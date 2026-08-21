@@ -1,4 +1,19 @@
+/*
+ * 직무 프로필 공식자료 검증 원칙
+ * 1. 직무명·주요업무 → 고용24 / 커리어넷
+ * 2. 관련 전공·학과 → 커리어넷 / 고용24
+ * 3. Knowledge / Skill / Attitude → 대응 NCS가 명확한 경우 NCS
+ * 4. competencyKeywords → 공식 직무정보 + NCS를 바탕으로 교육용 요약
+ * 5. 임금·전망 → 기준연도와 공식 출처가 확인되는 경우에만 사용
+ * 6. 특정 기업의 실제 요구사항 → STEP 8에 넣지 않고 STEP 9 실제 채용공고에서 확인
+ * NCS와 정확히 대응되지 않는 현대 직무는 억지로 하나의 NCS 직무에 연결하지 않는다.
+ * 공식 직업정보나 NCS가 직무군의 일부만 지원하면 supports에 해당 항목을 기록하되
+ * verification은 summary를 유지한다. verified는 현재 항목 전체가 공식자료와 충분히
+ * 일치한다고 검토자가 판단한 경우에만 사용한다.
+ */
 (function(){
+ const dataVersion='1.0';
+ const lastContentReview='';
  const profiles=[
   {role:'교육·HRD',aliases:['HRD','교육기획','인재개발','사내교육'],tasks:['교육 요구를 분석합니다.','학습 프로그램과 콘텐츠를 기획·운영합니다.','교육 효과를 평가하고 개선합니다.'],education:{majors:['교육학','심리학','경영학'],note:'전공 외에도 교육기획·운영 경험과 포트폴리오가 도움이 됩니다.'},knowledge:['교육설계','학습이론','조직·인재개발'],skills:['요구분석','프로그램 운영','강의·퍼실리테이션','성과분석'],attitudes:['학습지향','공감','피드백 수용'],competencyKeywords:['교육기획','요구분석','프로그램운영','의사소통','성과분석']},
   {role:'데이터·리서치',aliases:['데이터분석','데이터 분석가','리서처','시장조사'],tasks:['문제를 정의하고 필요한 데이터를 수집합니다.','데이터를 분석해 패턴과 의미를 찾습니다.','의사결정에 필요한 인사이트를 보고합니다.'],education:{majors:['통계학','수학','컴퓨터공학','사회과학'],note:'분석 기초와 함께 탐색하려는 산업의 도메인 지식이 도움이 됩니다.'},knowledge:['통계·조사방법','데이터 구조','산업·도메인 지식'],skills:['데이터 분석','리서치 설계','시각화·보고'],attitudes:['논리성','호기심','정확성'],competencyKeywords:['문제정의','데이터수집','분석','시각화','인사이트도출']},
@@ -29,10 +44,110 @@
   {name:'고용24 직업정보',publisher:'고용노동부·한국고용정보원',url:'https://www.work24.go.kr/',use:'개별 직업의 하는 일·교육·훈련·임금·전망 최신 확인'},
   {name:'커리어넷 직업정보',publisher:'교육부·한국직업능력연구원',url:'https://www.career.go.kr/',use:'대표 직업의 직업개요·관련 학과·취업현황·전망 확인'}
  ];
+ const verificationBatches={
+  1:['교육·HRD','데이터·리서치','서비스·제품기획','마케팅·콘텐츠','UX·디자인','전략·기획'],
+  2:['프로젝트·운영관리','HR·조직개발','영업·사업개발','상담·코칭','R&D·연구','품질·컴플라이언스'],
+  3:['회계·재무·감사','컨설팅','창업·신사업','공공·비영리','고객경험·서비스','보건·복지'],
+  4:['공간·건축·설계','스포츠·퍼포먼스','현장기술·생산','음악·음향','미디어·공연','자연·환경·생명']
+ };
+ const batch1OccupationSources={
+  '교육·HRD':[
+   {name:'커리어넷',url:'https://www.career.go.kr/cloud/m/job/view?seq=462',matchedOccupation:'사이버교육운영자',supports:['tasks','education'],note:'교육·HRD 직무군 중 교육과정·프로그램 기획·운영·평가 및 교육 관련 전공 영역을 지원'}
+  ],
+  '데이터·리서치':[
+   {name:'커리어넷',url:'https://www.career.go.kr/cloud/m/job/view?seq=10032',matchedOccupation:'빅 데이터 전문가',supports:['tasks','education','knowledge'],note:'데이터·리서치 직무군 중 데이터 수집·분석·시각화 및 데이터분석 관련 전공·지식 영역을 지원. 리서치 직무 전체를 의미하지 않음'}
+  ],
+  '마케팅·콘텐츠':[
+   {name:'커리어넷',url:'https://www.career.go.kr/cloud/m/job/view?seq=1068',matchedOccupation:'마케팅전문가',supports:['tasks','education'],note:'시장·소비자 분석과 마케팅 전략 영역을 지원'},
+   {name:'커리어넷',url:'https://www.career.go.kr/cloud/m/job/view?seq=232',matchedOccupation:'광고 및 홍보전문가',supports:['tasks','education'],note:'광고·홍보·콘텐츠 기획과 관련된 영역을 보완적으로 지원'}
+  ],
+  'UX·디자인':[
+   {name:'커리어넷',url:'https://www.career.go.kr/cloud/m/job/view?seq=10003',matchedOccupation:'UX 디자인 컨설턴트',supports:['tasks','education'],note:'사용자 조사·이해, 사용자 중심 설계 및 UX 관련 전공 영역을 직접적으로 지원'}
+  ],
+  '전략·기획':[
+   {name:'커리어넷',url:'https://www.career.go.kr/cloud/m/job/view?seq=202',matchedOccupation:'경영컨설턴트',supports:['tasks','education'],note:'기업 문제 분석·대책 수립·경영 자문 영역을 지원. 기업 내부 전략기획 직무 전체와 동일한 직무는 아님'}
+  ]
+ };
+ const batch2OccupationSources={
+  'HR·조직개발':[
+   {name:'커리어넷',url:'https://www.career.go.kr/cloud/m/job/view?seq=1279',matchedOccupation:'헤드헌터',supports:['tasks'],note:'HR·조직개발 직무군 중 기업의 채용요구 파악, 인재 선정·평가·채용 영역을 부분적으로 지원'},
+   {name:'커리어넷',url:'https://www.career.go.kr/cloud/m/job/view?seq=205',matchedOccupation:'노무사',supports:['tasks','education','knowledge'],note:'HR·조직개발 직무군 중 인사제도, 노무관리, HR컨설팅, 채용·교육 및 노동관계 영역을 부분적으로 지원. 조직개발 전체를 의미하지 않음'}
+  ],
+  '영업·사업개발':[
+   {name:'커리어넷',url:'https://www.career.go.kr/cloud/m/job/view?seq=474',matchedOccupation:'아이티(IT)기술영업원',supports:['tasks','knowledge','skills','competencyKeywords'],note:'영업·사업개발 직무군 중 제품·서비스에 대한 전문지식 기반 고객 제안·판매·상담·협상 영역을 지원. 사업개발(BD) 전체를 의미하지 않음'}
+  ],
+  '상담·코칭':[
+   {name:'커리어넷',url:'https://www.career.go.kr/cloud/m/job/view?seq=380',matchedOccupation:'상담전문가',supports:['tasks','education'],note:'상담·코칭 직무군 중 내담자 문제 파악, 상담, 심리검사, 변화 방향 탐색 및 상담 관련 전공 영역을 지원'},
+   {name:'커리어넷',url:'https://www.career.go.kr/cloud/m/job/view?seq=408',matchedOccupation:'직업상담 및 취업알선원',supports:['tasks','education'],note:'상담·코칭 직무군 중 진로·경력개발상담, 직업정보 제공, 구직자 특성 파악 영역을 보완적으로 지원. 코칭 직무 전체를 의미하지 않음'}
+  ],
+  'R&D·연구':[
+   {name:'커리어넷',url:'https://www.career.go.kr/cloud/m/job/view?seq=56',matchedOccupation:'기계공학 기술자·연구원',supports:['tasks','education'],note:'R&D·연구 직무군 중 이공계 연구·개발·설계 영역을 지원'},
+   {name:'커리어넷',url:'https://www.career.go.kr/cloud/m/job/view?seq=203',matchedOccupation:'경제학연구원',supports:['tasks','education'],note:'R&D·연구 직무군 중 사회과학 분야 자료수집·이론 및 실증연구·분석·연구결과 제시 영역을 지원'}
+  ],
+  '품질·컴플라이언스':[
+   {name:'커리어넷',url:'https://www.career.go.kr/cloud/m/job/view?seq=952',matchedOccupation:'화학공학기술자',supports:['tasks','knowledge','skills','competencyKeywords'],note:'품질·컴플라이언스 직무군 중 품질표준 확인, 품질통제, 품질관리 프로그램 운영 및 기준 설정 영역을 부분적으로 지원. 컴플라이언스·준법 영역의 근거는 아님'}
+  ]
+ };
+ const batch1NcsSources={
+  '교육·HRD':[
+   {name:'NCS',url:'https://m.ncs.go.kr/blind/bl04/RecrtNotifDetail.do?recrtNo=20260420105501',matchedNcs:'기업교육(04030102)',supports:['tasks','knowledge','skills','attitudes','competencyKeywords'],note:'교육·HRD와 직접성이 높은 NCS. 이 URL은 NCS 공정채용에서 기업교육 능력단위 적용을 확인하기 위한 근거이며 K/S/A 문장 전체를 직접 검증한 것은 아님.'}
+  ],
+  '데이터·리서치':[
+   {name:'NCS',url:'',matchedNcs:'빅데이터분석(20010105)',supports:['tasks','knowledge','skills','competencyKeywords'],note:'데이터·리서치 중 대규모 데이터 수집·처리·분석 영역과의 관련성을 기록. 검증된 구체적 URL은 아직 등록하지 않음.'},
+   {name:'NCS',url:'https://www.ncs.go.kr/blind/bl04/RecrtNotifDetail.do?recrtNo=20260507104349',matchedNcs:'통계조사(02010303)',supports:['tasks','knowledge','skills','competencyKeywords'],note:'데이터·리서치 중 조사설계·자료처리·통계분석·정성조사 영역을 지원'}
+  ],
+  '마케팅·콘텐츠':[
+   {name:'NCS',url:'https://pdms.ncs.go.kr/cdv/sch/pub/retrieveTracseDevRptSchDtl.do?schRptTy=NPDMS&schTracseReqstSeq=58969&schTracseSeq=52752',matchedNcs:'마케팅전략기획(02010301)',supports:['tasks','knowledge','skills','competencyKeywords'],note:'마케팅전략 계획수립, 시장환경분석, 신상품기획, 마케팅 성과관리 등 능력단위 확인'},
+   {name:'NCS',url:'https://www.ncs.go.kr/blind/bl04/RecrtNotifDetail.do?recrtNo=20180725112201',matchedNcs:'PR/광고',supports:['tasks','knowledge','skills','competencyKeywords'],note:'마케팅·콘텐츠 중 PR·광고·홍보 영역을 지원'}
+  ],
+  'UX·디자인':[
+   {name:'NCS',url:'https://www.ncs.go.kr/blind/bl04/RecrtNotifDetail.do?recrtNo=20191008165948',matchedNcs:'UI/UX엔지니어링',supports:['tasks','knowledge','skills','competencyKeywords'],note:'UI/UX 환경 분석, 계획수립, 요구분석, UI 아키텍처 설계, UI 디자인, 구현, 테스트, 가이드 제작 영역 확인'}
+  ],
+  '전략·기획':[
+   {name:'NCS',url:'https://m.ncs.go.kr/blind/bl04/RecrtNotifDetail.do?recrtNo=20260729113657',matchedNcs:'경영기획(02010101)',supports:['tasks','knowledge','skills','attitudes','competencyKeywords'],note:'전략·기획 직무군의 사업환경 분석·계획 수립·신규사업 기획 영역을 직접적으로 지원'}
+  ]
+ };
+ const batch1AttitudeRefinements={
+  '교육·HRD':['지속적으로 교육방법과 직무지식을 학습하려는 태도','교육대상자의 요구와 관점을 존중하는 태도','교육 결과와 피드백을 반영해 개선하려는 태도'],
+  '데이터·리서치':['분석 기준과 절차를 일관되게 적용하는 태도','필요한 자료와 정보를 적극적으로 탐색하는 태도','데이터와 분석결과의 정확성을 반복 확인하는 태도'],
+  '마케팅·콘텐츠':['목표와 고객에 맞는 다양한 메시지와 대안을 탐색하는 태도','고객의 반응과 관점에서 결과를 점검하는 태도','일정과 집행기준을 관리하며 계획을 실행하는 태도'],
+  'UX·디자인':['사용자 요구를 추측하지 않고 자료와 관찰을 통해 확인하려는 태도','UI 가이드와 일관성·사용성 기준을 준수하려는 태도','사용성 테스트와 피드백 결과를 반영해 지속적으로 개선하는 태도'],
+  '전략·기획':['객관적 자료를 종합하여 시사점을 도출하려는 태도','의사결정 전에 근거와 위험요인을 충분히 검토하는 태도','계획과 성과지표를 지속적으로 점검하는 태도']
+ };
+ const batch1CompetencyKeywordRefinements={
+  '교육·HRD':['인재개발전략','교육체계수립','교육과정설계','교육과정운영','교육성과평가'],
+  '전략·기획':['사업환경분석','경영계획수립','신규사업기획','경영실적분석','경영리스크관리']
+ };
+ const allowedVerificationStatuses=['verified','ncs-based','summary','needs-review'];
+ const allowedSourceSupports=['tasks','education','knowledge','skills','attitudes','competencyKeywords','pay','outlook'];
+ const sourceSchemas={
+  occupation:{name:'',url:'',matchedOccupation:'',supports:[],note:''},
+  ncs:{name:'NCS',url:'',matchedNcs:'',supports:[],note:''}
+ };
  profiles.forEach(p=>{
+  if(batch1AttitudeRefinements[p.role])p.attitudes=[...batch1AttitudeRefinements[p.role]];
+  if(batch1CompetencyKeywordRefinements[p.role])p.competencyKeywords=[...batch1CompetencyKeywordRefinements[p.role]];
   p.pay=p.pay||{text:'',year:'',source:''};
   p.outlook=p.outlook||{text:'',year:'',source:''};
-  p.source={status:'general-summary',label:'직무 이해를 위한 일반적 요약',note:'복합 직무군을 수업용으로 요약한 자료이며 특정 기업의 채용요건이나 공식 직업정보의 직접 인용이 아닙니다.',officialReferences:officialReferences.map(x=>({...x}))};
- });
- window.JOB_PROFILE_DATA={profiles,officialReferences,officialLinks:{work24:'https://www.work24.go.kr/',careerNet:'https://www.career.go.kr/'},missingText:'최신 직업정보에서 확인 필요'};
+  p.verification={tasks:'summary',education:'summary',knowledge:'summary',skills:'summary',attitudes:'summary',competencyKeywords:'summary',pay:'needs-review',outlook:'needs-review'};
+  if(batch1CompetencyKeywordRefinements[p.role])p.verification.competencyKeywords='ncs-based';
+  const occupationSources=batch1OccupationSources[p.role]||batch2OccupationSources[p.role]||[];
+  p.sources={occupation:occupationSources.map(x=>({...x,supports:[...x.supports]})),ncs:(batch1NcsSources[p.role]||[]).map(x=>({...x,supports:[...x.supports]})),pay:[],outlook:[],checkedDate:occupationSources.length?'2026-08-21':''};
+  p.verificationBatch=Number(Object.keys(verificationBatches).find(batch=>verificationBatches[batch].includes(p.role)))||0;
+  });
+ function getJobProfileVerificationSummary(){
+  const counts={verified:0,'ncs-based':0,summary:0,'needs-review':0};
+  profiles.forEach(profile=>Object.values(profile.verification).forEach(status=>{if(allowedVerificationStatuses.includes(status))counts[status]++}));
+  return{totalProfiles:profiles.length,...counts,occupationSourceProfiles:profiles.filter(p=>p.sources.occupation.length>0).length,ncsSourceProfiles:profiles.filter(p=>p.sources.ncs.length>0).length};
+ }
+ function validateJobProfileSource(kind,entry){
+  if(!['occupation','ncs'].includes(kind)||!entry||typeof entry!=='object')return false;
+  const matchedKey=kind==='occupation'?'matchedOccupation':'matchedNcs';
+  const supports=Array.isArray(entry.supports)?entry.supports:[];
+  const url=String(entry.url||'');
+  const urlIsValid=kind==='ncs'?!url||/^https:\/\//i.test(url):/^https:\/\//i.test(url);
+  return Boolean(String(entry.name||'').trim()&&urlIsValid&&String(entry[matchedKey]||'').trim()&&supports.length&&new Set(supports).size===supports.length&&supports.every(x=>allowedSourceSupports.includes(x)));
+ }
+  window.getJobProfileVerificationSummary=getJobProfileVerificationSummary;
+ window.JOB_PROFILE_DATA={dataVersion,lastContentReview,profiles,verificationBatches,allowedVerificationStatuses,allowedSourceSupports,sourceSchemas,officialReferences,officialLinks:{work24:'https://www.work24.go.kr/',careerNet:'https://www.career.go.kr/'},missingText:'최신 직업정보에서 확인 필요',getJobProfileVerificationSummary,validateJobProfileSource};
 })();
