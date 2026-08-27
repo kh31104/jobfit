@@ -59,3 +59,37 @@ const sampleIndustryCompanies=(items,max=12)=>{
 const map=new Map();Object.entries(lists).forEach(([industry,items])=>sampleIndustryCompanies(items).forEach(([name,type])=>{const old=map.get(name);if(old){if(!old.industries.includes(industry))old.industries.push(industry);if(!old.companyTypes.includes(type))old.companyTypes.push(type);old.roleExamples=[...new Set([...old.roleExamples,...roles[industry]])].slice(0,7);return}map.set(name,{name,industries:[industry],companyTypes:[type],roleExamples:[...roles[industry]],keywords:[...industries.find(x=>x.name===industry).examples.slice(0,3)]})}));
 window.CAREER_FIT_DATA={industries,companies:[...map.values()],companyTypes:['공기업·공공기관','대기업','중견기업','중소기업','스타트업·벤처','외국계기업'],classificationNote:'진로탐색용 분류 · 최신 정보 확인 필요'};
 })();
+
+// Hotfix 2026-08-27: prevent STEP 6+ navigation from getting stuck when VIA/MI results are incomplete.
+(function(){
+ const STORAGE_KEY='careerCompassV64';
+ function completeRanks(values){return Array.isArray(values)&&values.filter(Boolean).length===3&&new Set(values.filter(Boolean)).size===3}
+ function repairSavedStage(){
+  try{
+   const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return;
+   const data=JSON.parse(raw);if(!data||Number(data.current)<6)return;
+   if(!completeRanks(data.via)){data.current=4;data.currentSub=3;localStorage.setItem(STORAGE_KEY,JSON.stringify(data));return}
+   if(!completeRanks(data.mi)){data.current=5;data.currentSub=3;localStorage.setItem(STORAGE_KEY,JSON.stringify(data))}
+  }catch(e){}
+ }
+ repairSavedStage();
+ window.addEventListener('load',function(){
+  if(typeof window.goStep!=='function')return;
+  const originalGoStep=window.goStep;
+  window.goStep=function(n){
+   const target=Math.min(Math.max(Number(n)||1,1),12);
+   if(target>=6&&typeof window.readRanks==='function'){
+    const via=window.readRanks('via'),mi=window.readRanks('mi');
+    if(!completeRanks(via)){
+     alert('STEP 6 이후를 보려면 VIA 상위 3개를 먼저 입력해 주세요. VIA 입력 화면으로 이동합니다.');
+     if(typeof window.goSubStep==='function')return window.goSubStep(4,3);
+    }
+    if(!completeRanks(mi)){
+     alert('STEP 6 이후를 보려면 다중지능 상위 3개를 먼저 입력해 주세요. 다중지능 입력 화면으로 이동합니다.');
+     if(typeof window.goSubStep==='function')return window.goSubStep(5,3);
+    }
+   }
+   return originalGoStep(target);
+  };
+ });
+})();
