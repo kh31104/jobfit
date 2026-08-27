@@ -4,10 +4,10 @@
   {id:'riasec',title:'직업흥미 · RIASEC',tag:'흥미',desc:'어떤 활동과 업무에 자연스럽게 관심이 가는지 확인합니다.',use:'직무 후보를 탐색하는 핵심 자료'},
   {id:'anchor',title:'직업가치 · Career Anchor',tag:'가치',desc:'일에서 포기하기 어려운 가치와 경력 선택 기준을 확인합니다.',use:'기업환경·경력방향을 비교하는 자료'},
   {id:'experience',title:'경험 · 나의 강점',tag:'경험',desc:'내 경험과 타인 피드백에서 실제로 드러난 강점을 찾습니다.',use:'자기소개·면접·역량 근거 자료'},
-  {id:'via',title:'VIA 성격강점',tag:'강점',desc:'평소 자주 발휘하는 성격강점의 특징을 확인합니다.',use:'일하는 방식과 강점 활용 자료'},
-  {id:'mi',title:'다중지능',tag:'학습방식',desc:'정보를 이해하고 문제를 해결할 때 선호하는 방식을 살펴봅니다.',use:'학습·문제해결 방식 참고자료'},
-  {id:'mbti',title:'MBTI',tag:'업무스타일',desc:'이미 알고 있는 MBTI 유형을 직접 입력해 업무·협업 스타일을 돌아봅니다.',use:'소통·협업 방식 참고자료'},
-  {id:'disc',title:'DiSC',tag:'행동스타일',desc:'외부 DiSC 검사 결과를 입력해 행동·의사소통 경향을 살펴봅니다.',use:'관계·협업 방식 참고자료'}
+  {id:'via',title:'VIA 성격강점',tag:'강점',desc:'VIA 외부 검사를 실시한 뒤 상위 성격강점 결과를 입력합니다.',use:'일하는 방식과 강점 활용 자료'},
+  {id:'mi',title:'다중지능',tag:'학습방식',desc:'외부 검사를 실시한 뒤 정보이해·문제해결 방식의 상위 결과를 입력합니다.',use:'학습·문제해결 방식 참고자료'},
+  {id:'mbti',title:'MBTI',tag:'업무스타일',desc:'별도 검사는 하지 않고, 이미 알고 있는 본인의 MBTI 유형을 직접 입력합니다.',use:'소통·협업 방식 참고자료'},
+  {id:'disc',title:'DiSC',tag:'행동스타일',desc:'외부 DiSC 검사를 실시한 뒤 D·i·S·C 결과를 입력합니다.',use:'관계·협업 방식 참고자료'}
  ];
  let selected=new Set();
  let originalSelect=null;
@@ -111,11 +111,14 @@
   if(!selected.size){alert('오늘 진행할 자기이해 모듈을 1개 이상 선택해 주세요.');return}
   writeModules([...selected]);
   closeSelector();
+  setAppVisible(true);
   if(originalSelect)originalSelect('class');
-  setTimeout(decorateBanner,0);
+  setAppVisible(true);
+  setTimeout(()=>{setAppVisible(true);decorateBanner();},0);
  };
  window.backToCourseModeV3=function(){
   closeSelector();
+  setAppVisible(false);
   if(typeof window.changeCourseModeV3==='function')window.changeCourseModeV3();
  };
  window.openCareerModuleSelectorV3=openSelector;
@@ -141,12 +144,17 @@
   originalSelect=window.selectCourseModeV3;
   window.selectCourseModeV3=function(mode){
    if(mode==='class'){openSelector();return}
+   closeSelector();
+   setAppVisible(true);
    originalSelect(mode);
+   setAppVisible(true);
   };
   selected=new Set(readModules());
   const current=window.getCourseModeV3();
   if(current==='class'){
-   if(!selected.size)openSelector();else decorateBanner();
+   if(!selected.size)openSelector();else{setAppVisible(true);decorateBanner();}
+  }else if(current==='full'){
+   closeSelector();setAppVisible(true);
   }
  }
  if(document.readyState==='complete')install();
