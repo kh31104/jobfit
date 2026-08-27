@@ -147,6 +147,12 @@
    description:'rank-weighted role signals with per-role baseline frequency standardization and cross-source support',
    getRoleSignals:()=>roleSignalData()
   };
+
+  try{
+   if(current===6)renderIntegrated();
+   if(current===7)renderCareerFitMap();
+   if(current===8&&typeof renderCareerTargetAnalysis==='function')renderCareerTargetAnalysis();
+  }catch(e){console.error('Career recommendation V2 rerender failed',e)}
  }
 
  if(document.readyState==='complete')install();
