@@ -28,7 +28,7 @@
    body:JSON.stringify(payload)
   });
   const text=await res.text();
-  if(!res.ok)throw new Error(text||`HTTP ${res.status}`);
+  if(!res.ok)throw new Error(`HTTP ${res.status} ${text||''}`.trim());
   if(!text)return null;
   try{return JSON.parse(text)}catch(e){return text}
  }
@@ -51,6 +51,11 @@
   return row||{a_count:0,b_count:0,total_count:0,a_percent:0,b_percent:0};
  }
 
+ function shortError(err){
+  const msg=String(err&&err.message?err.message:err||'알 수 없는 오류').replace(/\s+/g,' ').trim();
+  return msg.length>280?msg.slice(0,280)+'…':msg;
+ }
+
  function install(){
   if(typeof window.chooseBalance!=='function'||typeof window.renderBalance!=='function'){
    setTimeout(install,60);return;
@@ -68,7 +73,7 @@
     window.__careerVoteConnectionError='';
    }catch(err){
     console.error('Supabase value vote failed',err);
-    window.__careerVoteConnectionError='실제 참여자 투표율 연결에 실패했습니다. 내 선택은 이 기기에 저장되었습니다.';
+    window.__careerVoteConnectionError=shortError(err);
    }
    window.renderBalance();
   };
@@ -94,7 +99,8 @@
      r.innerHTML=`<div class="voteStat"><b>A ${ap.toFixed(1)}%</b> · ${a}표</div><div class="voteStat"><b>B ${bp.toFixed(1)}%</b> · ${b}표</div><div class="small muted" style="grid-column:1/-1;margin-top:6px">${scopeLabel} 참여자 ${total}명 기준 · 내 선택 후 공개</div>`;
     }catch(err){
      console.error('Supabase vote counts failed',err);
-     r.innerHTML='<div class="voteStat" style="grid-column:1/-1">투표율을 불러오지 못했습니다. 내 선택은 계속 진행할 수 있습니다.</div>';
+     const castMsg=window.__careerVoteConnectionError?`<br>저장 오류: ${esc(window.__careerVoteConnectionError)}`:'';
+     r.innerHTML=`<div class="voteStat" style="grid-column:1/-1;text-align:left"><b>진단용 오류</b><br>${esc(shortError(err))}${castMsg}</div>`;
     }
    });
 
