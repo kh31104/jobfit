@@ -69,7 +69,7 @@
     const reasons=[];
     if(via.length)reasons.push('VIA · '+via.slice(0,2).map(x=>x.d.key).join(' + '));
     if(mi.length)reasons.push('다중지능 · '+mi.slice(0,2).map(x=>x.d.key).join(' + '));
-    if(r.cross)reasons.push('교차 지지 · VIA와 다중지능에서 모두 연결');
+    if(r.cross)reasons.push('두 검사 모두에서 이 직무와 연결됨');
 
     const hints=ROLE_STRENGTH_HINTS[r.role]||[];
     const common=hints.filter(x=>experienceCommonStrengths.includes(x)).slice(0,2);
@@ -106,10 +106,9 @@
    const box=el('recommendedRoleCards');if(!box)return;
    const roles=roleRecommendations();
    box.innerHTML=roles.length
-    ?`<div class="callout"><b>추천 알고리즘 V2 · 빈도편향 보정</b><br>
-       VIA·다중지능에 원래 자주 연결된 직무가 자동으로 높은 점수를 받지 않도록 <b>직무별 기본 출현빈도를 보정</b>했습니다.
-       VIA와 다중지능이 동시에 지지하면 교차 신호로 반영합니다.<br>
-       <span class="small">탐색지수(1~10)는 직무적합도·능력수준·합격가능성이 아니라, <b>현재 6개 결과 안에서 상대적으로 확인할 가치가 큰 정도</b>입니다.</span></div>`
+    ?`<div class="callout"><b>나의 결과에서 먼저 살펴볼 직무</b><br>
+       VIA와 다중지능 결과를 함께 고려해 탐색해볼 직무를 제안합니다.<br>
+       <span class="small">탐색지수(1~10)는 직무 적합도나 능력 점수가 아니라, <b>현재 결과에서 먼저 확인해볼 정도</b>를 나타냅니다.</span></div>`
       +roles.map((r,i)=>`<article class="roleCard ${careerTarget.role===r.role&&careerTarget.roleSource==='recommendation'?'selected':''}">
        <div class="roleHead"><h3>${i+1}. ${esc(r.role)}</h3><span class="scoreBadge">${esc(r.level)} · 탐색지수 ${r.index}/10</span></div>
        <div><b class="small">이 직무가 나온 근거</b><ul class="reasonList">${r.reasons.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
@@ -129,13 +128,13 @@
     const roleBox=boxes.find(box=>box.querySelector('h3')?.textContent.trim()==='탐색 후보 직무');
     if(roleBox){
      const p=roleBox.querySelector('p');
-     if(p)p.innerHTML='추천 알고리즘 V2는 <b>직무별 기본 출현빈도</b>를 보정해, HR·조직개발·교육·HRD처럼 원래 매핑에 자주 등장하는 직무가 자동으로 유리해지는 현상을 줄였습니다. VIA와 다중지능이 함께 지지하는 경우 교차 신호를 추가합니다. <b>탐색지수는 적합도 점수가 아닙니다.</b>';
+     if(p)p.innerHTML='VIA와 다중지능 결과를 함께 고려해 <b>먼저 살펴볼 직무</b>를 제안합니다. <b>탐색지수는 적합도 점수가 아니라 진로탐색을 위한 참고값</b>입니다.';
      roleBox.querySelectorAll('.pill.role').forEach(pill=>{
       pill.textContent=pill.textContent.replace(/ · 연결 (\d+)/,' · 탐색지수 $1/10');
      });
      if(!roleBox.querySelector('.roleModelNote')){
       const note=document.createElement('div');note.className='small muted roleModelNote';note.style.marginTop='10px';
-      note.textContent='탐색지수 1~10 = 현재 VIA TOP3·다중지능 TOP3 조합에서 상대적으로 먼저 검증해볼 정도. 실제 직무 적합성은 RIASEC, 경험, 전공·기술, 채용공고와 함께 확인합니다.';
+      note.textContent='관심이 가는 직무는 실제 경험, RIASEC, 전공·기술, 최신 채용공고와 함께 확인해보세요.';
       roleBox.appendChild(note);
      }
     }
