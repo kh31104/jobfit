@@ -1,1 +1,1 @@
-document.write('<script src="career-fit-data-base.js"><\/script><script src="supabase-votes.js"><\/script><script src="step2-peer-strengths.js"><\/script><script src="step6-integration-ui.js"><\/script>');
+document.write('<script src="career-fit-data-base.js"><\/script><script src="supabase-votes.js"><\/script><script src="step2-peer-strengths.js"><\/script><script src="step6-integration-ui.js"><\/script><script src="recommendation-v2.js"><\/script>');
