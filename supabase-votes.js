@@ -1,5 +1,5 @@
 (function(){
- const SUPABASE_URL='https://hlnoriffbhzpyhpnvsf.supabase.co';
+ const SUPABASE_URL='https://hllnoriffbhzpyhpnvsf.supabase.co';
  const SUPABASE_KEY='sb_publishable_5rar9UtV4SbceAOwoAbwBw_LEp6XB7L';
  const PARTICIPANT_KEY='careerNavigationParticipantIdV1';
 
