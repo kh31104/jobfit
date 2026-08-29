@@ -17,7 +17,7 @@
   }
  }
  function sessionCode(){
-  return explicitSessionCode()||`DAILY-${koreaDateCode()}`;
+  return explicitSessionCode()||`DAILY2-${koreaDateCode()}`;
  }
  function sessionLabel(){return explicitSessionCode()?'이 수업':'오늘 참여자'}
 
