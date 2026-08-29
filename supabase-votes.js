@@ -51,6 +51,26 @@
   return row||{a_count:0,b_count:0,total_count:0,a_percent:0,b_percent:0};
  }
 
+ // V4 and later screens use this public repository instead of the old local VoteRepository.
+ window.CareerVoteRepository={
+  mode:'supabase',
+  sessionCode,
+  participantId,
+  async vote(questionIndex,choice){
+   await castVote(questionIndex,choice);
+   return this.counts(questionIndex);
+  },
+  async counts(questionIndex){
+   const c=await voteCounts(questionIndex);
+   const a=Number(c.a_count||0),b=Number(c.b_count||0),total=Number(c.total_count||0);
+   return{
+    a,b,total,
+    aPercent:Number(c.a_percent??(total?a/total*100:0)),
+    bPercent:Number(c.b_percent??(total?b/total*100:0))
+   };
+  }
+ };
+
  function install(){
   if(typeof window.chooseBalance!=='function'||typeof window.renderBalance!=='function'){
    setTimeout(install,60);return;
