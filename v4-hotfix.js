@@ -40,13 +40,10 @@
    }
   }));
  }
- function scheduleVoteRefresh(){
-  setTimeout(refreshV4VoteCounts,80);
-  setTimeout(refreshV4VoteCounts,350);
- }
+ function scheduleVoteRefresh(){setTimeout(refreshV4VoteCounts,80);setTimeout(refreshV4VoteCounts,350)}
  async function syncCurrentV4Votes(){
   const repo=window.CareerVoteRepository;
-  if(!repo||typeof repo.vote!=='function'||!Array.isArray(window.balanceAnswers)&&typeof balanceAnswers==='undefined')return;
+  if(!repo||typeof repo.vote!=='function'||(!Array.isArray(window.balanceAnswers)&&typeof balanceAnswers==='undefined'))return;
   let answers=[];try{answers=Array.isArray(balanceAnswers)?balanceAnswers:[]}catch(e){return}
   const sig=answers.map(x=>String(x||'').toLowerCase()).join('|');
   if(!sig.replaceAll('|',''))return;
@@ -55,12 +52,37 @@
   if(localStorage.getItem(key)===sig){scheduleVoteRefresh();return}
   for(let i=0;i<Math.min(7,answers.length);i++){
    const c=String(answers[i]||'').toLowerCase();
-   if(c==='a'||c==='b'){
-    try{await repo.vote(i,c)}catch(e){console.error('V4 vote sync failed',i,e)}
-   }
+   if(c==='a'||c==='b'){try{await repo.vote(i,c)}catch(e){console.error('V4 vote sync failed',i,e)}}
   }
-  localStorage.setItem(key,sig);
-  scheduleVoteRefresh();
+  localStorage.setItem(key,sig);scheduleVoteRefresh();
+ }
+ function viaSaved(){
+  try{const d=JSON.parse(localStorage.getItem('careerCompassV64')||'{}');return Array.isArray(d.via)?d.via.slice(0,5):[]}catch(e){return[]}
+ }
+ function viaSelection(){
+  const saved=viaSaved();
+  return [1,2,3,4,5].map((n,i)=>document.getElementById('via'+n)?.value||saved[i]||'');
+ }
+ function viaEsc(v){
+  try{return typeof esc==='function'?esc(v):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}catch(e){return String(v??'')}
+ }
+ let viaRepairing=false;
+ function ensureViaTop5Rows(){
+  const box=document.getElementById('viaRankRows');
+  if(!box||typeof VIA==='undefined'||!Array.isArray(VIA)||viaRepairing)return;
+  const hasFive=[1,2,3,4,5].every(n=>document.getElementById('via'+n));
+  if(hasFive)return;
+  viaRepairing=true;
+  const selected=viaSelection();
+  box.innerHTML=[1,2,3,4,5].map((n,i)=>`<div class="rankRow"><div class="rankHead"><div class="rankN">${n}</div><b>VIA 강점 ${n}위</b></div><select id="via${n}" onchange="rankChanged('via',${n})"><option value="">선택하세요</option>${VIA.map(x=>`<option value="${viaEsc(x.key)}" ${selected[i]===x.key?'selected':''}>${viaEsc(x.key)} · ${viaEsc(x.en)}</option>`).join('')}</select><div class="rankPreview" id="viaPreview${n}">결과를 선택하면 특징이 표시됩니다.</div></div>`).join('');
+  [1,2,3,4,5].forEach(n=>{try{if(typeof updatePreview==='function')updatePreview('via',n)}catch(e){}});
+  viaRepairing=false;
+ }
+ function scheduleViaTop5(){setTimeout(ensureViaTop5Rows,20);setTimeout(ensureViaTop5Rows,120);setTimeout(ensureViaTop5Rows,350)}
+ function watchViaRows(){
+  const box=document.getElementById('viaRankRows');if(!box||box.__viaTop5Observer)return;
+  const observer=new MutationObserver(()=>{if(!viaRepairing&&![1,2,3,4,5].every(n=>document.getElementById('via'+n)))setTimeout(ensureViaTop5Rows,0)});
+  observer.observe(box,{childList:true});box.__viaTop5Observer=observer;scheduleViaTop5();
  }
  function install(){
   if(typeof window.goCareerFlowV4!=='function'||typeof window.readRanks!=='function'){setTimeout(install,80);return}
@@ -78,24 +100,21 @@
    try{if(typeof selectedValues!=='undefined')window.selectedValues=[...selectedValues]}catch(e){}
    const r=originalGo(step);
    if(Number(step)===0)setTimeout(syncCurrentV4Votes,120);
-   if(Number(step)===6)setTimeout(()=>{
-    try{const d=JSON.parse(localStorage.getItem('careerCompassV64')||'{}'),saved=Array.isArray(d.via)?d.via.slice(0,5):[];if(saved.length&&typeof renderRanks==='function'&&typeof VIA!=='undefined')renderRanks('via',VIA,saved)}catch(e){}
-   },120);
+   if(Number(step)===6){scheduleViaTop5();setTimeout(watchViaRows,80)}
    return r;
   };
+  const originalSub=window.goSubStep;
+  if(typeof originalSub==='function'&&!originalSub.__viaTop5Wrapped){
+   const wrappedSub=function(stage,sub){const r=originalSub(stage,sub);if(Number(stage)===4){scheduleViaTop5();setTimeout(watchViaRows,60)}return r};
+   wrappedSub.__viaTop5Wrapped=true;window.goSubStep=wrappedSub;
+  }
   const originalRead=window.readRanks;
   window.readRanks=function(prefix){if(prefix==='mi')return[];return originalRead(prefix)};
-
   const originalToggleValue=window.toggleValueV4;
   if(typeof originalToggleValue==='function'){
-   window.toggleValueV4=keepScroll(function(v){
-    const r=originalToggleValue(v);
-    try{window.selectedValues=[...selectedValues]}catch(e){}
-    return r;
-   });
+   window.toggleValueV4=keepScroll(function(v){const r=originalToggleValue(v);try{window.selectedValues=[...selectedValues]}catch(e){}return r});
   }
   if(typeof window.toggleInterestV4==='function')window.toggleInterestV4=keepScroll(window.toggleInterestV4);
-
   const originalChooseIce=window.chooseIceV4;
   if(typeof originalChooseIce==='function'){
    window.chooseIceV4=keepScroll(async function(i,c){
@@ -112,11 +131,12 @@
     scheduleVoteRefresh();
    });
   }
-
   try{if(typeof selectedValues!=='undefined')window.selectedValues=[...selectedValues]}catch(e){}
+  watchViaRows();scheduleViaTop5();
   if(/STEP\s*0\s*\/\s*13/.test(document.getElementById('stepText')?.textContent||''))setTimeout(syncCurrentV4Votes,120);
  }
  window.refreshCareerVoteCountsV4=refreshV4VoteCounts;
  window.syncCareerVotesV4=syncCurrentV4Votes;
+ window.ensureViaTop5RowsV4=ensureViaTop5Rows;
  if(document.readyState==='complete')setTimeout(install,180);else window.addEventListener('load',()=>setTimeout(install,180),{once:true});
 })();
