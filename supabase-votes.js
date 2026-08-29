@@ -3,10 +3,23 @@
  const SUPABASE_KEY='sb_publishable_5rar9UtV4SbceAOwoAbwBw_LEp6XB7L';
  const PARTICIPANT_KEY='careerNavigationParticipantIdV1';
 
- function sessionCode(){
+ function explicitSessionCode(){
   const raw=(new URLSearchParams(location.search).get('session')||'').trim();
-  return /^[A-Za-z0-9._:-]{1,80}$/.test(raw)?raw:'GLOBAL';
+  return /^[A-Za-z0-9._:-]{1,80}$/.test(raw)?raw:'';
  }
+ function koreaDateCode(){
+  try{
+   const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+   const p=Object.fromEntries(parts.map(x=>[x.type,x.value]));
+   return `${p.year}${p.month}${p.day}`;
+  }catch(e){
+   const d=new Date();return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  }
+ }
+ function sessionCode(){
+  return explicitSessionCode()||`DAILY-${koreaDateCode()}`;
+ }
+ function sessionLabel(){return explicitSessionCode()?'이 수업':'오늘 참여자'}
 
  function createUuid(){
   if(window.crypto&&typeof window.crypto.randomUUID==='function')return window.crypto.randomUUID();
@@ -51,10 +64,10 @@
   return row||{a_count:0,b_count:0,total_count:0,a_percent:0,b_percent:0};
  }
 
- // V4 and later screens use this public repository instead of the old local VoteRepository.
  window.CareerVoteRepository={
   mode:'supabase',
   sessionCode,
+  sessionLabel,
   participantId,
   async vote(questionIndex,choice){
    await castVote(questionIndex,choice);
@@ -95,11 +108,11 @@
 
   window.renderBalance=function(){
    const box=el('balanceQuestions');if(!box)return;
-   const scopeLabel=sessionCode()==='GLOBAL'?'전체 누적':'이 수업';
+   const scopeLabel=sessionLabel();
    box.innerHTML=BALANCE_QUESTIONS.map((q,i)=>{
     const answer=String(balanceAnswers[i]||'').toLowerCase();
     const voteArea=answer
-     ?`<div class="voteResult" id="voteResult${i}"><div class="voteStat" style="grid-column:1/-1">${scopeLabel} 참여자 투표율 불러오는 중...</div></div>`
+     ?`<div class="voteResult" id="voteResult${i}"><div class="voteStat" style="grid-column:1/-1">${scopeLabel} 투표율 불러오는 중...</div></div>`
      :`<div class="voteResult" id="voteResult${i}"><div class="voteStat" style="grid-column:1/-1">먼저 선택하면 실제 참여자 투표율이 표시됩니다.</div></div>`;
     return `<div class="balanceCard"><h3>${i+1}. 나의 선택은?</h3><div class="choiceGrid"><button class="choiceBtn ${answer==='a'?'selected':''}" onclick="chooseBalance(${i},'a')"><b>A</b><br>${esc(q.a)}</button><button class="choiceBtn ${answer==='b'?'selected':''}" onclick="chooseBalance(${i},'b')"><b>B</b><br>${esc(q.b)}</button></div>${voteArea}${answer?`<div class="valueHint">나의 선택 키워드 · ${esc(valueLabel(answer==='a'?q.av:q.bv))}</div>`:''}</div>`;
    }).join('');
@@ -111,7 +124,7 @@
      const c=await voteCounts(i);
      const a=Number(c.a_count||0),b=Number(c.b_count||0),total=Number(c.total_count||0);
      const ap=Number(c.a_percent||0),bp=Number(c.b_percent||0);
-     r.innerHTML=`<div class="voteStat"><b>A ${ap.toFixed(1)}%</b> · ${a}표</div><div class="voteStat"><b>B ${bp.toFixed(1)}%</b> · ${b}표</div><div class="small muted" style="grid-column:1/-1;margin-top:6px">${scopeLabel} 참여자 ${total}명 기준 · 내 선택 후 공개</div>`;
+     r.innerHTML=`<div class="voteStat"><b>A ${ap.toFixed(1)}%</b> · ${a}표</div><div class="voteStat"><b>B ${bp.toFixed(1)}%</b> · ${b}표</div><div class="small muted" style="grid-column:1/-1;margin-top:6px">${scopeLabel} ${total}명 기준 · 내 선택 후 공개</div>`;
     }catch(err){
      console.error('Supabase vote counts failed',err);
      r.innerHTML='<div class="voteStat" style="grid-column:1/-1">현재 투표율을 불러오지 못했습니다. 내 선택은 저장되며 다음 활동은 계속 진행할 수 있습니다.</div>';
