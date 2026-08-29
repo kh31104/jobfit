@@ -1,5 +1,6 @@
 (function(){
  const WORK_KEY='careerNavigationWork24ResultsV3';
+ const SELF_KEY='careerNavigationSelfAwarenessV4';
  function restoreScroll(y){
   const top=Math.max(0,Number(y)||0);
   requestAnimationFrame(()=>window.scrollTo({top,behavior:'auto'}));
@@ -84,6 +85,40 @@
   const observer=new MutationObserver(()=>{if(!viaRepairing&&![1,2,3,4,5].every(n=>document.getElementById('via'+n)))setTimeout(ensureViaTop5Rows,0)});
   observer.observe(box,{childList:true});box.__viaTop5Observer=observer;scheduleViaTop5();
  }
+ function isFullRoadmap(){
+  try{return typeof window.getCourseModeV3==='function'?window.getCourseModeV3()!=='class':localStorage.getItem('careerNavigationCourseModeV3')!=='class'}catch(e){return true}
+ }
+ function ensureRoadmapNavStyle(){
+  if(document.getElementById('careerRoadmapNavV4Style'))return;
+  const s=document.createElement('style');s.id='careerRoadmapNavV4Style';
+  s.textContent=`body.careerFullRoadmapV4 .stageToggle{display:none!important}body.careerFullRoadmapV4 .stageNav,body.careerFullRoadmapV4 .stageNav.hiddenStages{display:flex!important;grid-template-columns:none!important;gap:8px;overflow-x:auto;overflow-y:hidden;white-space:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:thin;position:sticky;top:0;z-index:35;background:rgba(248,249,255,.96);backdrop-filter:blur(10px);padding:9px 3px 11px;margin:0 0 8px}body.careerFullRoadmapV4 .stageNav .stageChip{flex:0 0 auto;width:auto;min-width:max-content;padding:9px 12px;border-radius:999px;font-size:12px} @media(max-width:600px){body.careerFullRoadmapV4 .stageNav,body.careerFullRoadmapV4 .stageNav.hiddenStages{margin-left:-2px;margin-right:-2px;padding-left:2px;padding-right:2px}body.careerFullRoadmapV4 .stageNav .stageChip{font-size:11px;padding:8px 10px}}`;
+  document.head.appendChild(s);
+ }
+ function centerActiveStage(){
+  const nav=document.getElementById('stageNav'),on=nav?.querySelector('.stageChip.on');if(!nav||!on)return;
+  const target=Math.max(0,on.offsetLeft-(nav.clientWidth-on.offsetWidth)/2);
+  nav.scrollTo({left:target,behavior:'smooth'});
+ }
+ function refreshFullRoadmapNav(){
+  ensureRoadmapNavStyle();const full=isFullRoadmap();document.body.classList.toggle('careerFullRoadmapV4',full);
+  const nav=document.getElementById('stageNav'),toggle=document.getElementById('stageToggle');
+  if(full&&nav){nav.classList.remove('hiddenStages');if(toggle)toggle.style.display='none';setTimeout(centerActiveStage,30)}
+  else if(toggle)toggle.style.display='';
+ }
+ function refreshInterestSaveButton(){
+  const root=document.getElementById('careerFlowV4');if(!root)return;
+  const btn=[...root.querySelectorAll('button.btnPrimary')].find(b=>/고용24\s*S형|completeInterestV4/.test((b.textContent||'')+' '+(b.getAttribute('onclick')||'')));
+  if(!btn)return;btn.textContent='저장';btn.setAttribute('onclick','saveInterestOnlyV4()');
+ }
+ window.saveInterestOnlyV4=function(){
+  let x={};try{x=JSON.parse(localStorage.getItem(SELF_KEY)||'{}')}catch(e){}
+  x.interest=x.interest||{selected:[],note:'',done:false};
+  const selected=Array.isArray(x.interest.selected)?x.interest.selected:[];
+  if(selected.length!==3){alert('내가 생각하는 흥미 TOP3를 모두 선택해 주세요.');return}
+  x.interest.done=true;localStorage.setItem(SELF_KEY,JSON.stringify(x));
+  const root=document.getElementById('careerFlowV4');const btn=[...root?.querySelectorAll('button.btnPrimary')||[]].find(b=>(b.getAttribute('onclick')||'').includes('saveInterestOnlyV4'));
+  if(btn){btn.textContent='✓ 저장됨';setTimeout(()=>{if(document.body.contains(btn))btn.textContent='저장'},1200)}
+ };
  function install(){
   if(typeof window.goCareerFlowV4!=='function'||typeof window.readRanks!=='function'){setTimeout(install,80);return}
   const originalOpen=window.openWork24AssessmentV4;
@@ -100,12 +135,13 @@
    try{if(typeof selectedValues!=='undefined')window.selectedValues=[...selectedValues]}catch(e){}
    const r=originalGo(step);
    if(Number(step)===0)setTimeout(syncCurrentV4Votes,120);
+   if(Number(step)===1)setTimeout(refreshInterestSaveButton,25);
    if(Number(step)===6){scheduleViaTop5();setTimeout(watchViaRows,80)}
-   return r;
+   setTimeout(refreshFullRoadmapNav,30);return r;
   };
   const originalSub=window.goSubStep;
   if(typeof originalSub==='function'&&!originalSub.__viaTop5Wrapped){
-   const wrappedSub=function(stage,sub){const r=originalSub(stage,sub);if(Number(stage)===4){scheduleViaTop5();setTimeout(watchViaRows,60)}return r};
+   const wrappedSub=function(stage,sub){const r=originalSub(stage,sub);if(Number(stage)===4){scheduleViaTop5();setTimeout(watchViaRows,60)}setTimeout(refreshFullRoadmapNav,20);return r};
    wrappedSub.__viaTop5Wrapped=true;window.goSubStep=wrappedSub;
   }
   const originalRead=window.readRanks;
@@ -114,7 +150,8 @@
   if(typeof originalToggleValue==='function'){
    window.toggleValueV4=keepScroll(function(v){const r=originalToggleValue(v);try{window.selectedValues=[...selectedValues]}catch(e){}return r});
   }
-  if(typeof window.toggleInterestV4==='function')window.toggleInterestV4=keepScroll(window.toggleInterestV4);
+  const originalToggleInterest=window.toggleInterestV4;
+  if(typeof originalToggleInterest==='function')window.toggleInterestV4=keepScroll(function(...args){const r=originalToggleInterest.apply(this,args);setTimeout(refreshInterestSaveButton,0);return r});
   const originalChooseIce=window.chooseIceV4;
   if(typeof originalChooseIce==='function'){
    window.chooseIceV4=keepScroll(async function(i,c){
@@ -132,11 +169,13 @@
    });
   }
   try{if(typeof selectedValues!=='undefined')window.selectedValues=[...selectedValues]}catch(e){}
-  watchViaRows();scheduleViaTop5();
+  watchViaRows();scheduleViaTop5();refreshFullRoadmapNav();refreshInterestSaveButton();
+  const stageNav=document.getElementById('stageNav');if(stageNav&&!stageNav.__careerNavObserver){const ob=new MutationObserver(()=>setTimeout(()=>{refreshFullRoadmapNav();centerActiveStage()},0));ob.observe(stageNav,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});stageNav.__careerNavObserver=ob}
   if(/STEP\s*0\s*\/\s*13/.test(document.getElementById('stepText')?.textContent||''))setTimeout(syncCurrentV4Votes,120);
  }
  window.refreshCareerVoteCountsV4=refreshV4VoteCounts;
  window.syncCareerVotesV4=syncCurrentV4Votes;
  window.ensureViaTop5RowsV4=ensureViaTop5Rows;
+ window.refreshFullRoadmapNavV4=refreshFullRoadmapNav;
  if(document.readyState==='complete')setTimeout(install,180);else window.addEventListener('load',()=>setTimeout(install,180),{once:true});
 })();
