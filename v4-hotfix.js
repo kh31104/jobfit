@@ -18,6 +18,28 @@
   wrapped.__careerKeepScrollV4=true;
   return wrapped;
  }
+ async function refreshV4VoteCounts(){
+  const repo=window.CareerVoteRepository;
+  if(!repo||typeof repo.counts!=='function')return;
+  const scope=typeof repo.sessionCode==='function'&&repo.sessionCode()!=='GLOBAL'?'이 수업':'전체 누적';
+  await Promise.all([0,1,2,3,4,5,6].map(async i=>{
+   const r=document.getElementById('f4Vote'+i);if(!r)return;
+   try{
+    const c=await repo.counts(i);
+    const a=Number(c.a||0),b=Number(c.b||0),total=Number(c.total??(a+b));
+    const ap=Number(c.aPercent??(total?a/total*100:0));
+    const bp=Number(c.bPercent??(total?b/total*100:0));
+    r.innerHTML=`<div class="voteStat"><b>A ${ap.toFixed(1)}%</b> · ${a}표</div><div class="voteStat"><b>B ${bp.toFixed(1)}%</b> · ${b}표</div><div class="small muted" style="grid-column:1/-1;margin-top:6px">${scope} 참여자 ${total}명 기준</div>`;
+   }catch(e){
+    console.error('V4 Supabase vote count failed',e);
+    r.innerHTML='<div class="voteStat" style="grid-column:1/-1">현재 실제 참여자 투표율을 불러오지 못했습니다.</div>';
+   }
+  }));
+ }
+ function scheduleVoteRefresh(){
+  setTimeout(refreshV4VoteCounts,60);
+  setTimeout(refreshV4VoteCounts,220);
+ }
  function install(){
   if(typeof window.goCareerFlowV4!=='function'||typeof window.readRanks!=='function'){setTimeout(install,80);return}
   const originalOpen=window.openWork24AssessmentV4;
@@ -33,6 +55,7 @@
   window.goCareerFlowV4=function(step){
    try{if(typeof selectedValues!=='undefined')window.selectedValues=[...selectedValues]}catch(e){}
    const r=originalGo(step);
+   if(Number(step)===0)scheduleVoteRefresh();
    if(Number(step)===6)setTimeout(()=>{
     try{const d=JSON.parse(localStorage.getItem('careerCompassV64')||'{}'),saved=Array.isArray(d.via)?d.via.slice(0,5):[];if(saved.length&&typeof renderRanks==='function'&&typeof VIA!=='undefined')renderRanks('via',VIA,saved)}catch(e){}
    },120);
@@ -50,9 +73,25 @@
    });
   }
   if(typeof window.toggleInterestV4==='function')window.toggleInterestV4=keepScroll(window.toggleInterestV4);
-  if(typeof window.chooseIceV4==='function')window.chooseIceV4=keepScroll(window.chooseIceV4);
+
+  const originalChooseIce=window.chooseIceV4;
+  if(typeof originalChooseIce==='function'){
+   window.chooseIceV4=keepScroll(async function(i,c){
+    const previous=String((balanceAnswers||[])[i]||'').toLowerCase();
+    if(previous===String(c).toLowerCase()){scheduleVoteRefresh();return}
+    await originalChooseIce(i,c);
+    try{
+     if(window.CareerVoteRepository&&typeof window.CareerVoteRepository.vote==='function'){
+      await window.CareerVoteRepository.vote(i,c);
+     }
+    }catch(e){console.error('V4 Supabase vote save failed',e)}
+    scheduleVoteRefresh();
+   });
+  }
 
   try{if(typeof selectedValues!=='undefined')window.selectedValues=[...selectedValues]}catch(e){}
+  if(/STEP\s*0\s*\/\s*13/.test(document.getElementById('stepText')?.textContent||''))scheduleVoteRefresh();
  }
+ window.refreshCareerVoteCountsV4=refreshV4VoteCounts;
  if(document.readyState==='complete')setTimeout(install,180);else window.addEventListener('load',()=>setTimeout(install,180),{once:true});
 })();
