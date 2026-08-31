@@ -88,10 +88,20 @@
  function isFullRoadmap(){
   try{return typeof window.getCourseModeV3==='function'?window.getCourseModeV3()!=='class':localStorage.getItem('careerNavigationCourseModeV3')!=='class'}catch(e){return true}
  }
+ function normalizeV4Layout(){
+  const main=document.querySelector('.wrap > main');if(!main||!main.parentNode)return;
+  const parent=main.parentNode;
+  const flow=document.getElementById('careerFlowV4');
+  const work=document.getElementById('work24V4');
+  if(flow&&flow.parentNode===parent)parent.insertBefore(flow,main);
+  if(work&&work.parentNode===parent)parent.insertBefore(work,main);
+ }
+ function hideFlowV4(){const s=document.getElementById('careerFlowV4');if(s)s.classList.add('flowV4Hidden')}
+ function hideWork24V4(){const s=document.getElementById('work24V4');if(s)s.classList.add('work24V4Hidden')}
  function ensureRoadmapNavStyle(){
   if(document.getElementById('careerRoadmapNavV4Style'))return;
   const s=document.createElement('style');s.id='careerRoadmapNavV4Style';
-  s.textContent=`body.careerFullRoadmapV4 .stageToggle{display:none!important}body.careerFullRoadmapV4 .stageNav,body.careerFullRoadmapV4 .stageNav.hiddenStages{display:flex!important;grid-template-columns:none!important;gap:8px;overflow-x:auto;overflow-y:hidden;white-space:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:thin;position:sticky;top:0;z-index:35;background:rgba(248,249,255,.96);backdrop-filter:blur(10px);padding:9px 3px 11px;margin:0 0 8px}body.careerFullRoadmapV4 .stageNav .stageChip{flex:0 0 auto;width:auto;min-width:max-content;padding:9px 12px;border-radius:999px;font-size:12px} @media(max-width:600px){body.careerFullRoadmapV4 .stageNav,body.careerFullRoadmapV4 .stageNav.hiddenStages{margin-left:-2px;margin-right:-2px;padding-left:2px;padding-right:2px}body.careerFullRoadmapV4 .stageNav .stageChip{font-size:11px;padding:8px 10px}}`;
+  s.textContent=`body.careerFullRoadmapV4 .stageToggle{display:none!important}body.careerFullRoadmapV4 .stageNav,body.careerFullRoadmapV4 .stageNav.hiddenStages{display:flex!important;grid-template-columns:none!important;gap:8px;overflow-x:auto;overflow-y:hidden;white-space:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:thin;position:sticky;top:0;z-index:35;background:rgba(248,249,255,.97);backdrop-filter:blur(10px);padding:9px 3px 11px;margin:0 0 8px;border-bottom:1px solid rgba(228,232,241,.9)}body.careerFullRoadmapV4 .stageNav .stageChip{flex:0 0 auto;width:auto;min-width:max-content;padding:9px 12px;border-radius:999px;font-size:12px}@media(max-width:600px){body.careerFullRoadmapV4 .stageNav,body.careerFullRoadmapV4 .stageNav.hiddenStages{margin-left:-2px;margin-right:-2px;padding-left:2px;padding-right:2px}body.careerFullRoadmapV4 .stageNav .stageChip{font-size:11px;padding:8px 10px}}`;
   document.head.appendChild(s);
  }
  function centerActiveStage(){
@@ -100,7 +110,7 @@
   nav.scrollTo({left:target,behavior:'smooth'});
  }
  function refreshFullRoadmapNav(){
-  ensureRoadmapNavStyle();const full=isFullRoadmap();document.body.classList.toggle('careerFullRoadmapV4',full);
+  ensureRoadmapNavStyle();normalizeV4Layout();const full=isFullRoadmap();document.body.classList.toggle('careerFullRoadmapV4',full);
   const nav=document.getElementById('stageNav'),toggle=document.getElementById('stageToggle');
   if(full&&nav){nav.classList.remove('hiddenStages');if(toggle)toggle.style.display='none';setTimeout(centerActiveStage,30)}
   else if(toggle)toggle.style.display='';
@@ -122,7 +132,13 @@
  function install(){
   if(typeof window.goCareerFlowV4!=='function'||typeof window.readRanks!=='function'){setTimeout(install,80);return}
   const originalOpen=window.openWork24AssessmentV4;
-  if(typeof originalOpen==='function')window.openWork24AssessmentV4=function(id,opts){try{if(typeof selectedValues!=='undefined')window.selectedValues=[...selectedValues]}catch(e){}return originalOpen(id,opts)};
+  if(typeof originalOpen==='function')window.openWork24AssessmentV4=function(id,opts){
+   hideFlowV4();
+   try{if(typeof selectedValues!=='undefined')window.selectedValues=[...selectedValues]}catch(e){}
+   const r=originalOpen(id,opts);
+   setTimeout(()=>{normalizeV4Layout();refreshFullRoadmapNav()},0);
+   return r;
+  };
   window.updateWork24V4Score=function(id,key,value){
    let x={};try{x=JSON.parse(localStorage.getItem(WORK_KEY)||'{}')}catch(e){}
    x.riasec=x.riasec||{scores:{},status:'draft',completedAt:''};x.riasec.scores=x.riasec.scores||{};
@@ -132,18 +148,31 @@
   };
   const originalGo=window.goCareerFlowV4;
   window.goCareerFlowV4=function(step){
+   step=Number(step);
+   if(![2,4,10].includes(step))hideWork24V4();
    try{if(typeof selectedValues!=='undefined')window.selectedValues=[...selectedValues]}catch(e){}
    const r=originalGo(step);
-   if(Number(step)===0)setTimeout(syncCurrentV4Votes,120);
-   if(Number(step)===1)setTimeout(refreshInterestSaveButton,25);
-   if(Number(step)===6){scheduleViaTop5();setTimeout(watchViaRows,80)}
-   setTimeout(refreshFullRoadmapNav,30);return r;
+   if(step===0)setTimeout(syncCurrentV4Votes,120);
+   if(step===1)setTimeout(refreshInterestSaveButton,25);
+   if(step===6){scheduleViaTop5();setTimeout(watchViaRows,80)}
+   setTimeout(()=>{normalizeV4Layout();refreshFullRoadmapNav()},30);return r;
   };
   const originalSub=window.goSubStep;
   if(typeof originalSub==='function'&&!originalSub.__viaTop5Wrapped){
-   const wrappedSub=function(stage,sub){const r=originalSub(stage,sub);if(Number(stage)===4){scheduleViaTop5();setTimeout(watchViaRows,60)}setTimeout(refreshFullRoadmapNav,20);return r};
+   const wrappedSub=function(stage,sub){
+    if(Number(stage)===5&&/STEP\s*6\s*\/\s*13/.test(document.getElementById('stepText')?.textContent||''))return window.goCareerFlowV4(7);
+    const r=originalSub(stage,sub);if(Number(stage)===4){scheduleViaTop5();setTimeout(watchViaRows,60)}setTimeout(()=>{normalizeV4Layout();refreshFullRoadmapNav()},20);return r
+   };
    wrappedSub.__viaTop5Wrapped=true;window.goSubStep=wrappedSub;
   }
+  window.finishVia=function(){
+   ensureViaTop5Rows();
+   const a=[1,2,3,4,5].map(n=>document.getElementById('via'+n)?.value||'');
+   if(a.some(x=>!x)){alert('VIA 상위 5개를 모두 선택해 주세요.');return}
+   if(new Set(a).size<5){alert('VIA 결과가 중복되어 있습니다.');return}
+   try{if(typeof save==='function')save()}catch(e){}
+   window.goCareerFlowV4(7);
+  };
   const originalRead=window.readRanks;
   window.readRanks=function(prefix){if(prefix==='mi')return[];return originalRead(prefix)};
   const originalToggleValue=window.toggleValueV4;
@@ -169,13 +198,14 @@
    });
   }
   try{if(typeof selectedValues!=='undefined')window.selectedValues=[...selectedValues]}catch(e){}
-  watchViaRows();scheduleViaTop5();refreshFullRoadmapNav();refreshInterestSaveButton();
-  const stageNav=document.getElementById('stageNav');if(stageNav&&!stageNav.__careerNavObserver){const ob=new MutationObserver(()=>setTimeout(()=>{refreshFullRoadmapNav();centerActiveStage()},0));ob.observe(stageNav,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});stageNav.__careerNavObserver=ob}
+  normalizeV4Layout();watchViaRows();scheduleViaTop5();refreshFullRoadmapNav();refreshInterestSaveButton();
+  const stageNav=document.getElementById('stageNav');if(stageNav&&!stageNav.__careerNavObserver){const ob=new MutationObserver(()=>setTimeout(()=>{normalizeV4Layout();refreshFullRoadmapNav();centerActiveStage()},0));ob.observe(stageNav,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});stageNav.__careerNavObserver=ob}
   if(/STEP\s*0\s*\/\s*13/.test(document.getElementById('stepText')?.textContent||''))setTimeout(syncCurrentV4Votes,120);
  }
  window.refreshCareerVoteCountsV4=refreshV4VoteCounts;
  window.syncCareerVotesV4=syncCurrentV4Votes;
  window.ensureViaTop5RowsV4=ensureViaTop5Rows;
  window.refreshFullRoadmapNavV4=refreshFullRoadmapNav;
+ window.normalizeV4Layout=normalizeV4Layout;
  if(document.readyState==='complete')setTimeout(install,180);else window.addEventListener('load',()=>setTimeout(install,180),{once:true});
 })();
