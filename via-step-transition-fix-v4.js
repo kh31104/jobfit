@@ -1,26 +1,40 @@
 (function(){
+ function activateViaV4(){
+  try{
+   if(typeof window.goCareerFlowV4==='function')window.goCareerFlowV4(6);
+  }catch(e){console.error('V4 VIA activation failed',e)}
+ }
  function showViaInput(){
   try{
-   const custom=document.getElementById('careerFlowV4');if(custom)custom.classList.add('flowV4Hidden');
-   const work=document.getElementById('work24V4');if(work)work.classList.add('work24V4Hidden');
-   if(typeof window.setCareerAppVisibleV3==='function')window.setCareerAppVisibleV3(true);
-   current=4;currentSub=3;
-   if(typeof renderProgress==='function')renderProgress();
+   activateViaV4();
    setTimeout(()=>{
-    try{
-     const saved=typeof readRanks==='function'?readRanks('via'):[];
-     if(typeof renderRanks==='function'&&typeof VIA!=='undefined')renderRanks('via',VIA,saved);
-    }catch(e){}
-    window.scrollTo({top:0,behavior:'smooth'});
-   },60);
+    const custom=document.getElementById('careerFlowV4');if(custom)custom.classList.add('flowV4Hidden');
+    const work=document.getElementById('work24V4');if(work)work.classList.add('work24V4Hidden');
+    if(typeof window.setCareerAppVisibleV3==='function')window.setCareerAppVisibleV3(true);
+    current=4;currentSub=3;
+    if(typeof renderProgress==='function')renderProgress();
+    setTimeout(()=>{
+     try{
+      if(typeof window.ensureViaTop5RowsV4==='function')window.ensureViaTop5RowsV4();
+      const saved=typeof readRanks==='function'?readRanks('via'):[];
+      if(typeof renderRanks==='function'&&typeof VIA!=='undefined')renderRanks('via',VIA,saved);
+      if(typeof window.ensureViaTop5RowsV4==='function')window.ensureViaTop5RowsV4();
+     }catch(e){}
+     window.scrollTo({top:0,behavior:'smooth'});
+    },60);
+   },20);
   }catch(e){console.error('VIA input transition failed',e)}
  }
  function showViaFeatures(){
   try{
-   if(typeof window.setCareerAppVisibleV3==='function')window.setCareerAppVisibleV3(true);
-   current=4;currentSub=2;
-   if(typeof renderProgress==='function')renderProgress();
-   window.scrollTo({top:0,behavior:'smooth'});
+   activateViaV4();
+   setTimeout(()=>{
+    const custom=document.getElementById('careerFlowV4');if(custom)custom.classList.add('flowV4Hidden');
+    if(typeof window.setCareerAppVisibleV3==='function')window.setCareerAppVisibleV3(true);
+    current=4;currentSub=2;
+    if(typeof renderProgress==='function')renderProgress();
+    window.scrollTo({top:0,behavior:'smooth'});
+   },20);
   }catch(e){console.error('VIA features transition failed',e)}
  }
  window.openViaTop5InputV4=showViaInput;
