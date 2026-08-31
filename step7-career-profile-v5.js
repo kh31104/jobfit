@@ -16,12 +16,13 @@
  function esc(x){return String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
  function readSelf(){try{return JSON.parse(localStorage.getItem(SELF_KEY)||'{}')}catch(e){return{}}}
  function work(){try{return typeof window.getWork24AssessmentResultsV4==='function'?window.getWork24AssessmentResultsV4():{}}catch(e){return{}}}
- function globals(name){try{const v=window[name];return Array.isArray(v)?v:[]}catch(e){return[]}}
- function selectedValues(){try{return Array.isArray(window.selectedValues)?window.selectedValues:[]}catch(e){try{return Array.isArray(selectedValues)?selectedValues:[]}catch(_){return[]}}}
- function viaTop(){try{if(typeof window.readRanks==='function')return window.readRanks('via').slice(0,5)}catch(e){}try{const d=JSON.parse(localStorage.getItem('careerCompassV64')||'{}');return Array.isArray(d.via)?d.via.slice(0,5):[]}catch(e){return[]}}
+ function getSelectedValues(){try{return Array.isArray(selectedValues)?selectedValues:[]}catch(e){return[]}}
+ function getSelfStrengths(){try{return Array.isArray(selfStrengths)?selfStrengths:[]}catch(e){return[]}}
+ function getPeerStrengths(){try{return Array.isArray(experiencePeerStrengths)?experiencePeerStrengths:[]}catch(e){return[]}}
+ function viaTop(){try{if(typeof readRanks==='function')return readRanks('via').slice(0,5)}catch(e){}try{const d=JSON.parse(localStorage.getItem('careerCompassV64')||'{}');return Array.isArray(d.via)?d.via.slice(0,5):[]}catch(e){return[]}}
  function topInterest(r){return Object.entries(r.riasec?.scores||{}).filter(([,v])=>v!==''&&v!=null&&Number.isFinite(Number(v))).map(([id,score])=>({id,score:Number(score)})).sort((a,b)=>b.score-a.score).slice(0,3)}
  function valueTop(r){return (r.workvalue?.topValues||[]).filter(x=>x&&x.value&&x.score!==''&&x.score!=null).slice(0,5)}
- function valueLabelSafe(v){try{return typeof window.valueLabel==='function'?window.valueLabel(v):v}catch(e){return v}}
+ function valueLabelSafe(v){try{return typeof valueLabel==='function'?valueLabel(v):v}catch(e){return v}}
  function pill(items,cls=''){return items.length?items.map(x=>`<span class="pill ${cls}">${esc(x)}</span>`).join(''):'<span class="muted">미입력</span>'}
  function ensureStyle(){
   if(document.getElementById('careerProfileV5Style'))return;
@@ -36,12 +37,12 @@
   const myInterest=Array.isArray(self.interest?.selected)?self.interest.selected.slice(0,3):[];
   const testInterest=topInterest(r);
   const interestCommon=myInterest.filter(id=>testInterest.some(x=>x.id===id));
-  const myValues=selectedValues().slice(0,5);
+  const myValues=getSelectedValues().slice(0,5);
   const testValues=valueTop(r);
   const valueMatches=testValues.filter(x=>(VALUE_BRIDGE[x.value]||[]).some(v=>myValues.includes(v)));
   const via=viaTop();
-  const selfS=globals('selfStrengths').slice(0,5);
-  const peerS=globals('experiencePeerStrengths').slice(0,5);
+  const selfS=getSelfStrengths().slice(0,5);
+  const peerS=getPeerStrengths().slice(0,5);
   const experienceCommon=selfS.filter(x=>peerS.includes(x));
   const sameVia=[...new Set(via.filter(x=>selfS.includes(x)||peerS.includes(x)))];
   const interestSignal=interestCommon.length>=2?'공통 신호 높음':interestCommon.length===1?'일부 공통':'차이 탐색 필요';
