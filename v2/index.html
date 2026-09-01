@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#315df4" />
+  <title>Jobfit | AI Career & Job Application</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <div class="brand"><div class="logo">J</div><div>Jobfit <span class="muted subbrand">AI Career Lab</span></div></div>
+      <div class="topActions">
+        <span class="saveState" id="saveState">이 브라우저에 자동 저장</span>
+        <button class="btn outline smallBtn" id="exportBtn">내 데이터 내보내기</button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow">AI CAREER & JOB APPLICATION PLATFORM</div>
+      <h1>나를 이해하고,<br>지원 가능한 결과물까지.</h1>
+      <p>자기이해 → 경험·역량 → 직무 → 산업·기업 → 채용공고 → 입사지원서 → 면접 → Job Portfolio를 하나의 데이터 흐름으로 연결합니다.</p>
+      <div class="heroMeta" id="heroMeta"></div>
+    </section>
+
+    <div class="shell">
+      <aside class="side"><div class="card sideCard" id="stepNav"></div></aside>
+      <main class="main"><div id="stepRoot"></div></main>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" aria-live="polite"></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
