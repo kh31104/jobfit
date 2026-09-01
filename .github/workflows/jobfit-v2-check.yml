@@ -3,13 +3,16 @@ name: Jobfit v2 checks
 on:
   pull_request:
     paths:
+      - 'index.html'
       - 'v2/**'
       - '.github/workflows/jobfit-v2-check.yml'
   push:
     branches:
       - jobfit-v2-build
     paths:
+      - 'index.html'
       - 'v2/**'
+      - '.github/workflows/jobfit-v2-check.yml'
 
 jobs:
   syntax:
@@ -33,6 +36,7 @@ jobs:
         shell: bash
         run: |
           set -e
+          test -f index.html
           test -f v2/index.html
           test -f v2/styles.css
           test -f v2/portfolio.css
@@ -40,13 +44,16 @@ jobs:
           for n in $(seq 0 13); do
             test -f "v2/steps/step${n}.js" || { echo "Missing step${n}.js"; exit 1; }
           done
-      - name: Confirm v2 index loads required assets
+      - name: Confirm both shells load required assets
         shell: bash
         run: |
           set -e
           grep -q './styles.css' v2/index.html
           grep -q './portfolio.css' v2/index.html
           grep -q './app.js' v2/index.html
+          grep -q './v2/styles.css' index.html
+          grep -q './v2/portfolio.css' index.html
+          grep -q './v2/app.js' index.html
       - name: Guard research submission disabled by default
         shell: bash
         run: |
@@ -74,10 +81,15 @@ jobs:
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/jobfit-server.log 2>&1 &
           echo $! >/tmp/jobfit-server.pid
           sleep 2
+          curl --fail http://127.0.0.1:8765/ >/dev/null
           curl --fail http://127.0.0.1:8765/v2/ >/dev/null
-      - name: Run browser smoke tests
+      - name: Run v2 browser smoke tests
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
+        run: node v2/tests/smoke.mjs
+      - name: Run production-root browser smoke tests
+        env:
+          JOBFIT_TEST_URL: http://127.0.0.1:8765/
         run: node v2/tests/smoke.mjs
       - name: Show static server log on failure
         if: failure()
