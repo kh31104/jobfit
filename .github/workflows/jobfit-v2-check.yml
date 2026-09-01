@@ -24,14 +24,35 @@ jobs:
         run: |
           set -e
           node --check v2/app.js
+          node --check v2/research.js
           for f in v2/steps/step*.js; do
             echo "Checking $f"
             node --check "$f"
           done
-      - name: Confirm required modules
+      - name: Confirm required modules and assets
         shell: bash
         run: |
           set -e
+          test -f v2/index.html
+          test -f v2/styles.css
+          test -f v2/portfolio.css
+          test -f v2/research.js
           for n in $(seq 0 13); do
             test -f "v2/steps/step${n}.js" || { echo "Missing step${n}.js"; exit 1; }
           done
+      - name: Confirm v2 index loads required assets
+        shell: bash
+        run: |
+          set -e
+          grep -q './styles.css' v2/index.html
+          grep -q './portfolio.css' v2/index.html
+          grep -q './app.js' v2/index.html
+      - name: Guard research submission disabled by default
+        shell: bash
+        run: |
+          set -e
+          grep -q 'Central research collection is disabled' v2/research.js
+          if grep -R -nE 'fetch\(|XMLHttpRequest|sendBeacon|supabase|firebase' v2/research.js v2/steps; then
+            echo 'Unexpected network/research backend call found in learner modules.'
+            exit 1
+          fi
