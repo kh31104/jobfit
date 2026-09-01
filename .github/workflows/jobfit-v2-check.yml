@@ -1,0 +1,96 @@
+name: Jobfit v2 checks
+
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'v2/**'
+      - '.github/workflows/jobfit-v2-check.yml'
+  push:
+    branches:
+      - jobfit-v2-build
+    paths:
+      - 'index.html'
+      - 'v2/**'
+      - '.github/workflows/jobfit-v2-check.yml'
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        shell: bash
+        run: |
+          set -e
+          node --check v2/app.js
+          node --check v2/research.js
+          for f in v2/steps/step*.js; do
+            echo "Checking $f"
+            node --check "$f"
+          done
+      - name: Confirm required modules and assets
+        shell: bash
+        run: |
+          set -e
+          test -f index.html
+          test -f v2/index.html
+          test -f v2/styles.css
+          test -f v2/portfolio.css
+          test -f v2/research.js
+          for n in $(seq 0 13); do
+            test -f "v2/steps/step${n}.js" || { echo "Missing step${n}.js"; exit 1; }
+          done
+      - name: Confirm both shells load required assets
+        shell: bash
+        run: |
+          set -e
+          grep -q './styles.css' v2/index.html
+          grep -q './portfolio.css' v2/index.html
+          grep -q './app.js' v2/index.html
+          grep -q './v2/styles.css' index.html
+          grep -q './v2/portfolio.css' index.html
+          grep -q './v2/app.js' index.html
+      - name: Guard research submission disabled by default
+        shell: bash
+        run: |
+          set -e
+          grep -q 'Central research collection is disabled' v2/research.js
+          if grep -R -nE 'fetch\(|XMLHttpRequest|sendBeacon|supabase|firebase' v2/research.js v2/steps; then
+            echo 'Unexpected network/research backend call found in learner modules.'
+            exit 1
+          fi
+
+  browser-smoke:
+    needs: syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start static server
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/jobfit-server.log 2>&1 &
+          echo $! >/tmp/jobfit-server.pid
+          sleep 2
+          curl --fail http://127.0.0.1:8765/ >/dev/null
+          curl --fail http://127.0.0.1:8765/v2/ >/dev/null
+      - name: Run v2 browser smoke tests
+        env:
+          JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
+        run: node v2/tests/smoke.mjs
+      - name: Run production-root browser smoke tests
+        env:
+          JOBFIT_TEST_URL: http://127.0.0.1:8765/
+        run: node v2/tests/smoke.mjs
+      - name: Show static server log on failure
+        if: failure()
+        run: cat /tmp/jobfit-server.log || true
