@@ -1,0 +1,97 @@
+export async function render(ctx){
+  const s=ctx.getState();
+  const jobs=getTargetJobs(s);
+  const ic=s.artifacts?.industryCompany||{industries:[],targetIndustries:[],companies:[],targetCompanies:[]};
+  const industries=(ic.targetIndustries||[]).map(id=>ic.industries?.find(x=>x.id===id)).filter(Boolean);
+  const companies=(ic.targetCompanies||[]).map(id=>ic.companies?.find(x=>x.id===id)).filter(Boolean);
+  const saved=s.artifacts?.careerFit||{comparisons:[],selectedId:'',reflection:''};
+  const data=structuredClone(saved);
+  const root=document.getElementById('stepRoot');
+
+  root.innerHTML=`
+  <section class="card">
+    <div class="sectionHead"><div><div class="kicker">STEP 6</div><h2>Career Fit Map</h2><p>나·직무·산업·기업을 한 번에 비교해 중간 Career FIT 방향을 정리합니다.</p></div><span class="badge">8주차 · 중간평가</span></div>
+    <div class="progress"><span style="width:50%"></span></div>
+
+    <div class="callout info"><b>FIT 점수의 의미</b><br>아래 점수는 타당화된 심리검사 점수가 아니라, 학생이 확인한 근거를 바탕으로 선택지를 비교하기 위한 <b>의사결정 보조점수</b>입니다. 점수보다 근거 메모와 GAP가 더 중요합니다.</div>
+
+    <div class="block"><h3>1. 비교 조합 만들기</h3><p class="help">Target Job × Industry × Company 조합을 2~5개 정도 만들어 비교하세요.</p>
+      <div class="grid3">
+        ${selectEntity('fitJob','직무',jobs,'title')}
+        ${selectEntity('fitIndustry','산업',industries,'name')}
+        ${selectEntity('fitCompany','기업',companies,'name')}
+      </div>
+      <div class="grid3" style="margin-top:12px">
+        ${score('roleInterest','직무 관심도')}
+        ${score('valueFit','가치 적합')}
+        ${score('evidenceReadiness','경험 Evidence')}
+        ${score('industryAppeal','산업 관심도')}
+        ${score('companyAppeal','기업 관심도')}
+        ${score('infoConfidence','정보 확신도')}
+      </div>
+      <div class="grid2" style="margin-top:12px">
+        ${area('fitReasons','FIT 근거','','왜 이 조합이 나와 맞는가? 검사결과가 아니라 실제 경험·가치·업무정보를 근거로 적으세요.')}
+        ${area('fitRisks','리스크·GAP','','확신이 낮은 부분, 부족한 경험, 더 확인할 정보')}
+      </div>
+      <div class="actions"><button class="btn primary" id="addFit">비교조합 추가</button></div><div class="status" id="status"></div>
+    </div>
+
+    <div class="block"><div id="fitList"></div></div>
+
+    <div class="hr"></div>
+    <div class="block"><h3>2. 현재 우선방향 선택</h3><p class="help">중간고사 시점의 가설입니다. 이후 실제 채용공고를 보면서 바뀌어도 됩니다.</p><div id="priorityPick"></div></div>
+
+    <div class="hr"></div>
+    <div class="block"><h3>3. ME × JOB × INDUSTRY × COMPANY FIT Report</h3>
+      <div class="field"><label>중간성찰</label><textarea id="reflection" placeholder="처음 생각과 비교해 무엇이 달라졌는지, 아직 무엇이 불확실한지 적어보세요.">${esc(data.reflection||'',ctx)}</textarea></div>
+      <div class="actions"><button class="btn secondary" id="buildReport">FIT Report 생성</button><button class="btn outline" id="copyReport">Report 복사</button></div>
+      <div id="reportBox" class="summaryBox" style="margin-top:14px"></div>
+      <div class="actions"><button class="btn primary" id="saveFit">중간 FIT 저장</button><button class="btn secondary" id="nextStep">STEP 7 JD Analyzer →</button></div>
+    </div>
+  </section>`;
+
+  renderList();renderPriority();renderReport();
+  document.getElementById('addFit').addEventListener('click',addFit);
+  document.getElementById('buildReport').addEventListener('click',()=>{saveBase();renderReport();ctx.toast('FIT Report를 갱신했습니다.');});
+  document.getElementById('copyReport').addEventListener('click',()=>copy(reportText(),ctx));
+  document.getElementById('saveFit').addEventListener('click',()=>{saveBase();status('중간 FIT 결과를 저장했습니다.');});
+  document.getElementById('nextStep').addEventListener('click',()=>{saveBase();ctx.navigate(7)});
+
+  function addFit(){
+    const jobId=v('fitJob'),industryId=v('fitIndustry'),companyId=v('fitCompany');
+    if(!jobId||!industryId||!companyId){status('직무·산업·기업을 모두 선택하세요.');return;}
+    const item={id:`fit_${Date.now()}`,jobId,industryId,companyId,roleInterest:n('roleInterest'),valueFit:n('valueFit'),evidenceReadiness:n('evidenceReadiness'),industryAppeal:n('industryAppeal'),companyAppeal:n('companyAppeal'),infoConfidence:n('infoConfidence'),reasons:v('fitReasons'),risks:v('fitRisks'),createdAt:new Date().toISOString()};
+    data.comparisons.push(item);persist();renderList();renderPriority();renderReport();status('FIT 비교조합을 추가했습니다.');
+  }
+  function renderList(){
+    const box=document.getElementById('fitList');if(!data.comparisons.length){box.innerHTML='<div class="placeholder"><b>아직 FIT 비교가 없습니다.</b>직무·산업·기업 조합을 2개 이상 만들어 비교해 보세요.</div>';return;}
+    box.innerHTML=data.comparisons.map((x,i)=>{const names=resolve(x);const avg=average(x);return `<div class="listCard"><div class="listHead"><div><span class="rankTag">조합 ${i+1}</span><h3>${esc(names.job,ctx)} × ${esc(names.industry,ctx)} × ${esc(names.company,ctx)}</h3></div><div class="scoreChip">비교지표 ${avg.toFixed(1)}/5</div></div><div class="pillRow"><span class="pill">직무 ${x.roleInterest}</span><span class="pill">가치 ${x.valueFit}</span><span class="pill">Evidence ${x.evidenceReadiness}</span><span class="pill">산업 ${x.industryAppeal}</span><span class="pill">기업 ${x.companyAppeal}</span><span class="pill">정보확신 ${x.infoConfidence}</span></div><div class="grid2" style="margin-top:10px"><div><b>FIT 근거</b><p>${esc(x.reasons||'—',ctx)}</p></div><div><b>리스크·GAP</b><p>${esc(x.risks||'—',ctx)}</p></div></div><div class="actions"><button class="btn danger smallBtn" data-delfit="${x.id}">삭제</button></div></div>`}).join('');
+    box.querySelectorAll('[data-delfit]').forEach(b=>b.addEventListener('click',()=>{data.comparisons=data.comparisons.filter(x=>x.id!==b.dataset.delfit);if(data.selectedId===b.dataset.delfit)data.selectedId='';persist();renderList();renderPriority();renderReport();}));
+  }
+  function renderPriority(){
+    const box=document.getElementById('priorityPick');if(!data.comparisons.length){box.innerHTML='<div class="callout warn">비교조합을 먼저 만드세요.</div>';return;}
+    box.innerHTML=data.comparisons.map(x=>{const n=resolve(x);return `<label class="checkRow"><input type="radio" name="priority" value="${x.id}" ${data.selectedId===x.id?'checked':''}><div><b>${esc(n.job,ctx)} × ${esc(n.industry,ctx)} × ${esc(n.company,ctx)}</b><span>비교지표 ${average(x).toFixed(1)}/5 · 선택은 언제든 수정 가능</span></div></label>`}).join('');
+    box.querySelectorAll('input[name=priority]').forEach(r=>r.addEventListener('change',()=>{data.selectedId=r.value;persist();renderReport();}));
+  }
+  function renderReport(){const box=document.getElementById('reportBox');box.innerHTML=`<h4>중간 Career FIT Report</h4><pre style="white-space:pre-wrap;margin:0;font-family:inherit;line-height:1.65;color:#475467">${esc(reportText(),ctx)}</pre>`}
+  function reportText(){
+    const selected=data.comparisons.find(x=>x.id===data.selectedId);
+    const top=[...data.comparisons].sort((a,b)=>average(b)-average(a)).slice(0,3);
+    const self=summarySelf(s);
+    const lines=[];lines.push('ME × JOB × INDUSTRY × COMPANY FIT REPORT');lines.push('');lines.push('[1. 나의 현재 Career Evidence]');lines.push(self);lines.push('');lines.push('[2. 비교한 방향]');
+    if(!top.length)lines.push('아직 비교조합 없음');else top.forEach((x,i)=>{const n=resolve(x);lines.push(`${i+1}) ${n.job} × ${n.industry} × ${n.company} | 비교지표 ${average(x).toFixed(1)}/5`);lines.push(`   근거: ${x.reasons||'미작성'}`);lines.push(`   GAP: ${x.risks||'미작성'}`)});
+    lines.push('');lines.push('[3. 현재 우선방향]');if(selected){const n=resolve(selected);lines.push(`${n.job} × ${n.industry} × ${n.company}`);lines.push(`선택 근거: ${selected.reasons||'추가 작성 필요'}`);lines.push(`확인할 GAP: ${selected.risks||'추가 작성 필요'}`)}else lines.push('아직 선택하지 않음');
+    lines.push('');lines.push('[4. 중간성찰]');lines.push(document.getElementById('reflection')?.value?.trim()||data.reflection||'미작성');
+    lines.push('');lines.push('※ 비교지표는 심리검사 점수가 아니라 학생의 탐색 의사결정을 돕는 자기평가 지표입니다.');return lines.join('\n');
+  }
+  function saveBase(){data.reflection=v('reflection');persist()}
+  function resolve(x){return {job:jobs.find(j=>j.id===x.jobId)?.title||'직무 미확인',industry:industries.find(i=>i.id===x.industryId)?.name||'산업 미확인',company:companies.find(c=>c.id===x.companyId)?.name||'기업 미확인'}}
+  function average(x){return [x.roleInterest,x.valueFit,x.evidenceReadiness,x.industryAppeal,x.companyAppeal,x.infoConfidence].reduce((a,b)=>a+(+b||0),0)/6}
+  function persist(){ctx.saveState({artifacts:{careerFit:data}})}function v(id){return document.getElementById(id)?.value?.trim()||''}function n(id){return Number(document.getElementById(id)?.value||0)}function status(t){document.getElementById('status').textContent=t;ctx.toast(t)}
+}
+function getTargetJobs(s){const e=s.artifacts?.jobExplorer||{};return (e.targets||[]).map(id=>e.candidates?.find(x=>x.id===id)).filter(Boolean)}
+function selectEntity(id,label,items,key){return `<div class="field"><label>${label}</label><select id="${id}"><option value="">선택</option>${items.map(x=>`<option value="${x.id}">${x[key]}</option>`).join('')}</select></div>`}
+function score(id,label){return `<div class="field"><label>${label} <span class="muted">1–5</span></label><select id="${id}"><option value="1">1 낮음</option><option value="2">2</option><option value="3" selected>3 보통</option><option value="4">4</option><option value="5">5 높음</option></select></div>`}
+function area(id,label,value,ph){return `<div class="field"><label>${label}</label><textarea id="${id}" placeholder="${ph||''}">${value||''}</textarea></div>`}
+function summarySelf(s){const d=s.assessments?.careerDNA||{}, e=s.artifacts?.experienceCompetency||{};const bits=[];if(d.testType)bits.push(`직업선호도 ${d.testType}형`);const r=d.riasec||{};const top=Object.entries(r).filter(([,v])=>v!==''&&v!=null).sort((a,b)=>Number(b[1])-Number(a[1])).slice(0,3).map(([k,v])=>`${k} ${v}`).join(', ');if(top)bits.push(`RIASEC: ${top}`);const comps=e.competencies||e.keywords||[];if(Array.isArray(comps)&&comps.length)bits.push(`역량: ${comps.slice(0,6).join(', ')}`);return bits.join('\n')||'Career DNA와 Experience Evidence를 추가로 입력하세요.'}
+function esc(x,ctx){return ctx.escapeHtml(x==null?'':x)}async function copy(t,ctx){try{await navigator.clipboard.writeText(t);ctx.toast('FIT Report를 복사했습니다.')}catch{ctx.toast('복사하지 못했습니다.')}}
