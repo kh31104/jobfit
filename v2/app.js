@@ -1,17 +1,17 @@
 const STORAGE_KEY='jobfit:v2:learner';
 
 const STEPS=[
-  ['Career Start','1주차'],['Career DNA','3주차'],['Experience & Competency','4주차'],['Job Explorer','6주차'],['Job Deep Dive','6주차'],['Industry & Company','7주차'],['Career Fit Map','8주차'],['JD Analyzer','9주차'],['Career Asset DB','10주차'],['Resume Lab','9주차'],['Cover Letter Lab','10주차'],['Interview Lab','11–12주차'],['Human-First Check','13주차'],['AI Job Portfolio','14주차']
+  ['Career Start','1주차'],['Career DNA','3주차'],['Experience & Competency','4주차'],['Job Explorer','6주차'],['Job Deep Dive','6주차'],['Industry & Company','7주차'],['Career Fit Map','8주차'],['JD Analyzer','9주차'],['Career Asset Match','9주차'],['Resume Lab','9주차'],['Cover Letter Lab','10주차'],['Interview Lab','11–12주차'],['Human-First Check','13주차'],['AI Job Portfolio','14주차']
 ];
 
 const DEFAULT_STATE={
-  version:2,
+  version:2.1,
   activeStep:0,
   mode:'full',
   profile:{},
   baseline:{},
   research:{consent:false},
-  assessments:{careerDNA:{}},
+  assessments:{careerDNA:{},experienceCompetency:{experiences:[]}},
   artifacts:{},
   meta:{createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}
 };
@@ -85,8 +85,8 @@ async function navigate(step){
     const mod=await import(`./steps/step${state.activeStep}.js`);
     root.innerHTML='';await mod.render(context);
   }catch(err){
-    if(state.activeStep<=1){console.error(err);root.innerHTML=`<div class="card callout warn">화면을 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.<br><small>${escapeHtml(err.message)}</small></div>`;}
-    else root.innerHTML=`<div class="card"><div class="sectionHead"><div><div class="kicker">STEP ${state.activeStep}</div><h2>${STEPS[state.activeStep][0]}</h2><p>${STEPS[state.activeStep][1]} 강의와 함께 구현 예정입니다.</p></div><span class="badge">BUILD NEXT</span></div><div class="placeholder"><b>${STEPS[state.activeStep][0]}</b>이 STEP은 현재 제작 순서에 따라 곧 연결됩니다.</div></div>`;
+    console.error(err);
+    root.innerHTML=`<div class="card callout warn"><b>STEP ${state.activeStep} 화면을 불러오지 못했습니다.</b><br>새로고침 후 다시 시도해 주세요.<br><small>${escapeHtml(err.message)}</small></div>`;
   }
   scrollTo({top:0,behavior:'smooth'});
 }
