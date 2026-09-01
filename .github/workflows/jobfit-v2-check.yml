@@ -1,0 +1,37 @@
+name: Jobfit v2 checks
+
+on:
+  pull_request:
+    paths:
+      - 'v2/**'
+      - '.github/workflows/jobfit-v2-check.yml'
+  push:
+    branches:
+      - jobfit-v2-build
+    paths:
+      - 'v2/**'
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        shell: bash
+        run: |
+          set -e
+          node --check v2/app.js
+          for f in v2/steps/step*.js; do
+            echo "Checking $f"
+            node --check "$f"
+          done
+      - name: Confirm required modules
+        shell: bash
+        run: |
+          set -e
+          for n in $(seq 0 13); do
+            test -f "v2/steps/step${n}.js" || { echo "Missing step${n}.js"; exit 1; }
+          done
