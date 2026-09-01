@@ -38,6 +38,7 @@
 - [ ] forced `interest=S` and `interest=L` verification
 - [ ] portfolio print/PDF verification
 - [ ] decide production root routing while preserving existing public Jobfit URL
+- [ ] explicit approval to replace the live app
 
 ## Research/backend — separate track
 - [ ] receive K-CAAS-SF permission response
