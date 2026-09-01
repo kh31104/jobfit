@@ -17,7 +17,7 @@ export async function render(ctx){
       <div class="callout warn">익명코드는 로그인 대신 데이터를 구분하기 위한 코드입니다. 현재 개발버전은 이 브라우저에 저장되므로 브라우저 데이터 삭제 시 복구되지 않을 수 있습니다.</div>
     </div>
 
-    <div class="hr"></div><div class="block"><h3>3. 기본 프로필</h3><p class="help">진로분석과 향후 연구에서 필요한 최소 배경정보입니다. 이름·학번·전화번호는 입력하지 않습니다.</p>
+    <div class="hr"></div><div class="block"><h3>3. 기본 프로필</h3><p class="help">진로분석에 필요한 최소 배경정보입니다. 이름·학번·전화번호는 입력하지 않습니다.</p>
       <div class="grid3">
         ${num('age','나이',p.age,'예: 22')}
         ${sel('gender','성별',p.gender,['','여성','남성','기타','응답하지 않음'])}
@@ -28,7 +28,7 @@ export async function render(ctx){
       </div>
     </div>
 
-    <div class="hr"></div><div class="block"><h3>4. 진로·취업 Baseline</h3><p class="help">지금의 상태를 기록합니다. 학기 말에 결과를 비교할 때 출발점이 됩니다.</p>
+    <div class="hr"></div><div class="block"><h3>4. 진로·취업 Baseline</h3><p class="help">정답을 고르는 것이 아니라 지금의 상태를 기록합니다. 학기 말에 출발점과 비교할 수 있습니다.</p>
       <div class="grid3">
         ${sel('jobDecision','희망직무 결정 정도',b.jobDecision,['','전혀 정하지 못함','탐색 중','2–3개 후보 있음','거의 정함','명확히 정함'])}
         ${sel('industryDecision','희망산업 결정 정도',b.industryDecision,['','전혀 정하지 못함','탐색 중','2–3개 후보 있음','거의 정함','명확히 정함'])}
@@ -39,17 +39,16 @@ export async function render(ctx){
       </div>
     </div>
 
-    <div class="hr"></div><div class="block"><h3>5. AI 활용 Baseline</h3><p class="help">AI 경험 자체를 평가하지 않습니다. 한 학기 동안 AI를 어떻게 활용하게 되는지 확인하기 위한 출발점입니다.</p>
+    <div class="hr"></div><div class="block"><h3>5. AI 활용 Baseline</h3><p class="help">AI를 많이 쓰는지가 아니라, 무엇을 맡기고 무엇을 내가 판단할지를 정합니다.</p>
       <div class="grid3">
         ${sel('aiFrequency','생성형 AI 사용빈도',b.aiFrequency,['','거의 사용하지 않음','월 1–3회','주 1–2회','주 3회 이상','거의 매일'])}
         ${txt('aiTools','주로 사용하는 AI',b.aiTools,'예: ChatGPT, Gemini')}
         ${sel('aiCareerUse','취업준비 AI 사용경험',b.aiCareerUse,['','없음','정보검색만','기업·직무분석','지원서 작성','면접연습','여러 단계에서 활용'])}
       </div>
+      <div class="field" style="margin-top:12px"><label>My AI Career Rule</label><textarea id="aiRule" placeholder="예: AI는 정보정리와 질문 생성에 활용하되, 경험의 사실과 최종 판단은 내가 직접 확인한다.">${ctx.escapeHtml(b.aiRule||'')}</textarea><span class="hint">한 학기 동안 반복해서 확인할 나의 AI 활용 원칙입니다.</span></div>
     </div>
 
-    <div class="hr"></div><div class="block"><h3>6. 연구 활용 동의 <span class="muted">(선택)</span></h3><p class="help">교육 참여와 연구 참여는 별개입니다. 동의하지 않아도 Jobfit 기능은 동일하게 사용할 수 있어야 합니다.</p>
-      <label class="checkRow"><input type="checkbox" id="researchConsent" ${s.research?.consent?'checked':''}><div><b>익명화된 검사·배경정보의 연구 활용에 동의</b><span>현재 개발버전에서는 중앙 연구 DB로 전송하지 않습니다. 실제 연구수집 전에는 연구안내·동의절차와 저장정책을 별도로 확정합니다.</span></div></label>
-    </div>
+    ${c.research?`<div class="hr"></div><div class="block"><h3>6. 연구 활용 동의 <span class="muted">(선택)</span></h3><p class="help">교육 참여와 연구 참여는 별개입니다. 동의하지 않아도 Jobfit 기능은 동일하게 사용할 수 있어야 합니다.</p><label class="checkRow"><input type="checkbox" id="researchConsent" ${s.research?.consent?'checked':''}><div><b>익명화된 검사·배경정보의 연구 활용에 동의</b><span>실제 수집 전 승인된 연구안내문·동의문·저장정책을 적용해야 합니다.</span></div></label></div>`:`<div class="callout info"><b>현재 연구데이터 수집은 비활성화되어 있습니다.</b> 학습 데이터는 학생의 Jobfit 진행을 위해 이 브라우저에만 저장됩니다.</div>`}
 
     <div class="actions"><button class="btn primary" id="saveStart">Career Start 저장</button><button class="btn secondary" id="nextStep">STEP 1 Career DNA →</button></div><div class="status" id="status"></div>
   </section>`;
@@ -62,8 +61,9 @@ export async function render(ctx){
 
   function save(){
     const profile={...ctx.getState().profile,courseCode:v('courseCode'),institution:v('institution'),age:v('age'),gender:v('gender'),grade:v('grade'),major:v('major'),majorGroup:v('majorGroup'),graduationPlan:v('graduationPlan')};
-    const baseline={...ctx.getState().baseline,jobDecision:v('jobDecision'),industryDecision:v('industryDecision'),prepStage:v('prepStage'),internship:v('internship'),careerProgram:v('careerProgram'),certificate:v('certificate'),aiFrequency:v('aiFrequency'),aiTools:v('aiTools'),aiCareerUse:v('aiCareerUse')};
-    ctx.saveState({profile,baseline,research:{...ctx.getState().research,consent:document.getElementById('researchConsent').checked}});document.getElementById('status').textContent='저장되었습니다.';ctx.toast('Career Start를 저장했습니다.');
+    const baseline={...ctx.getState().baseline,jobDecision:v('jobDecision'),industryDecision:v('industryDecision'),prepStage:v('prepStage'),internship:v('internship'),careerProgram:v('careerProgram'),certificate:v('certificate'),aiFrequency:v('aiFrequency'),aiTools:v('aiTools'),aiCareerUse:v('aiCareerUse'),aiRule:v('aiRule')};
+    const research={...ctx.getState().research};if(c.research) research.consent=!!document.getElementById('researchConsent')?.checked;
+    ctx.saveState({profile,baseline,research,artifacts:{careerStartProfile:{jobDecision:baseline.jobDecision,industryDecision:baseline.industryDecision,prepStage:baseline.prepStage,aiRule:baseline.aiRule,updatedAt:new Date().toISOString()}}});document.getElementById('status').textContent='저장되었습니다.';ctx.toast('Career Start를 저장했습니다.');
   }
   function v(id){return document.getElementById(id)?.value?.trim?.()??document.getElementById(id)?.value??''}
   function txt(id,label,value,ph){return `<div class="field"><label>${label}</label><input class="input" id="${id}" value="${ctx.escapeHtml(value||'')}" placeholder="${ph||''}"></div>`}
