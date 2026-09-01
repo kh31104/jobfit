@@ -26,6 +26,7 @@
 - [x] central research submission disabled by default
 - [x] Week 1–14 lesson design documents
 - [x] JS syntax / required-step CI
+- [x] CI guard against accidental research/backend network calls in learner modules
 
 ## Before live merge
 - [ ] latest CI green
