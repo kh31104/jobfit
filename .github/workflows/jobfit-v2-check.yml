@@ -5,13 +5,20 @@ on:
     paths:
       - 'index.html'
       - 'v2/**'
+      - 'instructor/**'
+      - 'research-sync-config.js'
+      - 'supabase/**'
       - '.github/workflows/jobfit-v2-check.yml'
   push:
     branches:
+      - main
       - jobfit-v2-build
     paths:
       - 'index.html'
       - 'v2/**'
+      - 'instructor/**'
+      - 'research-sync-config.js'
+      - 'supabase/**'
       - '.github/workflows/jobfit-v2-check.yml'
 
 jobs:
@@ -28,6 +35,18 @@ jobs:
           set -e
           node --check v2/app.js
           node --check v2/research.js
+          node --check v2/researchBackend.js
+          node --check v2/researchMeasures.js
+          node --check instructor/app.js
+          node --check instructor/centralBackend.js
+          node --check instructor/researchData.js
+          node --check research-sync-config.js
+          node --check v2/tests/smoke.mjs
+          node --check v2/tests/research-measures.mjs
+          node --check v2/tests/relationship-smoke.mjs
+          node --check v2/tests/application-flow.mjs
+          node --check v2/tests/backup-restore.mjs
+          node --check v2/tests/inje-classroom.mjs
           for f in v2/steps/step*.js; do
             echo "Checking $f"
             node --check "$f"
@@ -39,8 +58,25 @@ jobs:
           test -f index.html
           test -f v2/index.html
           test -f v2/styles.css
+          test -f v2/guided.css
           test -f v2/portfolio.css
           test -f v2/research.js
+          test -f v2/researchMeasures.js
+          test -f v2/researchBackend.js
+          test -f instructor/index.html
+          test -f instructor/app.js
+          test -f instructor/researchData.js
+          test -f instructor/centralBackend.js
+          test -f instructor/styles.css
+          test -f research-sync-config.js
+          test -f supabase/research_schema.sql
+          test -f supabase/config.toml
+          test -f supabase/INSTRUCTOR_SETUP.md
+          test -f supabase/functions/research-sync/index.ts
+          test -f v2/tests/relationship-smoke.mjs
+          test -f v2/tests/application-flow.mjs
+          test -f v2/tests/backup-restore.mjs
+          test -f v2/tests/inje-classroom.mjs
           for n in $(seq 0 13); do
             test -f "v2/steps/step${n}.js" || { echo "Missing step${n}.js"; exit 1; }
           done
@@ -49,20 +85,42 @@ jobs:
         run: |
           set -e
           grep -q './styles.css' v2/index.html
+          grep -q './guided.css' v2/index.html
           grep -q './portfolio.css' v2/index.html
           grep -q './app.js' v2/index.html
           grep -q './v2/styles.css' index.html
+          grep -q './v2/guided.css' index.html
           grep -q './v2/portfolio.css' index.html
           grep -q './v2/app.js' index.html
-      - name: Guard research submission disabled by default
+          grep -q 'importBtn' v2/index.html
+          grep -q 'importBtn' index.html
+      - name: Guard student submission while allowing restricted measure retrieval
         shell: bash
         run: |
           set -e
-          grep -q 'Central research collection is disabled' v2/research.js
+          grep -q 'enabled:false' research-sync-config.js
+          grep -q 'instructorAuthEnabled:true' research-sync-config.js
+          grep -q 'consentApproved:false' research-sync-config.js
+          grep -q 'if(!consent)' v2/researchBackend.js
+          grep -q 'RESEARCH_CONSENT_VERSION' supabase/functions/research-sync/index.ts
+          grep -q 'revoke all on table public.research_snapshots from anon, authenticated' supabase/research_schema.sql
+          grep -q 'excludes_activity_text' v2/researchBackend.js
+
+          # Learner steps and research export logic must not make backend/network calls.
           if grep -R -nE 'fetch\(|XMLHttpRequest|sendBeacon|supabase|firebase' v2/research.js v2/steps; then
-            echo 'Unexpected network/research backend call found in learner modules.'
+            echo 'Unexpected network/research backend call found in learner steps or research export logic.'
             exit 1
           fi
+
+          # researchMeasures.js may make exactly the read-only access-controlled measure request.
+          grep -q "MEASURE_FUNCTION_NAME='research-measures'" v2/researchMeasures.js
+          grep -q 'functions/v1/${MEASURE_FUNCTION_NAME}' v2/researchMeasures.js
+          if grep -nE 'XMLHttpRequest|sendBeacon|firebase|research-sync' v2/researchMeasures.js; then
+            echo 'Unexpected submission/backend transport found in researchMeasures.js.'
+            exit 1
+          fi
+          FETCH_COUNT=$(grep -c 'await fetch(' v2/researchMeasures.js || true)
+          test "$FETCH_COUNT" -eq 1 || { echo "researchMeasures.js must contain exactly one authorized measure fetch; found $FETCH_COUNT"; exit 1; }
 
   browser-smoke:
     needs: syntax
@@ -86,11 +144,23 @@ jobs:
       - name: Run v2 browser smoke tests
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
-        run: node v2/tests/smoke.mjs
+        run: |
+          node v2/tests/smoke.mjs
+          node v2/tests/research-measures.mjs
+          node v2/tests/relationship-smoke.mjs
+          node v2/tests/application-flow.mjs
+          node v2/tests/backup-restore.mjs
+          node v2/tests/inje-classroom.mjs
       - name: Run production-root browser smoke tests
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/
-        run: node v2/tests/smoke.mjs
+        run: |
+          node v2/tests/smoke.mjs
+          node v2/tests/research-measures.mjs
+          node v2/tests/relationship-smoke.mjs
+          node v2/tests/application-flow.mjs
+          node v2/tests/backup-restore.mjs
+          node v2/tests/inje-classroom.mjs
       - name: Show static server log on failure
         if: failure()
         run: cat /tmp/jobfit-server.log || true

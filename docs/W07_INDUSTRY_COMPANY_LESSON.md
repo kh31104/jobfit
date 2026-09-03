@@ -1,73 +1,176 @@
-# Week 7 — Industry & Company Explorer
+# 7주차 — Industry & Company Explorer
 
-## Position in course
-Jobfit STEP 5. Students place Target Jobs inside industries and companies, then compare how the same role changes by business context.
+## 수업 위치
+Jobfit STEP 5. Target Job을 산업과 기업 안에 실제로 연결하고, 동일 직무가 산업·기업 맥락에 따라 어떻게 달라지는지 근거자료로 확인한다.
 
-## Learning outcomes
-Students can:
-1. distinguish industry analysis from company analysis;
-2. explain an industry's product/service, customer and value chain at a practical level;
-3. explain how the same Target Job changes across industries;
-4. analyze a company's business, customers, competitive direction and job connection using official sources;
-5. build an Industry Pool and Company Pool before narrowing choices;
-6. select up to three Target Industries and five Target Companies for the midterm FIT comparison.
+## 핵심 메시지
+“좋아 보이는 기업”을 고르는 것이 아니라, **내가 하려는 일이 어떤 산업의 어떤 사업 안에서 어떤 성과와 연결되는지** 이해해야 한다.
 
-## Core teaching message
-“좋아 보이는 기업”을 고르는 것이 아니라, 내가 하려는 일이 어떤 산업의 어떤 사업 안에서 어떤 성과와 연결되는지를 이해해야 한다.
+Jobfit은 기업명을 단순 추천하지 않는다.
 
-## Class flow
-### Block A — Job × Industry
-- Use one familiar job title and compare it across 3 industries.
-- Ask: Who is the customer? What output is produced? What problem does this job solve? What does success mean here?
+Target Job → Industry Evidence → Company Evidence → 실제 채용·직무근거
 
-### Block B — Industry Pool
-Students use Jobfit's AI Industry Explorer prompt, then verify with:
-- government/industry association reports;
-- company IR and annual/business reports;
-- official industry statistics;
-- credible recent sources when needed.
+순서로 연결한다.
 
-Students record:
-- industry name;
-- business/customer structure;
-- recent change or issue;
-- connection to the Target Job;
-- source and URL.
+## 학습목표
+학생은 수업 후 다음을 할 수 있다.
+1. 산업분석과 기업분석을 구분한다.
+2. 산업의 제품·서비스, 고객, 가치사슬을 설명할 수 있다.
+3. 동일 Target Job이 산업에 따라 Task·Tool·KPI·고객맥락에서 어떻게 달라지는지 설명할 수 있다.
+4. 산업정보의 출처 유형·자료명·URL·확인일을 기록할 수 있다.
+5. 기업의 사업자료와 채용·직무자료를 분리해 확인할 수 있다.
+6. Company ↔ Industry ↔ Target Job 연결이 실제 자료와 일치하는지 확인할 수 있다.
+7. 채용근거가 약한 기업은 ‘미확인’ 상태로 남길 수 있다.
+8. 최대 3개 Target Industry와 5개 Target Company를 직접 선택할 수 있다.
 
-### Block C — Target Industry
-Students manually select up to three industries. No automated “best industry” decision.
+## STEP 5-1 — Industry Evidence Pool
+학생은 AI로 산업후보를 넓힌 후 실제 자료를 확인한다.
 
-### Block D — Company analysis
-For candidate companies, students answer:
-- What does the company actually sell or provide?
-- Who pays or receives value?
-- What business/direction is currently important?
-- Where does my Target Job contribute?
-- What official source supports this?
+권장 출처:
+- 정부·공공기관
+- 산업협회·전문기관
+- 공시·통계
+- 기업 IR·사업보고서
+- 기타 신뢰가능 자료
 
-### Block E — Company Pool
-Encourage comparison across company types when relevant: large, mid-sized, SME, startup, public, foreign-owned.
+각 산업 Evidence에 저장:
+- 산업명
+- 연결 Target Job
+- 출처 유형
+- 자료명
+- URL
+- 확인일
+- 산업 구조·고객
+- 최근 변화·이슈
+- Target Job의 역할
+- 다른 산업과 비교해 달라지는 부분
 
-Students manually select up to five Target Companies for the midterm FIT stage.
+## 동일 직무의 산업별 차이 비교
+Target Industry를 2개 이상 선택하면 Jobfit 비교표를 사용한다.
 
-## AI use rule
-AI may summarize official materials and generate comparison questions. AI must not invent current strategy, market share, hiring plans or financial facts. Students should label unsupported claims as unconfirmed.
+비교 질문:
+- 고객은 누구인가?
+- 대표 제품·서비스는 무엇인가?
+- 이 직무가 해결하는 문제는 무엇인가?
+- 주요 산출물은 무엇인가?
+- 많이 사용하는 Tool은 무엇인가?
+- 성과기준은 무엇인가?
+- 협업부서는 누구인가?
 
-## Student outputs
-- Industry Pool
+예를 들어 ‘데이터분석’이라는 직무명은 같아도 금융·제조·플랫폼 산업에서 데이터, 고객, 의사결정 목적이 달라질 수 있다.
+
+## STEP 5-2 — Company Evidence Pool
+기업은 Target Industry와 Target Job을 선택한 뒤 등록한다.
+
+필수 연결:
+- Company → Industry ID
+- Company → Target Job ID
+
+선택한 Industry Evidence에 연결된 Target Job과 기업의 Target Job이 다르면 Jobfit이 조합 오류를 경고한다.
+
+### 기업에서 확인할 두 종류의 자료
+#### A. 사업 근거
+- 기업 홈페이지
+- 사업보고서
+- IR 자료
+- 공식 보도자료
+
+확인 내용:
+- 주요 사업·제품·서비스
+- 고객
+- 최근 사업방향
+- 직무가 어느 사업성과와 연결되는지
+
+#### B. 직무·채용 근거
+- 현재 채용공고
+- 최근 채용공고
+- 공식 직무소개
+
+확인 내용:
+- 실제 Task
+- KSA
+- Tool
+- 경험·자격 요구
+- 반복되는 역량신호
+
+채용공고를 찾지 못했으면 AI가 추측해서 채우지 않고 **‘아직 미확인’**으로 남긴다.
+
+## Company Evidence 상태
+Jobfit은 기업을 적합도 순으로 추천하지 않는다.
+
+대신 근거상태를 표시한다.
+- 근거 높음: 공식 기업자료 + 실제/최근 채용공고
+- 근거 보통: 공식 기업자료 + 공식 직무소개
+- 근거 보강: 기업자료 또는 직무·채용근거 부족
+
+이 상태는 기업의 우수성이나 합격가능성이 아니라 **정보검증 수준**을 의미한다.
+
+## 120분 운영안
+### 0–15분 | 직무가 산업 안에서 달라지는 이유
+같은 직무 1개를 3개 산업에 배치해 고객·제품·Task를 비교한다.
+
+### 15–35분 | AI Industry Explorer
+Jobfit 산업탐색 프롬프트를 외부 AI에서 실행한다.
+
+규칙:
+- 6~10개 산업후보
+- 산업 인기순위 금지
+- 성장성 단정 금지
+- 출처 확인이 필요한 정보 표시
+
+### 35–60분 | Industry Evidence 검증
+학생이 정부·협회·공시·IR 자료를 찾아 산업 후보를 Jobfit에 등록한다.
+
+### 60–70분 | Target Industry 1–3 선택
+산업별 직무 차이 비교표 확인 후 직접 선택한다.
+
+### 70–90분 | Company Research
+Target Industry 안의 기업 후보를 탐색하고 공식 사업자료를 확인한다.
+
+### 90–108분 | 실제 직무·채용근거 확인
+현재/최근 채용공고 또는 공식 직무소개를 확인한다.
+
+기업 하나당 최소한:
+- 사업근거 1개
+- 직무·채용근거 1개 또는 ‘미확인’ 표시
+
+### 108–116분 | Target Company 선택
+최대 5개를 직접 선택한다.
+Jobfit의 연결오류·채용근거 경고를 확인한다.
+
+### 116–120분 | 8주차 연결
+> 다음 시간에는 높은 ‘FIT 점수’를 만드는 것이 아니라, 내가 원하는 정도·내 Evidence·내가 확인한 정보의 질을 분리해서 비교합니다.
+
+## AI 사용 규칙
+AI는:
+- 공식자료 요약
+- 비교질문 생성
+- 자료에서 확인되는 직무연결 구조화
+
+에는 사용할 수 있다.
+
+AI는:
+- 현재 전략을 추측
+- 시장점유율을 임의 생성
+- 채용계획을 추정
+- “이 기업이 당신에게 가장 잘 맞는다” 결정
+
+해서는 안 된다.
+
+## 학생 산출물
+- Industry Evidence Pool
 - Target Industry 1–3
-- Company Pool
+- 동일 직무의 산업별 차이표
+- Company Evidence Pool
+- 사업자료 + 직무·채용자료
+- Company ↔ Industry ↔ Job 연결
 - Target Company 1–5
-- source-grounded notes on business/customer/job connection
+- 추가 확인이 필요한 Unknown
 
-## Jobfit implementation
-STEP 5 stores:
-- industry candidates and source metadata;
-- target industry IDs;
-- company candidates, company type and source metadata;
-- target company IDs;
-- job linkage notes;
-- AI research prompts.
-
-## Link to Week 8
-Week 8 does not introduce new exploration content. Students use Week 1–7 data to compare ME × JOB × INDUSTRY × COMPANY combinations and submit a FIT Report.
+## 평가 포인트
+1. 산업과 기업을 구분했는가?
+2. 직무가 산업에서 어떻게 달라지는지 설명했는가?
+3. 출처·URL·확인일이 있는가?
+4. 기업 사업자료와 채용자료를 구분했는가?
+5. Company ↔ Industry ↔ Job 연결이 실제로 맞는가?
+6. 확인하지 못한 정보는 미확인으로 남겼는가?

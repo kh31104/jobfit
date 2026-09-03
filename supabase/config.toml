@@ -1,0 +1,7 @@
+project_id = "hllnoriffbhzpyhpnvsf"
+
+[functions.research-sync]
+# Students are not Supabase Auth users. This endpoint uses the public API key
+# plus origin, consent-version, participant sync-token, schema, size, and
+# field allow-list checks implemented inside the function.
+verify_jwt = false

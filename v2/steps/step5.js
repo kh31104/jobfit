@@ -1,111 +1,67 @@
+const INDUSTRY_SOURCE_TYPES=['정부·공공기관','산업협회·전문기관','공시·통계','기업 IR·사업보고서','기타 신뢰자료'];
+const COMPANY_TYPES=['대기업','중견기업','중소기업','스타트업','공공기관','외국계','기타'];
+const HIRING_EVIDENCE=['현재 채용공고 확인','최근 채용공고 확인','공식 직무소개 확인','직무 존재만 확인','아직 미확인'];
+
 export async function render(ctx){
-  const s=ctx.getState();
-  const jobs=getTargetJobs(s);
-  const saved=s.artifacts?.industryCompany||{industries:[],targetIndustries:[],companies:[],targetCompanies:[],notes:''};
-  const root=document.getElementById('stepRoot');
-  let data=structuredClone(saved);
+  const s=ctx.getState(),jobs=getTargetJobs(s),saved=s.artifacts?.industryCompany||{industries:[],targetIndustries:[],companies:[],targetCompanies:[],notes:''};
+  const root=document.getElementById('stepRoot');let data=structuredClone(saved);
+  data.industries=data.industries||[];data.companies=data.companies||[];data.targetIndustries=data.targetIndustries||[];data.targetCompanies=data.targetCompanies||[];
 
-  root.innerHTML=`
-  <section class="card">
-    <div class="sectionHead"><div><div class="kicker">STEP 5</div><h2>Industry & Company Explorer</h2><p>같은 직무라도 산업과 기업이 달라지면 고객·업무맥락·요구역량이 달라집니다. 직무를 산업과 기업 안에서 다시 봅니다.</p></div><span class="badge">7주차</span></div>
+  root.innerHTML=`<section class="card">
+    <div class="sectionHead"><div><div class="kicker">STEP 5</div><h2>Industry & Company Explorer</h2><p>직무를 실제 산업·기업 맥락에 연결하고, 공식자료와 채용근거가 있는 조합만 남깁니다.</p></div><span class="badge">7주차</span></div>
     <div class="progress"><span style="width:43%"></span></div>
+    <div class="callout info"><b>이 STEP의 기준</b><br>기업명 DB를 많이 모으는 것이 목표가 아닙니다. <b>Target Job이 어떤 산업에서 어떤 사업성과에 기여하고, 특정 기업에서 실제로 존재하는지</b>를 근거로 확인합니다.</div>
 
-    <div class="block"><h3>1. 직무 기준점</h3><p class="help">이번 탐색은 ‘유명한 기업 찾기’가 아니라 내가 탐색한 직무가 어떤 산업·기업에서 어떻게 쓰이는지 확인하는 과정입니다.</p>
-      <div class="pillRow">${jobs.length?jobs.map((j,i)=>`<span class="pill">${i+1}. ${esc(j.title,ctx)}</span>`).join(''):'<span class="pill">STEP 3에서 Target Job을 먼저 선택하세요.</span>'}</div>
+    <div class="block"><h3>1. Target Job 기준점</h3><div class="pillRow">${jobs.length?jobs.map((j,i)=>`<span class="pill">${i+1}. ${esc(j.title,ctx)}</span>`).join(''):'<span class="pill">STEP 3에서 Target Job을 먼저 선택하세요.</span>'}</div></div>
+
+    <div class="hr"></div><div class="block"><h3>2. AI 산업탐색 프롬프트</h3><textarea id="industryPrompt" rows="12">${esc(buildIndustryPrompt(s),ctx)}</textarea><div class="actions"><button class="btn secondary" id="copyIndustryPrompt">산업탐색 프롬프트 복사</button></div></div>
+
+    <div class="hr"></div><div class="block"><h3>3. Industry Evidence Pool</h3><p class="help">산업명보다 제품·서비스·고객·가치사슬과 목표직무의 역할을 확인합니다.</p>
+      <div class="grid4">${txt('industryName','산업명','','예: 반도체')}${selectJob('industryJobId','연결 Target Job',jobs)}${sel('industrySourceType','출처 유형','',INDUSTRY_SOURCE_TYPES)}${txt('industryChecked','확인일','',today())}</div>
+      <div class="grid2" style="margin-top:12px">${txt('industrySource','자료명','','예: 산업통상자원부 산업동향')}${txt('industryUrl','출처 URL','','https://...')}${area('industryBusiness','산업 구조·고객','','주요 제품·서비스, 고객, 가치사슬')}${area('industryChange','최근 변화·이슈','','기술·규제·수요·채용 변화 중 확인된 내용')}${area('industryJobLink','직무 역할','','이 산업에서 Target Job이 어떤 문제를 해결하고 어떤 성과에 기여하는가?')}${area('industryDifference','다른 산업과의 차이','','같은 직무가 다른 산업과 비교해 Task·Tool·KPI에서 어떻게 달라질 수 있는가?')}</div>
+      <div class="actions"><button class="btn primary" id="addIndustry">산업 Evidence 추가</button></div><div id="industryList" style="margin-top:14px"></div>
     </div>
 
-    <div class="hr"></div>
-    <div class="block"><h3>2. AI 산업탐색 프롬프트</h3><textarea id="industryPrompt" rows="12">${esc(buildIndustryPrompt(s),ctx)}</textarea><div class="actions"><button class="btn secondary" id="copyIndustryPrompt">산업탐색 프롬프트 복사</button></div></div>
+    <div class="hr"></div><div class="block"><h3>4. Target Industry 최대 3개</h3><div id="industryTargets"></div><div id="industryCompare" style="margin-top:14px"></div></div>
 
-    <div class="hr"></div>
-    <div class="block"><h3>3. Industry Pool</h3><p class="help">산업 후보를 넓게 탐색하되 시장규모 숫자를 억지로 채우지 않습니다. 내가 확인한 공식·신뢰가능 자료만 기록하세요.</p>
-      <div class="grid3">
-        ${txt('industryName','산업명','','예: 반도체, 금융, 바이오')}
-        ${txt('industrySource','확인 출처','','예: 산업협회, 정부자료, 기업 IR')}
-        ${txt('industryUrl','출처 URL','','https://...')}
-      </div>
-      <div class="grid2" style="margin-top:12px">
-        ${area('industryWhy','탐색 이유','','왜 이 산업을 더 보고 싶은가?')}
-        ${area('industryBusiness','산업 구조·고객','','무엇을 만들거나 제공하며 주요 고객은 누구인가?')}
-        ${area('industryChange','최근 변화·이슈','','내가 확인한 변화, 기술, 규제, 채용변화')}
-        ${area('industryJobLink','내 직무와의 연결','','이 산업에서 Target Job의 역할은 어떻게 달라지는가?')}
-      </div>
-      <div class="actions"><button class="btn primary" id="addIndustry">산업 후보 추가</button></div>
-      <div id="industryList" style="margin-top:14px"></div>
+    <div class="hr"></div><div class="block"><h3>5. Company Evidence Pool</h3><p class="help">기업은 반드시 Target Industry와 Target Job에 연결합니다. 채용공고가 없다면 ‘미확인’을 그대로 남깁니다.</p>
+      <div class="grid4">${txt('companyName','기업명','','예: ○○전자')}${sel('companyType','기업유형','',COMPANY_TYPES)}${selectIndustry('companyIndustryId','연결 산업',data.industries)}${selectJob('companyJobId','연결 Target Job',jobs)}</div>
+      <div class="grid3" style="margin-top:12px">${txt('companySource','공식 기업자료','','예: 사업보고서 / IR / 공식 홈페이지')}${txt('companyUrl','기업자료 URL','','https://...')}${txt('companyChecked','확인일','',today())}${sel('companyHiringEvidence','채용 근거','',HIRING_EVIDENCE)}${txt('companyJobSource','채용·직무 자료','','예: 2026 신입 채용공고')}${txt('companyJobUrl','채용·직무 URL','','https://...')}</div>
+      <div class="grid2" style="margin-top:12px">${area('companyBusiness','주요 사업·고객','','무엇으로 수익을 만들고 누구에게 가치를 제공하는가?')}${area('companyDirection','최근 추진방향','','공식자료에서 확인한 최근 사업·투자·제품·전략 방향')}${area('companyRole','직무의 사업 연결','','이 기업에서 목표직무가 어느 사업·공정·고객·성과와 연결되는가?')}${area('companySignals','채용 역량신호','','공식 직무소개/채용공고에서 반복되는 Task·KSA·경험')}${area('companyWhy','나의 관심 근거','','왜 이 기업을 더 탐색하려 하는가?')}${area('companyUnknown','아직 모르는 것','','추가로 확인해야 할 사업·직무·근무조건·채용정보')}</div>
+      <div class="actions"><button class="btn primary" id="addCompany">기업 Evidence 추가</button><button class="btn secondary" id="copyCompanyPrompt">기업분석 프롬프트 복사</button></div><div id="companyList" style="margin-top:14px"></div>
     </div>
 
-    <div class="hr"></div>
-    <div class="block"><h3>4. Target Industry 최대 3개</h3><div id="industryTargets"></div></div>
-
-    <div class="hr"></div>
-    <div class="block"><h3>5. Company Pool</h3><p class="help">기업명만 모으지 말고 사업·고객·경쟁력·직무연결을 함께 기록합니다.</p>
-      <div class="grid3">
-        ${txt('companyName','기업명','','예: ○○전자')}
-        ${sel('companyType','기업유형','',['대기업','중견기업','중소기업','스타트업','공공기관','외국계','기타'])}
-        ${txt('companyIndustry','산업','','예: 반도체')}
-        ${txt('companySource','확인 출처','','예: 기업 홈페이지 / 사업보고서')}
-        ${txt('companyUrl','출처 URL','','https://...')}
-        ${txt('companyJob','연결 직무','','예: 공정기술')}
-      </div>
-      <div class="grid2" style="margin-top:12px">
-        ${area('companyBusiness','주요 사업·고객','','기업이 무엇으로 돈을 벌고 누구에게 가치를 제공하는가?')}
-        ${area('companyStrength','경쟁력·최근 방향','','공식자료에서 확인한 핵심 경쟁력 또는 최근 추진방향')}
-        ${area('companyRole','직무 연결','','이 기업에서 목표직무가 어떤 사업·성과와 연결되는가?')}
-        ${area('companyWhy','나의 관심 근거','','왜 이 기업을 더 확인하고 싶은가?')}
-      </div>
-      <div class="actions"><button class="btn primary" id="addCompany">기업 후보 추가</button><button class="btn secondary" id="copyCompanyPrompt">기업분석 프롬프트 복사</button></div>
-      <div id="companyList" style="margin-top:14px"></div>
-    </div>
-
-    <div class="hr"></div>
-    <div class="block"><h3>6. Target Company 최대 5개</h3><div id="companyTargets"></div>
-      <div class="field" style="margin-top:12px"><label>탐색 메모</label><textarea id="notes" placeholder="산업과 기업을 비교하면서 새롭게 알게 된 점">${esc(data.notes||'',ctx)}</textarea></div>
+    <div class="hr"></div><div class="block"><h3>6. Target Company 최대 5개</h3><div id="companyTargets"></div><div id="companyGuard" style="margin-top:12px"></div>
+      <div class="field" style="margin-top:12px"><label>탐색 메모</label><textarea id="notes" placeholder="산업·기업·직무를 연결하면서 새롭게 알게 된 점">${esc(data.notes||'',ctx)}</textarea></div>
       <div class="actions"><button class="btn primary" id="saveAll">산업·기업 탐색 저장</button><button class="btn secondary" id="nextStep">STEP 6 Career Fit Map →</button></div><div class="status" id="status"></div>
     </div>
   </section>`;
 
-  renderIndustries();renderIndustryTargets();renderCompanies();renderCompanyTargets();
+  renderAll();
   document.getElementById('copyIndustryPrompt').addEventListener('click',()=>copy(document.getElementById('industryPrompt').value,ctx));
   document.getElementById('copyCompanyPrompt').addEventListener('click',()=>copy(buildCompanyPrompt(ctx.getState(),data),ctx));
-  document.getElementById('addIndustry').addEventListener('click',addIndustry);
-  document.getElementById('addCompany').addEventListener('click',addCompany);
-  document.getElementById('saveAll').addEventListener('click',saveAll);
-  document.getElementById('nextStep').addEventListener('click',()=>{saveAll();ctx.navigate(6)});
+  document.getElementById('addIndustry').addEventListener('click',addIndustry);document.getElementById('addCompany').addEventListener('click',addCompany);
+  document.getElementById('saveAll').addEventListener('click',saveAll);document.getElementById('nextStep').addEventListener('click',()=>{saveAll();ctx.navigate(6)});
 
-  function addIndustry(){
-    const name=v('industryName');if(!name){status('산업명을 입력하세요.');return;}
-    data.industries.push({id:`ind_${Date.now()}`,name,source:v('industrySource'),url:v('industryUrl'),why:v('industryWhy'),business:v('industryBusiness'),change:v('industryChange'),jobLink:v('industryJobLink')});
-    ['industryName','industrySource','industryUrl','industryWhy','industryBusiness','industryChange','industryJobLink'].forEach(id=>document.getElementById(id).value='');persist();renderIndustries();renderIndustryTargets();status('산업 후보를 추가했습니다.');
-  }
-  function addCompany(){
-    const name=v('companyName');if(!name){status('기업명을 입력하세요.');return;}
-    data.companies.push({id:`co_${Date.now()}`,name,type:v('companyType'),industry:v('companyIndustry'),source:v('companySource'),url:v('companyUrl'),job:v('companyJob'),business:v('companyBusiness'),strength:v('companyStrength'),role:v('companyRole'),why:v('companyWhy')});
-    ['companyName','companyIndustry','companySource','companyUrl','companyJob','companyBusiness','companyStrength','companyRole','companyWhy'].forEach(id=>document.getElementById(id).value='');document.getElementById('companyType').value='';persist();renderCompanies();renderCompanyTargets();status('기업 후보를 추가했습니다.');
-  }
-  function renderIndustries(){
-    const box=document.getElementById('industryList');if(!data.industries.length){box.innerHTML='<div class="placeholder"><b>Industry Pool이 비어 있습니다.</b>직무가 활용되는 여러 산업을 비교해 보세요.</div>';return;}
-    box.innerHTML=data.industries.map((x,i)=>`<div class="listCard"><div class="listHead"><div><span class="rankTag">산업 ${i+1}</span><h3>${esc(x.name,ctx)}</h3></div><button class="btn danger smallBtn" data-delind="${x.id}">삭제</button></div><div class="grid2"><div><b>산업 구조·고객</b><p>${esc(x.business||'—',ctx)}</p></div><div><b>최근 변화</b><p>${esc(x.change||'—',ctx)}</p></div><div><b>직무 연결</b><p>${esc(x.jobLink||'—',ctx)}</p></div><div><b>탐색 이유</b><p>${esc(x.why||'—',ctx)}</p></div></div><div class="sourceLine"><b>출처</b> ${esc(x.source||'미입력',ctx)} ${x.url?`· <a href="${esc(x.url,ctx)}" target="_blank" rel="noopener">열기</a>`:''}</div></div>`).join('');
-    box.querySelectorAll('[data-delind]').forEach(b=>b.addEventListener('click',()=>{data.industries=data.industries.filter(x=>x.id!==b.dataset.delind);data.targetIndustries=data.targetIndustries.filter(id=>id!==b.dataset.delind);persist();renderIndustries();renderIndustryTargets();}));
-  }
-  function renderIndustryTargets(){
-    const box=document.getElementById('industryTargets');box.innerHTML=data.industries.length?data.industries.map(x=>`<label class="checkRow"><input type="checkbox" data-itarget="${x.id}" ${data.targetIndustries.includes(x.id)?'checked':''}><div><b>${esc(x.name,ctx)}</b><span>${esc(x.jobLink||'',ctx)}</span></div></label>`).join(''):'<div class="callout warn">산업 후보를 먼저 추가하세요.</div>';
-    box.querySelectorAll('[data-itarget]').forEach(c=>c.addEventListener('change',()=>{const ids=[...box.querySelectorAll('[data-itarget]:checked')].map(x=>x.dataset.itarget);if(ids.length>3){c.checked=false;ctx.toast('Target Industry는 최대 3개입니다.');}}));
-  }
-  function renderCompanies(){
-    const box=document.getElementById('companyList');if(!data.companies.length){box.innerHTML='<div class="placeholder"><b>Company Pool이 비어 있습니다.</b>기업 유형을 섞어 비교하면 선택 기준이 더 선명해집니다.</div>';return;}
-    box.innerHTML=data.companies.map((x,i)=>`<div class="listCard"><div class="listHead"><div><span class="rankTag">기업 ${i+1}</span><h3>${esc(x.name,ctx)}</h3><div class="muted small">${esc([x.type,x.industry,x.job].filter(Boolean).join(' · '),ctx)}</div></div><button class="btn danger smallBtn" data-delco="${x.id}">삭제</button></div><div class="grid2"><div><b>사업·고객</b><p>${esc(x.business||'—',ctx)}</p></div><div><b>경쟁력·방향</b><p>${esc(x.strength||'—',ctx)}</p></div><div><b>직무 연결</b><p>${esc(x.role||'—',ctx)}</p></div><div><b>관심 근거</b><p>${esc(x.why||'—',ctx)}</p></div></div><div class="sourceLine"><b>출처</b> ${esc(x.source||'미입력',ctx)} ${x.url?`· <a href="${esc(x.url,ctx)}" target="_blank" rel="noopener">열기</a>`:''}</div></div>`).join('');
-    box.querySelectorAll('[data-delco]').forEach(b=>b.addEventListener('click',()=>{data.companies=data.companies.filter(x=>x.id!==b.dataset.delco);data.targetCompanies=data.targetCompanies.filter(id=>id!==b.dataset.delco);persist();renderCompanies();renderCompanyTargets();}));
-  }
-  function renderCompanyTargets(){
-    const box=document.getElementById('companyTargets');box.innerHTML=data.companies.length?data.companies.map(x=>`<label class="checkRow"><input type="checkbox" data-ctarget="${x.id}" ${data.targetCompanies.includes(x.id)?'checked':''}><div><b>${esc(x.name,ctx)}</b><span>${esc([x.type,x.industry,x.job].filter(Boolean).join(' · '),ctx)}</span></div></label>`).join(''):'<div class="callout warn">기업 후보를 먼저 추가하세요.</div>';
-    box.querySelectorAll('[data-ctarget]').forEach(c=>c.addEventListener('change',()=>{const ids=[...box.querySelectorAll('[data-ctarget]:checked')].map(x=>x.dataset.ctarget);if(ids.length>5){c.checked=false;ctx.toast('Target Company는 최대 5개입니다.');}}));
-  }
-  function saveAll(){
-    data.targetIndustries=[...document.querySelectorAll('[data-itarget]:checked')].map(x=>x.dataset.itarget);data.targetCompanies=[...document.querySelectorAll('[data-ctarget]:checked')].map(x=>x.dataset.ctarget);data.notes=v('notes');persist();status('산업·기업 탐색 결과를 저장했습니다.');
-  }
-  function persist(){ctx.saveState({artifacts:{industryCompany:data}})}function v(id){return document.getElementById(id)?.value?.trim()||''}function status(t){document.getElementById('status').textContent=t;ctx.toast(t)}
+  function addIndustry(){const name=v('industryName'),jobId=v('industryJobId'),source=v('industrySource'),url=v('industryUrl');if(!name||!jobId||!source||!url){status('산업명·연결직무·자료명·URL을 입력하세요.');return;}data.industries.push({id:`ind_${Date.now()}`,name,jobId,sourceType:v('industrySourceType'),source,url,checkedAt:v('industryChecked'),business:v('industryBusiness'),change:v('industryChange'),jobLink:v('industryJobLink'),difference:v('industryDifference'),createdAt:new Date().toISOString()});clear(['industryName','industrySource','industryUrl','industryBusiness','industryChange','industryJobLink','industryDifference']);persist();renderAll();status('산업 Evidence를 추가했습니다.');}
+  function addCompany(){const name=v('companyName'),industryId=v('companyIndustryId'),jobId=v('companyJobId');if(!name||!industryId||!jobId){status('기업명·산업·직무 연결을 모두 선택하세요.');return;}const industry=data.industries.find(x=>x.id===industryId);if(industry?.jobId&&industry.jobId!==jobId){status('선택한 산업 Evidence와 연결된 Target Job이 다릅니다. 조합을 다시 확인하세요.');return;}data.companies.push({id:`co_${Date.now()}`,name,type:v('companyType'),industryId,jobId,industry:industry?.name||'',job:jobs.find(x=>x.id===jobId)?.title||'',source:v('companySource'),url:v('companyUrl'),checkedAt:v('companyChecked'),hiringEvidence:v('companyHiringEvidence'),jobSource:v('companyJobSource'),jobUrl:v('companyJobUrl'),business:v('companyBusiness'),direction:v('companyDirection'),role:v('companyRole'),signals:v('companySignals'),why:v('companyWhy'),unknown:v('companyUnknown'),createdAt:new Date().toISOString()});clear(['companyName','companySource','companyUrl','companyJobSource','companyJobUrl','companyBusiness','companyDirection','companyRole','companySignals','companyWhy','companyUnknown']);persist();renderAll();status('기업 Evidence를 추가했습니다.');}
+  function renderAll(){refreshCompanyIndustrySelect();renderIndustries();renderIndustryTargets();renderIndustryCompare();renderCompanies();renderCompanyTargets();renderCompanyGuard();}
+  function refreshCompanyIndustrySelect(){const el=document.getElementById('companyIndustryId');if(!el)return;const current=el.value;el.innerHTML='<option value="">선택</option>'+data.industries.map(x=>`<option value="${esc(x.id,ctx)}">${esc(x.name,ctx)}</option>`).join('');if(data.industries.some(x=>x.id===current))el.value=current;}
+  function renderIndustries(){const box=document.getElementById('industryList');if(!data.industries.length){box.innerHTML='<div class="placeholder"><b>Industry Evidence가 없습니다.</b>Target Job이 실제로 활용되는 산업을 근거자료와 함께 추가하세요.</div>';return;}box.innerHTML=data.industries.map((x,i)=>{const job=jobs.find(j=>j.id===x.jobId);return `<div class="listCard"><div class="listHead"><div><span class="rankTag">산업 ${i+1}</span><h3>${esc(x.name,ctx)}</h3><div class="muted small">${esc(job?.title||'직무 미연결',ctx)} · ${esc(x.sourceType||'출처유형 미입력',ctx)} · 확인 ${esc(x.checkedAt||'미입력',ctx)}</div></div><button class="btn danger smallBtn" data-delind="${x.id}">삭제</button></div><div class="grid2"><div><b>구조·고객</b><p>${esc(x.business||'—',ctx)}</p></div><div><b>최근 변화</b><p>${esc(x.change||'—',ctx)}</p></div><div><b>직무 역할</b><p>${esc(x.jobLink||'—',ctx)}</p></div><div><b>산업별 차이</b><p>${esc(x.difference||'—',ctx)}</p></div></div><div class="sourceLine"><b>근거</b> ${esc(x.source,ctx)} · <a href="${esc(x.url,ctx)}" target="_blank" rel="noopener">원문 열기 ↗</a></div></div>`}).join('');box.querySelectorAll('[data-delind]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.delind;data.industries=data.industries.filter(x=>x.id!==id);data.targetIndustries=data.targetIndustries.filter(x=>x!==id);data.companies=data.companies.filter(x=>x.industryId!==id);data.targetCompanies=data.targetCompanies.filter(id=>data.companies.some(c=>c.id===id));persist();renderAll();}));}
+  function renderIndustryTargets(){const box=document.getElementById('industryTargets');box.innerHTML=data.industries.length?data.industries.map(x=>`<label class="checkRow"><input type="checkbox" data-itarget="${x.id}" ${data.targetIndustries.includes(x.id)?'checked':''}><div><b>${esc(x.name,ctx)}</b><span>${esc(jobs.find(j=>j.id===x.jobId)?.title||'',ctx)} · ${esc(x.jobLink||'',ctx)}</span></div></label>`).join(''):'<div class="callout warn">산업 Evidence를 먼저 추가하세요.</div>';box.querySelectorAll('[data-itarget]').forEach(c=>c.addEventListener('change',()=>{const ids=[...box.querySelectorAll('[data-itarget]:checked')];if(ids.length>3){c.checked=false;ctx.toast('Target Industry는 최대 3개입니다.');}saveSelections();renderIndustryCompare();}));}
+  function renderIndustryCompare(){const box=document.getElementById('industryCompare'),ids=currentIndustryTargets(),arr=ids.map(id=>data.industries.find(x=>x.id===id)).filter(Boolean);if(arr.length<2){box.innerHTML='<div class="callout info">Target Industry를 2개 이상 선택하면 같은 직무의 산업별 차이를 비교할 수 있습니다.</div>';return;}box.innerHTML=`<div class="matrixWrap"><table class="matrix"><thead><tr><th>산업</th><th>Target Job</th><th>직무 역할</th><th>산업별 차이</th><th>근거</th></tr></thead><tbody>${arr.map(x=>`<tr><td><b>${esc(x.name,ctx)}</b></td><td>${esc(jobs.find(j=>j.id===x.jobId)?.title||'—',ctx)}</td><td>${esc(x.jobLink||'—',ctx)}</td><td>${esc(x.difference||'—',ctx)}</td><td>${esc(x.source||'—',ctx)}</td></tr>`).join('')}</tbody></table></div>`;}
+  function renderCompanies(){const box=document.getElementById('companyList');if(!data.companies.length){box.innerHTML='<div class="placeholder"><b>Company Evidence가 없습니다.</b>사업자료와 채용·직무 근거를 연결해 기업 후보를 추가하세요.</div>';return;}box.innerHTML=data.companies.map((x,i)=>{const ind=data.industries.find(a=>a.id===x.industryId),job=jobs.find(a=>a.id===x.jobId),quality=companyEvidenceQuality(x);return `<div class="listCard"><div class="listHead"><div><span class="rankTag">기업 ${i+1}</span><h3>${esc(x.name,ctx)}</h3><div class="muted small">${esc([x.type,ind?.name||x.industry,job?.title||x.job].filter(Boolean).join(' · '),ctx)}</div></div><span class="scoreChip">${quality}</span></div><div class="grid2"><div><b>사업·고객</b><p>${esc(x.business||'—',ctx)}</p></div><div><b>최근 방향</b><p>${esc(x.direction||'—',ctx)}</p></div><div><b>직무 연결</b><p>${esc(x.role||'—',ctx)}</p></div><div><b>채용 역량신호</b><p>${esc(x.signals||'—',ctx)}</p></div></div><div class="sourceLine"><b>기업근거</b> ${esc(x.source||'미입력',ctx)} ${x.url?`· <a href="${esc(x.url,ctx)}" target="_blank" rel="noopener">열기</a>`:''}<br><b>채용근거</b> ${esc(x.hiringEvidence||'미확인',ctx)} ${x.jobUrl?`· <a href="${esc(x.jobUrl,ctx)}" target="_blank" rel="noopener">열기</a>`:''}</div><div class="actions"><button class="btn danger smallBtn" data-delco="${x.id}">삭제</button></div></div>`}).join('');box.querySelectorAll('[data-delco]').forEach(b=>b.addEventListener('click',()=>{data.companies=data.companies.filter(x=>x.id!==b.dataset.delco);data.targetCompanies=data.targetCompanies.filter(id=>id!==b.dataset.delco);persist();renderAll();}));}
+  function renderCompanyTargets(){const box=document.getElementById('companyTargets');box.innerHTML=data.companies.length?data.companies.map(x=>`<label class="checkRow"><input type="checkbox" data-ctarget="${x.id}" ${data.targetCompanies.includes(x.id)?'checked':''}><div><b>${esc(x.name,ctx)}</b><span>${esc([x.industry||data.industries.find(i=>i.id===x.industryId)?.name,x.job||jobs.find(j=>j.id===x.jobId)?.title,x.hiringEvidence].filter(Boolean).join(' · '),ctx)}</span></div></label>`).join(''):'<div class="callout warn">기업 Evidence를 먼저 추가하세요.</div>';box.querySelectorAll('[data-ctarget]').forEach(c=>c.addEventListener('change',()=>{const ids=[...box.querySelectorAll('[data-ctarget]:checked')];if(ids.length>5){c.checked=false;ctx.toast('Target Company는 최대 5개입니다.');}saveSelections();renderCompanyGuard();}));}
+  function renderCompanyGuard(){const box=document.getElementById('companyGuard'),arr=currentCompanyTargets().map(id=>data.companies.find(x=>x.id===id)).filter(Boolean);if(!arr.length){box.innerHTML='<div class="callout info">Target Company를 선택하면 근거상태를 점검합니다.</div>';return;}const weak=arr.filter(x=>['직무 존재만 확인','아직 미확인',''].includes(x.hiringEvidence)||!x.url);const orphan=arr.filter(x=>!data.targetIndustries.includes(x.industryId));if(orphan.length)box.innerHTML=`<div class="callout warn"><b>조합 확인 필요</b><br>${orphan.map(x=>esc(x.name,ctx)).join(', ')}은 현재 Target Industry에 포함되지 않습니다.</div>`;else if(weak.length)box.innerHTML=`<div class="callout warn"><b>채용근거 보강 필요</b><br>${weak.map(x=>esc(x.name,ctx)).join(', ')}은 실제 채용공고 또는 공식 직무자료를 더 확인하세요.</div>`;else box.innerHTML='<div class="callout good"><b>기본 연결 확인</b><br>선택한 기업이 Target Industry·Target Job과 연결되고 채용/직무 근거도 기록되어 있습니다.</div>';}
+  function saveSelections(){data.targetIndustries=currentIndustryTargets();data.targetCompanies=currentCompanyTargets();persist();}
+  function saveAll(){saveSelections();data.notes=v('notes');persist();renderCompanyGuard();status('산업·기업 탐색 결과를 저장했습니다.');}
+  function currentIndustryTargets(){return [...document.querySelectorAll('[data-itarget]:checked')].map(x=>x.dataset.itarget)}function currentCompanyTargets(){return [...document.querySelectorAll('[data-ctarget]:checked')].map(x=>x.dataset.ctarget)}
+  function persist(){ctx.saveState({artifacts:{industryCompany:data}})}function v(id){return document.getElementById(id)?.value?.trim()||''}function clear(ids){ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value=''})}function status(t){document.getElementById('status').textContent=t;ctx.toast(t)}
 }
+
 function getTargetJobs(s){const e=s.artifacts?.jobExplorer||{};return (e.targets||[]).map(id=>e.candidates?.find(x=>x.id===id)).filter(Boolean)}
-function buildIndustryPrompt(s){const jobs=getTargetJobs(s).map(x=>x.title);return `너는 대학생의 산업탐색을 돕는 리서처다. 내가 탐색 중인 직무는 ${jobs.join(', ')||'아직 미정'}이다.\n\n이 직무가 실제로 채용되는 산업을 6~10개 정도 넓게 제시해줘.\n\n규칙:\n1. 산업명만 나열하지 말고 그 산업의 주요 제품·서비스, 고객, 가치사슬에서 이 직무가 맡는 역할을 설명한다.\n2. 같은 직무가 산업에 따라 어떻게 달라지는지 비교한다.\n3. 최신 동향이나 숫자를 말할 때는 반드시 확인 가능한 출처가 필요하다고 표시한다.\n4. 기업 추천부터 하지 말고 산업 구조를 먼저 이해하게 돕는다.\n5. 성장성이나 전망을 근거 없이 단정하지 않는다.\n6. 내가 다음으로 확인해야 할 정부·산업협회·기업 IR·공식자료의 종류를 제안한다.\n7. 마지막에는 내 직무 기준으로 서로 성격이 다른 산업 후보 3~5개를 비교질문 형태로 제시한다.`}
-function buildCompanyPrompt(s,data){const inds=(data.targetIndustries||[]).map(id=>data.industries.find(x=>x.id===id)?.name).filter(Boolean);const jobs=getTargetJobs(s).map(x=>x.title);return `너는 취업용 기업분석 코치다.\n목표직무: ${jobs.join(', ')||'미정'}\n관심산업: ${inds.join(', ')||'미정'}\n\n내가 입력할 기업의 공식자료를 바탕으로만 다음을 분석해줘. 자료에 없으면 '자료에서 확인되지 않음'이라고 표시해줘.\n1. 주요 사업과 고객\n2. 현재 중요하게 추진하는 사업·방향\n3. 목표직무가 사업성과에 기여하는 지점\n4. 직무와 직접 관련된 최근 이슈\n5. 기업 핵심가치·인재상 중 직무관련성이 높은 요소\n6. 내가 추가로 확인해야 할 공식자료\n\n기업의 광고문구를 그대로 반복하지 말고 실제 사업과 직무의 연결을 중심으로 설명해줘.`}
-function txt(id,label,value,ph){return `<div class="field"><label>${label}</label><input class="input" id="${id}" value="${value||''}" placeholder="${ph||''}"></div>`}function area(id,label,value,ph){return `<div class="field"><label>${label}</label><textarea id="${id}" placeholder="${ph||''}">${value||''}</textarea></div>`}function sel(id,label,value,opts){return `<div class="field"><label>${label}</label><select id="${id}"><option value="">선택</option>${opts.map(o=>`<option ${o===value?'selected':''}>${o}</option>`).join('')}</select></div>`}function esc(x,ctx){return ctx.escapeHtml(x==null?'':x)}async function copy(t,ctx){try{await navigator.clipboard.writeText(t);ctx.toast('프롬프트를 복사했습니다.')}catch{ctx.toast('복사하지 못했습니다.')}}
+function companyEvidenceQuality(x){if(x.url&&x.jobUrl&&['현재 채용공고 확인','최근 채용공고 확인'].includes(x.hiringEvidence))return '근거 높음';if(x.url&&(x.jobUrl||x.hiringEvidence==='공식 직무소개 확인'))return '근거 보통';return '근거 보강'}
+function buildIndustryPrompt(s){const jobs=getTargetJobs(s).map(x=>x.title);return `너는 대학생의 산업탐색을 돕는 리서처다. 목표직무는 ${jobs.join(', ')||'미정'}이다.\n\n목표는 산업 인기순위를 만드는 것이 아니라 같은 직무가 서로 다른 산업에서 어떤 Task·Tool·KPI·고객맥락을 갖는지 비교하는 것이다.\n\n규칙:\n1. 서로 성격이 다른 산업 6~10개를 제시한다.\n2. 각 산업의 제품·서비스, 고객, 가치사슬을 설명한다.\n3. 목표직무가 해결하는 문제와 사업성과 연결을 설명한다.\n4. 같은 직무가 산업별로 어떻게 달라지는지 비교한다.\n5. 최신 동향·숫자는 확인 가능한 출처가 필요하다고 표시한다.\n6. 성장성·취업가능성을 근거 없이 단정하지 않는다.\n7. 정부·공공기관·산업협회·공시·기업 IR 등 검증할 자료를 제안한다.\n8. 최종선택은 하지 말고 비교질문을 제시한다.`}
+function buildCompanyPrompt(s,data){const inds=(data.targetIndustries||[]).map(id=>data.industries.find(x=>x.id===id)?.name).filter(Boolean),jobs=getTargetJobs(s).map(x=>x.title);return `너는 취업용 기업분석 리서처다.\n목표직무: ${jobs.join(', ')||'미정'}\n관심산업: ${inds.join(', ')||'미정'}\n\n기업의 공식자료와 실제 채용/직무자료를 분리해서 분석해라. 내가 제공하지 않은 사실은 추측하지 말고 '자료에서 확인되지 않음'으로 표시해라.\n\n1. 주요 사업·제품·서비스와 고객\n2. 최근 공식적으로 확인되는 사업방향\n3. 목표직무가 사업성과에 기여하는 지점\n4. 실제 직무소개/채용공고에서 확인되는 Task·KSA·Tool·Experience\n5. 기업 홍보문구와 실제 채용요구를 구분\n6. 이 산업의 같은 직무가 다른 산업과 달라지는 점\n7. 내가 추가로 확인해야 할 공식자료\n\n출처 없이 '잘 맞는다', '유망하다', '취업 가능성이 높다'고 평가하지 마라.`}
+function selectJob(id,label,jobs){return `<div class="field"><label>${label}</label><select id="${id}"><option value="">선택</option>${jobs.map(x=>`<option value="${x.id}">${x.title}</option>`).join('')}</select></div>`}function selectIndustry(id,label,inds){return `<div class="field"><label>${label}</label><select id="${id}"><option value="">선택</option>${inds.map(x=>`<option value="${x.id}">${x.name}</option>`).join('')}</select></div>`}
+function txt(id,label,value,ph){return `<div class="field"><label>${label}</label><input class="input" id="${id}" value="${value||''}" placeholder="${ph||''}"></div>`}function area(id,label,value,ph){return `<div class="field"><label>${label}</label><textarea id="${id}" placeholder="${ph||''}">${value||''}</textarea></div>`}function sel(id,label,value,opts){return `<div class="field"><label>${label}</label><select id="${id}"><option value="">선택</option>${opts.map(o=>`<option ${o===value?'selected':''}>${o}</option>`).join('')}</select></div>`}function today(){return new Date().toISOString().slice(0,10)}function esc(x,ctx){return ctx.escapeHtml(x==null?'':x)}async function copy(t,ctx){try{await navigator.clipboard.writeText(t);ctx.toast('프롬프트를 복사했습니다.')}catch{ctx.toast('복사하지 못했습니다.')}}

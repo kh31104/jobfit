@@ -1,111 +1,175 @@
-# Week 6 — Job Explorer & Job Deep Dive
+# 6주차 — Job Explorer & Job Deep Dive
 
-## Position in course
-Jobfit STEP 3–4. Students move from self-understanding and experience evidence to evidence-led job exploration, then verify what selected jobs actually do.
+## 수업 위치
+Jobfit STEP 3–4. 자기이해 결과를 직무로 자동변환하지 않고, 서로 다른 업무군을 넓게 탐색한 뒤 실제 Task·KSA를 출처와 함께 검증한다.
 
-## Learning outcomes
-By the end of class, students can:
-1. distinguish job exploration from job analysis;
-2. generate a broad job pool without treating test results as deterministic recommendations;
-3. compare candidate jobs using interest, values and lived evidence;
-4. select up to three Target Jobs deliberately;
-5. verify selected jobs with official job information and real job postings;
-6. describe core Task, KSA, KPI, tools, entry routes and work context;
-7. build a Requirement × My Evidence matrix.
+## 핵심 문제
+기존 진로추천 도구의 가장 큰 위험은 서로 다른 학생에게 비슷한 직무가 반복적으로 제시되는 것이다. 사회형·강점 결과 몇 개만으로 HR·HRD·상담 직무가 과도하게 반복되면 학생의 실제 경험·산업선호·직무과업 차이가 사라진다.
 
-## Core teaching message
-A career test does not decide a job. A job hypothesis becomes credible only when the student can connect multiple self-data sources to verified information about the real work.
+Jobfit은 이를 막기 위해 **Anti-Collapse Rule + Evidence Rule**을 적용한다.
 
-## Recommended class flow
-### Block A — What is a job?
-- Separate job title, job family, task and industry.
-- Show examples where the same title means different tasks by company or industry.
-- Explain why generic labels such as “HR”, “marketing”, “data” are not enough.
+검사결과 → 자동직무추천 X
 
-### Block B — STEP 3 Job Explorer
-Students review three evidence streams:
-- Career DNA: interest and work values;
-- Experience & Competency: behaviors already demonstrated;
-- Student preference: what they actually want to explore.
+흥미 + 가치 + 실제 행동 Evidence + 다양한 업무군 탐색 + 공식자료 검증 + 학생 직접선택 O
 
-AI LAB:
-- Copy the Job Explorer prompt from Jobfit.
-- Ask external AI for 8–12 diversified candidate jobs.
-- Require separate interest/value/experience evidence for each candidate.
-- Do not accept candidates whose evidence is only a personality/test label.
+## 학습목표
+학생은 수업 후 다음을 할 수 있다.
+1. 직업명과 실제 직무 Task를 구분한다.
+2. 최소 4개 이상의 서로 다른 직무군에서 후보를 탐색한다.
+3. 동일 계열 직무가 이름만 바뀌어 반복되는지 점검한다.
+4. 후보를 흥미·가치·행동 Evidence·정보확인 수준으로 구분해 비교한다.
+5. NCS·고용24 직업정보·기업 공식 직무소개·실제 채용공고를 사용해 후보를 검증한다.
+6. Target Job 1·2·3을 학생이 직접 선택한다.
+7. 선택 직무의 Task를 출처별로 등록하고 반복 확인 여부를 볼 수 있다.
+8. Task·KSA·KPI·Tool·업무환경·진입경로와 기업·산업별 변형을 구분한다.
+9. 직무 요구사항과 자신의 Evidence 수준(A/B/C/없음)을 비교한다.
 
-### Block C — Validate the pool
-For each promising candidate, students check at least one real source:
-- NCS job information;
-- Work24 occupational information;
-- company official job pages;
-- current or recent job postings.
+## STEP 3 — Job Explorer
+### 후보 Pool 권장기준
+- 후보 8~12개
+- 최소 4개 이상 직무군
+- 6개 이상 후보가 있는데 직무군이 3개 이하이면 경고
+- 같은 직무군이 3개 이상 몰리면 반복추천 경고
 
-Student records source name and URL.
+### 후보별 기록
+- 직무명 / 직무군
+- 대표 Task
+- 관심 근거
+- 행동 Evidence
+- 가치 적합
+- 정보 확인 수준
+- 공식자료 출처 / URL
 
-### Block D — Choose Target Job 1·2·3
-Students rate each candidate on:
-- personal interest;
-- existing evidence/experience;
-- value fit.
+표시되는 탐색우선값은 심리검사 적합도나 취업확률이 아니라 학생이 직접 입력한 탐색 판단값이다.
 
-Important:
-- The simple average displayed in Jobfit is an exploration-priority score, not a validated psychological fit score.
-- Students make the final choice themselves.
+## AI 직무탐색 규칙
+AI에게 “나에게 맞는 직무 3개 추천해줘”라고 하지 않는다.
 
-Output: Target Job 1–3.
+대신:
+- 직무후보 10개
+- 최소 5개 직무군
+- 동일 직무군 최대 2개 원칙
+- 대표 Task 3개
+- 관심·가치 연결근거
+- 실제 행동 Evidence 연결근거
+- Evidence가 약한 부분
+- 확인할 공식자료
 
-### Block E — STEP 4 Job Deep Dive
-For each Target Job, students verify at least two sources and extract:
-- core Task;
-- Knowledge / Skill / Attitude;
-- KPI or performance criteria;
-- tools/systems/methods;
-- preferred entry experiences;
-- work context and collaboration partners.
+를 요청한다.
 
-### Block F — Requirement × My Evidence
-Students add repeated job requirements one by one and classify them as:
-Task / Knowledge / Skill / Attitude / Tool / Experience / Qualification.
+고용24 결과표의 추천직업은 STEP 1에 저장되어 있더라도 AI 추천의 우선근거로 사용하지 않는다.
 
-For each requirement:
-- What evidence do I already have?
-- What is missing?
-- How important is this requirement?
+## STEP 4 — Job Deep Dive
+### 1. Source Register
+직무별 최소 2개 이상의 근거를 등록한다.
 
-This matrix becomes an input for later JD analysis, Career Asset DB and GAP planning.
+권장 출처:
+- 기업 공식 직무소개
+- 기업 공식 채용공고
+- NCS
+- 고용24 직업정보
+- 공공기관·정부자료
+- 산업협회·전문기관
 
-## AI use rule for Week 6
-AI may broaden, structure and compare job information. It must not fabricate job facts or choose the student’s target job. Official sources and actual postings are the evidence layer.
+AI 답변 자체는 출처로 인정하지 않는다.
 
-## Student outputs
-- Job Pool: up to roughly 10 candidates
-- Target Job 1·2·3
-- Job Analysis for selected targets
+각 출처에 기록:
+- 출처 유형
+- 자료명
+- URL
+- 확인일
+- 이 자료에서 실제 확인한 핵심 내용
+
+### 2. Task Evidence Map
+Task를 자유서술 한 덩어리로 적지 않고 하나씩 등록한다.
+
+각 Task:
+- Task명
+- 근거 출처
+- 중요도
+- 주요 산출물·결과
+- 업무맥락·협업대상
+
+여러 출처에서 동일·유사 Task가 반복되면 더 강한 직무근거로 본다.
+
+### 3. 직무 핵심 구조
+- KSA
+- KPI·성과기준
+- Tool·시스템·방법
+- 신입 진입경로·선호경험
+- 업무환경·협업대상
+- 기업·산업에 따라 달라질 수 있는 부분
+
+자료에서 확인되지 않은 KPI나 자격요건을 AI가 임의로 보완하지 않는다.
+
+### 4. Requirement × My Evidence Matrix
+요구사항별로:
+- Task / Knowledge / Skill / Attitude / Tool / Experience / Qualification
+- 중요도
+- Evidence 수준
+  - A: 직접 증거
+  - B: 관련 증거
+  - C: 간접 증거
+  - 없음
+- 내 실제 Evidence
+- 현재 GAP
+
+를 구분한다.
+
+## 120분 운영안
+### 0–15분 | 직무명과 실제 일의 차이
+예: 같은 ‘마케팅’이라도 CRM, 퍼포먼스, 브랜드, 콘텐츠, 리서치의 Task가 다름.
+
+### 15–30분 | 나의 탐색근거 다시 보기
+흥미 / 가치 / STEP 2 행동 Evidence를 확인한다.
+
+교수자 메시지:
+> 세 근거가 모두 같은 직무를 가리킬 필요는 없습니다. 오늘은 결론보다 탐색 폭과 검증이 중요합니다.
+
+### 30–50분 | AI로 후보 확장
+외부 AI로 후보 8~12개 생성. 동일 직무군 반복 여부 점검.
+
+### 50–70분 | 공식자료 검증
+NCS·고용24·기업 공식 직무소개·채용공고를 확인하고 실제 근거가 있는 후보만 Jobfit에 저장.
+
+### 70–85분 | Target Job 1·2·3 선택
+학생이 직접 선택. 같은 직무군 3개 선택 시 재검토 경고.
+
+### 85–105분 | Source Register + Task Evidence Map
+Target Job 중 우선 1개를 깊게 분석한다.
+- 최소 출처 2개
+- Task 최소 3개
+- 각 Task의 출처 연결
+
+### 105–115분 | Requirement × Evidence
+직무 요구 3개 이상을 내 경험 Evidence와 비교한다.
+
+### 115–120분 | 직무의 본질 한 문장
+직무명을 쓰지 않고 다음 형식으로 정의한다.
+> “이 직무는 ___ 문제를 해결하기 위해 ___ Task를 수행하고, ___ 결과를 만들어내는 일이다.”
+
+다음주 연결:
+> 같은 직무라도 산업과 기업이 달라지면 고객·제품·Tool·KPI·업무맥락이 달라질 수 있습니다.
+
+## 학생 산출물
+**Target Job 1·2·3 + Evidence-based Job Analysis**
+- 다양한 직무 후보 Pool
+- Target Job 최대 3개
+- 출처 Register
+- Task Evidence Map
+- KSA/KPI/Tool/업무맥락
 - Requirement × My Evidence Matrix
-- one-sentence job-analysis conclusion per target
+- 직무의 본질 정의
+- 강점 Evidence와 GAP
 
-## Jobfit implementation
-STEP 3:
-- no fixed occupation recommendation mapping;
-- prompt generation from Career DNA + experience evidence;
-- candidate pool with source/url;
-- student ratings;
-- manual TOP3 selection.
+## 평가 포인트
+좋은 결과는 ‘나에게 딱 맞는 직무 하나’를 찾는 것이 아니다.
 
-STEP 4:
-- source logging with checked date;
-- Task/KSA/KPI/tools/entry/work-context fields;
-- source-grounded AI analysis prompt;
-- requirement/evidence/gap matrix;
-- per-job analysis storage.
-
-## Research note
-Job exploration choices and raw career documents remain learner-learning data by default, not Research Core. If a future study specifically examines job-choice trajectories, a separate IRB-approved data plan should define which derived variables may be used.
-
-## Instructor checkpoints
-- Stop students who choose jobs only because AI ranked them.
-- Ask “What actual behavior of yours supports this candidate?”
-- Ask “What official source confirms that this task is part of the job?”
-- Challenge candidates that are all near-duplicates.
-- Keep the student’s final TOP3 decision manual.
+좋은 결과는:
+1. 후보가 충분히 넓다.
+2. 직무군 쏠림을 스스로 점검했다.
+3. 실제 Task를 확인했다.
+4. Task에 출처가 연결되어 있다.
+5. 요구사항과 자신의 Evidence를 구분했다.
+6. 모르는 정보는 모른다고 남겼다.
+7. 본인이 직접 우선순위를 결정했다.

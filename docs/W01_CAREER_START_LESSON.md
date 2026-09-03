@@ -1,119 +1,252 @@
-# Week 1 — Career Starting Point
+# 1주차 — Career Starting Point
 
-## Position in course
-Jobfit STEP 0. Orientation is kept short; students begin producing usable career data in the first class.
+## 수업 위치
+Jobfit STEP 0. 오리엔테이션을 길게 하지 않고 첫 수업부터 학생의 실제 진로·취업 시작점을 기록한다.
 
-## Learning outcomes
-By the end of class, students can:
-1. explain the semester flow from self-understanding to a job-ready AI Job Portfolio;
-2. create and preserve an anonymous Jobfit code;
-3. describe their current job/industry decision status without forcing an early answer;
-4. identify their current generative-AI usage pattern and set a personal AI-use rule;
-5. save a Career Start Profile that becomes the baseline for later activities.
+## 1주차 핵심 메시지
+> 오늘 진로의 정답을 정하는 것이 아니라, 학기 말에 비교할 수 있도록 ‘지금의 나’를 정확하게 기록한다.
 
-## Core teaching message
-This course is not a sequence of disconnected tests and assignments. Every weekly output becomes a component of the final job application portfolio.
+## 수업 우선순위
+1. 학생이 INJE2026 전용 링크로 정상 접속한다.
+2. 익명코드를 만든다.
+3. 기본정보와 현재 진로·취업 준비상태를 기록한다.
+4. AI Career Check-in으로 이번 학기 변화목표를 말로 정리한다.
+5. 고용24 구직준비도검사 PRE 결과를 입력한다.
+6. 한국판 K-CAAS-SF 12문항 PRE를 완료한다.
+7. Career Start를 저장하고 JSON 백업파일을 개인 공간에 보관한다.
 
-## Recommended class flow
-### Block A — Orientation & final destination
-- Show the final output first: AI Job Application Portfolio.
-- Explain the semester funnel: SELF → EXPERIENCE → COMPETENCY → JOB → INDUSTRY/COMPANY → JD → APPLICATION → INTERVIEW → PORTFOLIO.
-- Explain assessment logic: midterm FIT report, final Job Portfolio.
+연구 활용은 이후 별도 단계에서 검토한다. 1주차 학생에게는 연구용 파일 제출을 요구하지 않는다.
 
-### Block B — Jobfit onboarding
-- Open Jobfit v2.
-- Choose full roadmap or apply course code.
-- Generate anonymous code and save it personally.
-- Explain that the anonymous code replaces name/student number in the research layer.
+## 학습목표
+학생은 수업 후 다음을 할 수 있다.
+1. 한 학기 흐름 SELF → EXPERIENCE → JOB → INDUSTRY/COMPANY → JD → APPLICATION → INTERVIEW → PORTFOLIO를 설명할 수 있다.
+2. 자신의 익명 Jobfit Code를 생성하고 백업할 수 있다.
+3. 현재 진로·취업 준비상태를 과장하지 않고 기록할 수 있다.
+4. AI를 답안 작성자가 아니라 질문자·구조화 도구로 사용할 수 있다.
+5. 고용24 구직준비도검사 PRE 결과를 Jobfit에 저장할 수 있다.
+6. 한국판 K-CAAS-SF 진로적응성 시작점 측정을 완료할 수 있다.
+7. 모든 결과를 하나의 JSON 백업파일로 저장하고 이메일·카카오톡 ‘나에게 보내기’·클라우드 중 한 곳에 보관할 수 있다.
 
-### Block C — Career Starting Point
-Students complete:
-- age / gender / grade / major / major group / graduation status;
-- current job-decision level;
-- current industry-decision level;
-- target job/industry if any;
-- internship/field-practice experience;
-- prior career/employment-program experience.
+## 학생 화면 순서
+Jobfit STEP 0은 학생에게 다음 7단계 흐름을 제공한다.
 
-Instructor emphasis:
-- “아직 모르겠다” is valid data, not a wrong answer.
-- Students should record current reality rather than a socially desirable answer.
+1. 수업 연결 확인
+2. 익명코드
+3. 기본정보
+4. 현재 준비상태
+5. AI Career Check-in
+6. PRE 측정
+7. 백업 저장
 
-### Block D — AI Baseline mini-lab
-Students record:
-- AI usage frequency;
-- AI tools used;
-- previous career/employment uses.
+`?course=INJE2026`으로 접속한 학생은 인제대학교 / 전체 Career Roadmap / PRE·POST 측정 설정이 자동 적용된다.
 
-Mini discussion prompts:
-- What do I ask AI to do most often?
-- What should AI never invent for me?
-- Which decisions must remain mine?
+---
 
-Student writes one sentence: My AI Career Rule.
-Suggested frame: “AI는 ___에 활용하되, ___은 내가 직접 판단하고 사실을 확인한다.”
+# 120분 권장 운영안
 
-### Block E — Research participation notice
-- Research participation is optional.
-- Non-participation must not restrict Jobfit learning functions.
-- The production build must use an institution-approved final consent text before central research collection is enabled.
-- Current development build stores locally only.
+## 0–12분 | Orientation — 최종 결과부터 보여주기
+교수자는 먼저 기말에 만들 AI Job Application Portfolio 예시를 보여준다.
 
-### Block F — Save & preview Week 3
-- Save Career Start.
-- Preview Career DNA: Work24 S or L (one only), work values, VIA TOP5.
-- Explain that test results are evidence to interpret, not a final label.
+설명 포인트:
+- 매주 활동이 따로 노는 과제가 아니다.
+- 자기이해 결과는 직무탐색으로 연결된다.
+- 경험은 Career Asset이 된다.
+- Career Asset은 이력서·자소서·면접에서 같은 Evidence로 재사용된다.
+- 기말에는 새로 만드는 것이 아니라 한 학기 데이터를 조립·검증한다.
 
-## Student output
-Career Start Profile:
-- anonymous code
-- current career decision status
-- current target job/industry (optional)
-- experience baseline
-- AI-use baseline
-- My AI Career Rule
+교수자 핵심 멘트:
+> 이 수업의 목표는 오늘 직업 하나를 정하는 것이 아닙니다. 한 학기 동안 여러분의 선택 근거를 쌓아서, 마지막에는 ‘왜 이 직무인지, 무엇을 준비했고, 무엇을 보여줄 수 있는지’를 설명할 수 있게 만드는 것입니다.
 
-## Jobfit implementation
-STEP 0 should support:
-- full/selective mode;
-- course code configuration;
-- anonymous code generation;
-- minimum demographic profile;
-- career baseline;
-- AI baseline;
-- optional research consent;
-- local save/export;
-- next-step navigation.
+## 12–22분 | Jobfit 접속 · 익명코드
+학생은 INJE2026 전용 링크로 접속한다.
 
-## Research Core candidates from Week 1
-Only for participants who later satisfy the final approved consent/IRB process:
-- anonymous participant code
-- cohort/program/institution metadata
-- age
-- gender
-- grade
-- major and analysis-level major group
-- graduation status
-- job-decision status
-- industry-decision status
-- internship/field-practice experience
-- prior career-program participation
-- AI-use frequency
-- AI-use experience for career preparation
+확인:
+- 인제대학교
+- INJE2026
+- 전체 Career Roadmap
+- PRE/POST 측정
+- STEP 0 Career Start
 
-## Do not place in Research Core by default
-- name
-- student number
-- phone/email
-- raw personal stories
-- cover-letter text
-- raw AI chat logs
+교수자 메시지:
+> 이름과 학번은 입력하지 않습니다. 대신 지금 만드는 익명코드를 한 학기 동안 계속 사용합니다.
 
-## Instructor checklist before first class
-- Confirm production URL.
-- Confirm course code to distribute.
-- Confirm whether research consent collection will be enabled or shown as “coming later”.
-- Test mobile Chrome/Safari.
-- Prepare QR code for Jobfit URL.
-- Prepare one slide showing the final portfolio example.
-- Prepare fallback: if network is unstable, students record the anonymous code and baseline on a temporary worksheet and enter it later.
+학생은 익명코드를 생성하고 코드 복사 또는 메모를 한다.
+
+## 22–35분 | 기본정보 + Career Baseline
+학생 입력:
+- 나이
+- 성별
+- 학년
+- 학과 / 전공계열
+- 학적상태
+- 희망직무 결정 정도
+- 희망산업 결정 정도
+- 취업준비 단계
+- 인턴·현장실습 경험
+- 취업지원 프로그램 참여
+- 실제 지원경험
+- 근로경험
+
+강조:
+- ‘아직 모르겠다’는 오답이 아니다.
+- 사회적으로 좋아 보이는 응답보다 실제 상태가 중요하다.
+- 오늘의 응답은 평가점수가 아니라 출발점이다.
+
+## 35–45분 | AI Baseline + My AI Career Rule
+학생 입력:
+- 생성형 AI 사용빈도
+- 주로 사용하는 AI
+- 취업준비에서 AI를 사용한 경험
+
+학생은 한 문장으로 AI 활용원칙을 작성한다.
+
+예시:
+> AI는 정보정리와 질문 생성에 활용하되, 경험의 사실과 최종 판단은 내가 직접 확인한다.
+
+## 45–60분 | AI LAB 00 · Career Check-in
+학생은 Jobfit에서 `AI 인터뷰 프롬프트 만들기`를 누른 뒤 외부 AI에 붙여넣는다.
+
+AI 역할:
+- 한 번에 한 질문
+- 최대 5개 질문
+- 학생이 말하지 않은 경험 추측 금지
+- 현재 관심 직무, 경험, 막막한 부분, 이번 학기 변화목표, AI 역할 확인
+
+학생 산출물:
+- 지금의 나 한 문장
+- 이번 주 직접 할 행동 1개
+
+교수자 개입 기준:
+- AI 답변을 그대로 옮기지 않게 한다.
+- 학생이 실제 말한 사실만 남기게 한다.
+- 너무 거창한 목표는 이번 주 행동 1개로 줄이게 한다.
+
+## 60–83분 | Work24 PRE · 구직준비도검사
+학생은 고용24에서 `구직준비도검사`를 실시한다.
+
+Jobfit에는 결과표의 다음 9개 점수를 그대로 입력한다.
+1. 경제적 취약성 적응도
+2. 가족의 지지
+3. 사회적 지지
+4. 자아 존중감
+5. 자기 효능감
+6. 구직기술
+7. 의사전달
+8. 대인관계 활용
+9. 구직정보 수집
+
+운영원칙:
+- `구직준비도검사`라는 검사명을 반드시 확인한다.
+- S형/L형, 대학생 진로준비도검사와 혼동하지 않는다.
+- 검사일과 9개 결과점수만 Jobfit에 기록한다.
+
+고용24 로그인·접속 지연 학생은 이 구간에서 먼저 로그인 문제를 해결하고, 완료 학생은 K-CAAS-SF로 먼저 넘어가도 된다.
+
+## 83–93분 | 한국판 K-CAAS-SF PRE · 12문항
+사용 척도:
+- 김민선·고은영(2020) 한국판 진로적응성 단축형척도(K-CAAS-SF)
+- 버전: `K-CAAS-SF-KR-2020-v1`
+- 총 12문항
+- 관심 3 / 통제 3 / 호기심 3 / 자신감 3
+- 응답: 1(전혀 그렇지 않다) ~ 5(매우 그렇다)
+- PRE와 POST에서 문항·순서·응답척도·채점방식을 동일하게 사용한다.
+
+현재 Jobfit에는 논문 부록의 한국판 최종 문항이 LOCK되어 있다.
+
+## 93–100분 | PRE 저장 · 누락 확인
+학생은 `PRE · 시작점 측정 한 번에 저장`을 누른다.
+
+확인:
+- 고용24 9개 결과점수
+- K-CAAS-SF 12개 응답
+
+미완료 항목은 Jobfit 상태 메시지로 확인한다.
+
+강점활용·약점교정 척도는 1주차에 실시하지 않는다. STEP 2 경험·역량 수업에서 경험 분석 직전에 한국판 최종 9문항으로 실시한다.
+
+## 100–113분 | Career Start 저장 + 백업
+학생은:
+1. `Career Start 저장`
+2. `백업파일 다운로드` 또는 `공유해서 보관`
+3. 이메일·카카오톡 ‘나에게 보내기’·Google Drive·iCloud·OneDrive 중 한 곳에 보관
+4. 원하는 학생만 `기기 밖 보관 완료` 체크
+
+파일 예시:
+`jobfit-JF26-XXXXXX-YYYY-MM-DD.json`
+
+학생에게 안내:
+- 다운로드 폴더에만 두지 않는 것을 권장한다.
+- 익명코드를 별도 메모해도 좋다.
+- 다른 기기 사용 시 `백업 불러오기`로 복구한다.
+- 기기 밖 보관 체크는 선택이며 수업 완료조건이 아니다.
+
+## 113–120분 | Exit Ticket + 다음 주 연결
+학생이 마지막으로 적는다.
+
+> 이번 학기 Jobfit을 통해 가장 먼저 확인하거나 바꾸고 싶은 것은 무엇인가?
+
+교수자 마무리:
+> 오늘 만든 것은 결과가 아니라 출발점입니다. 다음 활동부터 이 데이터를 바탕으로 ‘나는 어떤 사람인가’가 아니라 ‘어떤 선택 근거를 만들 수 있는가’를 찾아갑니다.
+
+---
+
+# 1주차 완료 기준
+필수:
+- INJE2026 연결
+- 익명코드 생성
+- 기본정보 입력
+- 현재 준비상태 입력
+- AI Career Check-in 결과 2개 입력
+- 고용24 구직준비도 9개 점수 저장
+- K-CAAS-SF 12문항 저장
+- Career Start 저장
+- JSON 백업파일 생성
+
+권장:
+- 백업파일을 기기 밖 개인공간에 보관
+- 익명코드 별도 메모
+
+1주차 완료조건이 아닌 것:
+- 연구용 데이터 파일 제출
+- 강점활용·약점교정 9문항
+- STEP 1 이후 활동
+
+---
+
+# 확정 연구척도 슬롯
+
+## K-CAAS-SF
+- 버전: `K-CAAS-SF-KR-2020-v1`
+- 한국판 12문항
+- 1~5점
+- PRE: STEP 0
+- POST: STEP 13
+- 동일 문항·순서·응답척도·채점방식 LOCK
+
+## 한국판 SUDCO
+- 버전: `SUDCO-KR-2019-final9-v1`
+- 최종 9문항
+- 강점활용 5 + 약점교정 4
+- 원척도 6번 삭제
+- 0~6점
+- PRE: STEP 2
+- POST: STEP 13
+- 동일 문항·순서·응답척도·채점방식 LOCK
+
+연구분석·중앙수집·동의·IRB 관련 작업은 1주차 수업 안정화 후 별도로 진행한다.
+
+---
+
+# 첫 수업 직전 교수자 체크리스트
+- INJE2026 전용 URL을 직접 열어 인제대학교 / 전체 Career Roadmap 표시 확인
+- STEP 0이 첫 화면으로 열리는지 확인
+- 익명코드 생성·복사 확인
+- Career Start 저장 확인
+- 고용24 구직준비도검사 링크 확인
+- PRE 고용24 9개 입력 확인
+- K-CAAS-SF 12문항 입력·저장 확인
+- 백업 다운로드 확인
+- 모바일 Chrome 확인
+- 가능하면 iPhone Safari 확인
+- 고용24 로그인 문제 학생용 대체 안내 준비
+- 수업 종료 전 JSON 백업파일 생성 여부 안내
