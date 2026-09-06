@@ -1,6 +1,7 @@
-import {renderMeasurePanel,bindMeasurePanel} from '../researchMeasures.js';
+import {prepareResearchMeasures,renderMeasurePanel,bindMeasurePanel} from '../researchMeasures.js';
 
 export async function render(ctx){
+  if(ctx.courseConfig.researchMeasures)await prepareResearchMeasures(ctx);
   const s=ctx.getState(),jd=s.artifacts?.jdAnalyzer||{postings:[],selectedId:''},posting=jd.postings?.find(x=>x.id===jd.selectedId)||jd.postings?.[0];
   const saved=s.artifacts?.jobPortfolio||{positioning:'',gap:'',plan30:'',plan90:'',finalChecks:{gate:false,jd:false,facts:false,consistency:false,ready:false}};
   const data=structuredClone(saved);data.finalChecks=data.finalChecks||{};
