@@ -22,14 +22,17 @@ async function runFlow(name,viewport){
     assert((await page.locator('#stepRoot h2').first().textContent()).includes('Career Start'),'STEP 0 Career Start did not load');
     assert((await page.locator('#heroMeta').textContent()).includes('수업 INJE2026'),'INJE2026 meta missing');
     assert((await page.locator('#heroMeta').textContent()).includes('PRE/POST 측정'),'PRE/POST measure preset missing');
-    assert(await page.locator('#researchExportBtn').evaluate(el=>el.classList.contains('hidden')),'Top research export button should be hidden in Inje classroom view');
-    assert(await page.locator('.researchTask').count()===1&&await page.locator('.researchTask').isHidden(),'Research export task should be hidden, not removed, in week 1 classroom flow');
+    assert(await page.locator('#researchExportBtn').count()===0,'Top research export button should not exist in the student view');
+    assert(await page.locator('.researchTask').count()===0,'Research export task should not exist in the student view');
     assert(await page.locator('.centralResearchTask.disabledTask').count()===1&&await page.locator('.centralResearchTask.disabledTask').isHidden(),'Disabled central research submission should be hidden in week 1 classroom flow');
     assert((await page.locator('#stepRoot .sectionHead .badge').first().textContent())==='1주차 · 120분','Week 1 duration badge not updated');
     assert(await page.locator('.researchAccessGate').count()===0,'Measure access gate should not render');
     await page.waitForSelector('[data-measure="pre-kcaas"]');
 
     const body=(await page.locator('#stepRoot').textContent())||'';
+    const hero=(await page.locator('.hero').textContent())||'';
+    assert(hero.includes('교수자에게 자동 전송되지 않습니다.'),'First-screen local-only data notice missing');
+    assert((await page.locator('#exportBtn').textContent()).includes('내 학습 백업 저장'),'Learner backup label is unclear');
     assert(body.includes('한국판 원문 확인 · PRE/POST 동일'),'Verified scale provenance label missing');
     assert(body.includes('연구자료 제출은 1주차에 하지 않습니다.'),'Week 1 research submission exclusion notice missing');
     assert(body.includes('중앙 연구 DB로 전송되지 않습니다.'),'Classroom local-only storage notice missing');
@@ -111,6 +114,7 @@ async function runFlow(name,viewport){
     assert(backup.research?.measurements?.pre?.work24CollegeCareerReadiness?.scores?.length===14,'Backup omitted Work24 PRE results');
     assert(backup.research?.measurements?.pre?.kcaas?.items?.length===12,'Backup omitted K-CAAS-SF PRE results');
     assert(backup.artifacts?.careerStartProfile?.statement,'Backup omitted Career Start statement');
+    assert(backup.baseline?.aiRule==='AI는 정보 정리와 질문 생성에 활용하고, 경험의 사실 여부와 진로에 대한 최종 판단은 내가 직접 확인한다.','Default AI career rule was not saved');
 
     await page.reload({waitUntil:'networkidle'});
     await page.waitForSelector('#anonCode');
