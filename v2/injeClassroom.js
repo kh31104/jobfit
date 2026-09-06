@@ -12,8 +12,8 @@ if(isInjeClass){
     const s=readState(),p=s.profile||{},b=s.baseline||{},a=s.artifacts?.careerStartProfile||{},pre=s.research?.measurements?.pre||{};
     return !!(
       String(p.anonCode||'').startsWith('JF26-')&&p.age&&p.grade&&b.jobDecision&&b.prepStage&&
-      a.statement&&a.nextAction&&pre.work24JobReadiness?.examDate&&
-      fullFinite(pre.work24JobReadiness?.scores,9)&&fullFinite(pre.kcaas?.items,12,1,5)&&
+      a.statement&&a.nextAction&&pre.work24CollegeCareerReadiness?.examDate&&
+      fullFinite(pre.work24CollegeCareerReadiness?.scores,14)&&fullFinite(pre.kcaas?.items,12,1,5)&&
       pre.kcaas?.wordingVersion==='K-CAAS-SF-KR-2020-v1'
     );
   };
@@ -44,11 +44,11 @@ if(isInjeClass){
   };
   const addWork24Hint=()=>{
     const headings=[...document.querySelectorAll('#stepRoot h3')];
-    const heading=headings.find(el=>el.textContent.trim()==='고용24 구직준비도검사');
+    const heading=headings.find(el=>el.textContent.trim()==='고용24 대학생진로준비도검사');
     const box=heading?.closest('.summaryBox');if(!box||box.querySelector('.injeWork24LoginHint'))return;
     const hint=document.createElement('div');
     hint.className='callout info injeWork24LoginHint';
-    hint.innerHTML='<b>수업 전 고용24 로그인 상태를 확인하세요.</b><br>검사 페이지가 로그인 화면으로 이어지면 로그인 후 다시 <b>구직준비도검사</b>를 선택하세요. 검사 대상은 대학생·성인이며 약 20분이 걸립니다.';
+    hint.innerHTML='<b>수업 전 고용24 로그인 상태를 확인하세요.</b><br>로그인 후 필터에서 <b>대학생 → 진로(취업)준비도</b>를 선택하고, <b>대학생진로준비도검사</b>를 실시하세요. 약 20분이 걸립니다.';
     const actions=box.querySelector('.actions');
     if(actions)actions.insertAdjacentElement('afterend',hint);else box.prepend(hint);
   };
