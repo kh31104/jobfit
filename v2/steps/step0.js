@@ -61,7 +61,7 @@ export async function render(ctx){
       </div>
       <div class="backupComplete ${backupComplete?'done':''}" id="backupCompleteState" aria-live="polite"></div>
       <div class="actions"><button class="btn outline" id="nextStep">STEP 1 Career DNA →</button></div><div class="status" id="status"></div>
-      <div class="callout info"><b>첫 수업 완료 기준</b><br>익명코드 + 기본정보 + 현재 준비상태 + AI Check-in + 고용24 구직준비도·진로적응성 PRE까지 완료하면 됩니다. 백업파일의 기기 밖 보관과 확인 체크는 권장사항입니다. 강점활용·약점교정 측정은 STEP 2 경험·역량 수업에서 진행합니다.</div>
+      <div class="callout info"><b>첫 수업 완료 기준</b><br>익명코드 + 기본정보 + 현재 준비상태 + AI Check-in + 고용24 대학생진로준비도·진로적응성 PRE까지 완료하면 됩니다. 백업파일의 기기 밖 보관과 확인 체크는 권장사항입니다. 강점활용·약점교정 측정은 STEP 2 경험·역량 수업에서 진행합니다.</div>
     </div>
 
     <div class="callout info"><b>연구 활용은 별도 절차입니다.</b> 교육활동 참여 및 성적과 연구동의는 분리됩니다. 중앙 전송이 활성화되더라도 동의하지 않은 학생은 연구용 파일이나 중앙 DB를 제출하지 않아도 됩니다.</div>
