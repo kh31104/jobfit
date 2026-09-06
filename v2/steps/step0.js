@@ -28,7 +28,7 @@ export async function render(ctx){
 
     <div class="hr"></div><div class="block focusBlock"><div class="stepLabel">②</div><h3>내 익명코드 확인</h3><p class="help">이름·학번 대신 한 학기 동안 사용할 코드입니다. 같은 학생의 PRE/POST를 연결하는 기준이 됩니다.</p>
       <div class="codeBox"><div><div class="muted" style="font-size:11px;font-weight:800">MY JOBFIT CODE</div><div class="anonCode" id="anonCode">${ctx.escapeHtml(p.anonCode||'아직 생성되지 않음')}</div></div><div class="actions compactActions"><button class="btn outline" id="copyCodeBtn">코드 복사</button><button class="btn primary" id="makeCodeBtn">${p.anonCode?'코드 재발급':'익명코드 생성'}</button></div></div>
-      <div class="callout warn"><b>코드는 한 번만 발급됩니다.</b> 이 코드는 이번 학기 동안 유지됩니다. 브라우저 데이터가 삭제되거나 다른 기기를 사용할 때 같은 코드를 유지할 수 있도록 JSON 백업파일도 보관하세요.</div>
+      <div class="callout warn"><b>코드는 한 번만 발급됩니다.</b> 이 코드는 이번 학기 동안 유지됩니다. 브라우저 데이터가 삭제되거나 다른 기기를 사용할 때 같은 코드를 유지할 수 있도록 ‘내 학습 백업파일’도 보관하세요.</div>
     </div>
 
     <div class="hr"></div><div class="block"><div class="stepLabel">③</div><h3>기본정보</h3><p class="help">진로·취업 분석에 필요한 최소 정보만 입력합니다. 이름·학번·전화번호·정확한 생년월일은 입력하지 않습니다.</p>
@@ -52,20 +52,20 @@ export async function render(ctx){
     ${c.researchMeasures?`<div class="stepLabel measureStepLabel">⑥</div>${renderMeasurePanel(ctx,'pre')}`:''}
 
     <div class="hr"></div><div class="block finishBlock"><div class="stepLabel">⑦</div><h3>저장·백업 안내</h3><p class="help">학생의 입력 내용은 먼저 <b>현재 사용 중인 브라우저</b>에 저장됩니다. 교수자에게 자동 전송되지 않습니다.</p>
-      <div class="callout info"><b>학생과 교수자가 하는 일</b><br><b>학생 필수:</b> ‘Career Start 저장’ → ‘백업파일 다운로드’ → 본인 이메일·카카오톡·클라우드에 보관<br><b>교수자:</b> 수업 중 저장·백업 완료 여부만 안내합니다. 현재는 학생의 전체 활동내용을 자동으로 볼 수 없습니다.<br><b>연구자료:</b> IRB 및 연구동의 절차가 확정된 뒤, 동의한 학생만 별도의 연구용 파일을 제출합니다.</div>
-      <div class="callout good"><b>일반 백업파일에 저장되는 정보</b><br>익명코드, 기본정보, 현재 준비상태, 검사 입력값, STEP별 선택·작성 내용과 AI 결과 붙여넣기 내용이 저장됩니다. 이름·학번·전화번호는 입력하거나 저장하지 않습니다.<br><b>연구용 파일:</b> 인구통계·검사점수·진행률만 포함하고 경험서술·AI 대화·자기소개서·면접답변 원문은 제외합니다.</div>
+      <div class="callout info"><b>학생과 교수자가 하는 일</b><br><b>학생 필수:</b> ‘Career Start 저장’ → ‘내 학습 백업파일 다운로드’ → 본인 이메일·카카오톡·클라우드에 보관<br><b>교수자:</b> 수업 중 저장·백업 완료 여부만 안내합니다. 학생의 활동내용과 검사결과는 교수자에게 자동 전송되지 않습니다.</div>
+      <div class="callout good"><b>내 학습 백업파일에 저장되는 정보</b><br>익명코드, 기본정보, 현재 준비상태, 검사 입력값, STEP별 선택·작성 내용과 AI 결과 붙여넣기 내용이 저장됩니다. 이 파일은 학생 본인의 학습을 이어가기 위한 개인 백업이며, 이름·학번·전화번호는 입력하거나 저장하지 않습니다.</div>
       <div class="backupFlow">
         <div class="backupTask"><span class="backupTaskN">1</span><div><b>현재 답변 저장</b><p>입력한 Career Start와 PRE 결과를 이 브라우저에 저장합니다.</p><button class="btn primary" id="saveStart">Career Start 저장</button></div></div>
-        <div class="backupTask"><span class="backupTaskN">2</span><div><b>JSON 백업파일 만들기</b><p><b>휴대폰·태블릿:</b> ‘공유해서 보관’ 후 카카오톡 나에게 보내기·이메일·Drive 등을 선택하세요.<br><b>노트북:</b> ‘파일 다운로드’ 후 자기 이메일이나 클라우드에 직접 첨부하세요.</p><div class="actions"><button class="btn secondary" id="backupNowBtn">백업파일 다운로드</button><button class="btn outline" id="shareBackupBtn">공유해서 보관</button></div><div class="status" id="backupFileStatus"></div></div></div>
+        <div class="backupTask"><span class="backupTaskN">2</span><div><b>내 학습 백업파일 만들기</b><p><b>휴대폰·태블릿:</b> ‘공유해서 보관’ 후 카카오톡 나에게 보내기·이메일·Drive 등을 선택하세요.<br><b>노트북:</b> ‘파일 다운로드’ 후 자기 이메일이나 클라우드에 직접 첨부하세요.</p><div class="actions"><button class="btn secondary" id="backupNowBtn">내 학습 백업파일 다운로드</button><button class="btn outline" id="shareBackupBtn">공유해서 보관</button></div><div class="status" id="backupFileStatus"></div></div></div>
         <div class="backupTask"><span class="backupTaskN">3</span><div><b>기기 밖 보관 확인 <span class="muted">(선택)</span></b><p>다운로드 폴더에만 두면 휴대폰 분실·기기 변경 시 찾지 못할 수 있습니다. 확인 체크는 권장사항이며 다음 단계 진행에는 영향을 주지 않습니다.</p><label class="backupConfirm"><input type="checkbox" id="backupStoredCheck" ${backupComplete?'checked':''}><span>이메일·카카오톡 ‘나에게 보내기’·Google Drive·iCloud·OneDrive 중 한 곳에 보관했습니다.</span></label></div></div>
         ${renderCentralResearchTask(researchStatus,researchSyncedAt,ctx)}
       </div>
       <div class="backupComplete ${backupComplete?'done':''}" id="backupCompleteState" aria-live="polite"></div>
       <div class="actions"><button class="btn outline" id="nextStep">STEP 1 Career DNA →</button></div><div class="status" id="status"></div>
-      <div class="callout info"><b>첫 수업 완료 기준</b><br>익명코드 + 기본정보 + 현재 준비상태 + AI Check-in + 고용24 대학생진로준비도·진로적응성 PRE까지 완료하면 됩니다. 백업파일의 기기 밖 보관과 확인 체크는 권장사항입니다. 강점활용·약점교정 측정은 STEP 2 경험·역량 수업에서 진행합니다.</div>
+      <div class="callout info"><b>첫 수업 완료 기준</b><br>익명코드 + 기본정보 + 현재 준비상태 + AI Check-in + 고용24 대학생진로준비도·진로적응성 PRE까지 완료하면 됩니다. 내 학습 백업파일의 기기 밖 보관과 확인 체크는 권장사항입니다. 강점활용·약점교정 측정은 STEP 2 경험·역량 수업에서 진행합니다.</div>
     </div>
 
-    <div class="callout info"><b>연구 활용은 별도 절차입니다.</b> 교육활동 참여 및 성적과 연구동의는 분리됩니다. 중앙 전송이 활성화되더라도 동의하지 않은 학생은 연구용 파일이나 중앙 DB를 제출하지 않아도 됩니다.</div>
+    <div class="callout info"><b>현재는 수업 실습용입니다.</b> 입력한 자료는 학생의 브라우저와 내 학습 백업파일에만 저장되며 교수자 또는 중앙 DB로 자동 전송되지 않습니다.</div>
   </section>`;
 
   if(c.lockMode)root.querySelectorAll('.modeCard').forEach(x=>x.style.pointerEvents='none');
