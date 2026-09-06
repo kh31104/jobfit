@@ -58,7 +58,6 @@ export async function render(ctx){
         <div class="backupTask"><span class="backupTaskN">1</span><div><b>현재 답변 저장</b><p>입력한 Career Start와 PRE 결과를 이 브라우저에 저장합니다.</p><button class="btn primary" id="saveStart">Career Start 저장</button></div></div>
         <div class="backupTask"><span class="backupTaskN">2</span><div><b>JSON 백업파일 만들기</b><p><b>휴대폰·태블릿:</b> ‘공유해서 보관’ 후 카카오톡 나에게 보내기·이메일·Drive 등을 선택하세요.<br><b>노트북:</b> ‘파일 다운로드’ 후 자기 이메일이나 클라우드에 직접 첨부하세요.</p><div class="actions"><button class="btn secondary" id="backupNowBtn">백업파일 다운로드</button><button class="btn outline" id="shareBackupBtn">공유해서 보관</button></div><div class="status" id="backupFileStatus"></div></div></div>
         <div class="backupTask"><span class="backupTaskN">3</span><div><b>기기 밖 보관 확인 <span class="muted">(선택)</span></b><p>다운로드 폴더에만 두면 휴대폰 분실·기기 변경 시 찾지 못할 수 있습니다. 확인 체크는 권장사항이며 다음 단계 진행에는 영향을 주지 않습니다.</p><label class="backupConfirm"><input type="checkbox" id="backupStoredCheck" ${backupComplete?'checked':''}><span>이메일·카카오톡 ‘나에게 보내기’·Google Drive·iCloud·OneDrive 중 한 곳에 보관했습니다.</span></label></div></div>
-        <div class="backupTask researchTask"><span class="backupTaskN">R</span><div><b>연구용 데이터 파일 저장 <span class="muted">(현재 제출하지 않음)</span></b><p>IRB·연구동의 절차가 확정된 후 교수자가 별도로 안내할 때만 사용합니다. <b>인구통계·검사점수·진행률만</b> 포함하며 경험 서술, AI 대화, 지원서, 면접답변 원문은 제외합니다.</p><button class="btn researchBtn" id="researchDownloadBtn">연구용 데이터 파일 내려받기</button><div class="status" id="researchFileStatus"></div></div></div>
         ${renderCentralResearchTask(researchStatus,researchSyncedAt,ctx)}
       </div>
       <div class="backupComplete ${backupComplete?'done':''}" id="backupCompleteState" aria-live="polite"></div>
@@ -89,7 +88,7 @@ export async function render(ctx){
   document.getElementById('backupNowBtn').addEventListener('click',()=>{save(false);ctx.downloadJSON();renderBackupStatus();});
   document.getElementById('shareBackupBtn').addEventListener('click',async()=>{save(false);await ctx.shareBackup();renderBackupStatus();});
   document.getElementById('backupStoredCheck').addEventListener('change',e=>{const latest=ctx.getState();if(e.target.checked&&!latest.meta?.lastBackupAt){e.target.checked=false;ctx.toast('백업파일을 먼저 만들거나 공유해 주세요.');return}ctx.saveState({meta:{backupConfirmed:e.target.checked,backupConfirmedAt:e.target.checked?new Date().toISOString():null}});renderBackupStatus();});
-  document.getElementById('researchDownloadBtn').addEventListener('click',()=>{save(false);const name=ctx.downloadResearchJSON();if(name)renderResearchStatus();});
+  document.getElementById('researchDownloadBtn')?.addEventListener('click',()=>{save(false);const name=ctx.downloadResearchJSON();if(name)renderResearchStatus();});
   document.getElementById('centralResearchBtn')?.addEventListener('click',async()=>{
     const required=['researchReadCheck','researchVoluntaryCheck','researchAgreeCheck'];
     if(required.some(id=>!document.getElementById(id)?.checked)){ctx.toast('연구 안내와 동의 항목 3개를 모두 확인해 주세요.');return}
