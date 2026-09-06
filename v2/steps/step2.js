@@ -1,9 +1,10 @@
-import {renderStrengthMeasure,bindStrengthMeasure} from '../researchMeasures.js';
+import {prepareResearchMeasures,renderStrengthMeasure,bindStrengthMeasure} from '../researchMeasures.js';
 
 const CATEGORIES=['수업·과제','팀프로젝트','캡스톤·연구','동아리·학생회','공모전·대외활동','인턴·현장실습','아르바이트·근로','봉사활동','개인프로젝트','기타'];
 const EVIDENCE_TYPES=['수치·지표','산출물·문서','교수·상사·고객 피드백','수상·선발·평가결과','작업기록·로그','동료·팀 피드백','자기기억만'];
 
 export async function render(ctx){
+  if(ctx.courseConfig.researchMeasures)await prepareResearchMeasures(ctx);
   const state=ctx.getState();
   const saved=state.assessments?.experienceCompetency||{experiences:[]};
   const experiences=Array.isArray(saved.experiences)?saved.experiences:[];
