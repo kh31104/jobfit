@@ -13,7 +13,7 @@ async function runFlow(name,viewport){
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
-  await page.route('**/functions/v1/research-measures',async route=>{const body=route.request().postDataJSON?.()||{};if(!String(body.access_code||''))return route.fulfill({status:403,contentType:'application/json',body:JSON.stringify({error:'invalid_access'})});return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,course:body.course,measures:mockBundle})})});
+  await page.route('**/functions/v1/research-measures',async route=>{const body=route.request().postDataJSON?.()||{};return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,course:body.course,measures:mockBundle})})});
   try{
     await page.goto(`${base}?course=INJE2026`,{waitUntil:'networkidle'});
     await page.waitForSelector('#stepRoot h2');
@@ -26,10 +26,7 @@ async function runFlow(name,viewport){
     assert(await page.locator('.researchTask').count()===1&&await page.locator('.researchTask').isHidden(),'Research export task should be hidden, not removed, in week 1 classroom flow');
     assert(await page.locator('.centralResearchTask.disabledTask').count()===1&&await page.locator('.centralResearchTask.disabledTask').isHidden(),'Disabled central research submission should be hidden in week 1 classroom flow');
     assert((await page.locator('#stepRoot .sectionHead .badge').first().textContent())==='1주차 · 120분','Week 1 duration badge not updated');
-    assert(await page.locator('.researchAccessGate').count()===1,'Restricted measure access gate missing');
-    assert(await page.locator('[data-measure="pre-kcaas"]').count()===0,'Research scale must not render before authorization');
-    await page.locator('.researchAccessCode').fill('test-only-code');
-    await page.locator('.researchAccessBtn').click();
+    assert(await page.locator('.researchAccessGate').count()===0,'Measure access gate should not render');
     await page.waitForSelector('[data-measure="pre-kcaas"]');
 
     const body=(await page.locator('#stepRoot').textContent())||'';
@@ -39,12 +36,12 @@ async function runFlow(name,viewport){
     assert(body.includes('수업 전 고용24 로그인 상태를 확인하세요.'),'Work24 login preflight hint missing');
     assert(body.includes('코드는 한 번만 발급됩니다.'),'Anonymous code one-time issue notice missing');
     assert(await page.locator('[data-measure="pre-kcaas"]').count()===12,'K-CAAS-SF PRE 12 items missing');
-    assert(await page.locator('[data-measure="pre-work24"]').count()===9,'Work24 PRE 9 result slots missing');
+    assert(await page.locator('[data-measure="pre-work24"]').count()===14,'Work24 PRE 14 result slots missing');
     assert(await page.locator('#backupNowBtn').isDisabled(),'Week 1 backup must be disabled before anonymous code exists');
     assert(await page.locator('#exportBtn').isDisabled(),'Top backup must be disabled before anonymous code exists');
     assert((await page.locator('.stepBtn[data-step="0"] .stepN').textContent())==='0','STEP 0 must not show complete before PRE');
 
-    const work24Href=await page.getByRole('link',{name:/고용24 검사 페이지 열기/}).getAttribute('href');
+    const work24Href=await page.getByRole('link',{name:/대학생진로준비도검사 화면 열기/}).getAttribute('href');
     assert(work24Href==='https://www.work24.go.kr/wk/r/c/1000/jobPsyExamList.do','Work24 examination URL changed or is incorrect');
 
     await page.locator('#makeCodeBtn').click();
@@ -71,7 +68,7 @@ async function runFlow(name,viewport){
     await page.locator('#careerStartStatement').fill('관심 직무를 탐색하면서 내 경험을 직무와 연결해야 하는 상태이다.');
     await page.locator('#careerStartAction').fill('관심 직무 3개의 실제 업무를 비교한다.');
 
-    for(let i=0;i<9;i++)await page.locator('[data-measure="pre-work24"]').nth(i).fill(String(40+i));
+    for(let i=0;i<14;i++)await page.locator('[data-measure="pre-work24"]').nth(i).fill(String(40+i));
     for(let i=0;i<12;i++)await page.locator('[data-measure="pre-kcaas"]').nth(i).fill(String((i%5)+1));
 
     await page.locator('#preMeasureSave').click();
@@ -92,8 +89,8 @@ async function runFlow(name,viewport){
 
     stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
     const pre=stored.research.measurements.pre;
-    assert(pre.work24JobReadiness.examDate==='2026-09-07','Work24 exam date was not stored');
-    assert(pre.work24JobReadiness.scores.length===9&&pre.work24JobReadiness.scores[0]===40&&pre.work24JobReadiness.scores[8]===48,'Work24 9 scores were not stored correctly');
+    assert(pre.work24CollegeCareerReadiness.examDate==='2026-09-07','Work24 exam date was not stored');
+    assert(pre.work24CollegeCareerReadiness.scores.length===14&&pre.work24CollegeCareerReadiness.scores[0]===40&&pre.work24CollegeCareerReadiness.scores[13]===53,'Work24 14 scores were not stored correctly');
     assert(pre.kcaas.items.length===12&&pre.kcaas.items.every(v=>v>=1&&v<=5),'K-CAAS-SF stored values are incomplete or out of range');
     assert(pre.kcaas.wordingVersion==='K-CAAS-SF-KR-2020-v1'&&pre.kcaas.locked===true,'Locked K-CAAS-SF version metadata missing');
     assert((await page.locator('.stepBtn[data-step="0"] .stepN').textContent())==='0','STEP 0 should remain incomplete until Career Start fields are saved');
@@ -111,7 +108,7 @@ async function runFlow(name,viewport){
     assert(backup.profile?.anonCode===code,'Backup file anonymous code differs from the screen');
     assert(backup.meta?.anonCodeLocked===true&&!!backup.meta?.anonCodeIssuedAt,'Backup omitted anonymous code lock metadata');
     assert(backup.profile?.courseCode==='INJE2026'&&backup.profile?.institution==='인제대학교','Backup lost Inje course constraints');
-    assert(backup.research?.measurements?.pre?.work24JobReadiness?.scores?.length===9,'Backup omitted Work24 PRE results');
+    assert(backup.research?.measurements?.pre?.work24CollegeCareerReadiness?.scores?.length===14,'Backup omitted Work24 PRE results');
     assert(backup.research?.measurements?.pre?.kcaas?.items?.length===12,'Backup omitted K-CAAS-SF PRE results');
     assert(backup.artifacts?.careerStartProfile?.statement,'Backup omitted Career Start statement');
 
