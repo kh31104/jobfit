@@ -56,7 +56,7 @@ if(isInjeClass){
     const saveLabel=document.getElementById('saveState');
     if(saveLabel&&saveLabel.textContent==='이 브라우저에 자동 저장')saveLabel.textContent='이 브라우저에 저장';
     document.querySelectorAll('#stepRoot .finishBlock > p.help').forEach(p=>{
-      if(p.textContent.includes('이 기기에는 자동저장됩니다.'))p.innerHTML='저장 버튼을 누르면 이 기기에 저장됩니다. 휴대폰에서 노트북으로 바꾸거나 브라우저 데이터가 지워질 때를 대비해 <b>JSON 백업파일을 기기 밖에도 보관</b>하는 것을 권장합니다.';
+      if(p.textContent.includes('이 기기에는 자동저장됩니다.'))p.innerHTML='저장 버튼을 누르면 이 기기에 저장됩니다. 휴대폰에서 노트북으로 바꾸거나 브라우저 데이터가 지워질 때를 대비해 <b>내 학습 백업파일을 기기 밖에도 보관</b>하는 것을 권장합니다.';
     });
   };
   const applyClassroomView=()=>{
@@ -86,7 +86,7 @@ if(isInjeClass){
         '연구 활용은 별도 절차입니다.'
       ].includes(label.textContent)){
         const box=label.parentElement;
-        if(box)box.innerHTML='<b>연구자료 제출은 1주차에 하지 않습니다.</b> 오늘 자료는 이 브라우저와 JSON 백업파일에만 저장되며 중앙 연구 DB로 전송되지 않습니다. 연구 활용 여부는 수업 운영과 별도로 이후 절차에서 안내합니다.';
+        if(box)box.innerHTML='<b>연구자료 제출은 1주차에 하지 않습니다.</b> 오늘 자료는 이 브라우저와 내 학습 백업파일에만 저장되며 교수자 또는 중앙 연구 DB로 전송되지 않습니다. 연구 활용 여부는 수업 운영과 별도로 이후 절차에서 안내합니다.';
       }
     });
     addWork24Hint();
