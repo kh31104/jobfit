@@ -12,10 +12,10 @@ export function renderMeasurePanel(ctx,timepoint='pre'){
   const kItems=lockedSavedItems(k,KCAAS_SCALE),uItems=lockedSavedItems(u,SUDCO_SCALE);
   const prefix=timepoint==='post'?'post':'pre';
   const includeStrengthDeficit=timepoint==='post';
-  const title=timepoint==='post'?'POST · 학기 말 측정':'PRE · 시작점 측정';
+  const title=timepoint==='post'?'POST · 수업 후(학기 말) 측정':'PRE · 수업 전(시작점) 측정';
   const timing=timepoint==='post'?'수업을 모두 마친 뒤':'수업 시작 전';
   return `<div class="hr"></div><div class="block researchMeasurePanel" data-timepoint="${prefix}">
-    <div class="sectionHead"><div><h3>${title}</h3><p class="help">${timing} 같은 익명코드로 측정합니다. ${includeStrengthDeficit?'세 측정':'두 측정'}은 서로 다른 변화를 보기 위한 자료입니다.</p></div><span class="badge">PRE / POST</span></div>
+    <div class="sectionHead"><div><h3>${title}</h3><p class="help"><b>PRE는 수업 전(Before), POST는 수업 후(After)</b>를 뜻합니다. ${timing} 같은 익명코드로 측정하며 두 결과를 비교해 변화를 확인합니다.</p></div><span class="badge">수업 전 / 수업 후</span></div>
     <div class="callout info"><b>권장 순서</b><br>${includeStrengthDeficit?'① 고용24 구직준비도검사 → ② 진로적응성 12문항 → ③ 강점활용·약점교정 9문항 → ④ 한 번에 저장':'① 고용24 구직준비도검사 → ② 진로적응성 12문항 → ③ 한 번에 저장'}</div>
 
     <div class="summaryBox">
@@ -122,7 +122,8 @@ function renderAccessGate(ctx,gateId){
   const course=String(ctx.courseConfig?.course||'').toUpperCase();
   const allowed=['INJE2026','INJE-2026-2'].includes(course);
   return `<div class="hr"></div><div class="block researchAccessGate" data-gate-id="${ctx.escapeHtml(gateId)}">
-    <div class="sectionHead"><div><div class="kicker">CLASS PARTICIPANT ONLY</div><h3>수업 참여자 전용 검사</h3><p class="help">척도 문항은 연구대상 수업 참여자에게만 제공됩니다. 교수자가 수업에서 안내한 접근코드를 입력하면 현재 브라우저 세션 동안 검사가 열립니다.</p></div><span class="badge">접근 제한</span></div>
+    <div class="sectionHead"><div><div class="kicker">⑥ PRE · 수업 전(시작점) 측정</div><h3>고용24 구직준비도검사 + 진로적응성 검사 열기</h3><p class="help">이 화면이 바로 ⑥ PRE 측정의 입구입니다. 척도 원문을 공개 웹사이트에 그대로 노출하지 않기 위해 수업 참여자만 접근코드로 열 수 있습니다.</p></div><span class="badge">수업 전 검사</span></div>
+    <div class="callout info"><b>접근코드는 연구동의가 아닙니다.</b><br>교수자가 수업시간에 알려주는 잠금번호이며, 올바르게 입력하면 고용24 결과점수 입력란과 진로적응성 12문항이 바로 나타납니다. PRE는 수업 전(Before), POST는 수업 후(After) 측정입니다.</div>
     ${allowed?`<div class="grid2"><div class="field"><label>수업 접근코드</label><input class="input researchAccessCode" type="password" autocomplete="off" placeholder="접근코드 입력"></div><div class="field"><label>&nbsp;</label><button class="btn primary researchAccessBtn">검사 열기</button></div></div><div class="status researchAccessStatus"></div>`:'<div class="callout warn"><b>이 검사는 지정된 수업 링크에서만 이용할 수 있습니다.</b></div>'}
   </div>`;
 }
