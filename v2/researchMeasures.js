@@ -1,11 +1,23 @@
 const WORK24_URL='https://www.work24.go.kr/wk/r/c/1000/jobPsyExamList.do';
 const WORK24_LABELS=['경제적 취약성 적응도','가족의 지지','사회적 지지','자아 존중감','자기 효능감','구직기술','의사전달','대인관계 활용','구직정보 수집'];
-const MEASURE_SESSION_KEY='jobfit:research-measures:authorized:v1';
+const MEASURE_SESSION_KEY='jobfit:research-measures:loaded:v2';
 const MEASURE_FUNCTION_NAME='research-measures';
 let measureBundle=readMeasureSession();
 
+export async function prepareResearchMeasures(ctx){
+  if(hasVerifiedBundle())return true;
+  try{
+    measureBundle=await fetchMeasureBundle(ctx);
+    sessionStorage.setItem(MEASURE_SESSION_KEY,JSON.stringify(measureBundle));
+    return true;
+  }catch(error){
+    console.error(error);
+    return false;
+  }
+}
+
 export function renderMeasurePanel(ctx,timepoint='pre'){
-  if(!hasVerifiedBundle())return renderAccessGate(ctx,`measure-${timepoint}`);
+  if(!hasVerifiedBundle())return renderLoadError();
   const KCAAS_SCALE=measureBundle.kcaas,SUDCO_SCALE=measureBundle.sudco;
   const saved=ctx.getState().research?.measurements?.[timepoint]||{};
   const w=saved.work24JobReadiness||{},k=saved.kcaas||{},u=saved.sudco||{};
@@ -19,9 +31,9 @@ export function renderMeasurePanel(ctx,timepoint='pre'){
     <div class="callout info"><b>권장 순서</b><br>${includeStrengthDeficit?'① 고용24 구직준비도검사 → ② 진로적응성 12문항 → ③ 강점활용·약점교정 9문항 → ④ 한 번에 저장':'① 고용24 구직준비도검사 → ② 진로적응성 12문항 → ③ 한 번에 저장'}</div>
 
     <div class="summaryBox">
-      <div class="sectionHead"><div><div class="kicker">PRIMARY OUTCOME · WORK24</div><h3>고용24 구직준비도검사</h3><p class="help">고용24에서 직접 검사한 뒤 결과표의 9개 점수를 그대로 입력합니다. Jobfit이 문항을 복제하지 않습니다.</p></div><span class="badge">약 20분</span></div>
-      <div class="actions"><a class="btn secondary" href="${WORK24_URL}" target="_blank" rel="noopener">고용24 검사 페이지 열기 ↗</a><a class="btn outline" href="https://www.work24.go.kr/wk/r/c/1000/jobPsyExamRsltList.do" target="_blank" rel="noopener">검사 결과 확인 ↗</a></div>
-      <div class="callout warn"><b>고용24에서 ‘구직준비도검사’를 선택하세요.</b><br>S형/L형이나 대학생 진로준비도검사와 다른 검사입니다. PRE와 POST에서 반드시 같은 검사명을 사용합니다.</div>
+      <div class="sectionHead"><div><div class="kicker">PRIMARY OUTCOME · WORK24</div><h3>고용24 구직준비도검사 · 대학생·성인용</h3><p class="help">아래 버튼을 누르면 고용24 공식 직업심리검사 화면이 열립니다. 대상이 <b>‘대학생·성인’</b>으로 표시된 구직준비도검사를 실시한 뒤 결과표의 9개 점수를 이 화면에 입력합니다.</p></div><span class="badge">대학생 대상 · 약 20분</span></div>
+      <div class="actions"><a class="btn secondary" href="${WORK24_URL}" target="_blank" rel="noopener">대학생용 구직준비도검사 화면 열기 ↗</a><a class="btn outline" href="https://www.work24.go.kr/wk/r/c/1000/jobPsyExamRsltList.do" target="_blank" rel="noopener">내 검사 결과 확인 ↗</a></div>
+      <div class="callout warn"><b>고용24 화면에서 ‘구직준비도검사’를 선택하세요.</b><br>검사대상에 ‘대학생·성인’, 검사시간에 ‘20분’이라고 표시된 검사입니다. 직업선호도 S형·L형과는 다른 검사이며 PRE와 POST에서 동일한 검사를 사용합니다.</div>
       <div class="grid3" style="margin-top:12px"><div class="field"><label>검사일</label><input class="input" id="${prefix}Work24Date" type="date" value="${ctx.escapeHtml(w.examDate||'')}"></div>${WORK24_LABELS.map((label,i)=>`<div class="field"><label>${i+1}. ${label}</label><input class="input scoreInput" type="number" step="0.01" data-measure="${prefix}-work24" data-key="w${i+1}" value="${ctx.escapeHtml(w.scores?.[i]??'')}" placeholder="결과표 점수"></div>`).join('')}</div>
       <div class="status" id="${prefix}Work24Status">${complete(w.scores,9)?'9개 결과점수 입력 완료':''}</div>
     </div>
@@ -29,7 +41,7 @@ export function renderMeasurePanel(ctx,timepoint='pre'){
     <details class="summaryBox" style="margin-top:14px" ${timepoint==='pre'?'open':''} data-scale-version="${KCAAS_SCALE.version}">
       <summary><b>K-CAAS-SF · 진로적응성 12문항</b> <span class="muted">(약 3–4분)</span></summary>
       <div style="margin-top:12px"><div class="callout info"><b>한국판 원문 확인 · PRE/POST 동일</b><br>김민선·고은영(2020) 논문 부록의 K-CAAS-SF 12문항과 동일한 문항·순서·응답척도를 사용합니다. 이전 다른 버전의 응답값은 자동 이관하지 않습니다.</div>
-      <p class="help scaleInstruction" data-scale="kcaas">각 문항은 ${KCAAS_SCALE.response.min}(${KCAAS_SCALE.response.minLabel})–${KCAAS_SCALE.response.max}(${KCAAS_SCALE.response.maxLabel})로 응답하세요.</p>
+      <p class="help scaleInstruction" data-scale="kcaas">각 문항을 읽고 현재 자신과 일치하는 정도를 ${KCAAS_SCALE.response.min}(${KCAAS_SCALE.response.minLabel})–${KCAAS_SCALE.response.max}(${KCAAS_SCALE.response.maxLabel}) 중 하나로 응답하세요. 12문항에 모두 답한 뒤 아래의 ‘한 번에 저장’을 누르면 이 브라우저에 저장됩니다.</p>
       <div class="measureItems">${itemStatementInputs(ctx,prefix,'kcaas',KCAAS_SCALE,kItems)}</div>
       <div class="grid4" style="margin-top:12px">${scoreBox(`${prefix}KConcern`,'관심',k.concern)}${scoreBox(`${prefix}KControl`,'통제',k.control)}${scoreBox(`${prefix}KCuriosity`,'호기심',k.curiosity)}${scoreBox(`${prefix}KConfidence`,'자신감',k.confidence)}</div>
       <div class="status" id="${prefix}KTotal"></div></div>
@@ -48,7 +60,7 @@ export function renderMeasurePanel(ctx,timepoint='pre'){
 }
 
 export function bindMeasurePanel(ctx,timepoint='pre'){
-  if(!hasVerifiedBundle()){bindAccessGate(ctx,`measure-${timepoint}`);return}
+  if(!hasVerifiedBundle())return;
   const KCAAS_SCALE=measureBundle.kcaas,SUDCO_SCALE=measureBundle.sudco;
   const prefix=timepoint==='post'?'post':'pre';
   const saveBtn=document.getElementById(`${prefix}MeasureSave`);if(!saveBtn)return;
@@ -82,7 +94,7 @@ export function bindMeasurePanel(ctx,timepoint='pre'){
 }
 
 export function renderStrengthMeasure(ctx,timepoint='pre'){
-  if(!hasVerifiedBundle())return renderAccessGate(ctx,`strength-${timepoint}`);
+  if(!hasVerifiedBundle())return renderLoadError();
   const SUDCO_SCALE=measureBundle.sudco;
   const saved=ctx.getState().research?.measurements?.[timepoint]?.sudco||{};
   const items=lockedSavedItems(saved,SUDCO_SCALE);
@@ -101,7 +113,7 @@ export function renderStrengthMeasure(ctx,timepoint='pre'){
 }
 
 export function bindStrengthMeasure(ctx,timepoint='pre'){
-  if(!hasVerifiedBundle()){bindAccessGate(ctx,`strength-${timepoint}`);return}
+  if(!hasVerifiedBundle())return;
   const SUDCO_SCALE=measureBundle.sudco;
   const prefix=timepoint==='post'?'post':'pre';
   const saveBtn=document.getElementById(`${prefix}StrengthMeasureSave`);if(!saveBtn)return;
@@ -118,37 +130,14 @@ export function bindStrengthMeasure(ctx,timepoint='pre'){
   });
 }
 
-function renderAccessGate(ctx,gateId){
-  const course=String(ctx.courseConfig?.course||'').toUpperCase();
-  const allowed=['INJE2026','INJE-2026-2'].includes(course);
-  return `<div class="hr"></div><div class="block researchAccessGate" data-gate-id="${ctx.escapeHtml(gateId)}">
-    <div class="sectionHead"><div><div class="kicker">⑥ PRE · 수업 전(시작점) 측정</div><h3>고용24 구직준비도검사 + 진로적응성 검사 열기</h3><p class="help">이 화면이 바로 ⑥ PRE 측정의 입구입니다. 척도 원문을 공개 웹사이트에 그대로 노출하지 않기 위해 수업 참여자만 접근코드로 열 수 있습니다.</p></div><span class="badge">수업 전 검사</span></div>
-    <div class="callout info"><b>접근코드는 연구동의가 아닙니다.</b><br>교수자가 수업시간에 알려주는 잠금번호이며, 올바르게 입력하면 고용24 결과점수 입력란과 진로적응성 12문항이 바로 나타납니다. PRE는 수업 전(Before), POST는 수업 후(After) 측정입니다.</div>
-    ${allowed?`<div class="grid2"><div class="field"><label>수업 접근코드</label><input class="input researchAccessCode" type="password" autocomplete="off" placeholder="접근코드 입력"></div><div class="field"><label>&nbsp;</label><button class="btn primary researchAccessBtn">검사 열기</button></div></div><div class="status researchAccessStatus"></div>`:'<div class="callout warn"><b>이 검사는 지정된 수업 링크에서만 이용할 수 있습니다.</b></div>'}
-  </div>`;
-}
+function renderLoadError(){return `<div class="hr"></div><div class="block"><div class="callout warn"><b>검사 문항을 불러오지 못했습니다.</b><br>인터넷 연결을 확인한 뒤 새로고침해 주세요. 계속 표시되면 교수자에게 알려주세요.</div></div>`}
 
-function bindAccessGate(ctx,gateId){
-  const gate=document.querySelector(`.researchAccessGate[data-gate-id="${gateId}"]`);if(!gate)return;
-  const input=gate.querySelector('.researchAccessCode'),button=gate.querySelector('.researchAccessBtn'),status=gate.querySelector('.researchAccessStatus');if(!input||!button)return;
-  const submit=async()=>{
-    const code=input.value;status.textContent='접근코드를 확인하고 있습니다.';button.disabled=true;
-    try{
-      const bundle=await fetchMeasureBundle(ctx,code);
-      measureBundle=bundle;sessionStorage.setItem(MEASURE_SESSION_KEY,JSON.stringify(bundle));input.value='';ctx.toast('수업 참여자 검사가 열렸습니다.');
-      await ctx.navigate(ctx.getState().activeStep,{skipSave:true});
-    }catch(err){status.textContent=err.message||'접근코드를 확인할 수 없습니다.';input.select();ctx.toast('접근코드를 확인해 주세요.');}
-    finally{button.disabled=false}
-  };
-  button.addEventListener('click',submit);input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();submit()}});
-}
-
-async function fetchMeasureBundle(ctx,accessCode){
+async function fetchMeasureBundle(ctx){
   const config=window.JOBFIT_RESEARCH_CONFIG||{},base=String(config.supabaseUrl||'').replace(/\/$/,'');
   if(!base||!config.publishableKey)throw new Error('검사 서버 설정을 확인해 주세요.');
-  const response=await fetch(`${base}/functions/v1/${MEASURE_FUNCTION_NAME}`,{method:'POST',headers:{'Content-Type':'application/json','apikey':config.publishableKey},body:JSON.stringify({course:ctx.courseConfig?.course||'',access_code:accessCode})});
+  const response=await fetch(`${base}/functions/v1/${MEASURE_FUNCTION_NAME}`,{method:'POST',headers:{'Content-Type':'application/json','apikey':config.publishableKey},body:JSON.stringify({course:ctx.courseConfig?.course||''})});
   const body=await response.json().catch(()=>({}));
-  if(!response.ok){if(response.status===403)throw new Error('접근코드가 올바르지 않습니다.');throw new Error('검사 문항을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');}
+  if(!response.ok)throw new Error('검사 문항을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
   const bundle=body?.measures;if(!verifyBundle(bundle))throw new Error('검사 버전 검증에 실패했습니다. 교수자에게 알려 주세요.');return bundle;
 }
 
