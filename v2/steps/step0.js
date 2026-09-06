@@ -1,6 +1,7 @@
-import {renderMeasurePanel,bindMeasurePanel} from '../researchMeasures.js';
+import {prepareResearchMeasures,renderMeasurePanel,bindMeasurePanel} from '../researchMeasures.js';
 
 export async function render(ctx){
+  if(ctx.courseConfig.researchMeasures)await prepareResearchMeasures(ctx);
   const s=ctx.getState(),p=s.profile||{},b=s.baseline||{},c=ctx.courseConfig,start=s.artifacts?.careerStartProfile||{};
   const backupMeta=s.meta||{},backupComplete=!!backupMeta.backupConfirmed;
   const researchStatus=ctx.researchSyncStatus(),researchSyncedAt=backupMeta.lastResearchSyncAt||'';
