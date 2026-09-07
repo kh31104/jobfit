@@ -84,7 +84,7 @@ export async function render(ctx){
     const workValues={};VALUES.forEach((n,i)=>workValues[n]=num(`val_${i}`));
     const viaTop5=[0,1,2,3,4].map(i=>v(`via_${i}`)).filter(Boolean);
     const data={
-      interest:{type:selected,examDate:v('examDate')||new Date().toISOString().slice(0,10),resultVersion:v('resultVersion'),resultSource:v('resultSource'),riasecRaw,riasecStandard,work24SuggestedJobs:v('work24SuggestedJobs'),suggestedJobsPolicy:'reference-only-not-used-for-job-ranking'},
+      interest:{type:selected,examDate:v('examDate'),resultVersion:v('resultVersion'),resultSource:v('resultSource'),riasecRaw,riasecStandard,work24SuggestedJobs:v('work24SuggestedJobs'),suggestedJobsPolicy:'reference-only-not-used-for-job-ranking'},
       personalityBig5,personalityValidity,personalityFacets,lifeHistory,
       workValues,workValuesDate:v('workValuesDate'),workValuesVersion:v('workValuesVersion'),viaTop5,
       reflection:{fit:v('fit'),question:v('question'),disagree:v('disagree')},resultChecked:document.getElementById('resultChecked').checked
@@ -107,4 +107,40 @@ function sel(id,label,value,opts){return `<div class="field"><label>${label}</la
 function ranked(obj,n=3){return Object.entries(obj||{}).filter(([,v])=>Number.isFinite(v)).sort((a,b)=>b[1]-a[1]).slice(0,n)}
 function buildSummary(d){return {interestType:d.interest?.type,riasecTop:ranked(d.interest?.riasecStandard,3).map(([k,v])=>({code:k,score:v})),valueTop:ranked(d.workValues,3).map(([name,score])=>({name,score})),personalityTop:ranked(d.personalityBig5,2).map(([name,score])=>({name,score})),viaTop5:d.viaTop5||[],studentReflection:d.reflection||{},resultChecked:!!d.resultChecked,updatedAt:new Date().toISOString()}}
 function summaryHtml(d,selected,ctx){const x=buildSummary({...d,interest:{...(d.interest||{}),type:selected}});return `<h4>나의 Career DNA</h4><div class="resultGrid"><div class="resultCard"><strong>흥미 · ${selected}형(개정)</strong><p>${x.riasecTop.length?x.riasecTop.map(a=>`${a.code} ${a.score}`).join(' · '):'RIASEC 표준점수를 입력하면 상위 3개가 표시됩니다.'}</p></div><div class="resultCard"><strong>직업가치 TOP3</strong><p>${x.valueTop.length?x.valueTop.map(a=>`${ctx.escapeHtml(a.name)} ${a.score}`).join(' · '):'9개 가치 점수를 입력해 주세요.'}</p></div>${selected==='L'?`<div class="resultCard"><strong>성격 5요인 상위</strong><p>${x.personalityTop.length?x.personalityTop.map(a=>`${ctx.escapeHtml(a.name)} ${a.score}`).join(' · '):'성격 5요인 점수를 입력해 주세요.'}</p></div>`:''}<div class="resultCard"><strong>VIA TOP5</strong><p>${x.viaTop5.length?x.viaTop5.map(ctx.escapeHtml).join(' · '):'교육용 강점을 입력해 주세요.'}</p></div></div><div class="callout ${x.resultChecked?'good':'warn'}">${x.resultChecked?'결과표 대조 완료':'저장 전 고용24 결과표와 입력값을 다시 대조하세요.'}</div>`}
-function makePromptText(d){return `너는 대학생의 Career DNA를 해석하는 진로코치다. 아래 자료를 직무추천의 정답처럼 사용하지 말고, 내가 실제 경험으로 확인할 수 있도록 질문해줘.\n\n[직업선호도] ${d.interest.type}형(개정)\nRIASEC 표준점수: ${JSON.stringify(d.interest.riasecStandard)}\n[직업가치] ${JSON.stringify(d.workValues)}\n[성격 5요인] ${JSON.stringify(d.personalityBig5)}\n[VIA TOP5] ${d.viaTop5.join(', ')}\n[내가 일치한다고 느낀 결과] ${d.reflection.fit||'없음'}\n[확인이 필요한 결과] ${d.reflection.question||'없음'}\n[동의하기 어려운 결과] ${d.reflection.disagree||'없음'}\n\n규칙:\n1. 검사점수만 보고 직무명을 추천하지 않는다.\n2. 먼저 결과 간 공통점과 충돌점을 구분한다.\n3. 각 해석마다 '이 해석을 확인할 수 있는 실제 경험이 있는가?'를 질문한다.\n4. 내가 말하지 않은 성격·경험·역량을 만들어내지 않는다.\n5. 고용24 추천직업이 입력돼 있더라도 참고자료로만 취급한다.\n6. 마지막에는 확정 결론 대신 다음 단계에서 확인해야 할 경험 질문 5개를 제시한다.`}
+function compactScores(obj){return Object.fromEntries(Object.entries(obj||{}).filter(([,v])=>Number.isFinite(v)))}
+function makePromptText(d){
+  const lines=[
+    '너는 대학생의 Career DNA를 해석하는 진로코치다. 아래 자료를 직무추천의 정답처럼 사용하지 말고, 내가 실제 경험으로 확인할 수 있도록 질문해줘.',
+    '',
+    `[직업선호도] ${d.interest?.type||'미선택'}형(개정)`
+  ];
+  const std=compactScores(d.interest?.riasecStandard),raw=compactScores(d.interest?.riasecRaw);
+  if(Object.keys(std).length)lines.push(`RIASEC 표준점수: ${JSON.stringify(std)}`);
+  else if(Object.keys(raw).length)lines.push(`RIASEC 원점수: ${JSON.stringify(raw)}`);
+  const values=compactScores(d.workValues);
+  if(Object.keys(values).length)lines.push(`[직업가치] ${JSON.stringify(values)}`);
+  if(d.interest?.type==='L'){
+    const big5=compactScores(d.personalityBig5);
+    if(Object.keys(big5).length)lines.push(`[성격 5요인] ${JSON.stringify(big5)}`);
+  }
+  if(Array.isArray(d.viaTop5)&&d.viaTop5.length)lines.push(`[VIA TOP5] ${d.viaTop5.join(', ')}`);
+  if(d.interest?.work24SuggestedJobs)lines.push(`[고용24 추천직업 · 참고자료] ${d.interest.work24SuggestedJobs}`);
+  lines.push(
+    `[내가 일치한다고 느낀 결과] ${d.reflection?.fit||'없음'}`,
+    `[확인이 필요한 결과] ${d.reflection?.question||'없음'}`,
+    `[동의하기 어려운 결과] ${d.reflection?.disagree||'없음'}`,
+    '',
+    '규칙:',
+    '1. 검사점수만 보고 직무명을 추천하지 않는다.',
+    '2. 입력되지 않았거나 비어 있는 검사영역은 해석하지 않고, 점수나 특성을 추정하지 않는다.',
+    '3. 먼저 실제로 입력된 결과들 사이의 공통점과 충돌점을 구분한다.',
+    "4. 각 해석마다 '이 해석을 확인하거나 반박할 수 있는 실제 경험이 있는가?'를 질문한다.",
+    '5. 내가 말하지 않은 성격·경험·역량을 만들어내지 않는다.',
+    '6. 고용24 추천직업이 입력돼 있더라도 참고자료로만 취급하고, 적합 직무라고 단정하지 않는다.',
+    '7. 검사결과와 실제 경험이 다르면 검사결과보다 실제 경험을 추가로 확인한다.',
+    '8. 결과가 서로 충돌하면 어느 한쪽을 정답으로 정하지 말고, 어떤 상황에서 각각의 특성이 나타나는지 질문한다.',
+    "9. '당신은 ○○형 사람이다'처럼 성격이나 진로를 확정적으로 단정하지 않는다.",
+    '10. 마지막에는 확정 결론 대신 다음 STEP에서 확인해야 할 실제 경험 질문 5개를 제시한다.'
+  );
+  return lines.join('\n');
+}
