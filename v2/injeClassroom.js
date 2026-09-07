@@ -37,6 +37,37 @@ if(isInjeClass){
       btn.title='PRE/POST 연결을 위해 이 익명코드를 한 학기 동안 유지합니다.';
     }
   };
+  const restoreAnonCode=()=>{
+    const input=document.getElementById('existingAnonCode');
+    if(!input)return;
+    const code=String(input.value||'').trim().toUpperCase();
+    if(!/^JF26-[A-Z2-9]{6}$/.test(code)){
+      showToast('기존 익명코드를 확인해 주세요. 예: JF26-ABC234');
+      input.focus();
+      return;
+    }
+    const s=readState();
+    s.profile=s.profile||{};
+    s.meta=s.meta||{};
+    s.profile.anonCode=code;
+    s.meta.anonCodeLocked=true;
+    s.meta.anonCodeRestoredAt=new Date().toISOString();
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(s));
+    showToast(`기존 익명코드를 불러왔습니다: ${code}`);
+    setTimeout(()=>location.reload(),350);
+  };
+  const addExistingCodeRestore=()=>{
+    const box=document.getElementById('anonCode')?.closest('.codeBox');
+    if(!box||document.getElementById('existingAnonCodeWrap'))return;
+    const wrap=document.createElement('div');
+    wrap.id='existingAnonCodeWrap';
+    wrap.className='callout info';
+    wrap.style.marginTop='12px';
+    wrap.innerHTML='<b>이전에 발급받은 코드가 있나요?</b><br><span class="muted">다른 기기·다른 브라우저에서 다시 접속했다면 새 코드를 만들지 말고 기존 코드를 입력하세요.</span><div class="actions" style="margin-top:10px"><input class="input" id="existingAnonCode" inputmode="text" autocomplete="off" placeholder="예: JF26-ABC234" style="max-width:260px;text-transform:uppercase"><button class="btn secondary smallBtn" id="restoreAnonCodeBtn" type="button">기존 코드 불러오기</button></div>';
+    box.insertAdjacentElement('afterend',wrap);
+    document.getElementById('restoreAnonCodeBtn')?.addEventListener('click',restoreAnonCode);
+    document.getElementById('existingAnonCode')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();restoreAnonCode();}});
+  };
   const markWeek1Nav=()=>{
     const first=document.querySelector('.stepBtn[data-step="0"] .stepN');if(!first)return;
     const desired=week1Complete()?'✓':'0';
@@ -63,7 +94,6 @@ if(isInjeClass){
     const researchTop=document.getElementById('researchExportBtn');
     if(researchTop&&!researchTop.classList.contains('hidden'))researchTop.classList.add('hidden');
 
-    // DOM에서 제거하지 않고 숨긴다. STEP 0의 기존 이벤트 바인딩과 경쟁하지 않도록 한다.
     document.querySelectorAll('.researchTask').forEach(el=>el.classList.add('hidden'));
     document.querySelectorAll('.centralResearchTask.disabledTask').forEach(el=>el.classList.add('hidden'));
 
@@ -76,6 +106,8 @@ if(isInjeClass){
     if(!root)return;
     const kicker=root.querySelector('.kicker');
     if(!kicker||!kicker.textContent.includes('STEP 0'))return;
+
+    addExistingCodeRestore();
 
     const firstBadge=root.querySelector('.sectionHead .badge');
     if(firstBadge&&firstBadge.textContent!=='1주차 · 120분')firstBadge.textContent='1주차 · 120분';
