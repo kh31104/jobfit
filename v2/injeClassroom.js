@@ -126,6 +126,12 @@ if(isInjeClass){
 
   document.addEventListener('click',e=>{
     const target=e.target.closest?.('button');if(!target)return;
+
+    // STEP 0에서 다른 STEP으로 이동할 때 현재 Career Start 입력값을 먼저 저장한다.
+    if(target.matches('.stepBtn')&&document.getElementById('saveStart')){
+      document.getElementById('saveStart').click();
+    }
+
     if(['preMeasureSave','postMeasureSave'].includes(target.id)){
       if(!hasAnonCode()){
         e.preventDefault();e.stopImmediatePropagation();
