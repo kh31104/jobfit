@@ -1,6 +1,7 @@
-name: Jobfit v2 checks
+name: Jobfit regression checks
 
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - 'index.html'
@@ -8,6 +9,7 @@ on:
       - 'instructor/**'
       - 'research-sync-config.js'
       - 'supabase/**'
+      - 'docs/JOBFIT_DEVELOPMENT_RULES.md'
       - '.github/workflows/jobfit-v2-check.yml'
   push:
     branches:
@@ -19,10 +21,11 @@ on:
       - 'instructor/**'
       - 'research-sync-config.js'
       - 'supabase/**'
+      - 'docs/JOBFIT_DEVELOPMENT_RULES.md'
       - '.github/workflows/jobfit-v2-check.yml'
 
 jobs:
-  syntax:
+  syntax-and-contracts:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -42,6 +45,7 @@ jobs:
           node --check instructor/researchData.js
           node --check research-sync-config.js
           node --check v2/tests/smoke.mjs
+          node --check v2/tests/career-dna-regression.mjs
           node --check v2/tests/research-measures.mjs
           node --check v2/tests/relationship-smoke.mjs
           node --check v2/tests/application-flow.mjs
@@ -51,7 +55,7 @@ jobs:
             echo "Checking $f"
             node --check "$f"
           done
-      - name: Confirm required modules and assets
+      - name: Confirm required modules, tests and assets
         shell: bash
         run: |
           set -e
@@ -73,6 +77,9 @@ jobs:
           test -f supabase/config.toml
           test -f supabase/INSTRUCTOR_SETUP.md
           test -f supabase/functions/research-sync/index.ts
+          test -f docs/JOBFIT_DEVELOPMENT_RULES.md
+          test -f v2/tests/career-dna-regression.mjs
+          test -f v2/tests/research-measures.mjs
           test -f v2/tests/relationship-smoke.mjs
           test -f v2/tests/application-flow.mjs
           test -f v2/tests/backup-restore.mjs
@@ -106,13 +113,11 @@ jobs:
           grep -q 'revoke all on table public.research_snapshots from anon, authenticated' supabase/research_schema.sql
           grep -q 'excludes_activity_text' v2/researchBackend.js
 
-          # Learner steps and research export logic must not make backend/network calls.
           if grep -R -nE 'fetch\(|XMLHttpRequest|sendBeacon|supabase|firebase' v2/research.js v2/steps; then
             echo 'Unexpected network/research backend call found in learner steps or research export logic.'
             exit 1
           fi
 
-          # researchMeasures.js may make exactly the read-only access-controlled measure request.
           grep -q "MEASURE_FUNCTION_NAME='research-measures'" v2/researchMeasures.js
           grep -q 'functions/v1/${MEASURE_FUNCTION_NAME}' v2/researchMeasures.js
           if grep -nE 'XMLHttpRequest|sendBeacon|firebase|research-sync' v2/researchMeasures.js; then
@@ -122,8 +127,8 @@ jobs:
           FETCH_COUNT=$(grep -c 'await fetch(' v2/researchMeasures.js || true)
           test "$FETCH_COUNT" -eq 1 || { echo "researchMeasures.js must contain exactly one authorized measure fetch; found $FETCH_COUNT"; exit 1; }
 
-  browser-smoke:
-    needs: syntax
+  browser-regression:
+    needs: syntax-and-contracts
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -141,21 +146,21 @@ jobs:
           sleep 2
           curl --fail http://127.0.0.1:8765/ >/dev/null
           curl --fail http://127.0.0.1:8765/v2/ >/dev/null
-      - name: Run v2 browser smoke tests
+      - name: Run v2 regression suite
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
         run: |
-          node v2/tests/smoke.mjs
+          node v2/tests/career-dna-regression.mjs
           node v2/tests/research-measures.mjs
           node v2/tests/relationship-smoke.mjs
           node v2/tests/application-flow.mjs
           node v2/tests/backup-restore.mjs
           node v2/tests/inje-classroom.mjs
-      - name: Run production-root browser smoke tests
+      - name: Run production-root regression suite
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/
         run: |
-          node v2/tests/smoke.mjs
+          node v2/tests/career-dna-regression.mjs
           node v2/tests/research-measures.mjs
           node v2/tests/relationship-smoke.mjs
           node v2/tests/application-flow.mjs
