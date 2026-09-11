@@ -10,7 +10,9 @@ on:
       - 'research-sync-config.js'
       - 'supabase/**'
       - 'docs/JOBFIT_DEVELOPMENT_RULES.md'
+      - 'docs/JOBFIT_RELEASE_GATE.md'
       - '.github/workflows/jobfit-v2-check.yml'
+      - '.github/workflows/jobfit-live-production.yml'
   push:
     branches:
       - main
@@ -22,11 +24,18 @@ on:
       - 'research-sync-config.js'
       - 'supabase/**'
       - 'docs/JOBFIT_DEVELOPMENT_RULES.md'
+      - 'docs/JOBFIT_RELEASE_GATE.md'
       - '.github/workflows/jobfit-v2-check.yml'
+      - '.github/workflows/jobfit-live-production.yml'
+
+concurrency:
+  group: jobfit-regression-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   syntax-and-contracts:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -47,6 +56,7 @@ jobs:
           node --check v2/tests/smoke.mjs
           node --check v2/tests/career-dna-regression.mjs
           node --check v2/tests/week-isolation-regression.mjs
+          node --check v2/tests/live-production.mjs
           node --check v2/tests/research-measures.mjs
           node --check v2/tests/relationship-smoke.mjs
           node --check v2/tests/application-flow.mjs
@@ -79,8 +89,10 @@ jobs:
           test -f supabase/INSTRUCTOR_SETUP.md
           test -f supabase/functions/research-sync/index.ts
           test -f docs/JOBFIT_DEVELOPMENT_RULES.md
+          test -f docs/JOBFIT_RELEASE_GATE.md
           test -f v2/tests/career-dna-regression.mjs
           test -f v2/tests/week-isolation-regression.mjs
+          test -f v2/tests/live-production.mjs
           test -f v2/tests/research-measures.mjs
           test -f v2/tests/relationship-smoke.mjs
           test -f v2/tests/application-flow.mjs
@@ -132,6 +144,7 @@ jobs:
   browser-regression:
     needs: syntax-and-contracts
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -171,3 +184,15 @@ jobs:
       - name: Show static server log on failure
         if: failure()
         run: cat /tmp/jobfit-server.log || true
+
+  release-ready:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/jobfit-v2-build'
+    needs:
+      - syntax-and-contracts
+      - browser-regression
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mark exact tested SHA ready for production
+        run: |
+          echo "Release-ready commit: ${GITHUB_SHA}"
+          echo "Only this exact tested SHA may be promoted to main."
