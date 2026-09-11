@@ -1,4 +1,5 @@
 const ROOT_ID='stepRoot';
+const PROMPT_BUTTON_LABEL='Career DNA 인터뷰 프롬프트 만들기';
 
 function enhanceCareerDNA(){
   const root=document.getElementById(ROOT_ID);
@@ -29,7 +30,7 @@ function enhanceCareerDNA(){
 
   const makePrompt=root.querySelector('#makePrompt');
   if(makePrompt){
-    makePrompt.textContent='Career DNA 인터뷰 프롬프트 만들기';
+    if(makePrompt.textContent!==PROMPT_BUTTON_LABEL)makePrompt.textContent=PROMPT_BUTTON_LABEL;
     const actions=makePrompt.closest('.actions');
     if(actions&&!root.querySelector('#careerDnaAiGuide')){
       const guide=document.createElement('div');
