@@ -56,6 +56,19 @@ await run('STEP 0-13 all load with external measure API mocked',async page=>{
   }
 });
 
+await run('Career DNA gives students device and AI handoff guidance',async page=>{
+  await openCareerDNA(page);
+  await page.waitForSelector('#careerDnaDeviceNotice');
+  await page.waitForSelector('#careerDnaAiGuide');
+  const body=(await page.locator('#stepRoot').textContent())||'';
+  assert(body.includes('S형은 PC·모바일, L형은 PC에서 지원됩니다.'),'Work24 device guidance missing');
+  assert((await page.locator('.choiceCard[data-type="S"]').textContent()).includes('PC·모바일'),'S device support missing');
+  assert((await page.locator('.choiceCard[data-type="L"]').textContent()).includes('PC'),'L device support missing');
+  assert((await page.locator('#makePrompt').textContent()).includes('인터뷰 프롬프트 만들기'),'AI prompt button label is misleading');
+  assert(body.includes('프롬프트 만들기 → ② 프롬프트 복사'),'AI handoff order missing');
+  assert(body.includes('AI로 자동 전송되지는 않습니다.'),'AI auto-transfer clarification missing');
+});
+
 await run('S + VIA creates only available Career DNA modules',async page=>{
   await openCareerDNA(page);
   await fillRiasecStandard(page);
