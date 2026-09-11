@@ -12,7 +12,6 @@ on:
       - 'docs/JOBFIT_DEVELOPMENT_RULES.md'
       - 'docs/JOBFIT_RELEASE_GATE.md'
       - '.github/workflows/jobfit-v2-check.yml'
-      - '.github/workflows/jobfit-live-production.yml'
   push:
     branches:
       - main
@@ -26,7 +25,10 @@ on:
       - 'docs/JOBFIT_DEVELOPMENT_RULES.md'
       - 'docs/JOBFIT_RELEASE_GATE.md'
       - '.github/workflows/jobfit-v2-check.yml'
-      - '.github/workflows/jobfit-live-production.yml'
+
+permissions:
+  contents: read
+  actions: read
 
 concurrency:
   group: jobfit-regression-${{ github.ref }}
@@ -49,6 +51,7 @@ jobs:
           node --check v2/research.js
           node --check v2/researchBackend.js
           node --check v2/researchMeasures.js
+          node --check v2/careerDnaUx.js
           node --check instructor/app.js
           node --check instructor/centralBackend.js
           node --check instructor/researchData.js
@@ -75,6 +78,7 @@ jobs:
           test -f v2/styles.css
           test -f v2/guided.css
           test -f v2/portfolio.css
+          test -f v2/careerDnaUx.js
           test -f v2/research.js
           test -f v2/researchMeasures.js
           test -f v2/researchBackend.js
@@ -109,10 +113,12 @@ jobs:
           grep -q './guided.css' v2/index.html
           grep -q './portfolio.css' v2/index.html
           grep -q './app.js' v2/index.html
+          grep -q './careerDnaUx.js' v2/index.html
           grep -q './v2/styles.css' index.html
           grep -q './v2/guided.css' index.html
           grep -q './v2/portfolio.css' index.html
           grep -q './v2/app.js' index.html
+          grep -q './v2/careerDnaUx.js' index.html
           grep -q 'importBtn' v2/index.html
           grep -q 'importBtn' index.html
       - name: Guard student submission while allowing restricted measure retrieval
@@ -196,3 +202,44 @@ jobs:
         run: |
           echo "Release-ready commit: ${GITHUB_SHA}"
           echo "Only this exact tested SHA may be promoted to main."
+
+  live-production:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs:
+      - syntax-and-contracts
+      - browser-regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Wait for GitHub Pages to deploy this exact SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -e
+          for attempt in $(seq 1 60); do
+            RUNS=$(curl -fsSL \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "X-GitHub-Api-Version: 2026-03-10" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${GITHUB_SHA}&per_page=20")
+            STATE=$(printf '%s' "$RUNS" | python3 -c "import json,sys; d=json.load(sys.stdin); r=[x for x in d.get('workflow_runs',[]) if x.get('name')=='pages build and deployment']; print((r[0].get('conclusion') or r[0].get('status')) if r else 'waiting')")
+            echo "Pages deployment for ${GITHUB_SHA}: ${STATE} (attempt ${attempt}/60)"
+            if [ "$STATE" = "success" ]; then exit 0; fi
+            if [ "$STATE" = "failure" ] || [ "$STATE" = "cancelled" ] || [ "$STATE" = "timed_out" ] || [ "$STATE" = "action_required" ]; then exit 1; fi
+            sleep 10
+          done
+          echo 'Timed out waiting for GitHub Pages deployment.'
+          exit 1
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Verify deployed student Career DNA on desktop and mobile
+        env:
+          JOBFIT_LIVE_URL: https://kh31104.github.io/jobfit/?course=INJE2026
+        run: node v2/tests/live-production.mjs
