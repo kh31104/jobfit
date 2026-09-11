@@ -1,0 +1,32 @@
+name: Jobfit live production check
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - pages build and deployment
+    types:
+      - completed
+
+concurrency:
+  group: jobfit-live-production
+  cancel-in-progress: true
+
+jobs:
+  live-production:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Verify deployed student Career DNA
+        env:
+          JOBFIT_LIVE_URL: https://kh31104.github.io/jobfit/?course=INJE2026
+        run: node v2/tests/live-production.mjs
