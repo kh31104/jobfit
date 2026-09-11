@@ -19,6 +19,8 @@ async function run(name,viewport){
 
     await page.locator('.stepBtn[data-step="1"]').click();
     await page.waitForSelector('#makePrompt');
+    await page.waitForSelector('#careerDnaDeviceNotice');
+    await page.waitForSelector('#careerDnaAiGuide');
     const body=(await page.locator('#stepRoot').textContent())||'';
     assert(body.includes('Career DNA'),'Career DNA heading missing');
     assert(body.includes('현재 완료한 자료만으로 Career DNA 인터뷰를 시작'),'Partial-completion guidance missing');
@@ -27,6 +29,10 @@ async function run(name,viewport){
     assert(body.includes('추후 추가 가능'),'Work value optional guidance missing');
     assert(body.includes('VIA 강점 TOP5'),'VIA section missing');
     assert(body.includes('교육용 · 선택'),'VIA optional guidance missing');
+    assert(body.includes('S형은 PC·모바일, L형은 PC에서 지원됩니다.'),'Work24 device guidance missing');
+    assert(body.includes('프롬프트 만들기 → ② 프롬프트 복사'),'AI handoff steps missing');
+    assert(body.includes('AI로 자동 전송되지는 않습니다.'),'AI data-transfer clarification missing');
+    assert((await page.locator('#makePrompt').textContent()).includes('인터뷰 프롬프트 만들기'),'Prompt button label is misleading');
 
     if(viewport.width<=480){
       const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
