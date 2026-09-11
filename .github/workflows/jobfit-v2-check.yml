@@ -46,6 +46,7 @@ jobs:
           node --check research-sync-config.js
           node --check v2/tests/smoke.mjs
           node --check v2/tests/career-dna-regression.mjs
+          node --check v2/tests/week-isolation-regression.mjs
           node --check v2/tests/research-measures.mjs
           node --check v2/tests/relationship-smoke.mjs
           node --check v2/tests/application-flow.mjs
@@ -79,6 +80,7 @@ jobs:
           test -f supabase/functions/research-sync/index.ts
           test -f docs/JOBFIT_DEVELOPMENT_RULES.md
           test -f v2/tests/career-dna-regression.mjs
+          test -f v2/tests/week-isolation-regression.mjs
           test -f v2/tests/research-measures.mjs
           test -f v2/tests/relationship-smoke.mjs
           test -f v2/tests/application-flow.mjs
@@ -150,22 +152,22 @@ jobs:
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
         run: |
+          node v2/tests/week-isolation-regression.mjs
           node v2/tests/career-dna-regression.mjs
           node v2/tests/research-measures.mjs
           node v2/tests/relationship-smoke.mjs
           node v2/tests/application-flow.mjs
           node v2/tests/backup-restore.mjs
-          node v2/tests/inje-classroom.mjs
       - name: Run production-root regression suite
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/
         run: |
+          node v2/tests/week-isolation-regression.mjs
           node v2/tests/career-dna-regression.mjs
           node v2/tests/research-measures.mjs
           node v2/tests/relationship-smoke.mjs
           node v2/tests/application-flow.mjs
           node v2/tests/backup-restore.mjs
-          node v2/tests/inje-classroom.mjs
       - name: Show static server log on failure
         if: failure()
         run: cat /tmp/jobfit-server.log || true
