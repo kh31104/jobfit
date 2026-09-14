@@ -48,7 +48,7 @@ async function run(name,viewport){
     await page.locator('#makePrompt').click();
 
     const prompt=(await page.locator('#promptBox').textContent())||'';
-    assert(prompt.includes('[직업흥미 · RIASEC]'),'RIASEC module missing from live prompt');
+    assert(prompt.includes('[직업흥미 · 고용24 S형(개정)]'),'RIASEC module missing from live prompt');
     assert(prompt.includes('[VIA 강점 · 교육용 참고자료]'),'VIA module missing from live prompt');
     assert(!prompt.includes('[직업가치]'),'Unentered work values must not appear in live prompt');
     assert(!prompt.includes('[성격 5요인 · L형]'),'Default S-type flow must not add Big5 module');
