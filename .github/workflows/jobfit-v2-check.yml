@@ -47,6 +47,8 @@ jobs:
         shell: bash
         run: |
           set -e
+          node --check v2/bootstrap.js
+          node --check v2/storageContinuity.js
           node --check v2/app.js
           node --check v2/research.js
           node --check v2/researchBackend.js
@@ -57,6 +59,7 @@ jobs:
           node --check instructor/researchData.js
           node --check research-sync-config.js
           node --check v2/tests/smoke.mjs
+          node --check v2/tests/storage-continuity.mjs
           node --check v2/tests/career-dna-regression.mjs
           node --check v2/tests/week-isolation-regression.mjs
           node --check v2/tests/live-production.mjs
@@ -78,6 +81,8 @@ jobs:
           test -f v2/styles.css
           test -f v2/guided.css
           test -f v2/portfolio.css
+          test -f v2/bootstrap.js
+          test -f v2/storageContinuity.js
           test -f v2/careerDnaUx.js
           test -f v2/research.js
           test -f v2/researchMeasures.js
@@ -94,6 +99,7 @@ jobs:
           test -f supabase/functions/research-sync/index.ts
           test -f docs/JOBFIT_DEVELOPMENT_RULES.md
           test -f docs/JOBFIT_RELEASE_GATE.md
+          test -f v2/tests/storage-continuity.mjs
           test -f v2/tests/career-dna-regression.mjs
           test -f v2/tests/week-isolation-regression.mjs
           test -f v2/tests/live-production.mjs
@@ -112,13 +118,15 @@ jobs:
           grep -q './styles.css' v2/index.html
           grep -q './guided.css' v2/index.html
           grep -q './portfolio.css' v2/index.html
-          grep -q './app.js' v2/index.html
-          grep -q './careerDnaUx.js' v2/index.html
+          grep -q './bootstrap.js' v2/index.html
           grep -q './v2/styles.css' index.html
           grep -q './v2/guided.css' index.html
           grep -q './v2/portfolio.css' index.html
-          grep -q './v2/app.js' index.html
-          grep -q './v2/careerDnaUx.js' index.html
+          grep -q './v2/bootstrap.js' index.html
+          grep -q 'storageContinuity.js' v2/bootstrap.js
+          grep -q 'app.js' v2/bootstrap.js
+          grep -q 'injeClassroom.js' v2/bootstrap.js
+          grep -q 'careerDnaUx.js' v2/bootstrap.js
           grep -q 'importBtn' v2/index.html
           grep -q 'importBtn' index.html
       - name: Guard student submission while allowing restricted measure retrieval
@@ -171,6 +179,7 @@ jobs:
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
         run: |
+          node v2/tests/storage-continuity.mjs
           node v2/tests/week-isolation-regression.mjs
           node v2/tests/career-dna-regression.mjs
           node v2/tests/research-measures.mjs
@@ -181,6 +190,7 @@ jobs:
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/
         run: |
+          node v2/tests/storage-continuity.mjs
           node v2/tests/week-isolation-regression.mjs
           node v2/tests/career-dna-regression.mjs
           node v2/tests/research-measures.mjs
