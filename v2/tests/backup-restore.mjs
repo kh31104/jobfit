@@ -34,7 +34,7 @@ await run('Learner JSON backup restores data and keeps course constraints',async
   await page.locator('#importBtn').click();
   const chooser=await chooserPromise;
   await chooser.setFiles({name:'jobfit-backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(backup))});
-  await page.waitForSelector('#stepRoot h2');
+  await page.waitForFunction(()=>document.querySelector('#stepRoot h2')?.textContent?.includes('나의 경험에서 직무역량 찾기'));
   assert((await page.locator('#stepRoot h2').first().textContent()).includes('나의 경험에서 직무역량 찾기'),'Imported active step was not restored');
   const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   assert(stored.profile.anonCode==='JF26-REST99','Anonymous code was not restored');
