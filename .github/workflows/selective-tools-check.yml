@@ -6,6 +6,8 @@ on:
     paths:
       - 'v2/selective.html'
       - 'v2/selective.js'
+      - 'v2/selective-composer.js'
+      - 'v2/app.js'
       - 'v2/tests/selective-*.mjs'
       - '.github/workflows/selective-tools-check.yml'
   push:
@@ -14,6 +16,8 @@ on:
     paths:
       - 'v2/selective.html'
       - 'v2/selective.js'
+      - 'v2/selective-composer.js'
+      - 'v2/app.js'
       - 'v2/tests/selective-*.mjs'
       - '.github/workflows/selective-tools-check.yml'
 
@@ -39,11 +43,18 @@ jobs:
           set -e
           test -f v2/selective.html
           test -f v2/selective.js
+          test -f v2/selective-composer.js
           test -f v2/tests/selective-industry-company.mjs
+          test -f v2/tests/selective-composer.mjs
           node --check v2/selective.js
+          node --check v2/selective-composer.js
+          node --check v2/app.js
           node --check v2/tests/selective-industry-company.mjs
+          node --check v2/tests/selective-composer.mjs
           grep -q '연구 제출 없음' v2/selective.html
           grep -q 'jobfit:v2:selective:industry-company' v2/selective.js
+          grep -q 'AI Job Portfolio' v2/selective-composer.js
+          grep -q 'jobfit:v2:selective-run:' v2/app.js
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
@@ -52,11 +63,14 @@ jobs:
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/jobfit-selective-server.log 2>&1 &
           sleep 2
-          curl --fail http://127.0.0.1:8765/v2/selective.html?tool=industry-company >/dev/null
+          curl --fail http://127.0.0.1:8765/v2/selective.html >/dev/null
+          curl --fail 'http://127.0.0.1:8765/v2/selective.html?tool=industry-company' >/dev/null
       - name: Run selective tool desktop and mobile regression
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
-        run: node v2/tests/selective-industry-company.mjs
+        run: |
+          node v2/tests/selective-composer.mjs
+          node v2/tests/selective-industry-company.mjs
       - name: Show server log on failure
         if: failure()
         run: cat /tmp/jobfit-selective-server.log || true
@@ -94,7 +108,9 @@ jobs:
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
-      - name: Verify deployed selective tool on desktop and mobile
+      - name: Verify deployed selective tools on desktop and mobile
         env:
-          JOBFIT_TEST_URL: https://kh31104.github.io/jobfit/
-        run: node v2/tests/selective-industry-company.mjs
+          JOBFIT_TEST_URL: https://kh31104.github.io/jobfit/v2/
+        run: |
+          node v2/tests/selective-composer.mjs
+          node v2/tests/selective-industry-company.mjs
