@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Jobfit Selective Career Tools</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./guided.css">
+  <style>
+    body{background:#f7f8fb}
+    .selectiveShell{max-width:1180px;margin:0 auto;padding:24px 16px 56px}
+    .selectiveTop{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+    .selectiveTop h1{margin:4px 0 6px;font-size:30px}
+    .selectiveTop p{margin:0;color:#586174}
+    .selectiveMeta{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .toolGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+    .toolCard{display:block;padding:20px;border:1px solid #dfe3ec;border-radius:18px;background:#fff;text-decoration:none;color:inherit;box-shadow:0 8px 24px rgba(30,41,59,.05)}
+    .toolCard:hover{transform:translateY(-1px)}
+    .toolCard h3{margin:8px 0}
+    .toolCard p{margin:0;color:#667085;line-height:1.55}
+    .toolCard .badge{display:inline-flex}
+    .toolCard.muted{opacity:.58;pointer-events:none}
+    .standaloneNotice{margin:14px 0 18px}
+    .selectiveFooter{margin-top:24px;color:#667085;font-size:13px;text-align:center}
+    @media(max-width:640px){.selectiveTop{display:block}.selectiveMeta{justify-content:flex-start;margin-top:12px}.selectiveTop h1{font-size:25px}}
+  </style>
+</head>
+<body>
+  <main class="selectiveShell">
+    <header class="selectiveTop">
+      <div>
+        <div class="kicker">JOBFIT · SELECTIVE</div>
+        <h1>선택형 Career Tools</h1>
+        <p>한 학기 전체 과정을 하지 않아도, 필요한 수업 모듈만 바로 사용할 수 있습니다.</p>
+      </div>
+      <div class="selectiveMeta">
+        <span class="badge">수업코드 불필요</span>
+        <span class="badge">연구 제출 없음</span>
+        <span class="badge">브라우저 자동저장</span>
+      </div>
+    </header>
+
+    <div class="callout info standaloneNotice"><b>다른 강의·특강용 화면입니다.</b><br>학생의 입력내용은 현재 브라우저에만 저장되며 교수자에게 자동 전송되지 않습니다. 수업이 끝나기 전에 결과 JSON을 내려받아 보관할 수 있습니다.</div>
+
+    <section id="toolPicker" class="card">
+      <div class="sectionHead"><div><div class="kicker">CHOOSE A TOOL</div><h2>오늘 사용할 모듈 선택</h2><p>현재는 7주차 산업·기업 탐색 모듈을 우선 제공합니다.</p></div></div>
+      <div class="toolGrid">
+        <a class="toolCard" href="./selective.html?tool=industry-company">
+          <span class="badge">7주차 · 사용 가능</span>
+          <h3>Industry & Company Explorer</h3>
+          <p>관심 직무를 기준으로 산업을 탐색하고, 나의 가치관을 기업 선택 기준으로 연결합니다.</p>
+        </a>
+        <div class="toolCard muted"><span class="badge">추가 예정</span><h3>Career DNA</h3><p>자기이해 모듈을 선택형 강의용으로 분리할 예정입니다.</p></div>
+        <div class="toolCard muted"><span class="badge">추가 예정</span><h3>Experience & Competency</h3><p>경험에서 행동근거와 역량키워드를 추출하는 선택형 모듈입니다.</p></div>
+      </div>
+    </section>
+
+    <section id="toolRoot" hidden></section>
+    <div class="selectiveFooter">Jobfit Selective Career Tools · 입력내용은 이 기기에만 저장됩니다.</div>
+  </main>
+  <script type="module" src="./selective.js"></script>
+</body>
+</html>
