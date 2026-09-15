@@ -5,7 +5,7 @@ const STORAGE_KEY='jobfit:v2:learner';
 const MAX_BACKUP_BYTES=5*1024*1024;
 
 const STEPS=[
-  ['Career Start','1주차'],['Career DNA','3주차'],['Experience & Competency','4주차'],['Job Explorer','6주차'],['Job Deep Dive','6주차'],['Industry & Company','7주차'],['Career Fit Map','8주차'],['JD Analyzer','9주차'],['Career Asset Match','9주차'],['Resume Lab','9주차'],['Cover Letter Lab','10주차'],['Interview Lab','11–12주차'],['Human-First Check','13주차'],['AI Job Portfolio','14주차']
+  ['Career Start','1주차'],['Career DNA','3주차'],['Career Roadmap','4주차'],['Job Explorer','6주차'],['Job Deep Dive','6주차'],['Industry & Company','7주차'],['Career Fit Map','8주차'],['JD Analyzer','9주차'],['Career Asset Match','9주차'],['Resume Lab','9주차'],['Cover Letter Lab','10주차'],['Interview Lab','11–12주차'],['Human-First Check','13주차'],['AI Job Portfolio','14주차']
 ];
 
 const COURSE_PRESETS={
@@ -78,16 +78,58 @@ async function syncResearchData(){
   saveState({research:{...state.research,syncToken,consent:{agreed:true,version:status.consentVersion,agreedAt:new Date().toISOString(),documentUrl:status.consentDocumentUrl}},meta:{lastResearchSyncAt:result.received_at||new Date().toISOString()}});
   return result;
 }
-async function shareBackup(){const {file,exportedAt}=makeBackupFile();if(!navigator.share||!navigator.canShare?.({files:[file]})){downloadJSON();return {shared:false,fallback:true}}try{await navigator.share({title:'Jobfit 백업파일',text:`Jobfit ${state.profile.anonCode||''} 백업파일입니다. 다음 수업 전까지 보관하세요.`,files:[file]});markBackup('share',exportedAt);toast('공유가 완료되었습니다. 보관 완료 체크를 눌러주세요.');return {shared:true,fallback:false}}catch(err){if(err?.name!=='AbortError')toast('공유하지 못했습니다. 백업 저장 버튼을 이용해 주세요.');return {shared:false,fallback:false,cancelled:err?.name==='AbortError'}}}
-function requestImport(){const file=document.getElementById('importFile');if(file){file.value='';file.click()}}
-async function importJSONFile(file){if(!file)return;if(file.size>MAX_BACKUP_BYTES){toast('백업 파일이 너무 큽니다. 5MB 이하 JSON 파일을 선택하세요.');return;}try{const text=await file.text(),parsed=JSON.parse(text),clean=sanitizeBackup(parsed);validateBackup(clean);const code=clean.profile?.anonCode||'코드 없음';const ok=confirm(`백업 ${code}을(를) 불러오면 현재 이 브라우저의 Jobfit 데이터가 교체됩니다. 계속할까요?`);if(!ok)return;state=deepMerge(DEFAULT_STATE,clean);state.activeStep=Number.isInteger(Number(state.activeStep))?Math.max(0,Math.min(13,Number(state.activeStep))):0;state.meta=state.meta||{};state.meta.restoredAt=new Date().toISOString();applyCourseConstraints();localStorage.setItem(STORAGE_KEY,JSON.stringify(state));renderHeroMeta();renderNav();await navigate(state.activeStep,{skipSave:true});toast(`백업을 복구했습니다: ${state.profile?.anonCode||'Jobfit 데이터'}`);}catch(err){console.error(err);toast(`백업을 불러오지 못했습니다: ${err.message||'파일을 확인하세요.'}`)}}
-function sanitizeBackup(value){if(Array.isArray(value))return value.map(sanitizeBackup);if(value&&typeof value==='object'){const out={};for(const [k,v] of Object.entries(value)){if(['__proto__','prototype','constructor'].includes(k))continue;out[k]=sanitizeBackup(v)}return out}return value}
-function validateBackup(x){if(!x||typeof x!=='object'||Array.isArray(x))throw new Error('Jobfit JSON 형식이 아닙니다.');const version=Number(x.version);if(!Number.isFinite(version)||version<2)throw new Error('지원하지 않는 이전 버전입니다.');if(!x.profile||typeof x.profile!=='object')throw new Error('프로필 정보가 없습니다.');if(!x.assessments||typeof x.assessments!=='object')throw new Error('검사·경험 데이터 구조가 없습니다.');if(!x.artifacts||typeof x.artifacts!=='object')throw new Error('Career Roadmap 데이터 구조가 없습니다.')}
-function applyCourseCode(code){const c=String(code||'').trim();if(!c)return;const q=new URLSearchParams(location.search);q.set('course',c);q.delete('mode');q.delete('lockMode');q.delete('interest');q.delete('research');q.delete('measures');location.search=q.toString()}
-function renderHeroMeta(){const el=document.getElementById('heroMeta'),bits=[];bits.push(state.mode==='full'?'전체 Career Roadmap':'선택형 Career Tools');if(state.profile.courseCode)bits.push(`수업 ${state.profile.courseCode}`);if(state.profile.anonCode)bits.push(state.profile.anonCode);if(courseConfig.interest!=='CHOICE')bits.push(`지정검사 ${courseConfig.interest}형`);if(courseConfig.researchMeasures)bits.push('PRE/POST 측정');el.innerHTML=bits.map(x=>`<span>${escapeHtml(x)}</span>`).join('')}
-function renderNav(){const nav=document.getElementById('stepNav');if(!nav)return;nav.innerHTML=`<div class="sideTitle">${state.mode==='full'?'CAREER ROADMAP':'SELECT A CAREER TOOL'}</div>`+STEPS.map((s,i)=>`<button class="stepBtn ${i===state.activeStep?'active':''}" data-step="${i}"><span class="stepN">${isStepComplete(i,state)?'✓':i}</span><span>${s[0]}<span class="stepMeta">${s[1]}</span></span></button>`).join('');nav.querySelectorAll('.stepBtn').forEach(b=>b.addEventListener('click',()=>navigate(Number(b.dataset.step))))}
-function isStepComplete(i,s){const a=s.artifacts||{},d=s.assessments||{};switch(i){case 0:return !!(s.profile?.anonCode&&s.baseline?.jobDecision);case 1:return !!d.careerDNA?.interest?.type;case 2:return !!d.experienceCompetency?.experiences?.length;case 3:return !!a.jobExplorer?.targets?.length;case 4:return !!Object.keys(a.jobDeepDive?.analyses||{}).length;case 5:return !!(a.industryCompany?.targetIndustries?.length&&a.industryCompany?.targetCompanies?.length);case 6:return !!a.careerFit?.selectedId;case 7:return !!(a.jdAnalyzer?.selectedId&&a.jdAnalyzer?.postings?.length);case 8:return !!a.careerAssets?.assets?.length;case 9:return !!a.resumeLab?.items?.length;case 10:return !!a.coverLetterLab?.questions?.length;case 11:return !!a.interviewLab?.questions?.length;case 12:return !!a.humanFirst?.items?.length;case 13:return !!a.jobPortfolio?.finalChecks?.facts;default:return false}}
-async function navigate(step,{skipSave=false}={}){state.activeStep=Math.max(0,Math.min(13,step));if(!skipSave)saveState();else{renderHeroMeta();renderNav()}const root=document.getElementById('stepRoot');root.innerHTML='<div class="card placeholder"><b>불러오는 중</b>STEP을 준비하고 있습니다.</div>';try{const mod=await import(`./steps/step${state.activeStep}.js?v=13`);root.innerHTML='';await mod.render(context)}catch(err){console.error(err);root.innerHTML=`<div class="card callout warn"><b>STEP ${state.activeStep} 화면을 불러오지 못했습니다.</b><br>새로고침 후 다시 시도해 주세요.<br><small>${escapeHtml(err.message)}</small></div>`}scrollTo({top:0,behavior:'smooth'})}
 
-const context={STEPS,getState,saveState,toast,escapeHtml,makeAnonCode,courseConfig,navigate,applyCourseCode,downloadJSON,downloadResearchJSON,shareBackup,researchSyncStatus,syncResearchData};
-document.getElementById('exportBtn').addEventListener('click',downloadJSON);document.getElementById('researchExportBtn')?.addEventListener('click',downloadResearchJSON);document.getElementById('importBtn').addEventListener('click',requestImport);document.getElementById('importFile').addEventListener('change',e=>importJSONFile(e.target.files?.[0]));renderHeroMeta();renderNav();navigate(state.activeStep||0);
+function renderNav(){
+  const nav=document.getElementById('stepNav'),allowed=allowedSteps();nav.innerHTML='';
+  STEPS.forEach((s,i)=>{if(!allowed.includes(i))return;const b=document.createElement('button');b.className=`stepBtn ${state.activeStep===i?'active':''}`;b.dataset.step=i;b.innerHTML=`<span class="stepN">${isStepComplete(i,state)?'✓':i}</span><span><b>${escapeHtml(s[0])}</b><small>${escapeHtml(s[1])}</small></span>`;b.onclick=()=>navigate(i);nav.appendChild(b)});
+}
+function renderHeroMeta(){
+  const modeEl=document.getElementById('modeState');if(modeEl)modeEl.textContent=state.mode==='full'?'전체 Career Roadmap':'선택형 수업';
+  const courseEl=document.getElementById('courseState');if(courseEl)courseEl.textContent=courseConfig.course||'기본 코스';
+  const savedEl=document.getElementById('saveState');if(savedEl&&!['저장됨','저장 중…'].includes(savedEl.textContent))savedEl.textContent='이 브라우저에 자동 저장';
+}
+function allowedSteps(){
+  if(state.mode==='full')return STEPS.map((_,i)=>i);
+  const selected=state.selectedModules||[];const set=new Set([0,...selected]);return [...set].filter(n=>Number.isInteger(n)&&n>=0&&n<STEPS.length).sort((a,b)=>a-b)
+}
+function navigate(step){const n=Number(step);if(!allowedSteps().includes(n)){toast('현재 코스에서 선택되지 않은 단계입니다.');return}state.activeStep=n;saveState();loadStep(n)}
+async function loadStep(n){
+  const root=document.getElementById('stepRoot');root.innerHTML='<div class="card"><div class="placeholder">화면을 불러오는 중입니다…</div></div>';
+  try{const mod=await import(`./steps/step${n}.js?v=13`);await mod.render(ctx)}catch(e){console.error(e);root.innerHTML=`<div class="card"><div class="callout warn"><b>화면을 불러오지 못했습니다.</b><br>${escapeHtml(e.message||String(e))}</div></div>`}
+}
+function isStepComplete(i,s){
+  if(i===0)return !!s.artifacts?.careerStartProfile?.statement;
+  if(i===1)return !!s.assessments?.careerDNA?.interest?.type;
+  if(i===2)return (s.assessments?.experienceCompetency?.experiences||[]).length>0;
+  if(i===3)return (s.artifacts?.jobList||[]).length>0;
+  if(i===4)return (s.artifacts?.jobCards||[]).length>0;
+  if(i===5)return (s.artifacts?.companyCards||[]).length>0;
+  if(i===6)return !!s.artifacts?.careerFitMap?.selectedJob;
+  if(i===7)return (s.artifacts?.jdAnalysis||[]).length>0;
+  if(i===8)return (s.artifacts?.careerAssetMatch||[]).length>0;
+  if(i===9)return !!s.artifacts?.resume?.master;
+  if(i===10)return !!s.artifacts?.coverLetter?.master;
+  if(i===11)return (s.artifacts?.interviewBank||[]).length>0;
+  if(i===12)return !!s.artifacts?.humanFirst?.checked;
+  if(i===13)return !!s.artifacts?.portfolio?.complete;
+  return false;
+}
+async function applyCoursePreset(){
+  if(courseConfig.course)document.getElementById('courseInput').value=courseConfig.course;
+  if(courseConfig.lockMode){document.getElementById('modeSelect').value=courseConfig.mode||'full';document.getElementById('modeSelect').disabled=true;document.getElementById('modeHint').textContent='이 수업은 교수자가 전체 로드맵 모드로 고정했습니다.'}
+  if(courseConfig.mode&&['full','selective'].includes(courseConfig.mode)){state.mode=courseConfig.mode;saveState()}
+}
+
+const ctx={getState,saveState,navigate,toast,escapeHtml,courseConfig,STEPS};
+await applyCoursePreset();renderHeroMeta();renderNav();await loadStep(state.activeStep);
+
+document.getElementById('modeSelect').addEventListener('change',e=>{if(courseConfig.lockMode){e.target.value=courseConfig.mode;toast('이 수업은 모드가 고정되어 있습니다.');return}state.mode=e.target.value;saveState();if(state.mode==='selective')navigate(0)});
+document.getElementById('exportBtn').addEventListener('click',downloadJSON);
+document.getElementById('importBtn').addEventListener('click',()=>document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;if(file.size>MAX_BACKUP_BYTES){toast('백업파일이 너무 큽니다. 5MB 이하의 Jobfit JSON을 선택해 주세요.');e.target.value='';return}try{const obj=JSON.parse(await file.text());if(!obj||typeof obj!=='object'||Array.isArray(obj))throw new Error('객체 형식 아님');if(!String(obj.version||'').match(/^2(?:\.|$)/))throw new Error('지원하지 않는 버전');state=deepMerge(DEFAULT_STATE,obj);applyCourseConstraints();saveState();await loadStep(state.activeStep);toast('백업을 불러왔습니다. 이어서 진행하세요.')}catch(err){console.warn(err);toast('Jobfit 백업파일을 확인해 주세요.')}finally{e.target.value=''}});
+document.getElementById('researchExportBtn')?.addEventListener('click',downloadResearchJSON);
+document.getElementById('researchSyncBtn')?.addEventListener('click',async()=>{try{const r=await syncResearchData();toast(`연구 DB 제출 완료 · ${r.snapshot_id||'저장됨'}`)}catch(e){toast(e.message||'연구 DB 제출에 실패했습니다.')}});
+document.getElementById('courseInput').addEventListener('input',e=>{state.profile.courseCode=e.target.value.trim();saveState()});
+
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveState()});
+window.addEventListener('beforeunload',()=>saveState());
