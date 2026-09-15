@@ -49,8 +49,9 @@ async function run(name,viewport){
 
     const prompt=(await page.locator('#promptBox').textContent())||'';
     assert(prompt.includes('[직업흥미 · 고용24 S형(개정)]'),'RIASEC module missing from live prompt');
-    assert(prompt.includes('[VIA 강점 · 교육용 참고자료]'),'VIA module missing from live prompt');
-    assert(!prompt.includes('[직업가치]'),'Unentered work values must not appear in live prompt');
+    assert(prompt.includes('[VIA 강점 · 교육용 참고자료 · 부분입력]'),'Partial VIA module missing from live prompt');
+    assert(prompt.includes('VIA가 2/5만 입력'),'Partial VIA warning missing from live prompt');
+    assert(!prompt.includes('[직업가치'),'Unentered work values must not appear in live prompt');
     assert(!prompt.includes('[성격 5요인 · L형]'),'Default S-type flow must not add Big5 module');
     assert(prompt.includes('질문은 한 번에 반드시 하나만 한다.'),'One-question interview rule missing');
     assert(prompt.includes('첫 응답에서는 최종 해석이나 직업추천을 제시하지 말고'),'First-response job-recommendation guard missing');
@@ -58,6 +59,8 @@ async function run(name,viewport){
 
     const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
     assert(saved?.assessments?.careerDNA?.promptMeta?.version==='career-dna-dynamic-v1','Career DNA prompt version not persisted');
+    assert(saved?.assessments?.careerDNA?.promptMeta?.moduleStatus?.via?.status==='partial','Live partial VIA status not persisted');
+    assert(saved?.assessments?.careerDNA?.promptMeta?.moduleStatus?.via?.count===2,'Live partial VIA count mismatch');
 
     await page.locator('#nextStep').click();
     await page.waitForSelector('#stepRoot h2');
