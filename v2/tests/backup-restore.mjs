@@ -35,7 +35,7 @@ await run('Learner JSON backup restores data and keeps course constraints',async
   const chooser=await chooserPromise;
   await chooser.setFiles({name:'jobfit-backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(backup))});
   await page.waitForSelector('#stepRoot h2');
-  assert((await page.locator('#stepRoot h2').first().textContent()).includes('Career Roadmap'),'Imported active step was not restored');
+  assert((await page.locator('#stepRoot h2').first().textContent()).includes('나의 경험에서 직무역량 찾기'),'Imported active step was not restored');
   const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   assert(stored.profile.anonCode==='JF26-REST99','Anonymous code was not restored');
   assert(stored.profile.anonCode!==before,'Old state was not replaced');
