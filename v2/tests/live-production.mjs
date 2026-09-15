@@ -20,7 +20,7 @@ async function run(name,viewport){
     assert((await page.locator('[data-anchor-item]').count())===240,'Deployed Career Anchor must expose 40 items x 6 choices');
     assert((await page.locator('#makePrompt').textContent()).includes('자기이해 통합하기'),'Week3 prompt button label incorrect');
 
-    if(viewport.width<=480){const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);assert(overflow<=2,`Mobile horizontal overflow detected: ${overflow}px`)}
+    if(viewport.width<=480){const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);assert(overflow<=2,`Week3 mobile horizontal overflow detected: ${overflow}px`)}
 
     for(const i of [0,1,2,3,4])await page.locator('[data-strength]').nth(i).click();
     await page.locator('#via_0').fill('학구열');await page.locator('#via_1').fill('신중성');await page.locator('#mi_0').selectOption({label:'자기성찰지능'});await page.locator('#compare_repeat').fill('학습과 신중함이 반복해서 보인다.');
@@ -30,10 +30,18 @@ async function run(name,viewport){
     const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));assert(saved?.assessments?.careerDNA?.promptMeta?.version==='career-dna-standard-v1','Prompt version not persisted');
     await page.locator('#saveDNA').click();await page.waitForTimeout(100);const saved2=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));assert(saved2?.assessments?.careerDNA?.interest?.type==='STANDARD','STEP1 compatibility completion marker missing');
 
+    await page.locator('.stepBtn[data-step="2"]').click();await page.waitForSelector('#saveRoadmap');
+    const week4=(await page.locator('#stepRoot').textContent())||'';
+    for(const text of ['Career Roadmap','지난주 Career DNA 다시보기','Career DNA 경험검증 인터뷰','My Best 3 Experience','대표 경험 Evidence Interview','Career Story','Career Theme','Career Direction','1개월 Career Experiment'])assert(week4.includes(text),`Missing deployed Week4 module: ${text}`);
+    assert(await page.locator('#makeDnaInterviewPrompt').count()===1,'Week4 DNA validation prompt control missing');
+    assert(await page.locator('#makeInterviewPrompt').count()===1,'Week4 evidence interview control missing');
+    assert(await page.locator('#saveRoadmap').count()===1,'Week4 roadmap save control missing');
+    if(viewport.width<=480){const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);assert(overflow<=2,`Week4 mobile horizontal overflow detected: ${overflow}px`)}
+
     if(errors.length)throw new Error(errors.join('\n'));console.log(`PASS ${name}`);
   }catch(error){failed=true;console.error(`FAIL ${name}\n${error.stack||error}`)}finally{await context.close()}
 }
 
-await run('live production desktop Career DNA standard set',{width:1280,height:1000});
-await run('live production mobile Career DNA standard set',{width:390,height:844});
+await run('live production desktop Career DNA + Career Roadmap',{width:1280,height:1000});
+await run('live production mobile Career DNA + Career Roadmap',{width:390,height:844});
 await browser.close();if(failed)process.exit(1);
