@@ -1,6 +1,7 @@
 const params=new URLSearchParams(location.search);
 const course=(params.get('course')||'').trim().toUpperCase();
 const isInjeClass=['INJE2026','INJE-2026-2'].includes(course);
+const researchOptIn=params.get('measures')==='true';
 const STORAGE_KEY='jobfit:v2:learner';
 
 if(isInjeClass){
@@ -47,10 +48,12 @@ if(isInjeClass){
   const markWeek1Nav=()=>{const first=document.querySelector('.stepBtn[data-step="0"] .stepN');if(first){const desired=week1Complete()?'✓':'0';if(first.textContent!==desired)first.textContent=desired}};
   const makeStorageCopyAccurate=()=>{const saveLabel=document.getElementById('saveState');if(saveLabel&&saveLabel.textContent==='이 브라우저에 자동 저장')saveLabel.textContent='이 브라우저에 저장'};
   const removeResearchSemesterUI=()=>{
+    if(researchOptIn)return;
     const researchExport=document.getElementById('researchExportBtn');if(researchExport&&!researchExport.classList.contains('hidden'))researchExport.classList.add('hidden');
     document.querySelectorAll('.researchTask,.centralResearchTask,.researchMeasurePanel,.strengthMeasurePanel,.measureStepLabel').forEach(el=>{if(!el.classList.contains('hidden'))el.classList.add('hidden')});
   };
   const rewriteWeek1Copy=()=>{
+    if(researchOptIn)return;
     const root=document.getElementById('stepRoot');if(!root)return;
     const kicker=root.querySelector('.kicker');if(!kicker||!kicker.textContent.includes('STEP 0'))return;
     const mainCallout=[...root.querySelectorAll('.callout.good')].find(x=>x.textContent.includes('오늘 할 일'));
