@@ -28,13 +28,13 @@ await run('Learner JSON backup restores data and keeps course constraints',async
   await page.goto(`${base}?course=INJE2026`,{waitUntil:'networkidle'});
   await page.locator('#makeCodeBtn').click();
   const before=(await page.locator('#anonCode').textContent()).trim();
-  const backup={version:2.2,activeStep:2,mode:'selective',profile:{anonCode:'JF26-REST99',courseCode:'OTHER',institution:'다른기관'},baseline:{jobDecision:'탐색 중'},research:{consent:false,measurements:{pre:{},post:{}}},assessments:{careerDNA:{},experienceCompetency:{experiences:[{id:'exp1',title:'복구 테스트 경험',factChecked:true}]}},artifacts:{experienceMap:[{id:'exp1',title:'복구 테스트 경험'}]},meta:{createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}};
+  const backup={version:2.2,activeStep:2,mode:'full',profile:{anonCode:'JF26-REST99',courseCode:'OTHER',institution:'다른기관'},baseline:{jobDecision:'탐색 중'},research:{consent:false,measurements:{pre:{},post:{}}},assessments:{careerDNA:{},experienceCompetency:{experiences:[{id:'exp1',title:'복구 테스트 경험',factChecked:true}]}},artifacts:{experienceMap:[{id:'exp1',title:'복구 테스트 경험'}]},meta:{createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}};
   page.once('dialog',d=>d.accept());
   const chooserPromise=page.waitForEvent('filechooser');
   await page.locator('#importBtn').click();
   const chooser=await chooserPromise;
   await chooser.setFiles({name:'jobfit-backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(backup))});
-  await page.waitForSelector('#stepRoot h2');
+  await page.waitForFunction(()=>document.querySelector('#stepRoot h2')?.textContent?.includes('나의 경험에서 직무역량 찾기'),null,{timeout:10000});
   assert((await page.locator('#stepRoot h2').first().textContent()).includes('나의 경험에서 직무역량 찾기'),'Imported active step was not restored');
   const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   assert(stored.profile.anonCode==='JF26-REST99','Anonymous code was not restored');
