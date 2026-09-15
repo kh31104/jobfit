@@ -1,0 +1,100 @@
+name: Jobfit selective tools checks
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'v2/selective.html'
+      - 'v2/selective.js'
+      - 'v2/tests/selective-*.mjs'
+      - '.github/workflows/selective-tools-check.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'v2/selective.html'
+      - 'v2/selective.js'
+      - 'v2/tests/selective-*.mjs'
+      - '.github/workflows/selective-tools-check.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: jobfit-selective-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  selective-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check selective tool syntax and files
+        run: |
+          set -e
+          test -f v2/selective.html
+          test -f v2/selective.js
+          test -f v2/tests/selective-industry-company.mjs
+          node --check v2/selective.js
+          node --check v2/tests/selective-industry-company.mjs
+          grep -q '연구 제출 없음' v2/selective.html
+          grep -q 'jobfit:v2:selective:industry-company' v2/selective.js
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start static server
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/jobfit-selective-server.log 2>&1 &
+          sleep 2
+          curl --fail http://127.0.0.1:8765/v2/selective.html?tool=industry-company >/dev/null
+      - name: Run selective tool desktop and mobile regression
+        env:
+          JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
+        run: node v2/tests/selective-industry-company.mjs
+      - name: Show server log on failure
+        if: failure()
+        run: cat /tmp/jobfit-selective-server.log || true
+
+  selective-live-production:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: selective-regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Wait for GitHub Pages to deploy this exact SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -e
+          for attempt in $(seq 1 60); do
+            RUNS=$(curl -fsSL \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "X-GitHub-Api-Version: 2026-03-10" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${GITHUB_SHA}&per_page=20")
+            STATE=$(printf '%s' "$RUNS" | python3 -c "import json,sys; d=json.load(sys.stdin); r=[x for x in d.get('workflow_runs',[]) if x.get('name')=='pages build and deployment']; print((r[0].get('conclusion') or r[0].get('status')) if r else 'waiting')")
+            echo "Pages deployment for ${GITHUB_SHA}: ${STATE} (attempt ${attempt}/60)"
+            if [ "$STATE" = "success" ]; then exit 0; fi
+            if [ "$STATE" = "failure" ] || [ "$STATE" = "cancelled" ] || [ "$STATE" = "timed_out" ] || [ "$STATE" = "action_required" ]; then exit 1; fi
+            sleep 10
+          done
+          exit 1
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Verify deployed selective tool on desktop and mobile
+        env:
+          JOBFIT_TEST_URL: https://kh31104.github.io/jobfit/
+        run: node v2/tests/selective-industry-company.mjs
