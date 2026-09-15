@@ -34,10 +34,12 @@ await run('Learner JSON backup restores data and keeps course constraints',async
   await page.locator('#importBtn').click();
   const chooser=await chooserPromise;
   await chooser.setFiles({name:'jobfit-backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(backup))});
-  await page.waitForFunction(()=>{try{const s=JSON.parse(localStorage.getItem('jobfit:v2:learner')||'{}');return s.profile?.anonCode==='JF26-REST99'&&s.activeStep===2}catch{return false}},{timeout:10000});
+  await page.waitForTimeout(1200);
   const afterImport=await page.evaluate(()=>({state:JSON.parse(localStorage.getItem('jobfit:v2:learner')||'{}'),heading:document.querySelector('#stepRoot h2')?.textContent||'',toast:document.querySelector('#toast')?.textContent||''}));
-  console.log('RESTORE DEBUG',JSON.stringify({activeStep:afterImport.state.activeStep,mode:afterImport.state.mode,courseCode:afterImport.state.profile?.courseCode,institution:afterImport.state.profile?.institution,heading:afterImport.heading,toast:afterImport.toast}));
-  await page.waitForFunction(()=>document.querySelector('#stepRoot h2')?.textContent?.includes('나의 경험에서 직무역량 찾기'),{timeout:10000});
+  console.log('RESTORE DEBUG',JSON.stringify({activeStep:afterImport.state.activeStep,mode:afterImport.state.mode,code:afterImport.state.profile?.anonCode,courseCode:afterImport.state.profile?.courseCode,institution:afterImport.state.profile?.institution,heading:afterImport.heading,toast:afterImport.toast}));
+  assert(afterImport.state.profile?.anonCode==='JF26-REST99',`Imported anonymous code not saved; toast=${afterImport.toast}`);
+  assert(afterImport.state.activeStep===2,`Imported activeStep must be 2, got ${afterImport.state.activeStep}; heading=${afterImport.heading}`);
+  await page.waitForFunction(()=>document.querySelector('#stepRoot h2')?.textContent?.includes('나의 경험에서 직무역량 찾기'),null,{timeout:10000});
   assert((await page.locator('#stepRoot h2').first().textContent()).includes('나의 경험에서 직무역량 찾기'),'Imported active step was not restored');
   const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   assert(stored.profile.anonCode==='JF26-REST99','Anonymous code was not restored');
