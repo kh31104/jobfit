@@ -1,11 +1,48 @@
 const ROOT_ID='stepRoot';
 const PROMPT_BUTTON_LABEL='Career DNA 인터뷰 프롬프트 만들기';
+const STORAGE_KEY='jobfit:v2:learner';
+
+function parseState(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')}catch{return {}}}
+function normalizeResultVersion(value,type){
+  const expected=`${type}형(개정)`;
+  const text=String(value||'').trim();
+  if(!text)return expected;
+  if(text.includes(`${type}형`))return text;
+  if(/[SL]형/.test(text))return text.replace(/[SL]형/g,`${type}형`);
+  return text;
+}
+function persistCorrectedVersion(type,version){
+  const state=parseState();
+  const dna=state.assessments?.careerDNA;
+  if(!dna?.interest)return;
+  const currentType=String(dna.interest.type||'');
+  const currentVersion=String(dna.interest.resultVersion||'');
+  if(currentType===type&&currentVersion===version)return;
+  state.assessments=state.assessments||{};
+  state.assessments.careerDNA=dna||{};
+  state.assessments.careerDNA.interest={...(dna.interest||{}),type,resultVersion:version};
+  state.meta=state.meta||{};
+  state.meta.updatedAt=new Date().toISOString();
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+  window.JobfitStorageContinuity?.syncNow?.();
+}
+function syncResultVersion(root,{persist=true}={}){
+  const active=root.querySelector('.choiceCard.on[data-type]');
+  const type=active?.dataset.type;
+  const input=root.querySelector('#resultVersion');
+  if(!type||!input)return;
+  const corrected=normalizeResultVersion(input.value,type);
+  if(input.value!==corrected)input.value=corrected;
+  if(persist)persistCorrectedVersion(type,corrected);
+}
 
 function enhanceCareerDNA(){
   const root=document.getElementById(ROOT_ID);
   if(!root)return;
   const heading=root.querySelector('h2');
   if(!heading||!heading.textContent.includes('Career DNA'))return;
+
+  syncResultVersion(root);
 
   const sCard=root.querySelector('.choiceCard[data-type="S"] span');
   const lCard=root.querySelector('.choiceCard[data-type="L"] span');
@@ -49,6 +86,13 @@ function start(){
   const root=document.getElementById(ROOT_ID);
   if(!root)return;
   observer.observe(root,{childList:true,subtree:true});
+  root.addEventListener('click',event=>{
+    const target=event.target.closest?.('button');
+    if(target&&['saveDNA','makePrompt','nextStep'].includes(target.id))syncResultVersion(root);
+  },true);
+  root.addEventListener('change',event=>{
+    if(event.target?.id==='resultVersion')syncResultVersion(root);
+  },true);
   enhanceCareerDNA();
 }
 
