@@ -41,7 +41,7 @@ await run('DNA validation prompt uses reviewed hypothesis and asks one question 
   await page.locator('#makeDnaInterviewPrompt').click();const prompt=(await page.locator('#dnaInterviewPrompt').textContent())||'';
   assert(prompt.includes('전문성을 깊게 쌓고 신중하게 판단'),'Reviewed Career DNA hypothesis missing');
   assert(prompt.includes('한 번에 질문 하나만 한다'),'One-question rule missing');
-  assert(prompt.includes('반대되는 경험'),'Counterexample rule missing');
+  assert(prompt.includes('반대 사례'),'Counterexample rule missing');
   assert(prompt.includes('직업을 추천하지 않는다'),'No-job-recommendation guard missing');
   assert(prompt.includes('경험으로 확인됨'),'Validation output categories missing');
 });
@@ -76,7 +76,7 @@ await run('Career Roadmap v0 saves additive roadmap artifact without changing Ca
 await run('Theme and direction prompts stay hypothesis-based',async page=>{
   await page.locator('#dnaConfirmed').fill('학습 행동이 경험에서 확인되었다.');await page.locator('#themeLike').fill('배우고 설명하기');await page.locator('#themeValue').fill('전문성');await page.locator('#themeWork').fill('사람의 선택을 돕는 일');
   await page.locator('#makeThemePrompt').click();const theme=(await page.locator('#themePrompt').textContent())||'';assert(theme.includes('특정 직업명이나 기업명을 넣지 않는다'),'Theme prompt job guard missing');assert(theme.includes('문장 후보 3개'),'Theme candidates rule missing');
-  await page.locator('#careerTheme').fill('배우고 정리한 내용을 사람에게 설명하는 일');await page.locator('#makeDirectionPrompt').click();const direction=(await page.locator('#directionPrompt').textContent())||'';assert(direction.includes('직업을 확정하는 추천자가 아니라'),'Direction hypothesis framing missing');assert(direction.includes('직업을 나와 잘 맞는다고 확정하거나 추천하지 않는다'),'Direction no-fit guard missing');assert(direction.includes('실제 직무정보·채용공고'),'Next-step validation missing');
+  await page.locator('#careerTheme').fill('배우고 정리한 내용을 사람에게 설명하는 일');await page.locator('#makeDirectionPrompt').click();const direction=(await page.locator('#directionPrompt').textContent())||'';assert(direction.includes('확정하는 추천자가 아니라'),'Direction hypothesis framing missing');assert(direction.includes('직업을 나와 잘 맞는다고 확정하거나 추천하지 않는다'),'Direction no-fit guard missing');assert(direction.includes('실제 직무정보·채용공고'),'Next-step validation missing');
 });
 
 await browser.close();if(failed)process.exit(1);
