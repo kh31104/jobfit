@@ -120,6 +120,38 @@ await run('L type includes Big5 only when Big5 data exists',async page=>{
   assert(saved.assessments.careerDNA.promptMeta.moduleStatus.big5.status==='complete','Big5 completion status mismatch');
 });
 
+await run('Career DNA keeps result version synchronized with S/L choice',async page=>{
+  await openCareerDNA(page,`${base}?course=INJE2026`);
+  assert((await page.locator('#resultVersion').inputValue()).includes('S형'),'Default S result version missing');
+
+  await page.locator('.choiceCard[data-type="L"]').click();
+  await page.waitForSelector('#big5_0');
+  await page.waitForFunction(()=>document.querySelector('#resultVersion')?.value.includes('L형'));
+  let saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
+  assert(saved.assessments.careerDNA.interest.type==='L','L type was not saved after selection');
+  assert(String(saved.assessments.careerDNA.interest.resultVersion||'').includes('L형'),'L result version was not synchronized');
+
+  await page.evaluate(()=>{
+    const s=JSON.parse(localStorage.getItem('jobfit:v2:learner'));
+    s.assessments.careerDNA.interest.type='L';
+    s.assessments.careerDNA.interest.resultVersion='S형(개정)';
+    localStorage.setItem('jobfit:v2:learner',JSON.stringify(s));
+  });
+  await page.reload({waitUntil:'networkidle'});
+  await page.waitForSelector('#resultVersion');
+  await page.waitForFunction(()=>document.querySelector('#resultVersion')?.value.includes('L형'));
+  saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
+  assert(String(saved.assessments.careerDNA.interest.resultVersion||'').includes('L형'),'Legacy L/S mismatch was not repaired on load');
+
+  await page.locator('#resultVersion').fill('직업선호도검사 S형(개정)');
+  await page.locator('#saveDNA').click();
+  await page.waitForTimeout(100);
+  assert((await page.locator('#resultVersion').inputValue()).includes('L형'),'Wrong S label remained visible while L was selected');
+  saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
+  assert(saved.assessments.careerDNA.interest.type==='L','Saving version changed the selected L type');
+  assert(String(saved.assessments.careerDNA.interest.resultVersion||'').includes('L형'),'Wrong S label was saved for L type');
+});
+
 await run('STEP 1 reflection contract still reaches STEP 2',async page=>{
   await openCareerDNA(page);
   await fillRiasecStandard(page);
