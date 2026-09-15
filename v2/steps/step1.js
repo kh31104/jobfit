@@ -1,229 +1,174 @@
-const WORK24='https://www.work24.go.kr/wk/r/c/1000/jobPsyExamList.do';
-const VIA='https://www.viacharacter.org/';
-const RIASEC=[['R','현실형'],['I','탐구형'],['A','예술형'],['S','사회형'],['E','진취형'],['C','관습형']];
-const BIG5=['외향성','호감성','성실성','정서적 불안정성','경험에 대한 개방성'];
-const VALIDITY=['사회적 바람직성','부주의성','온전성'];
-const FACETS=['사교성','리더십','적극성','긍정성','타인에 대한 믿음','도덕성','타인에 대한 배려','수용성','겸손','휴머니즘','유능성','조직화능력','책임감','목표지향','자기통제력','완벽성','불안','분노','우울','자의식','충동성','스트레스 취약성','상상력','문화','정서','경험추구','지적호기심','대인관계지향'];
-const LIFE=['독립심','가족친화','야망','학업성취','예술성','운동선호','종교성','직무만족'];
-const VALUES=['사회적 공헌','변화 지향성','성취','경제적 보상','자기개발','일과 삶의 균형','사회적 인정','자율성','직업안정성'];
-const PROMPT_VERSION='career-dna-dynamic-v1';
+import {loadCareerAnchorScale} from '../careerDnaMeasures.js';
+import {castBalanceVote,getBalanceCounts,classSessionCode} from '../classroomVotes.js';
+
+const PROMPT_VERSION='career-dna-standard-v1';
+const VIA_URL='https://www.viacharacter.org/Survey//Account/Register';
+const MI_URL='https://multiiqtest.com/';
+const STRENGTHS=['감사','공감','도전','사랑','시간관리','온화함','자기관리','조화','추진력','학습','감수성','글쓰기','동기부여','설득력','신중함','용기','자신감','진정성','친절','행동력','개인화','끈기','리더십','설명력','심미안','유머','자제력','진행력','통찰력','협력','겸손','낙관주의','박학다식','섬세함','연결성','유쾌함','적응력','집중력','평등심','호기심','경청','논리성','분석력','성장','열린 마음','의사소통','전략','창의성','포용력','활력','계획','대중성','사교성','승부욕','열정','이해력','정리정돈','책임감','피드백','회복탄력성'];
+const MI_AREAS=['언어지능','논리수학지능','공간지능','신체운동지능','음악지능','자기성찰지능','인간친화지능','자연지능'];
+const BALANCE=[
+  {title:'고연봉 vs 저녁이 있는 삶',a:'연봉 7,500만 원',b:'저녁이 있는 삶',av:'보상',bv:'일과 삶의 균형'},
+  {title:'빠른 성장 vs 오래 다닐 안정성',a:'3년 뒤 몸값 2배',b:'평생 다닐 수 있는 회사',av:'성장',bv:'안정성'},
+  {title:'회사 이름 vs 내가 쌓는 실력',a:'모두가 아는 회사',b:'진짜 실력이 느는 회사',av:'기업 브랜드',bv:'전문성 성장'},
+  {title:'근무 편의 vs 최고의 사수',a:'침대에서 10분 만에 출근',b:'왕복 2시간 40분, 최고의 사수',av:'근무 편의',bv:'학습·멘토'},
+  {title:'높은 보상 vs 좋은 리더',a:'연봉 7,000만 원',b:'좋은 리더와 일하기',av:'보상',bv:'관계·리더십'},
+  {title:'서울의 기회 vs 지역의 삶',a:'서울의 꿈의 회사',b:'지역에서의 편안한 삶',av:'커리어 기회',bv:'생활 기반'},
+  {title:'좋아하는 일 vs 잘하는 일',a:'좋아하지만 아직 서툰 일',b:'아주 좋아하진 않지만 잘하는 일',av:'흥미',bv:'강점·역량'}
+];
 
 export async function render(ctx){
   const state=ctx.getState();
   const saved=state.assessments?.careerDNA||{};
-  const forced=ctx.courseConfig.interest;
-  const selected=forced!=='CHOICE'?forced:(saved.interest?.type||'S');
+  let scale=null,scaleError='';
+  try{scale=await loadCareerAnchorScale(ctx.courseConfig.course||'INJE2026')}catch(e){scaleError=e?.message||'Career Anchor 문항을 불러오지 못했습니다.'}
   const root=document.getElementById('stepRoot');
-  root.innerHTML=`<section class="card">
-    <div class="sectionHead"><div><div class="kicker">STEP 1</div><h2>Career DNA</h2><p>고용24 검사결과와 나의 실제 경험을 분리해서 보고, 나중에 직무탐색의 근거로 사용합니다.</p></div><span class="badge">3주차</span></div>
+  const balanceAnswers=normalizeBalance(saved.balance?.answers);
+  const selfStrengths=Array.isArray(saved.selfStrengths)?saved.selfStrengths.slice(0,5):[];
+  const anchorResponses=Array.isArray(saved.careerAnchor?.responses)?saved.careerAnchor.responses.slice(0,40):Array(40).fill(null);
+  while(anchorResponses.length<40)anchorResponses.push(null);
+  const bonusItems=Array.isArray(saved.careerAnchor?.bonusItems)?saved.careerAnchor.bonusItems.slice(0,3):[];
+  const viaTop5=Array.isArray(saved.viaTop5)?saved.viaTop5.slice(0,5):[];
+  const miTop3=Array.isArray(saved.multipleIntelligence?.top3)?saved.multipleIntelligence.top3.slice(0,3):[];
+  const comparison=saved.comparison||{};
+
+  root.innerHTML=`<section class="card careerDnaStandard">
+    ${styleBlock()}
+    <div class="sectionHead"><div><div class="kicker">STEP 1 · STANDARD SET v1</div><h2>Career DNA</h2><p>내가 생각하는 나와 검사에서 나타난 나를 비교해 <b>자기이해 가설</b>을 만듭니다.</p></div><span class="badge">3주차</span></div>
     <div class="progress"><span style="width:14%"></span></div>
-    <div class="callout info"><b>중요</b> · 검사결과는 직무의 정답이 아닙니다. 모든 검사를 한 번에 끝낼 필요도 없습니다. <b>현재 완료한 자료만으로 Career DNA 인터뷰를 시작</b>하고, 다른 결과는 나중에 추가할 수 있습니다.</div>
+    <div class="callout info"><b>오늘의 흐름</b> · Balance Game → Career Anchor → 내가 생각하는 강점 → VIA → 다중지능 → 정성 × 정량 비교 → AI 통합분석</div>
+    <div class="callout good"><b>이번 학기 운영</b> · 개인 검사결과와 활동내용은 교수자에게 자동 전송하지 않습니다. 이 브라우저에 저장하고, 다른 기기에서는 내 학습 백업파일을 사용합니다.</div>
 
-    <div class="block"><h3>1. 직업선호도검사 선택</h3><p class="help">현재 고용24의 <b>직업선호도검사 S형(개정)</b> 또는 <b>L형(개정)</b> 중 하나만 시행합니다. 같은 학생이 둘 다 시행하지 않습니다.</p>
-      <div class="choiceGrid">
-        ${choice('S','고용24 S형(개정)','흥미 중심 · 약 25분',selected,forced)}
-        ${choice('L','고용24 L형(개정)','흥미 + 성격 + 생활사 · 약 60분',selected,forced)}
+    <div class="block"><div class="moduleHead"><span>01</span><div><h3>Balance Game</h3><p>내가 생각하는 중요한 가치관 · 세부 조건은 수업 PPT를 보고 선택하세요.</p></div></div>
+      <div class="callout warn"><b>먼저 내 선택을 확정합니다.</b> 다른 참여자의 비율은 선택한 뒤에만 보입니다. 한 번 확정한 선택은 친구들의 결과를 보고 바꾸지 않습니다.</div>
+      <div id="balanceQuestions">${balanceHtml(balanceAnswers,ctx)}</div>
+      <div id="balanceSummary">${balanceSummaryHtml(balanceAnswers,ctx)}</div>
+    </div>
+
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>02</span><div><h3>Career Anchor</h3><p>Jobfit 안에서 40문항에 직접 응답하고 8개 커리어 앵커를 자동 채점합니다.</p></div></div>
+      ${scale?`<div class="callout info"><b>응답방법</b> · 각 문항을 1(결코 아님)–6(항상 해당됨)으로 응답합니다. 40문항을 마친 뒤 나에게 가장 적합한 문항 3개를 골라 각 문항에 +4점을 추가합니다.</div>
+      <div class="anchorProgress" id="anchorProgress"></div>
+      <div class="anchorItems">${anchorItemsHtml(scale,anchorResponses,ctx)}</div>
+      <div class="summaryBox" style="margin-top:14px"><h4>가장 나에게 맞는 문항 3개 선택</h4><p class="help">40문항 중 특히 나를 잘 설명한다고 느끼는 문항 3개를 고르세요. 선택한 문항에는 자료의 채점방식에 따라 +4점이 더해집니다.</p><div class="bonusGrid" id="bonusGrid">${bonusHtml(scale,bonusItems,ctx)}</div><div class="status" id="bonusStatus"></div></div>
+      <div class="summaryBox" style="margin-top:14px"><h4>Career Anchor 결과</h4><div id="anchorResult">${anchorResultHtml(scale,anchorResponses,bonusItems,ctx)}</div></div>`:`<div class="callout warn"><b>Career Anchor를 불러오지 못했습니다.</b><br>${ctx.escapeHtml(scaleError)}<br>새로고침 후 다시 시도해 주세요. 다른 활동은 계속할 수 있습니다.</div>`}
+    </div>
+
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>03</span><div><h3>내가 생각하는 나의 강점</h3><p>검사결과를 보기 전에, 평소 스스로 생각하는 대표 강점 5개를 선택합니다.</p></div></div>
+      <div class="strengthCounter" id="strengthCounter">${selfStrengths.length}/5 선택</div><div class="strengthGrid" id="strengthGrid">${strengthHtml(selfStrengths,ctx)}</div>
+    </div>
+
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>04</span><div><h3>VIA 성격강점</h3><p>공식 VIA 검사 후 상위 5개 강점만 Jobfit에 입력합니다.</p></div></div>
+      <div class="callout info">VIA는 <b>성격강점에 대한 자기보고 검사</b>입니다. 직업이나 역량의 정답으로 사용하지 않습니다.</div>
+      <div class="actions"><a class="btn secondary" href="${VIA_URL}" target="_blank" rel="noopener">VIA 공식 검사 열기 ↗</a></div>
+      <div class="grid3" style="margin-top:12px">${[0,1,2,3,4].map(i=>field(`via_${i}`,`TOP ${i+1}`,viaTop5[i]||'','결과에 표시된 강점명',ctx)).join('')}</div>
+    </div>
+
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>05</span><div><h3>다중지능검사</h3><p>검사 결과에서 상위 3개 영역을 입력합니다.</p></div></div>
+      <div class="callout info">다중지능 결과는 <b>선호하는 활동·문제해결 방식의 참고자료</b>로 사용합니다. 객관적인 능력의 확정판정으로 해석하지 않습니다.</div>
+      <div class="actions"><a class="btn secondary" href="${MI_URL}" target="_blank" rel="noopener">다중지능검사 한국어로 열기 ↗</a></div>
+      <div class="grid3" style="margin-top:12px">${[0,1,2].map(i=>selectField(`mi_${i}`,`TOP ${i+1}`,miTop3[i]||'',MI_AREAS)).join('')}</div>
+    </div>
+
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>06</span><div><h3>내가 생각하는 나 × 검사에서 나타난 나</h3><p>AI보다 먼저 직접 비교합니다. 검사가 ‘실제 나’의 정답은 아닙니다.</p></div></div>
+      <div class="compareColumns"><div class="compareCard qualitative"><b>내가 생각하는 나 · 정성</b><div id="qualSummary">${qualSummaryHtml(balanceAnswers,selfStrengths,ctx)}</div></div><div class="compareCard quantitative"><b>검사에서 나타난 나 · 정량</b><div id="quantSummary">${quantSummaryHtml(scale,anchorResponses,bonusItems,viaTop5,miTop3,ctx)}</div></div></div>
+      <div class="grid2" style="margin-top:14px">
+        ${area('compare_repeat','반복해서 나타난 부분','여러 결과에서 비슷하게 나타난 특징은?',comparison.repeat||saved.reflection?.fit||'',ctx)}
+        ${area('compare_connect','서로 연결된다고 느끼는 부분','표현은 달라도 서로 연결된다고 느끼는 결과는?',comparison.connect||'',ctx)}
+        ${area('compare_unexpected','예상과 달랐던 부분','내 생각과 다르게 나온 결과는?',comparison.unexpected||saved.reflection?.disagree||'',ctx)}
+        ${area('compare_verify','더 확인하고 싶은 부분','실제 경험으로 확인해보고 싶은 것은?',comparison.verify||saved.reflection?.question||'',ctx)}
       </div>
-      ${forced!=='CHOICE'?`<div class="callout good">이 수업의 지정검사는 <b>${forced}형</b>입니다.</div>`:''}
-      <div class="actions"><a class="btn primary linkBtn" href="${WORK24}" target="_blank" rel="noopener">고용24 직업심리검사 열기 ↗</a></div>
     </div>
 
-    <div class="hr"></div><div class="block"><h3>2. ${selected}형 결과 입력</h3><p class="help">고용24 결과표의 RIASEC 6개 원점수와 표준점수를 그대로 입력합니다. S형·L형 모두 동일한 6개 흥미유형 점수를 저장합니다.</p>
-      <div class="grid3">
-        ${dateField('examDate','검사일',saved.interest?.examDate)}
-        ${txt('resultVersion','결과표 표기/버전',saved.interest?.resultVersion||`${selected}형(개정)`,'예: 직업선호도검사 S형(개정)')}
-        ${sel('resultSource','입력 출처',saved.interest?.resultSource,['','고용24 결과표 직접입력','교수자 제공 결과표','기타'])}
-      </div>
-      <div class="grid3" style="margin-top:12px">${RIASEC.map(([k,n])=>riasecCard(k,n,saved)).join('')}</div>
-      ${selected==='L'?lFields(saved):''}
-      <details class="detailsBox block"><summary>고용24 결과표의 추천직업 기록 <span class="muted">(선택 · 참고용)</span></summary><p class="help">고용24 결과표에 제시된 추천직업/적합직업을 보관할 수 있습니다. <b>이 값은 STEP 3 직무 후보를 자동 생성하거나 우선순위를 매기는 데 사용하지 않습니다.</b></p><textarea id="work24SuggestedJobs" placeholder="결과표에 표시된 추천직업을 필요한 경우 그대로 기록">${ctx.escapeHtml(saved.interest?.work24SuggestedJobs||'')}</textarea></details>
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>07</span><div><h3>AI 통합분석</h3><p>현재 입력된 결과만 사용해 자기이해 가설을 만드는 프롬프트를 생성합니다.</p></div></div>
+      <div class="callout info" id="careerDnaAiGuide"><b>AI LAB 사용 순서</b><br>① 현재 내용 저장 → ② 통합분석 프롬프트 만들기 → ③ 복사 → ④ 수업에서 사용하는 AI에 붙여넣기<br><span class="muted">Jobfit이 입력내용을 AI로 자동 전송하지는 않습니다.</span></div>
+      <div class="actions"><button class="btn secondary" id="makePrompt">현재 결과로 자기이해 통합하기</button><button class="btn outline hidden" id="copyPrompt">프롬프트 복사</button></div><div class="promptBox hidden" id="promptBox"></div>
     </div>
 
-    <div class="hr"></div><div class="block"><h3>3. 성인용 직업가치관검사 <span class="muted">(추후 추가 가능)</span></h3><p class="help">시간이 되는 경우 현재 고용24가 안내하는 9개 직업가치 결과를 기록합니다. 이번 시간에 하지 않아도 Career DNA 인터뷰는 가능합니다.</p>
-      <div class="actions"><a class="btn secondary linkBtn" href="${WORK24}" target="_blank" rel="noopener">성인용 직업가치관검사 열기 ↗</a></div>
-      <div class="grid3" style="margin-top:12px">${VALUES.map((n,i)=>scoreField(`val_${i}`,n,saved.workValues?.[n])).join('')}</div>
-      <div class="grid2" style="margin-top:12px">${dateField('workValuesDate','검사일',saved.workValuesDate)}${txt('workValuesVersion','결과표 표기/버전',saved.workValuesVersion||'성인용 직업가치관검사','결과표에 표시된 명칭')}</div>
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>08</span><div><h3>Career DNA 가설 v1</h3><p>AI 통합분석 결과를 검토한 뒤 필요한 부분만 저장합니다. 4주차에는 실제 경험으로 이 가설을 확인합니다.</p></div></div>
+      <div class="field"><label>AI 통합분석 결과 · 내가 확인한 내용</label><textarea id="aiHypothesis" placeholder="AI 결과를 그대로 믿지 말고, 읽어본 뒤 맞는 부분·확인이 필요한 부분을 남기세요.">${ctx.escapeHtml(saved.hypothesis?.text||'')}</textarea></div>
+      <div class="field" style="margin-top:12px"><label>현재 결과가 나를 얼마나 잘 설명하나요?</label><select class="input" id="hypothesisFit"><option value="">선택</option>${['매우 맞음','어느 정도 맞음','잘 모르겠음','맞지 않음'].map(x=>`<option ${saved.hypothesis?.selfCheck===x?'selected':''}>${x}</option>`).join('')}</select></div>
     </div>
 
-    <div class="hr"></div><div class="block"><h3>4. VIA 강점 TOP5 <span class="muted">(교육용 · 선택)</span></h3><p class="help">VIA는 자기이해와 경험탐색을 위한 보조자료입니다. 입력한 경우에만 AI 인터뷰에 사용하며, 강점명만으로 역량이나 직무를 단정하지 않습니다.</p>
-      <div class="actions"><a class="btn secondary linkBtn" href="${VIA}" target="_blank" rel="noopener">VIA 검사 사이트 열기 ↗</a></div>
-      <div class="grid3" style="margin-top:12px">${[0,1,2,3,4].map(i=>`<div class="field"><label>TOP ${i+1}</label><input class="input" id="via_${i}" value="${ctx.escapeHtml(saved.viaTop5?.[i]||'')}" placeholder="결과에 표시된 강점명"></div>`).join('')}</div>
-    </div>
-
-    <div class="hr"></div><div class="block"><h3>5. 검사결과와 실제 나 비교</h3><p class="help">AI보다 먼저 본인이 결과를 검토합니다. ‘맞다/아니다’보다 실제 경험 근거를 적는 것이 중요합니다. 입력한 내용이 있으면 AI가 그 부분부터 확인합니다.</p>
-      <div class="grid3">
-        ${area('fit','일치하는 결과','어떤 실제 경험 때문에 이 결과가 나와 비슷하다고 느끼나요?',saved.reflection?.fit,ctx)}
-        ${area('question','확인이 필요한 결과','왜 이렇게 나왔는지 더 확인하고 싶은 부분은?',saved.reflection?.question,ctx)}
-        ${area('disagree','동의하기 어려운 결과','어떤 실제 경험과 달라서 동의하기 어렵나요?',saved.reflection?.disagree,ctx)}
-      </div>
-      <label class="checkRow"><input type="checkbox" id="resultChecked" ${saved.resultChecked?'checked':''}><div><b>결과표 대조 완료</b><span>입력한 숫자가 고용24 결과표와 일치하는지 다시 확인했습니다.</span></div></label>
-    </div>
-
-    <div class="hr"></div><div class="block"><h3>6. Career DNA 요약 + AI LAB</h3><div class="summaryBox" id="dnaSummary">${summaryHtml(saved,selected,ctx)}</div>
-      <p class="help" style="margin-top:12px"><b>완료한 자료만 사용합니다.</b> 직업가치관이나 VIA를 하지 않았어도 괜찮습니다. AI는 현재 입력된 결과에서 한 번에 질문 하나씩 하고, 실제 경험으로 확인합니다.</p>
-      <div class="actions"><button class="btn secondary" id="makePrompt">현재 결과로 Career DNA 인터뷰 시작</button><button class="btn outline hidden" id="copyPrompt">프롬프트 복사</button></div><div class="promptBox hidden" id="promptBox"></div>
-    </div>
-
-    <div class="actions"><button class="btn primary" id="saveDNA">Career DNA 저장</button><button class="btn secondary" id="nextStep">STEP 2 경험·역량 →</button></div><div class="status" id="status"></div>
+    <div class="actions"><button class="btn primary" id="saveDNA">3주차 Career DNA 저장</button><button class="btn secondary" id="nextStep">4주차로 이동 →</button></div><div class="status" id="status"></div>
   </section>`;
 
-  root.querySelectorAll('.choiceCard[data-type]').forEach(card=>card.addEventListener('click',()=>{
-    if(forced!=='CHOICE')return;
-    const type=card.dataset.type;ctx.saveState({assessments:{careerDNA:{...ctx.getState().assessments.careerDNA,interest:{...(ctx.getState().assessments.careerDNA.interest||{}),type}}}});ctx.navigate(1);
-  }));
+  let strengthSelection=[...selfStrengths];
+  let voteTimer=null;
+  bindBalance();
+  if(scale)bindAnchor();
+  bindStrengths();
+  ['via_0','via_1','via_2','via_3','via_4','mi_0','mi_1','mi_2'].forEach(id=>document.getElementById(id)?.addEventListener('change',refreshCompare));
   document.getElementById('saveDNA').addEventListener('click',()=>saveData(true));
   document.getElementById('nextStep').addEventListener('click',()=>{saveData(false);ctx.navigate(2)});
-  document.getElementById('makePrompt').addEventListener('click',()=>{const data=saveData(false);const prompt=makePromptText(data);const box=document.getElementById('promptBox');box.textContent=prompt;box.classList.remove('hidden');document.getElementById('copyPrompt').classList.remove('hidden');});
+  document.getElementById('makePrompt').addEventListener('click',()=>{const data=saveData(false);const prompt=buildPrompt(data,scale);const box=document.getElementById('promptBox');box.textContent=prompt;box.classList.remove('hidden');document.getElementById('copyPrompt').classList.remove('hidden')});
   document.getElementById('copyPrompt').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(document.getElementById('promptBox').textContent);ctx.toast('프롬프트를 복사했습니다.')}catch{ctx.toast('복사가 차단되었습니다. 직접 선택해 복사해 주세요.')}});
 
+  function bindBalance(){
+    root.querySelectorAll('[data-balance-choice]').forEach(btn=>btn.addEventListener('click',async()=>{
+      const i=Number(btn.dataset.index),choice=btn.dataset.balanceChoice;
+      if(balanceAnswers[i])return;
+      if(!confirm('이 선택으로 확정할까요? 확정 후 다른 참여자의 선택 비율이 공개됩니다.'))return;
+      const q=BALANCE[i];balanceAnswers[i]={questionId:i+1,choice,label:choice==='A'?q.a:q.b,value:choice==='A'?q.av:q.bv,confirmedAt:new Date().toISOString()};
+      saveData(false);renderBalanceSection();
+      try{await castBalanceVote(ctx.courseConfig.course||'INJE2026',i,choice);await updateVote(i)}catch{setVoteMessage(i,'현재 수업 선택 비율을 불러오지 못했습니다. 내 선택은 개인 화면에 저장되었습니다.')}
+      startVotePolling();
+    }));
+    startVotePolling();
+  }
+  function renderBalanceSection(){const el=document.getElementById('balanceQuestions');if(el)el.innerHTML=balanceHtml(balanceAnswers,ctx);const s=document.getElementById('balanceSummary');if(s)s.innerHTML=balanceSummaryHtml(balanceAnswers,ctx);bindBalance();refreshCompare()}
+  function startVotePolling(){if(voteTimer)return;const answered=()=>balanceAnswers.map((x,i)=>x?i:null).filter(x=>x!==null);if(!answered().length)return;voteTimer=setInterval(async()=>{if(!document.body.contains(root)){clearInterval(voteTimer);voteTimer=null;return}for(const i of answered())await updateVote(i)},2500);for(const i of answered())updateVote(i)}
+  async function updateVote(i){try{const c=await getBalanceCounts(ctx.courseConfig.course||'INJE2026',i),el=document.getElementById(`vote_${i}`);if(el)el.innerHTML=`<div><b>A ${c.aPercent.toFixed(1)}%</b> · ${c.a}명</div><div><b>B ${c.bPercent.toFixed(1)}%</b> · ${c.b}명</div><small>현재 수업 ${c.total}명 기준 · 약 2.5초 간격 업데이트</small>`}catch{setVoteMessage(i,'수업 선택 비율 연결 확인 중...')}}
+  function setVoteMessage(i,msg){const el=document.getElementById(`vote_${i}`);if(el)el.innerHTML=`<small>${ctx.escapeHtml(msg)}</small>`}
+
+  function bindAnchor(){
+    root.querySelectorAll('[data-anchor-item]').forEach(input=>input.addEventListener('change',()=>{anchorResponses[Number(input.dataset.anchorItem)]=Number(input.value);refreshAnchor()}));
+    root.querySelectorAll('[data-bonus-item]').forEach(input=>input.addEventListener('change',()=>{
+      const n=Number(input.value);if(input.checked){if(bonusItems.length>=3){input.checked=false;ctx.toast('가장 적합한 문항은 3개만 선택합니다.');return}bonusItems.push(n)}else{const k=bonusItems.indexOf(n);if(k>=0)bonusItems.splice(k,1)}refreshAnchor();
+    }));
+    refreshAnchor();
+  }
+  function refreshAnchor(){
+    const p=document.getElementById('anchorProgress'),done=anchorResponses.filter(x=>Number.isFinite(x)&&x>=1&&x<=6).length;if(p)p.innerHTML=`<b>${done}/40 응답</b><span>${done===40?'40문항 완료 · 이제 가장 적합한 문항 3개를 선택하세요.':'모든 문항에 응답하면 결과가 계산됩니다.'}</span>`;
+    const bs=document.getElementById('bonusStatus');if(bs)bs.textContent=`${bonusItems.length}/3 선택`;
+    const r=document.getElementById('anchorResult');if(r)r.innerHTML=anchorResultHtml(scale,anchorResponses,bonusItems,ctx);refreshCompare();
+  }
+  function bindStrengths(){root.querySelectorAll('[data-strength]').forEach(btn=>btn.addEventListener('click',()=>{const s=btn.dataset.strength,i=strengthSelection.indexOf(s);if(i>=0)strengthSelection.splice(i,1);else{if(strengthSelection.length>=5){ctx.toast('대표 강점은 5개까지 선택합니다.');return}strengthSelection.push(s)}const g=document.getElementById('strengthGrid');if(g)g.innerHTML=strengthHtml(strengthSelection,ctx);const c=document.getElementById('strengthCounter');if(c)c.textContent=`${strengthSelection.length}/5 선택`;bindStrengths();refreshCompare()}))}
+  function refreshCompare(){const via=readVia(),mi=readMi();const q=document.getElementById('qualSummary');if(q)q.innerHTML=qualSummaryHtml(balanceAnswers,strengthSelection,ctx);const n=document.getElementById('quantSummary');if(n)n.innerHTML=quantSummaryHtml(scale,anchorResponses,bonusItems,via,mi,ctx)}
+  function readVia(){return [0,1,2,3,4].map(i=>document.getElementById(`via_${i}`)?.value?.trim()||'').filter(Boolean)}
+  function readMi(){return [0,1,2].map(i=>document.getElementById(`mi_${i}`)?.value?.trim()||'').filter(Boolean)}
   function saveData(showToast){
-    const riasecRaw={},riasecStandard={};RIASEC.forEach(([k])=>{riasecRaw[k]=num(`raw_${k}`);riasecStandard[k]=num(`std_${k}`)});
-    const personalityBig5={},personalityValidity={},personalityFacets={},lifeHistory={};
-    if(selected==='L'){
-      BIG5.forEach((n,i)=>personalityBig5[n]=num(`big5_${i}`));VALIDITY.forEach((n,i)=>personalityValidity[n]=num(`valid_${i}`));FACETS.forEach((n,i)=>personalityFacets[n]=num(`facet_${i}`));LIFE.forEach((n,i)=>lifeHistory[n]=num(`life_${i}`));
-    }
-    const workValues={};VALUES.forEach((n,i)=>workValues[n]=num(`val_${i}`));
-    const viaTop5=[0,1,2,3,4].map(i=>v(`via_${i}`)).filter(Boolean);
-    const data={
-      interest:{type:selected,examDate:v('examDate'),resultVersion:v('resultVersion'),resultSource:v('resultSource'),riasecRaw,riasecStandard,work24SuggestedJobs:v('work24SuggestedJobs'),suggestedJobsPolicy:'reference-only-not-used-for-job-ranking'},
-      personalityBig5,personalityValidity,personalityFacets,lifeHistory,
-      workValues,workValuesDate:v('workValuesDate'),workValuesVersion:v('workValuesVersion'),viaTop5,
-      reflection:{fit:v('fit'),question:v('question'),disagree:v('disagree')},resultChecked:document.getElementById('resultChecked').checked
+    const via=readVia(),mi=readMi(),anchor=scale?scoreAnchor(scale,anchorResponses,bonusItems):{complete:false,scores:{},ranking:[]};
+    const data={...saved,
+      standard:{version:'career-dna-standard-set-v1',savedAt:new Date().toISOString(),sourceModules:['balance','careerAnchor','selfStrengths','via','multipleIntelligence','comparison','aiIntegration']},
+      balance:{answers:balanceAnswers,sessionCode:classSessionCode(ctx.courseConfig.course||'INJE2026'),policy:'classroom-live-aggregate-not-research'},
+      careerAnchor:{version:scale?.version||saved.careerAnchor?.version||'',responses:[...anchorResponses],bonusItems:[...bonusItems],scores:anchor.scores,ranking:anchor.ranking,complete:anchor.complete,source:scale?.source||saved.careerAnchor?.source||{}},
+      selfStrengths:[...strengthSelection],viaTop5:via,multipleIntelligence:{top3:mi},
+      comparison:{repeat:v('compare_repeat'),connect:v('compare_connect'),unexpected:v('compare_unexpected'),verify:v('compare_verify')},
+      reflection:{fit:v('compare_repeat'),question:v('compare_verify'),disagree:v('compare_unexpected')},
+      hypothesis:{text:v('aiHypothesis'),selfCheck:v('hypothesisFit'),version:'career-dna-hypothesis-v1',updatedAt:new Date().toISOString()},
+      promptMeta:{version:PROMPT_VERSION,moduleStatus:moduleStatus(balanceAnswers,anchor,strengthSelection,via,mi)}
     };
-    data.promptMeta={version:PROMPT_VERSION,moduleStatus:getModuleStatus(data)};
-    ctx.saveState({assessments:{careerDNA:data},artifacts:{careerDNAProfile:buildSummary(data)}});document.getElementById('dnaSummary').innerHTML=summaryHtml(data,selected,ctx);document.getElementById('status').textContent='저장되었습니다.';if(showToast)ctx.toast('Career DNA를 저장했습니다.');return data;
+    const profile=buildProfile(data);
+    ctx.saveState({assessments:{careerDNA:data},artifacts:{careerDNAProfile:profile}});document.getElementById('status').textContent='3주차 Career DNA가 이 브라우저에 저장되었습니다.';if(showToast)ctx.toast('3주차 Career DNA를 저장했습니다.');return data;
   }
   function v(id){return document.getElementById(id)?.value?.trim?.()||''}
-  function num(id){const x=v(id);return x===''?null:Number(x)}
 }
 
-function choice(type,title,desc,selected,forced){return `<div class="choiceCard ${selected===type?'on':''}" data-type="${type}" style="${forced!=='CHOICE'&&forced!==type?'opacity:.45':''}"><b>${title}</b><span>${desc}</span></div>`}
-function riasecCard(k,n,saved){const raw=saved.interest?.riasecRaw?.[k]??'',std=saved.interest?.riasecStandard?.[k]??'';return `<div class="metricCard"><b>${k} · ${n}</b><div class="scorePair"><label><small>원점수</small><input class="input scoreInput" type="number" step="any" id="raw_${k}" value="${raw}"></label><label><small>표준점수</small><input class="input scoreInput" type="number" step="any" id="std_${k}" value="${std}"></label></div></div>`}
-function scoreField(id,label,value){return `<div class="field"><label>${label}</label><input class="input scoreInput" type="number" step="any" id="${id}" value="${value??''}" placeholder="점수"></div>`}
-function lFields(saved){return `<div class="block"><h3>L형 성격 5요인</h3><p class="help">고용24 L형 결과에서 외향성·호감성·성실성·정서적 불안정성·경험에 대한 개방성 점수를 기록합니다.</p><div class="grid3">${BIG5.map((n,i)=>scoreField(`big5_${i}`,n,saved.personalityBig5?.[n])).join('')}</div></div>
-<details class="detailsBox block"><summary>L형 상세 점수 입력 · 타당도 / 성격 하위요인 / 생활사</summary><p class="help">결과표에 상세 점수가 제공되는 경우 입력합니다. Jobfit은 이 상세점수를 직무 자동추천에 사용하지 않습니다.</p><h4>응답·타당도 관련</h4><div class="grid3">${VALIDITY.map((n,i)=>scoreField(`valid_${i}`,n,saved.personalityValidity?.[n])).join('')}</div><h4>성격 하위요인</h4><div class="grid4">${FACETS.map((n,i)=>scoreField(`facet_${i}`,n,saved.personalityFacets?.[n])).join('')}</div><h4>생활사</h4><div class="grid4">${LIFE.map((n,i)=>scoreField(`life_${i}`,n,saved.lifeHistory?.[n])).join('')}</div></details>`}
-function area(id,title,ph,value,ctx){return `<div class="field"><label>${title}</label><textarea id="${id}" placeholder="${ph}">${ctx.escapeHtml(value||'')}</textarea></div>`}
-function txt(id,label,value,ph){return `<div class="field"><label>${label}</label><input class="input" id="${id}" value="${String(value||'').replace(/"/g,'&quot;')}" placeholder="${ph||''}"></div>`}
-function dateField(id,label,value){return `<div class="field"><label>${label}</label><input class="input" type="date" id="${id}" value="${value||''}"></div>`}
-function sel(id,label,value,opts){return `<div class="field"><label>${label}</label><select id="${id}">${opts.map(o=>`<option value="${o}" ${o===value?'selected':''}>${o||'선택'}</option>`).join('')}</select></div>`}
-function ranked(obj,n=3){return Object.entries(obj||{}).filter(([,v])=>Number.isFinite(v)).sort((a,b)=>b[1]-a[1]).slice(0,n)}
-function countScores(obj){return Object.values(obj||{}).filter(Number.isFinite).length}
-function statusFromCount(count,total){return count===0?'none':count===total?'complete':'partial'}
-function getModuleStatus(d){
-  const stdCount=countScores(d.interest?.riasecStandard),rawCount=countScores(d.interest?.riasecRaw);
-  const riasecCount=stdCount||rawCount;
-  const valueCount=countScores(d.workValues);
-  const big5Count=d.interest?.type==='L'?countScores(d.personalityBig5):0;
-  const viaCount=Array.isArray(d.viaTop5)?d.viaTop5.filter(Boolean).length:0;
-  const reflectionCount=['fit','question','disagree'].filter(k=>String(d.reflection?.[k]||'').trim()).length;
-  return {
-    riasec:{status:statusFromCount(riasecCount,6),count:riasecCount,total:6,scoreType:stdCount?'standard':rawCount?'raw':null},
-    values:{status:statusFromCount(valueCount,9),count:valueCount,total:9},
-    big5:{status:d.interest?.type==='L'?statusFromCount(big5Count,5):'not-applicable',count:big5Count,total:5},
-    via:{status:statusFromCount(viaCount,5),count:viaCount,total:5},
-    reflection:{status:reflectionCount?'available':'none',count:reflectionCount,total:3}
-  };
-}
-function buildSummary(d){return {interestType:d.interest?.type,riasecTop:ranked(d.interest?.riasecStandard,3).map(([k,v])=>({code:k,score:v})),valueTop:ranked(d.workValues,3).map(([name,score])=>({name,score})),personalityTop:ranked(d.personalityBig5,2).map(([name,score])=>({name,score})),viaTop5:d.viaTop5||[],studentReflection:d.reflection||{},resultChecked:!!d.resultChecked,moduleStatus:getModuleStatus(d),promptVersion:PROMPT_VERSION,updatedAt:new Date().toISOString()}}
-function statusLabel(x,label){if(!x||x.status==='none')return `${label}: 추후 추가 가능`;if(x.status==='not-applicable')return `${label}: 해당 없음`;if(x.status==='complete')return `${label}: 완료`;return `${label}: 부분입력 ${x.count}/${x.total}`}
-function summaryHtml(d,selected,ctx){
-  const x=buildSummary({...d,interest:{...(d.interest||{}),type:selected}}),m=x.moduleStatus;
-  const interestText=x.riasecTop.length?x.riasecTop.map(a=>`${a.code} ${a.score}`).join(' · '):m.riasec.status==='partial'?`RIASEC 일부 입력 ${m.riasec.count}/6`:'아직 입력하지 않았습니다.';
-  const valueText=x.valueTop.length?x.valueTop.map(a=>`${ctx.escapeHtml(a.name)} ${a.score}`).join(' · '):'추후 추가 가능';
-  const personalityText=x.personalityTop.length?x.personalityTop.map(a=>`${ctx.escapeHtml(a.name)} ${a.score}`).join(' · '):'추후 추가 가능';
-  const viaText=x.viaTop5.length?x.viaTop5.map(ctx.escapeHtml).join(' · '):'추후 추가 가능';
-  return `<h4>나의 Career DNA · 현재 자료</h4><div class="resultGrid"><div class="resultCard"><strong>흥미 · ${selected}형(개정)</strong><p>${interestText}</p></div><div class="resultCard"><strong>직업가치</strong><p>${valueText}</p></div>${selected==='L'?`<div class="resultCard"><strong>성격 5요인</strong><p>${personalityText}</p></div>`:''}<div class="resultCard"><strong>VIA TOP5</strong><p>${viaText}</p></div></div><div class="callout info"><b>인터뷰 사용 상태</b> · ${statusLabel(m.riasec,'직업흥미')} · ${statusLabel(m.values,'직업가치')} · ${statusLabel(m.via,'VIA')}${selected==='L'?` · ${statusLabel(m.big5,'성격 5요인')}`:''}</div><div class="callout ${x.resultChecked?'good':'warn'}">${x.resultChecked?'입력한 검사결과 대조 완료':'입력한 검사결과가 있다면 원 결과표와 다시 대조해 주세요.'}</div>`
-}
-function compactScores(obj){return Object.fromEntries(Object.entries(obj||{}).filter(([,v])=>Number.isFinite(v)))}
-function moduleHeader(title,status){return status==='partial'?`[${title} · 부분입력]`:`[${title}]`}
-function buildCoreModule(){return [
-  '너는 대학생의 자기이해를 돕는 Career DNA 인터뷰 코치다.',
-  '아래 자료는 학생의 진로나 직무를 결정하는 정답이 아니다. 현재 입력된 자료만 사용해 실제 경험을 질문하고, 학생이 자신의 흥미·선호·가치·행동 특성을 스스로 확인하도록 돕는다.',
-  '',
-  '공통 원칙:',
-  '1. 검사결과만으로 직업이나 직무를 추천하지 않는다.',
-  '2. 입력되지 않은 정보는 추정하거나 채워 넣지 않는다.',
-  '3. 흥미, 성격, 가치, 강점, 역량을 같은 개념으로 취급하지 않는다.',
-  '4. 실제 경험을 확인하기 전에는 강점이나 역량이라고 확정하지 않는다.',
-  '5. 검사결과와 실제 경험이 다르면 어느 한쪽을 정답으로 정하지 말고 실제 경험을 더 확인한다.',
-  '6. 최종 판단은 학생이 하도록 한다.'
-].join('\n')}
-function buildRIASECModule(d,status){
-  if(status.status==='none')return '';
-  const source=status.scoreType==='standard'?compactScores(d.interest?.riasecStandard):compactScores(d.interest?.riasecRaw);
-  const scoreName=status.scoreType==='standard'?'표준점수':'원점수';
-  const lines=[moduleHeader(`직업흥미 · 고용24 ${d.interest?.type||''}형(개정)`,status.status),`RIASEC ${scoreName}: ${JSON.stringify(source)}`];
-  if(status.status==='partial')lines.push(`주의: RIASEC가 ${status.count}/6만 입력되어 있다. 전체 유형 순위나 전체 패턴을 판단하지 말고 입력된 점수만 참고한다.`);
-  lines.push('해석 규칙: TOP1 하나만으로 학생을 설명하지 않는다. 흥미를 능력이나 역량으로 해석하지 않는다. 특정 직무와 바로 연결하지 않는다. 실제 경험으로 확인할 필요가 높은 특징 하나부터 질문한다.');
-  return lines.join('\n');
-}
-function buildValueModule(d,status){
-  if(status.status==='none')return '';
-  const lines=[moduleHeader('직업가치',status.status),`입력된 가치 점수: ${JSON.stringify(compactScores(d.workValues))}`];
-  if(status.status==='partial')lines.push(`주의: 직업가치가 ${status.count}/9만 입력되어 있다. 입력되지 않은 가치의 우선순위를 추정하지 않는다.`);
-  lines.push('해석 규칙: 높은 가치가 실제 선택이나 만족 경험에서 어떻게 나타났는지 질문한다. 점수만으로 선호 근무환경이나 직무를 확정하지 않는다.');
-  return lines.join('\n');
-}
-function buildBig5Module(d,status){
-  if(d.interest?.type!=='L'||status.status==='none'||status.status==='not-applicable')return '';
-  const lines=[moduleHeader('성격 5요인 · L형',status.status),`입력된 성격 5요인: ${JSON.stringify(compactScores(d.personalityBig5))}`];
-  if(status.status==='partial')lines.push(`주의: 성격 5요인이 ${status.count}/5만 입력되어 있다. 비어 있는 요인은 해석하지 않는다.`);
-  lines.push('해석 규칙: 성격 점수를 흥미나 능력과 동일시하지 않는다. 실제 행동 경험과 일치하는지 별도로 확인한다.');
-  return lines.join('\n');
-}
-function buildVIAModule(d,status){
-  if(status.status==='none')return '';
-  const lines=[moduleHeader('VIA 강점 · 교육용 참고자료',status.status),`입력된 VIA: ${(d.viaTop5||[]).join(', ')}`];
-  if(status.status==='partial')lines.push(`주의: VIA가 ${status.count}/5만 입력되어 있다. 입력된 강점만 참고한다.`);
-  lines.push("해석 규칙: 강점명 자체를 실제 역량으로 판단하지 않는다. '친절 → 상담 적합'처럼 직무로 연결하지 않는다. 해당 강점이 실제 행동으로 나타난 사례가 있는지 질문하고, 반복 행동이 확인될 때만 강점 후보로 남긴다.");
-  return lines.join('\n');
-}
-function buildSuggestedJobsModule(d){
-  if(!String(d.interest?.work24SuggestedJobs||'').trim())return '';
-  return `[고용24 추천직업 · 참고자료]\n${d.interest.work24SuggestedJobs}\n규칙: 참고자료로만 취급한다. 학생에게 적합한 직무라고 단정하거나 이후 질문의 결론으로 사용하지 않는다.`;
-}
-function buildReflectionModule(d,status){
-  if(status.status==='none')return '';
-  const lines=['[학생의 사전 판단]'];
-  if(String(d.reflection?.fit||'').trim())lines.push(`일치한다고 느낀 결과: ${d.reflection.fit}`);
-  if(String(d.reflection?.question||'').trim())lines.push(`확인이 필요한 결과: ${d.reflection.question}`);
-  if(String(d.reflection?.disagree||'').trim())lines.push(`동의하기 어려운 결과: ${d.reflection.disagree}`);
-  lines.push('규칙: 학생이 직접 표시한 의문이나 불일치가 있으면 검사점수 설명보다 우선해서 실제 경험을 확인한다.');
-  return lines.join('\n');
-}
-function buildInterviewModule(){return [
-  '[인터뷰 진행 규칙]',
-  '1. 질문은 한 번에 반드시 하나만 한다.',
-  '2. 질문 목록을 한꺼번에 보여주지 않는다.',
-  '3. 현재 자료에서 가장 확인 가치가 높은 특징 하나를 골라 실제 경험을 묻는다.',
-  '4. 학생이 답하면 그 경험에서 상황 → 실제 행동 → 그렇게 행동한 이유나 선호를 차례로 확인한다.',
-  '5. 필요하면 다른 경험에서도 같은 특징이 반복되는지, 반대 사례가 있는지 확인한다.',
-  '6. 학생이 말하지 않은 성격·경험·역량을 만들어내지 않는다.',
-  "7. '당신은 ○○형 사람이다'처럼 성격이나 진로를 확정적으로 단정하지 않는다.",
-  '8. 인터뷰 질문은 최대 5개까지만 사용한다. 필요한 정보가 충분하면 더 적게 끝내도 된다.',
-  '9. 4~5번째 질문에서는 지금까지의 잠정 가설을 짧게 제시하고 학생에게 얼마나 맞는지 확인한다.',
-  "10. 첫 응답에서는 최종 해석이나 직업추천을 제시하지 말고, 짧은 관찰 1개와 실제 경험 질문 1개만 제시한다."
-].join('\n')}
-function buildOutputModule(){return [
-  '[인터뷰 종료 후 정리 형식]',
-  '학생의 마지막 확인 응답을 받은 뒤에만 아래를 잠정적으로 정리한다.',
-  '- 내가 흥미를 느끼는 활동 또는 상황',
-  '- 반복해서 나타난 행동 특징',
-  '- 실제 경험으로 확인된 강점 후보',
-  '- 아직 확인되지 않았거나 서로 충돌하는 부분',
-  '- 다음 STEP 경험·역량에서 확인할 Evidence',
-  '',
-  '주의: 근거가 부족한 항목은 억지로 채우지 말고 "확인 필요"로 남긴다. 이 결과는 직업추천 결과가 아니라 다음 직무탐색과 경험분석을 위한 Career DNA 가설이다.'
-].join('\n')}
-function buildCareerDNAPrompt(d){
-  const status=getModuleStatus(d),modules=[buildCoreModule()];
-  const riasec=buildRIASECModule(d,status.riasec);if(riasec)modules.push(riasec);
-  const values=buildValueModule(d,status.values);if(values)modules.push(values);
-  const big5=buildBig5Module(d,status.big5);if(big5)modules.push(big5);
-  const via=buildVIAModule(d,status.via);if(via)modules.push(via);
-  const suggested=buildSuggestedJobsModule(d);if(suggested)modules.push(suggested);
-  const reflection=buildReflectionModule(d,status.reflection);if(reflection)modules.push(reflection);
-  modules.push(buildInterviewModule(),buildOutputModule());
-  return modules.join('\n\n');
-}
-function makePromptText(d){return buildCareerDNAPrompt(d)}
+function normalizeBalance(x){const a=Array.isArray(x)?x.slice(0,7):[];while(a.length<7)a.push(null);return a}
+function balanceHtml(answers,ctx){return BALANCE.map((q,i)=>{const ans=answers[i],locked=!!ans;return `<article class="balanceCard"><div class="balanceTitle"><span>${i+1}/7</span><h4>${ctx.escapeHtml(q.title)}</h4></div><div class="balanceChoices"><button type="button" class="balanceChoice ${ans?.choice==='A'?'selected':''}" data-balance-choice="A" data-index="${i}" ${locked?'disabled':''}><b>A</b><span>${ctx.escapeHtml(q.a)}</span></button><div class="vs">VS</div><button type="button" class="balanceChoice ${ans?.choice==='B'?'selected':''}" data-balance-choice="B" data-index="${i}" ${locked?'disabled':''}><b>B</b><span>${ctx.escapeHtml(q.b)}</span></button></div>${locked?`<div class="valueHint">내 선택 · <b>${ctx.escapeHtml(ans.label)}</b> <span>${ctx.escapeHtml(ans.value)}</span></div><div class="liveVote" id="vote_${i}"><small>현재 수업 선택 비율 불러오는 중...</small></div>`:`<div class="liveVote muted"><small>내 선택을 확정하면 다른 참여자의 비율이 표시됩니다.</small></div>`}</article>`}).join('')}
+function balanceSummaryHtml(answers,ctx){const done=answers.filter(Boolean);if(!done.length)return '';const counts={};done.forEach(x=>counts[x.value]=(counts[x.value]||0)+1);const ranked=Object.entries(counts).sort((a,b)=>b[1]-a[1]);return `<div class="summaryBox"><b>내 선택에서 나타난 가치 단서</b><div class="pillbox" style="margin-top:8px">${ranked.map(([k,n])=>`<span class="pill">${ctx.escapeHtml(k)}${n>1?` · ${n}회`:''}</span>`).join('')}</div><p class="help">진단점수가 아니라 선택 상황에서 나타난 선호 단서입니다.</p></div>`}
+function anchorItemsHtml(scale,responses,ctx){return scale.items.map((item,i)=>`<div class="anchorItem"><div><b>${i+1}</b><span>${ctx.escapeHtml(item)}</span></div><div class="anchorScale">${[1,2,3,4,5,6].map(n=>`<label><input type="radio" name="anchor_${i}" data-anchor-item="${i}" value="${n}" ${Number(responses[i])===n?'checked':''}><span>${n}</span></label>`).join('')}</div></div>`).join('')}
+function bonusHtml(scale,bonusItems,ctx){return scale.items.map((item,i)=>`<label class="bonusItem"><input type="checkbox" data-bonus-item value="${i+1}" ${bonusItems.includes(i+1)?'checked':''}><b>${i+1}</b><span>${ctx.escapeHtml(item)}</span></label>`).join('')}
+function scoreAnchor(scale,responses,bonusItems){const complete=responses.length===40&&responses.every(x=>Number.isFinite(Number(x))&&Number(x)>=1&&Number(x)<=6);const scores={};for(const a of scale.anchors){const nums=scale.scoring[a.code]||[];scores[a.code]=nums.reduce((sum,n)=>sum+Number(responses[n-1]||0)+(bonusItems.includes(n)?Number(scale.bonusRule?.addPoints||4):0),0)}const ranking=Object.entries(scores).map(([code,score])=>({code,score,name:scale.anchors.find(a=>a.code===code)?.name||code})).sort((a,b)=>b.score-a.score||a.code.localeCompare(b.code));return{complete:complete&&bonusItems.length===3,scores,ranking}}
+function anchorResultHtml(scale,responses,bonusItems,ctx){if(!scale)return '';const r=scoreAnchor(scale,responses,bonusItems),answered=responses.filter(x=>Number(x)>=1&&Number(x)<=6).length;if(answered<40)return `<p class="muted">${answered}/40 응답 · 40문항을 모두 완료하면 점수를 보여줍니다.</p>`;if(bonusItems.length!==3)return `<p class="muted">40문항 완료 · 가장 적합한 문항 3개를 선택하면 최종 점수를 보여줍니다.</p>`;const max=r.ranking[0]?.score,min=r.ranking.at(-1)?.score,top=r.ranking.filter(x=>x.score===max),lowest=r.ranking.filter(x=>x.score===min),secondScore=r.ranking.find(x=>x.score<max)?.score,second=secondScore===undefined?[]:r.ranking.filter(x=>x.score===secondScore);return `<div class="anchorResultCards"><div><small>주 앵커</small><b>${top.map(x=>`${x.code} ${ctx.escapeHtml(x.name)}`).join(' · ')}</b><span>${max}점${top.length>1?' · 공동 상위':''}</span></div><div><small>보조 앵커</small><b>${second.length?second.map(x=>`${x.code} ${ctx.escapeHtml(x.name)}`).join(' · '):'동점으로 별도 구분 없음'}</b><span>${secondScore??'—'}${secondScore!==undefined?'점':''}</span></div><div><small>가장 낮은 앵커</small><b>${lowest.map(x=>`${x.code} ${ctx.escapeHtml(x.name)}`).join(' · ')}</b><span>${min}점</span></div></div><div class="anchorBars">${r.ranking.map(x=>`<div><span>${x.code} ${ctx.escapeHtml(x.name)}</span><b>${x.score}</b></div>`).join('')}</div>`}
+function strengthHtml(selected,ctx){return STRENGTHS.map(s=>`<button type="button" class="strengthPick ${selected.includes(s)?'selected':''}" data-strength="${ctx.escapeHtml(s)}">${ctx.escapeHtml(s)}</button>`).join('')}
+function qualSummaryHtml(balance,selfStrengths,ctx){const choices=balance.filter(Boolean).map(x=>x.value);return `<p><b>가치 단서</b><br>${choices.length?choices.map(x=>ctx.escapeHtml(x)).join(' · '):'<span class="muted">아직 선택 전</span>'}</p><p><b>내가 고른 강점</b><br>${selfStrengths.length?selfStrengths.map(x=>ctx.escapeHtml(x)).join(' · '):'<span class="muted">아직 선택 전</span>'}</p>`}
+function quantSummaryHtml(scale,responses,bonusItems,via,mi,ctx){const r=scale?scoreAnchor(scale,responses,bonusItems):null,top=r?.complete?r.ranking.slice(0,3).map(x=>`${x.code} ${x.name}`):[];return `<p><b>Career Anchor</b><br>${top.length?top.map(x=>ctx.escapeHtml(x)).join(' · '):'<span class="muted">검사 완료 후 표시</span>'}</p><p><b>VIA TOP5</b><br>${via.length?via.map(x=>ctx.escapeHtml(x)).join(' · '):'<span class="muted">미입력</span>'}</p><p><b>다중지능 TOP3</b><br>${mi.length?mi.map(x=>ctx.escapeHtml(x)).join(' · '):'<span class="muted">미입력</span>'}</p>`}
+function field(id,label,value,placeholder,ctx){return `<div class="field"><label>${label}</label><input class="input" id="${id}" value="${ctx.escapeHtml(value)}" placeholder="${ctx.escapeHtml(placeholder)}"></div>`}
+function selectField(id,label,value,options){return `<div class="field"><label>${label}</label><select class="input" id="${id}"><option value="">선택</option>${options.map(x=>`<option ${value===x?'selected':''}>${x}</option>`).join('')}</select></div>`}
+function area(id,label,placeholder,value,ctx){return `<div class="field"><label>${label}</label><textarea id="${id}" placeholder="${ctx.escapeHtml(placeholder)}">${ctx.escapeHtml(value||'')}</textarea></div>`}
+function moduleStatus(balance,anchor,strengths,via,mi){return{balance:{status:balance.filter(Boolean).length===7?'complete':balance.filter(Boolean).length?'partial':'none',count:balance.filter(Boolean).length,total:7},careerAnchor:{status:anchor.complete?'complete':Object.values(anchor.scores||{}).some(Boolean)?'partial':'none',count:anchor.complete?40:0,total:40},selfStrengths:{status:strengths.length===5?'complete':strengths.length?'partial':'none',count:strengths.length,total:5},via:{status:via.length===5?'complete':via.length?'partial':'none',count:via.length,total:5},multipleIntelligence:{status:mi.length===3?'complete':mi.length?'partial':'none',count:mi.length,total:3}}}
+function buildProfile(data){const rank=data.careerAnchor?.ranking||[];return{version:'career-dna-profile-v2',valueClues:(data.balance?.answers||[]).filter(Boolean).map(x=>x.value),careerAnchorTop:rank.slice(0,3),selfStrengths:data.selfStrengths||[],viaTop5:data.viaTop5||[],multipleIntelligenceTop3:data.multipleIntelligence?.top3||[],comparison:data.comparison||{},hypothesis:data.hypothesis||{},updatedAt:new Date().toISOString()}}
+function buildPrompt(d,scale){const lines=[];lines.push('당신은 대학생의 자기이해를 돕는 Career DNA 분석 파트너다. 아래 자료를 통합하되, 검사결과를 성격이나 직업의 정답으로 단정하지 않는다. 이번 단계는 인터뷰가 아니라 현재 자료를 한 번에 정리해 자기이해 가설을 만드는 단계다.');lines.push('');lines.push('[분석 원칙]');lines.push('1. 여러 자료에서 반복되는 특징과 서로 다른 결과를 구분한다.');lines.push('2. 학생의 자기인식과 검사결과 중 어느 한쪽을 더 진짜라고 판단하지 않는다.');lines.push('3. 입력되지 않은 내용은 추정하지 않는다.');lines.push('4. VIA 강점명이나 다중지능 영역만으로 직무·역량을 단정하지 않는다.');lines.push('5. 직업을 추천하지 않는다. 확인이 필요한 내용은 가설로 남긴다.');lines.push('6. 다음 주 실제 경험으로 확인할 질문을 정확히 3개 만든다.');const bal=(d.balance?.answers||[]).filter(Boolean);if(bal.length){lines.push('','[Balance Game · 내가 생각하는 중요한 가치 단서]');bal.forEach((x,i)=>lines.push(`${i+1}. ${x.label} → ${x.value}`));if(bal.length<7)lines.push(`※ ${bal.length}/7만 응답. 미응답 문항은 해석하지 말 것.`)}const a=d.careerAnchor;if(a?.complete&&a.ranking?.length){lines.push('','[Career Anchor · 검사결과]');a.ranking.forEach(x=>lines.push(`${x.code} ${x.name}: ${x.score}점`));lines.push('※ 점수 차이가 작거나 동점이면 억지로 1·2위를 구분하지 말 것.')}else if(a?.responses?.some(x=>x)){lines.push('','[Career Anchor · 부분응답]','검사가 완성되지 않았으므로 앵커 순위를 해석하지 말 것.')}if(d.selfStrengths?.length){lines.push('','[내가 생각하는 나의 강점]');lines.push(d.selfStrengths.join(' · '));if(d.selfStrengths.length<5)lines.push(`※ ${d.selfStrengths.length}/5만 선택.`)}if(d.viaTop5?.length){lines.push('','[VIA 성격강점]');lines.push(d.viaTop5.join(' · '));if(d.viaTop5.length<5)lines.push(`※ VIA가 ${d.viaTop5.length}/5만 입력됨.`)}if(d.multipleIntelligence?.top3?.length){lines.push('','[다중지능]');lines.push(d.multipleIntelligence.top3.join(' · '));if(d.multipleIntelligence.top3.length<3)lines.push(`※ 다중지능이 ${d.multipleIntelligence.top3.length}/3만 입력됨.`)}const c=d.comparison||{};if(c.repeat||c.connect||c.unexpected||c.verify){lines.push('','[학생이 직접 비교한 결과]');if(c.repeat)lines.push(`반복해서 나타난 부분: ${c.repeat}`);if(c.connect)lines.push(`서로 연결된다고 느끼는 부분: ${c.connect}`);if(c.unexpected)lines.push(`예상과 달랐던 부분: ${c.unexpected}`);if(c.verify)lines.push(`더 확인하고 싶은 부분: ${c.verify}`)}lines.push('','[출력 형식 · Career DNA 가설 v1]','1. 내가 중요하게 생각하는 일의 조건','2. 여러 자료에서 반복되는 강점 후보','3. 선호하는 활동·문제해결 방식','4. 자기인식과 검사결과가 일치하거나 연결되는 부분','5. 서로 다르거나 아직 확인이 필요한 부분','6. 4주차 실제 경험으로 확인할 질문 3개','','각 항목은 근거가 된 입력자료를 괄호 안에 짧게 표시한다. 과장하거나 확정적으로 말하지 말고 “~일 가능성”, “~로 보이지만 경험 확인이 필요함”처럼 가설 수준을 유지한다.');return lines.join('\n')}
+function styleBlock(){return `<style>
+.careerDnaStandard .moduleHead{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}.careerDnaStandard .moduleHead>span{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#eef0ff;color:#4940b8;font-weight:900;flex:0 0 auto}.careerDnaStandard .moduleHead h3{margin:0 0 3px}.careerDnaStandard .moduleHead p{margin:0;color:var(--muted);font-size:13px}.balanceCard{border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:10px}.balanceTitle{display:flex;gap:8px;align-items:center}.balanceTitle span{font-size:11px;color:var(--muted)}.balanceTitle h4{margin:0}.balanceChoices{display:grid;grid-template-columns:1fr auto 1fr;gap:9px;align-items:center;margin-top:10px}.balanceChoice{border:1px solid var(--line);border-radius:14px;background:#fff;padding:15px;cursor:pointer;text-align:center;color:var(--text)}.balanceChoice b,.balanceChoice span{display:block}.balanceChoice b{font-size:12px;color:#5b50dd;margin-bottom:5px}.balanceChoice.selected{border-color:#655ae7;background:#f7f6ff}.balanceChoice:disabled{cursor:default;opacity:.75}.vs{font-size:11px;color:var(--muted);font-weight:900}.valueHint{margin-top:10px;font-size:12px}.valueHint span{margin-left:8px;color:var(--muted)}.liveVote{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:8px;padding:9px 11px;background:#f7f8fb;border-radius:10px;font-size:12px}.liveVote small{grid-column:1/-1;color:var(--muted)}.anchorProgress{display:flex;justify-content:space-between;gap:8px;padding:10px 12px;background:#f7f8fb;border-radius:12px;margin:12px 0;font-size:12px}.anchorItem{border:1px solid var(--line);border-radius:13px;padding:12px;margin-top:8px}.anchorItem>div:first-child{display:flex;gap:8px;line-height:1.55}.anchorItem>div:first-child b{color:#5b50dd}.anchorScale{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:10px}.anchorScale label input{position:absolute;opacity:0}.anchorScale label span{display:grid;place-items:center;height:36px;border:1px solid var(--line);border-radius:9px;cursor:pointer}.anchorScale label input:checked+span{background:#5b50dd;color:#fff;border-color:#5b50dd}.bonusGrid{max-height:360px;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:8px}.bonusItem{display:grid;grid-template-columns:auto 28px 1fr;gap:7px;padding:8px;border-bottom:1px solid #f0f1f5;font-size:12px;line-height:1.45}.anchorResultCards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.anchorResultCards>div{border:1px solid var(--line);border-radius:12px;padding:12px}.anchorResultCards small,.anchorResultCards b,.anchorResultCards span{display:block}.anchorResultCards small{color:var(--muted)}.anchorResultCards b{margin:5px 0}.anchorBars{margin-top:10px}.anchorBars>div{display:flex;justify-content:space-between;border-bottom:1px solid #f0f1f5;padding:6px 2px;font-size:12px}.strengthCounter{text-align:right;font-size:12px;color:var(--muted);margin-bottom:7px}.strengthGrid{display:flex;flex-wrap:wrap;gap:7px}.strengthPick{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 10px;cursor:pointer;color:var(--text)}.strengthPick.selected{background:#5b50dd;color:#fff;border-color:#5b50dd}.compareColumns{display:grid;grid-template-columns:1fr 1fr;gap:10px}.compareCard{border:1px solid var(--line);border-radius:15px;padding:14px}.compareCard> b{display:block;margin-bottom:10px}.compareCard p{font-size:12px;line-height:1.6}.qualitative{background:#fffaf5}.quantitative{background:#f7f9ff}@media(max-width:680px){.balanceChoices,.compareColumns,.anchorResultCards{grid-template-columns:1fr}.vs{text-align:center}.anchorScale{grid-template-columns:repeat(6,1fr)}.liveVote{grid-template-columns:1fr}.liveVote small{grid-column:auto}.anchorProgress{display:block}.anchorProgress span{display:block;margin-top:3px}}
+</style>`}
