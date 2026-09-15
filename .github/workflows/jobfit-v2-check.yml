@@ -61,6 +61,7 @@ jobs:
           node --check v2/tests/smoke.mjs
           node --check v2/tests/storage-continuity.mjs
           node --check v2/tests/career-dna-regression.mjs
+          node --check v2/tests/career-dna-prompt-matrix.mjs
           node --check v2/tests/week-isolation-regression.mjs
           node --check v2/tests/live-production.mjs
           node --check v2/tests/research-measures.mjs
@@ -101,6 +102,7 @@ jobs:
           test -f docs/JOBFIT_RELEASE_GATE.md
           test -f v2/tests/storage-continuity.mjs
           test -f v2/tests/career-dna-regression.mjs
+          test -f v2/tests/career-dna-prompt-matrix.mjs
           test -f v2/tests/week-isolation-regression.mjs
           test -f v2/tests/live-production.mjs
           test -f v2/tests/research-measures.mjs
@@ -182,6 +184,7 @@ jobs:
           node v2/tests/storage-continuity.mjs
           node v2/tests/week-isolation-regression.mjs
           node v2/tests/career-dna-regression.mjs
+          node v2/tests/career-dna-prompt-matrix.mjs
           node v2/tests/research-measures.mjs
           node v2/tests/relationship-smoke.mjs
           node v2/tests/application-flow.mjs
@@ -193,6 +196,7 @@ jobs:
           node v2/tests/storage-continuity.mjs
           node v2/tests/week-isolation-regression.mjs
           node v2/tests/career-dna-regression.mjs
+          node v2/tests/career-dna-prompt-matrix.mjs
           node v2/tests/research-measures.mjs
           node v2/tests/relationship-smoke.mjs
           node v2/tests/application-flow.mjs
