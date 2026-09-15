@@ -13,16 +13,24 @@
     .selectiveTop h1{margin:4px 0 6px;font-size:30px}
     .selectiveTop p{margin:0;color:#586174}
     .selectiveMeta{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-    .toolGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
-    .toolCard{display:block;padding:20px;border:1px solid #dfe3ec;border-radius:18px;background:#fff;text-decoration:none;color:inherit;box-shadow:0 8px 24px rgba(30,41,59,.05)}
-    .toolCard:hover{transform:translateY(-1px)}
-    .toolCard h3{margin:8px 0}
-    .toolCard p{margin:0;color:#667085;line-height:1.55}
-    .toolCard .badge{display:inline-flex}
-    .toolCard.muted{opacity:.58;pointer-events:none}
+    .moduleGroup{margin-top:18px}
+    .moduleGroup h3{margin:0 0 10px}
+    .moduleGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+    .moduleCard{display:block;padding:16px;border:1px solid #dfe3ec;border-radius:16px;background:#fff;cursor:pointer;transition:.15s ease}
+    .moduleCard:hover{transform:translateY(-1px)}
+    .moduleCard.on{border-color:#315df4;box-shadow:0 0 0 2px rgba(49,93,244,.10)}
+    .moduleCardTop{display:flex;gap:10px;align-items:flex-start}
+    .moduleCard input{margin-top:4px;transform:scale(1.15)}
+    .moduleCard h4{margin:0 0 5px;font-size:16px}
+    .moduleCard p{margin:0;color:#667085;line-height:1.5;font-size:13px}
+    .moduleTag{display:inline-flex;margin-top:9px;font-size:11px;font-weight:800;color:#536079;background:#f1f4f9;border-radius:999px;padding:4px 8px}
+    .composerBar{position:sticky;bottom:12px;margin-top:18px;padding:16px;border-radius:18px;background:rgba(255,255,255,.96);border:1px solid #dfe3ec;box-shadow:0 14px 38px rgba(30,41,59,.12);backdrop-filter:blur(8px);z-index:4}
+    .composerActions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .selectedSummary{margin:0 0 10px;color:#465166;font-size:13px}
+    .generatedLink{margin-top:12px;padding:12px;border-radius:12px;background:#f7f8fb;word-break:break-all;font-size:13px}
     .standaloneNotice{margin:14px 0 18px}
     .selectiveFooter{margin-top:24px;color:#667085;font-size:13px;text-align:center}
-    @media(max-width:640px){.selectiveTop{display:block}.selectiveMeta{justify-content:flex-start;margin-top:12px}.selectiveTop h1{font-size:25px}}
+    @media(max-width:640px){.selectiveTop{display:block}.selectiveMeta{justify-content:flex-start;margin-top:12px}.selectiveTop h1{font-size:25px}.composerBar{bottom:6px}}
   </style>
 </head>
 <body>
@@ -31,32 +39,20 @@
       <div>
         <div class="kicker">JOBFIT · SELECTIVE</div>
         <h1>선택형 Career Tools</h1>
-        <p>한 학기 전체 과정을 하지 않아도, 필요한 수업 모듈만 바로 사용할 수 있습니다.</p>
+        <p>강의 목적에 맞는 모듈만 골라 하나의 수업 링크로 조합합니다.</p>
       </div>
       <div class="selectiveMeta">
         <span class="badge">수업코드 불필요</span>
         <span class="badge">연구 제출 없음</span>
-        <span class="badge">브라우저 자동저장</span>
+        <span class="badge">주차표시 없음</span>
       </div>
     </header>
 
-    <div class="callout info standaloneNotice"><b>다른 강의·특강용 화면입니다.</b><br>학생의 입력내용은 현재 브라우저에만 저장되며 교수자에게 자동 전송되지 않습니다. 수업이 끝나기 전에 결과 JSON을 내려받아 보관할 수 있습니다.</div>
+    <div class="callout info standaloneNotice"><b>외부 강의·특강용 모듈 조합 화면입니다.</b><br>선택한 모듈은 Jobfit의 기본 학습 흐름 순서로 자동 배치됩니다. 학생 화면에는 인제대 주차표시가 나오지 않습니다.</div>
 
-    <section id="toolPicker" class="card">
-      <div class="sectionHead"><div><div class="kicker">CHOOSE A TOOL</div><h2>오늘 사용할 모듈 선택</h2><p>현재는 7주차 산업·기업 탐색 모듈을 우선 제공합니다.</p></div></div>
-      <div class="toolGrid">
-        <a class="toolCard" href="./selective.html?tool=industry-company">
-          <span class="badge">7주차 · 사용 가능</span>
-          <h3>Industry & Company Explorer</h3>
-          <p>관심 직무를 기준으로 산업을 탐색하고, 나의 가치관을 기업 선택 기준으로 연결합니다.</p>
-        </a>
-        <div class="toolCard muted"><span class="badge">추가 예정</span><h3>Career DNA</h3><p>자기이해 모듈을 선택형 강의용으로 분리할 예정입니다.</p></div>
-        <div class="toolCard muted"><span class="badge">추가 예정</span><h3>Experience & Competency</h3><p>경험에서 행동근거와 역량키워드를 추출하는 선택형 모듈입니다.</p></div>
-      </div>
-    </section>
-
+    <section id="toolPicker" class="card"></section>
     <section id="toolRoot" hidden></section>
-    <div class="selectiveFooter">Jobfit Selective Career Tools · 입력내용은 이 기기에만 저장됩니다.</div>
+    <div class="selectiveFooter">Jobfit Selective Career Tools · 학생 입력은 각자의 브라우저에 저장됩니다.</div>
   </main>
   <script type="module" src="./selective.js"></script>
 </body>
