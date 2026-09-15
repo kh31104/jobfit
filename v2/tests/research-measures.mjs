@@ -22,7 +22,9 @@ const mockBundle={
 await page.route('**/functions/v1/research-measures',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,course:'INJE2026',measures:mockBundle})}));
 
 try{
-  await page.goto(`${base}?course=INJE2026`,{waitUntil:'networkidle'});
+  // Current INJE2026 defaults to measures=false. This regression test explicitly opts into
+  // the legacy/research pipeline so that capability remains testable without collecting it this semester.
+  await page.goto(`${base}?course=INJE2026&measures=true`,{waitUntil:'networkidle'});
   await page.locator('#makeCodeBtn').click();
   await page.waitForFunction(()=>String(JSON.parse(localStorage.getItem('jobfit:v2:learner')).profile?.anonCode||'').startsWith('JF26-'));
   await page.waitForSelector('[data-measure="pre-kcaas"]');
