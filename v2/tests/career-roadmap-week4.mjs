@@ -101,4 +101,17 @@ await run('Week4 save stores Best3 in Experience & Competency without creating n
   assert(saved.assessments.careerDNA.hypothesis.version==='career-dna-hypothesis-v1','Career DNA was changed');
 });
 
+await run('Week6 Job Explorer bridges current Career DNA and Experience Map',async page=>{
+  await page.locator('.stepBtn[data-step="3"]').click();await page.waitForSelector('#jobPrompt');
+  const body=(await page.locator('#stepRoot').textContent())||'';
+  for(const text of ['강점·경험역량을 직무 후보로 연결하기','나의 직무탐색 근거 확인','AI 직무탐색 프롬프트','직무 후보 Pool','Target Job 1·2·3 직접 선택'])assert(body.includes(text),`Missing Week6 module: ${text}`);
+  assert(body.includes('분석'),'Experience Map competency not shown in Week6 bridge');
+  const prompt=await page.locator('#jobPrompt').inputValue();
+  assert(prompt.includes('[3주차 Career DNA]'),'Career DNA block missing');
+  assert(prompt.includes('[4주차 Experience Map]'),'Experience Map block missing');
+  assert(prompt.includes('Task·KSA·KPI'),'Task/KSA/KPI verification bridge missing');
+  assert(prompt.includes('직무 적합도, 취업성공확률, 추천순위를 만들지 않는다.'),'No-fit-score rule missing');
+  assert(!prompt.includes('RIASEC'),'Legacy RIASEC dependency remains in Week6 prompt');
+});
+
 await browser.close();if(failed)process.exit(1);
