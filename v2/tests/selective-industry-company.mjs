@@ -1,10 +1,11 @@
 import {chromium} from 'playwright';
 
 const base=process.env.JOBFIT_TEST_URL||'http://127.0.0.1:8765/v2/';
+const selectiveUrl=base.endsWith('/v2/')?`${base}selective.html?tool=industry-company`:`${base}v2/selective.html?tool=industry-company`;
 const browser=await chromium.launch({headless:true});let failed=false;
 function assert(v,m){if(!v)throw new Error(m)}
 async function run(name,viewport){const context=await browser.newContext({viewport}),page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));try{
-  await page.goto(`${base}selective.html?tool=industry-company`,{waitUntil:'networkidle'});
+  await page.goto(selectiveUrl,{waitUntil:'networkidle'});
   const body=(await page.locator('body').textContent())||'';
   for(const text of ['선택형 Career Tools','Industry & Company Explorer','Target Job 1~3개','AI 산업탐색','Industry Evidence','AI 기업탐색','Company Evidence','나의 Career Target 조합'])assert(body.includes(text),`Missing selective module text: ${text}`);
   assert(body.includes('연구 제출 없음'),'Selective shell must state no research submission');
