@@ -2,8 +2,9 @@ const ROOT_ID='stepRoot';
 const STORAGE_KEY='jobfit:v2:learner';
 const REOPEN_BALANCE_KEY='jobfit:balance-reopen';
 const PROMPT_LABEL='자기이해 + SWOT 통합분석 만들기';
-const GUIDE_HTML='<b>AI LAB 사용 순서</b><br>① 현재 내용 저장 → ② 통합분석 프롬프트 만들기 → ③ 복사 → ④ 수업에서 사용하는 AI에 붙여넣기<br><span class="muted">AI 결과에는 자기이해 가설과 함께 <b>자소서용 강점·약점 키워드</b>, <b>근거 상태</b>, <b>4주차 경험 확인 질문</b>, <b>SWOT 분석·전략</b>을 요청합니다. STEP 1 정보만으로 판단할 수 없는 기회(O)·위협(T)은 임의로 만들지 않고 ‘추가 정보 필요’로 표시합니다. 아직 실제 경험으로 확인하지 않은 키워드는 자소서 문장으로 확정하지 않습니다. Jobfit이 입력내용을 AI로 자동 전송하지는 않습니다.</span>';
+const GUIDE_HTML='<b>AI LAB 사용 순서</b><br>① 현재 내용 저장 → ② 통합분석 프롬프트 만들기 → ③ 복사 → ④ 수업에서 사용하는 AI에 붙여넣기 → ⑤ 결과를 읽고 나와 맞는 부분 확인 → ⑥ 08 Career DNA 가설에 핵심 내용 저장<br><span class="muted">AI 결과에는 자기이해 가설과 함께 <b>자소서용 강점·약점 키워드</b>, <b>근거 상태</b>, <b>4주차 경험 확인 질문</b>, <b>SWOT 분석·전략</b>을 요청합니다. STEP 1 정보만으로 판단할 수 없는 기회(O)·위협(T)은 임의로 만들지 않고 ‘추가 정보 필요’로 표시합니다. 아직 실제 경험으로 확인하지 않은 키워드는 자소서 문장으로 확정하지 않습니다. Jobfit이 입력내용을 AI로 자동 전송하지는 않습니다.</span>';
 const SWOT_PROMPT_MARKER='[추가 출력 · 자기소개서 활용 키워드 + SWOT]';
+const WEEK4_BRIDGE_MARKER='[3주차에서 내가 검토해 둔 자기이해 후보 · 참고만]';
 const SWOT_PROMPT_EXTENSION=`
 
 [추가 출력 · 자기소개서 활용 키워드 + SWOT]
@@ -63,6 +64,7 @@ const SWOT_PROMPT_EXTENSION=`
 주의: 키워드를 자기소개서 문장으로 바로 확정하지 말고, 다음 STEP에서 실제 경험의 상황·행동·결과·증거와 연결해 검증한다.`;
 
 let reopenBalanceIndex=null;
+let structuredDraft=null;
 try{
   const rawPending=sessionStorage.getItem(REOPEN_BALANCE_KEY);
   if(rawPending!==null){
@@ -76,6 +78,12 @@ function writeState(state){
   state.meta=state.meta||{};
   state.meta.updatedAt=new Date().toISOString();
   localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+}
+function normalizeList(value,max){
+  const source=Array.isArray(value)?value:String(value||'').split(/[,;\n·]+/);
+  const out=[];
+  source.map(x=>String(x||'').trim()).filter(Boolean).forEach(x=>{if(!out.includes(x)&&out.length<max)out.push(x)});
+  return out;
 }
 function ensureStandardCompatibility(){
   const state=parseState(),dna=state.assessments?.careerDNA;
@@ -99,6 +107,13 @@ function injectStyles(){
     .careerDnaStandard .balanceReselect{margin-left:8px;border:0;background:transparent;color:#5146c9;font-weight:800;font-size:12px;text-decoration:underline;cursor:pointer;padding:3px 4px}
     .careerDnaStandard .balanceReselect:hover{color:#3027a1}
     .careerDnaStandard .swotGuide{margin-top:10px}
+    .careerDnaStructured{margin-top:12px;border:1px solid var(--line);border-radius:14px;padding:12px;background:#fafbff}
+    .careerDnaStructured h4{margin:0 0 5px}.careerDnaStructured .help{margin-bottom:10px}
+    .careerDnaStructuredGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .jobfitStructuredBridge{margin-top:10px;border:1px solid var(--line);border-radius:14px;padding:12px;background:#fbfbff}
+    .jobfitStructuredBridge h4{margin:0 0 4px}.jobfitStructuredBridge p{margin:5px 0}.jobfitStructuredBridge small{color:var(--muted);font-weight:800}
+    .jobfitStructuredBridge ul{margin:5px 0 0;padding-left:20px}
+    @media(max-width:760px){.careerDnaStructuredGrid{grid-template-columns:1fr}}
   `;
   document.head.appendChild(style);
 }
@@ -158,6 +173,7 @@ function enhanceBalanceReselect(root){
     const btn=document.createElement('button');btn.type='button';btn.className='balanceReselect';btn.textContent='다시 선택';btn.setAttribute('aria-label',`${index+1}번 밸런스게임 다시 선택`);
     btn.addEventListener('click',async event=>{
       event.preventDefault();event.stopPropagation();
+      persistStructuredHypothesis();
       if(!confirm('이 문항을 다시 선택할까요? 현재 선택을 지운 뒤 A/B를 다시 고를 수 있습니다.'))return;
       const state=parseState();
       const answers=state.assessments?.careerDNA?.balance?.answers;
@@ -205,27 +221,99 @@ function enhanceAiSwot(root){
     if(hypothesis.placeholder!==placeholder)hypothesis.placeholder=placeholder;
   }
 }
+function enhanceHypothesisStructured(root){
+  const hypothesis=root.querySelector('#aiHypothesis');if(!hypothesis)return;
+  const state=parseState(),h=state.assessments?.careerDNA?.hypothesis||{};
+  if(root.querySelector('#careerDnaStructuredSummary')){
+    if(!structuredDraft)structuredDraft={strengthKeywords:normalizeList(h.strengthKeywords,5),developmentKeywords:normalizeList(h.developmentKeywords,3),verifyQuestions:normalizeList(h.verifyQuestions,3)};
+    return;
+  }
+  const wrap=document.createElement('div');wrap.id='careerDnaStructuredSummary';wrap.className='careerDnaStructured';
+  wrap.innerHTML='<h4>4주차로 가져갈 핵심만 다시 확인</h4><p class="help">AI 결과를 그대로 옮기지 말고, 내가 읽어보고 납득한 후보만 적으세요. 아직 ‘확정된 역량’이 아니라 실제 경험에서 확인할 가설입니다.</p><div class="careerDnaStructuredGrid"><div class="field"><label>내가 검토한 강점 키워드 <span class="muted">최대 5개</span></label><input class="input" id="verifiedStrengthKeywords" placeholder="예: 신중한 실행, 학습, 협력"><span class="hint">쉼표로 구분. 4주차 경험에서 행동근거를 확인합니다.</span></div><div class="field"><label>보완 키워드 <span class="muted">최대 3개</span></label><input class="input" id="verifiedDevelopmentKeywords" placeholder="예: 과도한 신중함, 우선순위 조정"><span class="hint">성격의 결함이 아니라 보완 행동이 필요한 후보만 남깁니다.</span></div></div><div class="field" style="margin-top:10px"><label>4주차 실제 경험에서 확인할 질문 <span class="muted">최대 3개 · 한 줄에 하나</span></label><textarea id="verifiedExperienceQuestions" placeholder="예: 협업 상황에서도 신중함이 실제 행동으로 나타났는가?\n결정을 내려야 할 때 신중함이 속도를 늦춘 적은 없었는가?"></textarea></div>';
+  hypothesis.closest('.field')?.insertAdjacentElement('afterend',wrap);
+  const strength=root.querySelector('#verifiedStrengthKeywords'),development=root.querySelector('#verifiedDevelopmentKeywords'),questions=root.querySelector('#verifiedExperienceQuestions');
+  strength.value=normalizeList(h.strengthKeywords,5).join(', ');
+  development.value=normalizeList(h.developmentKeywords,3).join(', ');
+  questions.value=normalizeList(h.verifyQuestions,3).join('\n');
+  const syncDraft=()=>{structuredDraft={strengthKeywords:normalizeList(strength.value,5),developmentKeywords:normalizeList(development.value,3),verifyQuestions:normalizeList(questions.value,3)}};
+  [strength,development,questions].forEach(el=>el.addEventListener('input',syncDraft));
+  syncDraft();
+}
+function persistStructuredHypothesis(){
+  if(!structuredDraft)return;
+  const state=parseState(),dna=state.assessments?.careerDNA;if(!dna)return;
+  dna.hypothesis={...(dna.hypothesis||{}),strengthKeywords:[...structuredDraft.strengthKeywords],developmentKeywords:[...structuredDraft.developmentKeywords],verifyQuestions:[...structuredDraft.verifyQuestions],structuredVersion:'career-dna-verified-summary-v1'};
+  writeState(state);
+  window.JobfitStorageContinuity?.syncNow?.();
+}
 function enhanceCareerDNA(){
   const root=document.getElementById(ROOT_ID);if(!root)return;
   const heading=root.querySelector('h2');if(!heading||!heading.textContent.includes('Career DNA'))return;
   injectStyles();
   enhanceBalanceReselect(root);
   enhanceAiSwot(root);
+  enhanceHypothesisStructured(root);
   enhanceCollapsibles(root);
   reopenBalanceIfNeeded(root);
   ensureStandardCompatibility();
 }
+function addBridgeRow(box,label,value){
+  const row=document.createElement('div');row.style.marginTop='9px';
+  const small=document.createElement('small');small.textContent=label;row.appendChild(small);
+  if(Array.isArray(value)){
+    const ul=document.createElement('ul');value.forEach(x=>{const li=document.createElement('li');li.textContent=x;ul.appendChild(li)});row.appendChild(ul);
+  }else{const p=document.createElement('p');p.textContent=value;row.appendChild(p)}
+  box.appendChild(row);
+}
+function enhanceExperienceBridge(root){
+  if(root.querySelector('#jobfitStructuredBridge'))return;
+  const h=parseState().assessments?.careerDNA?.hypothesis||{};
+  const strengths=normalizeList(h.strengthKeywords,5),development=normalizeList(h.developmentKeywords,3),questions=normalizeList(h.verifyQuestions,3);
+  if(!strengths.length&&!development.length&&!questions.length)return;
+  const box=document.createElement('div');box.id='jobfitStructuredBridge';box.className='jobfitStructuredBridge';
+  const title=document.createElement('h4');title.textContent='3주차에서 내가 검토해 둔 후보';box.appendChild(title);
+  const note=document.createElement('p');note.className='help';note.textContent='아직 확정된 역량이 아닙니다. 이번 주 실제 경험의 행동·결과·증거에서 맞는지 확인합니다.';box.appendChild(note);
+  if(strengths.length)addBridgeRow(box,'강점 후보',strengths.join(' · '));
+  if(development.length)addBridgeRow(box,'보완 후보',development.join(' · '));
+  if(questions.length)addBridgeRow(box,'이번 주 확인 질문',questions);
+  const firstBlock=root.querySelector('.block'),anchor=root.querySelector('.dnaBridge')||firstBlock?.querySelector('.callout')||firstBlock?.querySelector('.moduleHead');
+  anchor?.insertAdjacentElement('afterend',box);
+}
+function appendWeek4BridgePrompt(root){
+  const box=root.querySelector('#interviewPrompt');if(!box)return;
+  const current=box.textContent||'';if(!current||current.includes(WEEK4_BRIDGE_MARKER))return;
+  const h=parseState().assessments?.careerDNA?.hypothesis||{};
+  const strengths=normalizeList(h.strengthKeywords,5),development=normalizeList(h.developmentKeywords,3),questions=normalizeList(h.verifyQuestions,3);
+  if(!strengths.length&&!development.length&&!questions.length)return;
+  const lines=['', '', WEEK4_BRIDGE_MARKER,'아래 내용은 3주차에서 내가 검토한 자기이해 후보이며 사실로 전제하지 않는다. 이번 경험에서 실제 행동근거가 확인될 때만 유지하고, 근거가 없으면 수정하거나 버린다.'];
+  if(strengths.length)lines.push(`강점 후보: ${strengths.join(' · ')}`);
+  if(development.length)lines.push(`보완 후보: ${development.join(' · ')}`);
+  if(questions.length){lines.push('이번 주 확인 질문:');questions.forEach((q,i)=>lines.push(`${i+1}. ${q}`))}
+  lines.push('인터뷰에서는 위 키워드에 맞추어 답을 유도하지 말고, 내가 말한 실제 행동을 먼저 확인한 뒤 일치 여부를 판단한다.');
+  box.textContent=current+lines.join('\n');
+}
+function enhanceExperienceWeek4(){
+  const root=document.getElementById(ROOT_ID);if(!root)return;
+  const heading=root.querySelector('h2');if(!heading||!heading.textContent.includes('나의 경험에서 직무역량 찾기'))return;
+  injectStyles();enhanceExperienceBridge(root);
+  const btn=root.querySelector('#makeInterviewPrompt');
+  if(btn&&!btn.dataset.careerDnaBridge){btn.dataset.careerDnaBridge='1';btn.addEventListener('click',()=>appendWeek4BridgePrompt(root))}
+}
+function enhanceAll(){enhanceCareerDNA();enhanceExperienceWeek4()}
 
-const observer=new MutationObserver(()=>enhanceCareerDNA());
+const observer=new MutationObserver(()=>enhanceAll());
 function start(){
   const root=document.getElementById(ROOT_ID);if(!root)return;
   observer.observe(root,{childList:true,subtree:true});
   root.addEventListener('click',event=>{
     const btn=event.target.closest?.('button');
-    if(btn&&['saveDNA','makePrompt','nextStep'].includes(btn.id))setTimeout(ensureStandardCompatibility,0);
+    if(btn?.closest?.('.careerDnaStandard')){
+      if(['saveDNA','makePrompt','nextStep'].includes(btn.id)||btn.matches('[data-balance-choice]'))persistStructuredHypothesis();
+      if(['saveDNA','makePrompt','nextStep'].includes(btn.id))setTimeout(ensureStandardCompatibility,0);
+    }
   });
-  enhanceCareerDNA();
+  enhanceAll();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 
-window.JobfitCareerDnaUx={readState:parseState,ensureStandardCompatibility,enhanceCareerDNA};
+window.JobfitCareerDnaUx={readState:parseState,ensureStandardCompatibility,enhanceCareerDNA,persistStructuredHypothesis};
