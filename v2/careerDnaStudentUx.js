@@ -170,22 +170,32 @@ function enhancePromptButton(root=currentRoot()){
   btn.addEventListener('click',()=>{queueMicrotask(()=>{replacePromptExtension(root);updateStatuses(root)})});
 }
 
-function markDirty(event){
-  const root=currentRoot();
-  if(!careerSection(root))return;
-  const target=event.target;
-  if(target?.closest?.('[data-balance-choice],.balanceReselect,.strengthPick')||target?.matches?.('[data-anchor-item],[data-bonus-item],#via_0,#via_1,#via_2,#via_3,#via_4,#mi_0,#mi_1,#mi_2,#compare_repeat,#compare_connect,#compare_unexpected,#compare_verify,#aiHypothesis,#hypothesisFit'))dirty=true;
-  setTimeout(()=>updateStatuses(root),0);
-}
-
 function saveIfDirty(){
-  if(!dirty||saveLock)return false;
+  if(window.JobfitCareerDnaReselecting||!dirty||saveLock)return false;
   const root=currentRoot();
   if(!careerSection(root))return false;
   const btn=root.querySelector('#saveDNA');
   if(!btn)return false;
   saveLock=true;
   try{btn.click();dirty=false;return true}finally{setTimeout(()=>{saveLock=false},0)}
+}
+
+function markDirty(event){
+  const root=currentRoot();
+  if(!careerSection(root))return;
+  const target=event.target;
+  if(target?.closest?.('.balanceReselect')){
+    saveIfDirty();
+    window.JobfitCareerDnaReselecting=true;
+    dirty=false;
+    return;
+  }
+  if(target?.closest?.('[data-balance-choice]')){
+    setTimeout(()=>updateStatuses(root),0);
+    return;
+  }
+  if(target?.closest?.('.strengthPick')||target?.matches?.('[data-anchor-item],[data-bonus-item],#via_0,#via_1,#via_2,#via_3,#via_4,#mi_0,#mi_1,#mi_2,#compare_repeat,#compare_connect,#compare_unexpected,#compare_verify,#aiHypothesis,#hypothesisFit'))dirty=true;
+  setTimeout(()=>updateStatuses(root),0);
 }
 
 function addUnsavedHint(root=currentRoot()){
