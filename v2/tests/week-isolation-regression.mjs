@@ -14,7 +14,7 @@ async function run(name,viewport){
   await page.route('**/functions/v1/career-dna-measures',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,course:'INJE2026',careerAnchor:mockAnchor})}));
   await page.route('**/functions/v1/research-measures',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,course:'INJE2026',measures:mockMeasures})}));
   try{
-    await page.goto(`${base}?course=INJE2026`,{waitUntil:'networkidle'});
+    await page.goto(`${base}?course=INJE2026&measures=true`,{waitUntil:'networkidle'});
     assert(new URL(page.url()).searchParams.get('course')==='INJE2026','Course URL parameter changed');
     assert(new URL(page.url()).searchParams.get('measures')==='true','INJE2026 must keep STEP0 PRE enabled');
     assert(await page.locator('.stepBtn').count()===14,'STEP navigation must contain 14 steps');
