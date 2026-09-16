@@ -23,8 +23,10 @@ async function run(name,fn){
   await routeClassroom(page);
   try{await fn(page);if(errors.length)throw new Error(errors.join('\n'));console.log(`PASS ${name}`)}catch(e){failed=true;console.error(`FAIL ${name}\n${e.stack||e}`)}finally{await context.close()}
 }
-async function openCareerDNA(page){await page.goto(`${base}?course=INJE2026`,{waitUntil:'networkidle'});await page.locator('.stepBtn[data-step="1"]').click();await page.waitForSelector('#makePrompt')}
-async function completeAnchor(page){for(let i=0;i<40;i++){const value=(i%6)+1;await page.locator(`[data-anchor-item="${i}"][value="${value}"]`).check()}for(const n of [1,2,3])await page.locator(`[data-bonus-item][value="${n}"]`).check()}
+async function openCareerDNA(page){await page.goto(`${base}?course=INJE2026`,{waitUntil:'networkidle'});await page.locator('.stepBtn[data-step="1"]').click();await page.waitForSelector('#makePrompt',{state:'attached'});await page.waitForSelector('.jobfitModuleToggle',{state:'attached'})}
+function moduleHead(page,title){return page.locator('.careerDnaStandard .moduleHead').filter({has:page.locator('h3',{hasText:title})}).first()}
+async function expandModule(page,title){const head=moduleHead(page,title);if((await head.getAttribute('aria-expanded'))!=='true')await head.click()}
+async function completeAnchor(page){await expandModule(page,'Career Anchor');for(let i=0;i<40;i++){const value=(i%6)+1;await page.locator(`[data-anchor-item="${i}"][value="${value}"]`).check()}for(const n of [1,2,3])await page.locator(`[data-bonus-item][value="${n}"]`).check()}
 
 await run('STEP 0-13 all load without research-measure collection',async page=>{
   await page.goto(`${base}?course=INJE2026`,{waitUntil:'networkidle'});
@@ -35,23 +37,31 @@ await run('STEP 0-13 all load without research-measure collection',async page=>{
   }
 });
 
-await run('Week 3 renders the agreed Career DNA standard sequence',async page=>{
+await run('Week 3 renders the agreed Career DNA standard sequence collapsed by title',async page=>{
   await openCareerDNA(page);const body=(await page.locator('#stepRoot').textContent())||'';
   for(const text of ['Balance Game','Career Anchor','내가 생각하는 나의 강점','VIA 성격강점','다중지능검사','내가 생각하는 나 × 검사에서 나타난 나','AI 통합분석','Career DNA 가설 v1'])assert(body.includes(text),`Missing module: ${text}`);
   assert(!body.includes('직업선호도검사'),'Old Work24 S/L module must not remain in Week 3');
   assert(!body.includes('Career DNA 인터뷰 시작'),'Week 3 must not start the Career DNA interview');
   assert((await page.locator('[data-anchor-item]').count())===240,'40 Career Anchor items x 6 response choices expected');
   assert((await page.locator('[data-strength]').count())>=50,'Strength word picker missing');
+  assert((await page.locator('.careerDnaStandard .jobfitModuleToggle[aria-expanded="false"]').count())===8,'All eight Career DNA modules must start collapsed');
+  assert(await moduleHead(page,'Career Anchor').locator('p').isHidden(),'Career Anchor description should be hidden until opened');
+  await expandModule(page,'Career Anchor');assert(await moduleHead(page,'Career Anchor').locator('p').isVisible(),'Career Anchor should expand on click');
 });
 
-await run('Balance choice is private first, then shows live class aggregate',async page=>{
-  await openCareerDNA(page);
+await run('Balance choice can be corrected and still shows live class aggregate',async page=>{
+  await openCareerDNA(page);await expandModule(page,'Balance Game');
   assert(((await page.locator('#vote_0').count())===0),'Vote result must be hidden before own choice');
   await page.locator('[data-balance-choice="A"][data-index="0"]').click();
   await page.waitForSelector('#vote_0');
   await page.waitForFunction(()=>document.querySelector('#vote_0')?.textContent?.includes('60.0%'));
   const text=(await page.locator('#vote_0').textContent())||'';assert(text.includes('20명'),'Class total missing after vote');
-  assert(await page.locator('[data-balance-choice="B"][data-index="0"]').isDisabled(),'Choice must lock after confirmation');
+  assert(await page.locator('[data-balance-choice="B"][data-index="0"]').isDisabled(),'Confirmed choice must stay locked until reselect is used');
+  assert(await page.locator('.balanceReselect').first().isVisible(),'Reselect control missing after confirmation');
+  await page.locator('.balanceReselect').first().click();await page.waitForLoadState('networkidle');await page.waitForSelector('.jobfitModuleToggle',{state:'attached'});await expandModule(page,'Balance Game');
+  const cleared=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner'))?.assessments?.careerDNA?.balance?.answers?.[0]??null);assert(cleared===null,'Reselect must clear only the selected balance answer');
+  await page.locator('[data-balance-choice="B"][data-index="0"]').click();await page.waitForSelector('#vote_0');
+  assert(await page.locator('[data-balance-choice="B"][data-index="0"]').evaluate(el=>el.classList.contains('selected')),'Corrected B choice was not saved');
 });
 
 await run('Career Anchor scores all 40 items plus three +4 bonus items',async page=>{
@@ -62,15 +72,16 @@ await run('Career Anchor scores all 40 items plus three +4 bonus items',async pa
   assert(a.responses.length===40,'40 Career Anchor responses not saved');assert(a.bonusItems.length===3,'Three bonus items not saved');assert(Object.keys(a.scores).length===8,'Eight anchor scores not saved');assert(a.complete===true,'Career Anchor completion not saved');
 });
 
-await run('Qualitative and quantitative inputs produce one-shot integration prompt and preserve STEP2 bridge',async page=>{
+await run('Qualitative and quantitative inputs produce SWOT integration prompt and preserve STEP2 bridge',async page=>{
   await openCareerDNA(page);
-  for(const i of [0,1,2,3,4])await page.locator('[data-strength]').nth(i).click();
-  for(const [i,v] of ['학구열','신중성','진실성','희망','친절'].entries())await page.locator(`#via_${i}`).fill(v);
-  for(const [i,v] of ['자기성찰지능','언어지능','인간친화지능'].entries())await page.locator(`#mi_${i}`).selectOption({label:v});
-  const reflection='학습과 신중함이 여러 결과에서 반복된다.';await page.locator('#compare_repeat').fill(reflection);await page.locator('#compare_verify').fill('협업에서도 같은 강점이 반복되는지 확인하고 싶다.');
-  await page.locator('#makePrompt').click();const prompt=(await page.locator('#promptBox').textContent())||'';
+  await expandModule(page,'내가 생각하는 나의 강점');for(const i of [0,1,2,3,4])await page.locator('[data-strength]').nth(i).click();
+  await expandModule(page,'VIA 성격강점');for(const [i,v] of ['학구열','신중성','진실성','희망','친절'].entries())await page.locator(`#via_${i}`).fill(v);
+  await expandModule(page,'다중지능검사');for(const [i,v] of ['자기성찰지능','언어지능','인간친화지능'].entries())await page.locator(`#mi_${i}`).selectOption({label:v});
+  await expandModule(page,'내가 생각하는 나 × 검사에서 나타난 나');const reflection='학습과 신중함이 여러 결과에서 반복된다.';await page.locator('#compare_repeat').fill(reflection);await page.locator('#compare_verify').fill('협업에서도 같은 강점이 반복되는지 확인하고 싶다.');
+  await expandModule(page,'AI 통합분석');await page.locator('#makePrompt').click();const prompt=(await page.locator('#promptBox').textContent())||'';
   assert(prompt.includes('[내가 생각하는 나의 강점]'),'Self-strength module missing from prompt');assert(prompt.includes('[VIA 성격강점]'),'VIA missing from prompt');assert(prompt.includes('[다중지능]'),'MI missing from prompt');
   assert(prompt.includes('이번 단계는 인터뷰가 아니라'),'Prompt must state Week 3 is not an interview');assert(prompt.includes('직업을 추천하지 않는다'),'Job recommendation guard missing');assert(prompt.includes('4주차 실제 경험으로 확인할 질문 3개'),'Week4 verification questions missing');
+  assert(prompt.includes('[추가 출력 · 자기소개서 활용 키워드 + SWOT]'),'SWOT extension missing');assert(prompt.includes('강점 키워드 5개'),'Strength keyword output missing');assert(prompt.includes('약점/보완 키워드 3개'),'Weakness keyword output missing');assert(prompt.includes('SO 전략'),'SWOT strategy output missing');assert(prompt.includes('추가 정보 필요'),'Unsupported opportunity/threat guard missing');
   await page.locator('#nextStep').click();await page.waitForSelector('#stepRoot h2');const body=(await page.locator('#stepRoot').textContent())||'';assert(body.includes(reflection),'STEP2 reflection bridge broken');
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));assert(saved.assessments.careerDNA.reflection.fit===reflection,'Legacy reflection.fit contract changed');assert(saved.assessments.careerDNA.promptMeta.version==='career-dna-standard-v1','New prompt version missing');
 });
