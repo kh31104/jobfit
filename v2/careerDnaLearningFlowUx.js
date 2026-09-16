@@ -129,7 +129,7 @@ function enhanceStep2(section){
 
   const interviewBlock=moduleBlocks(section)[2];
   if(interviewBlock&&!interviewBlock.querySelector('.jobfitInterviewSafetyGuide')){
-    const actions=interviewBlock.querySelector('.actions');
+    const actions=interviewBlock.querySelector('#makeInterviewPrompt')?.closest('.actions');
     if(actions){
       const box=document.createElement('div');
       box.className='callout info jobfitInterviewSafetyGuide';
