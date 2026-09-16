@@ -15,4 +15,5 @@ if(['INJE2026','INJE-2026-2'].includes(bootCourse)&&!bootParams.has('measures'))
 await import('./app.js?v=15');
 await import('./injeClassroom.js?v=15');
 await import('./careerDnaUx.js?v=6');
+await import('./careerDnaStudentUx.js?v=1');
 startContinuity();
