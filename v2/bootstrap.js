@@ -16,5 +16,5 @@ await import('./app.js?v=15');
 await import('./injeClassroom.js?v=15');
 await import('./careerDnaUx.js?v=7');
 await import('./careerDnaStudentUx.js?v=1');
-await import('./careerDnaLearningFlowUx.js?v=3');
+await import('./careerDnaLearningFlowUx.js?v=4');
 startContinuity();
