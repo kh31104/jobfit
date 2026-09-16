@@ -14,8 +14,18 @@ async function run(name,viewport){
   try{
     await page.goto(base,{waitUntil:'networkidle',timeout:60000});
     assert(new URL(page.url()).searchParams.get('course')==='INJE2026','course=INJE2026 was not preserved');
-    assert(new URL(page.url()).searchParams.get('measures')==='false','Current semester must keep research measures off');
+    assert(new URL(page.url()).searchParams.get('measures')==='true','INJE2026 STEP0 PRE must stay enabled');
     assert(await page.locator('.stepBtn').count()===14,'Student navigation must contain 14 steps');
+
+    await page.waitForSelector('#preMeasureSave',{timeout:30000});
+    const step0=(await page.locator('#stepRoot').textContent())||'';
+    assert(step0.includes('오늘 할 일은 7개뿐입니다.'),'Deployed STEP0 must keep seven-stage sequence');
+    const journey=(await page.locator('.journeyStrip span').allTextContents()).map(x=>x.replace(/\s+/g,' ').trim());
+    assert(journey.length===7,'Deployed STEP0 journey must contain seven stages');
+    assert(journey[0].includes('수업 연결')&&journey[1].includes('익명코드')&&journey[2].includes('기본정보')&&journey[3].includes('현재 준비상태')&&journey[4].includes('AI Check-in')&&journey[5].includes('PRE 측정')&&journey[6].includes('백업'),'Deployed STEP0 stage order changed');
+    assert(await page.locator('[data-measure="pre-work24"]').count()===14,'Deployed Work24 PRE must expose 14 score inputs');
+    assert(await page.locator('[data-measure="pre-kcaas"]').count()===12,'Deployed K-CAAS PRE must expose 12 items');
+    assert(((await page.locator('#heroMeta').textContent())||'').includes('PRE/POST 측정'),'Deployed PRE/POST status label missing');
 
     await page.locator('.stepBtn[data-step="1"]').click();await page.waitForSelector('#makePrompt',{state:'attached'});await page.waitForSelector('[data-anchor-item]',{state:'attached'});await waitCareerUx(page);
     const body=(await page.locator('#stepRoot').textContent())||'';
@@ -68,6 +78,6 @@ async function run(name,viewport){
   }catch(error){failed=true;console.error(`FAIL ${name}\n${error.stack||error}`)}finally{await context.close()}
 }
 
-await run('live production desktop Week3-Week6 alignment',{width:1280,height:1000});
-await run('live production mobile Week3-Week6 alignment',{width:390,height:844});
+await run('live production desktop STEP0-Week6 alignment',{width:1280,height:1000});
+await run('live production mobile STEP0-Week6 alignment',{width:390,height:844});
 await browser.close();if(failed)process.exit(1);
