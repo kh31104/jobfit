@@ -37,7 +37,7 @@ const STEP1_COPY=[
 
 const STEP2_COPY=[
   {
-    title:'Career DNA → 실제 경험 확인',
+    title:'지난주 Career DNA 간단히 확인 · 실제 경험으로 검증',
     description:'지난주 강점 후보를 정답으로 쓰지 않고, 실제 경험에서 확인할 가설과 질문만 가져옵니다.'
   },
   {
