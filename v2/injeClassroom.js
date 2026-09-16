@@ -1,16 +1,21 @@
 const params=new URLSearchParams(location.search);
 const course=(params.get('course')||'').trim().toUpperCase();
 const isInjeClass=['INJE2026','INJE-2026-2'].includes(course);
-const researchOptIn=params.get('measures')==='true';
 const STORAGE_KEY='jobfit:v2:learner';
 
 if(isInjeClass){
   const readState=()=>{try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')}catch{return {}}};
   const hasAnonCode=()=>String(readState().profile?.anonCode||document.getElementById('anonCode')?.textContent||'').startsWith('JF26-');
+  const fullFinite=(arr,n,min=-Infinity,max=Infinity)=>Array.isArray(arr)&&arr.length===n&&arr.every(v=>Number.isFinite(Number(v))&&Number(v)>=min&&Number(v)<=max);
   const showToast=msg=>{const el=document.getElementById('toast');if(!el)return;el.textContent=msg;el.classList.add('on');clearTimeout(showToast.t);showToast.t=setTimeout(()=>el.classList.remove('on'),2600)};
   const week1Complete=()=>{
-    const s=readState(),p=s.profile||{},b=s.baseline||{},a=s.artifacts?.careerStartProfile||{};
-    return !!(String(p.anonCode||'').startsWith('JF26-')&&p.age&&p.grade&&b.jobDecision&&b.prepStage&&a.statement&&a.nextAction);
+    const s=readState(),p=s.profile||{},b=s.baseline||{},a=s.artifacts?.careerStartProfile||{},pre=s.research?.measurements?.pre||{};
+    return !!(
+      String(p.anonCode||'').startsWith('JF26-')&&p.age&&p.grade&&b.jobDecision&&b.prepStage&&
+      a.statement&&a.nextAction&&pre.work24CollegeCareerReadiness?.examDate&&
+      fullFinite(pre.work24CollegeCareerReadiness?.scores,14)&&
+      fullFinite(pre.kcaas?.items,12,1,5)&&pre.kcaas?.wordingVersion==='K-CAAS-SF-KR-2020-v1'
+    );
   };
   const setBackupAvailability=()=>{
     const ready=hasAnonCode();
@@ -47,27 +52,23 @@ if(isInjeClass){
   };
   const markWeek1Nav=()=>{const first=document.querySelector('.stepBtn[data-step="0"] .stepN');if(first){const desired=week1Complete()?'✓':'0';if(first.textContent!==desired)first.textContent=desired}};
   const makeStorageCopyAccurate=()=>{const saveLabel=document.getElementById('saveState');if(saveLabel&&saveLabel.textContent==='이 브라우저에 자동 저장')saveLabel.textContent='이 브라우저에 저장'};
-  const removeResearchSemesterUI=()=>{
-    if(researchOptIn)return;
+  const hideResearchSubmissionUI=()=>{
     const researchExport=document.getElementById('researchExportBtn');if(researchExport&&!researchExport.classList.contains('hidden'))researchExport.classList.add('hidden');
-    document.querySelectorAll('.researchTask,.centralResearchTask,.researchMeasurePanel,.strengthMeasurePanel,.measureStepLabel').forEach(el=>{if(!el.classList.contains('hidden'))el.classList.add('hidden')});
+    document.querySelectorAll('.researchTask,.centralResearchTask').forEach(el=>{if(!el.classList.contains('hidden'))el.classList.add('hidden')});
   };
-  const rewriteWeek1Copy=()=>{
-    if(researchOptIn)return;
+  const rewriteResearchNotice=()=>{
     const root=document.getElementById('stepRoot');if(!root)return;
     const kicker=root.querySelector('.kicker');if(!kicker||!kicker.textContent.includes('STEP 0'))return;
-    const mainCallout=[...root.querySelectorAll('.callout.good')].find(x=>x.textContent.includes('오늘 할 일'));
-    if(mainCallout&&!mainCallout.dataset.noResearch){mainCallout.innerHTML='<b>오늘 할 일은 6개입니다.</b><br>① 수업 연결 확인 → ② 익명코드 → ③ 기본정보 → ④ 현재 준비상태 → ⑤ AI Career Check-in → ⑥ 저장·백업';mainCallout.dataset.noResearch='1'}
-    const journey=root.querySelector('.journeyStrip');
-    if(journey&&!journey.dataset.noResearch){journey.innerHTML=['수업 연결','익명코드','기본정보','현재 준비상태','AI Check-in','저장·백업'].map((x,i)=>`<span><b>${i+1}</b>${x}</span>`).join('');journey.dataset.noResearch='1'}
-    root.querySelectorAll('h3').forEach(h=>{if(h.textContent.trim()==='저장·백업 안내'){const label=h.parentElement?.querySelector('.stepLabel');if(label&&label.textContent!=='⑥')label.textContent='⑥'}});
     root.querySelectorAll('.callout.info').forEach(box=>{
       if(box.dataset.noResearchNotice)return;
-      if(box.textContent.includes('연구 활용')||box.textContent.includes('중앙 연구')){box.innerHTML='<b>이번 학기에는 연구용 데이터를 수집하지 않습니다.</b><br>Jobfit의 개인 검사결과·작성내용·AI 결과는 교수자나 연구 DB로 자동 전송되지 않습니다. 학생 본인의 학습을 이어가기 위해 이 브라우저와 개인 백업파일에만 저장합니다.';box.dataset.noResearchNotice='1'}
+      if(box.textContent.includes('연구 활용')||box.textContent.includes('중앙 연구')){
+        box.innerHTML='<b>이번 학기에는 연구용 데이터를 제출하지 않습니다.</b><br>STEP 0의 PRE는 학생 본인의 수업 시작점을 확인하기 위한 학습용 측정이며, 검사결과·작성내용·AI 결과는 교수자나 연구 DB로 자동 전송되지 않습니다. 이 브라우저와 개인 백업파일에만 저장합니다.';
+        box.dataset.noResearchNotice='1';
+      }
     });
   };
   const applyClassroomView=()=>{
-    removeResearchSemesterUI();setBackupAvailability();lockExistingCode();markWeek1Nav();makeStorageCopyAccurate();rewriteWeek1Copy();addExistingCodeRestore();
+    hideResearchSubmissionUI();setBackupAvailability();lockExistingCode();markWeek1Nav();makeStorageCopyAccurate();rewriteResearchNotice();addExistingCodeRestore();
     const root=document.getElementById('stepRoot'),firstBadge=root?.querySelector('.sectionHead .badge');
     if(root?.querySelector('.kicker')?.textContent.includes('STEP 0')&&firstBadge&&firstBadge.textContent!=='1주차 · 120분')firstBadge.textContent='1주차 · 120분';
   };
