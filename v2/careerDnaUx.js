@@ -41,8 +41,11 @@ const SWOT_PROMPT_EXTENSION=`
 
 let reopenBalanceIndex=null;
 try{
-  const pending=Number(sessionStorage.getItem(REOPEN_BALANCE_KEY));
-  if(Number.isInteger(pending)&&pending>=0&&pending<7)reopenBalanceIndex=pending;
+  const rawPending=sessionStorage.getItem(REOPEN_BALANCE_KEY);
+  if(rawPending!==null){
+    const pending=Number(rawPending);
+    if(Number.isInteger(pending)&&pending>=0&&pending<7)reopenBalanceIndex=pending;
+  }
 }catch{}
 
 function parseState(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')}catch{return {}}}
