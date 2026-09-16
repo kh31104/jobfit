@@ -58,7 +58,11 @@ await run('Balance choice can be corrected and still shows live class aggregate'
   const text=(await page.locator('#vote_0').textContent())||'';assert(text.includes('20명'),'Class total missing after vote');
   assert(await page.locator('[data-balance-choice="B"][data-index="0"]').isDisabled(),'Confirmed choice must stay locked until reselect is used');
   assert(await page.locator('.balanceReselect').first().isVisible(),'Reselect control missing after confirmation');
-  await page.locator('.balanceReselect').first().click();await page.waitForLoadState('networkidle');await page.waitForSelector('.jobfitModuleToggle',{state:'attached'});await expandModule(page,'Balance Game');
+  await page.locator('.balanceReselect').first().click();
+  await page.waitForFunction(()=>{
+    const b=document.querySelector('[data-balance-choice="B"][data-index="0"]');
+    return b&&!b.disabled&&!!(b.offsetWidth||b.offsetHeight||b.getClientRects().length);
+  });
   const cleared=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner'))?.assessments?.careerDNA?.balance?.answers?.[0]??null);assert(cleared===null,'Reselect must clear only the selected balance answer');
   await page.locator('[data-balance-choice="B"][data-index="0"]').click();await page.waitForSelector('#vote_0');
   assert(await page.locator('[data-balance-choice="B"][data-index="0"]').evaluate(el=>el.classList.contains('selected')),'Corrected B choice was not saved');
