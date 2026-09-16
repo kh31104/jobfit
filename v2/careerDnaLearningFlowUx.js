@@ -102,13 +102,6 @@ function enhanceStep1(section){
     guide.innerHTML='<b>AI LAB 사용 순서</b><br>① 현재 내용 저장 → ② 통합분석 프롬프트 만들기 → ③ 복사해 수업에서 사용하는 AI에 붙여넣기 → ④ 결과의 근거와 ‘경험 확인 필요’ 표시 검토 → ⑤ 마지막의 Jobfit 저장용 요약을 중심으로 핵심만 정리 → ⑥ 08 Career DNA 가설에 저장<br><span class="muted">AI 결과는 최종 판정이 아닙니다. 실제 경험으로 확인하지 않은 강점·약점·역량은 다음 STEP에서 검증합니다. Jobfit이 입력내용을 AI로 자동 전송하지는 않습니다.</span>';
     guide.dataset.learningFlowGuide='1';
   }
-
-  const hypothesis=section.querySelector('#aiHypothesis');
-  if(hypothesis){
-    const label=hypothesis.closest('.field')?.querySelector('label');
-    if(label)label.textContent='내가 확인한 Career DNA 요약 · AI 결과 중 핵심만';
-    hypothesis.placeholder='AI 답변 전체를 붙여넣기보다 Jobfit 저장용 요약을 중심으로, 나와 맞는 내용·수정할 내용·다음 주 실제 경험에서 확인할 내용을 남기세요.';
-  }
 }
 
 function addStep2BridgeGuide(section){
