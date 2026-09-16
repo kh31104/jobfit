@@ -10,10 +10,12 @@ const anchors=[
 ];
 const scoring={A:[1,9,17,25,33],B:[2,10,18,26,34],C:[3,11,19,27,35],D:[4,12,20,28,36],E:[5,13,21,29,37],F:[6,14,22,30,38],G:[7,15,23,31,39],H:[8,16,24,32,40]};
 const mockAnchor={version:'COI-SCHEIN-KR-USER-SOURCE-40-v1',instrument:'Career Anchor Test',itemCount:40,itemNumbers:Array.from({length:40},(_,i)=>i+1),items:Array.from({length:40},(_,i)=>`Career Anchor 문항 ${i+1}`),response:{min:1,max:6,minLabel:'결코 아님',maxLabel:'항상 해당됨'},bonusRule:{selectCount:3,addPoints:4},anchors,scoring,source:{author:'Edgar H. Schein'}};
+const mockMeasures={schemaVersion:'jobfit-research-measures-v1',kcaas:{version:'K-CAAS-SF-KR-2020-v1',instrument:'test-k',itemCount:12,itemNumbers:Array.from({length:12},(_,i)=>i+1),items:Array.from({length:12},(_,i)=>`K${i+1}`),response:{min:1,max:5,minLabel:'전혀 그렇지 않다',maxLabel:'매우 그렇다'},source:{}},sudco:{version:'SUDCO-CHO-KR-2019-9-v1',instrument:'test-s',itemCount:9,itemNumbers:[1,2,3,4,5,7,8,9,10],items:[1,2,3,4,5,7,8,9,10].map(n=>`S${n}`),response:{min:0,max:6,minLabel:'전혀 그렇지 않다',maxLabel:'매우 그렇다'},source:{}}};
 
 function assert(value,message){if(!value)throw new Error(message)}
 async function routeClassroom(page){
   await page.route('**/functions/v1/career-dna-measures',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,course:'INJE2026',careerAnchor:mockAnchor})}));
+  await page.route('**/functions/v1/research-measures',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,course:'INJE2026',measures:mockMeasures})}));
   await page.route('**/rest/v1/rpc/cast_value_vote',route=>route.fulfill({status:200,contentType:'application/json',body:''}));
   await page.route('**/rest/v1/rpc/get_value_vote_counts',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([{a_count:12,b_count:8,total_count:20,a_percent:60,b_percent:40}])}));
 }
@@ -28,9 +30,10 @@ function moduleHead(page,title){return page.locator('.careerDnaStandard .moduleH
 async function expandModule(page,title){const head=moduleHead(page,title);if((await head.getAttribute('aria-expanded'))!=='true')await head.click()}
 async function completeAnchor(page){await expandModule(page,'Career Anchor');for(let i=0;i<40;i++){const value=(i%6)+1;await page.locator(`[data-anchor-item="${i}"][value="${value}"]`).check()}for(const n of [1,2,3])await page.locator(`[data-bonus-item][value="${n}"]`).check()}
 
-await run('STEP 0-13 all load without research-measure collection',async page=>{
+await run('STEP 0-13 all load with classroom PRE enabled',async page=>{
   await page.goto(`${base}?course=INJE2026`,{waitUntil:'networkidle'});
-  assert(new URL(page.url()).searchParams.get('measures')==='false','Current Inje semester must force measures=false');
+  assert(new URL(page.url()).searchParams.get('measures')==='true','INJE2026 must keep STEP0 PRE enabled');
+  assert(await page.locator('#preMeasureSave').count()===1,'STEP0 PRE panel must render');
   for(let i=0;i<=13;i++){
     await page.locator(`.stepBtn[data-step="${i}"]`).click();await page.waitForTimeout(70);
     const body=(await page.locator('#stepRoot').textContent())||'';assert(!body.includes('화면을 불러오지 못했습니다'),`STEP ${i} failed to render`);
