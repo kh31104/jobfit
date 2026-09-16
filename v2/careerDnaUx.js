@@ -38,6 +38,8 @@ const SWOT_PROMPT_EXTENSION=`
 약점/보완 키워드: 3개
 주의: 키워드를 자기소개서 문장으로 바로 확정하지 말고, 다음 STEP에서 실제 경험 근거와 연결해 검증한다.`;
 
+let reopenBalanceIndex=null;
+
 function parseState(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')}catch{return {}}}
 function writeState(state){
   state.meta=state.meta||{};
@@ -94,8 +96,19 @@ function enhanceCollapsibles(root){
     setBlockExpanded(block,false);
   });
 }
+function findBalanceBlock(root){
+  return [...root.querySelectorAll('.careerDnaStandard .block')].find(block=>block.querySelector('.moduleHead h3')?.textContent.trim()==='Balance Game')||null;
+}
+function reopenBalanceIfNeeded(root){
+  if(!Number.isInteger(reopenBalanceIndex))return;
+  const block=findBalanceBlock(root);if(!block||block.dataset.jobfitCollapsible!=='1')return;
+  const targetIndex=reopenBalanceIndex;
+  reopenBalanceIndex=null;
+  setBlockExpanded(block,true);
+  requestAnimationFrame(()=>block.querySelector(`.balanceCard:nth-child(${targetIndex+1})`)?.scrollIntoView({block:'center',behavior:'smooth'}));
+}
 function updateBalanceNotice(root){
-  const balanceBlock=[...root.querySelectorAll('.careerDnaStandard .block')].find(block=>block.querySelector('.moduleHead h3')?.textContent.trim()==='Balance Game');
+  const balanceBlock=findBalanceBlock(root);
   if(!balanceBlock)return;
   const notice=balanceBlock.querySelector('.callout.warn');
   if(notice&&!notice.dataset.reselectNotice){
@@ -122,7 +135,9 @@ function enhanceBalanceReselect(root){
       state.activeStep=1;
       writeState(state);
       try{await window.JobfitStorageContinuity?.syncNow?.()}catch{}
-      location.reload();
+      reopenBalanceIndex=index;
+      const nav=document.querySelector('.stepBtn[data-step="1"]');
+      if(nav)nav.click();else location.reload();
     });
     hint.appendChild(btn);
   });
@@ -139,7 +154,7 @@ function enhanceAiSwot(root){
     if(makePrompt.textContent!==PROMPT_LABEL)makePrompt.textContent=PROMPT_LABEL;
     if(!makePrompt.dataset.swotExtension){
       makePrompt.dataset.swotExtension='1';
-      makePrompt.addEventListener('click',()=>setTimeout(()=>appendSwotPrompt(root),0));
+      makePrompt.addEventListener('click',()=>appendSwotPrompt(root));
     }
   }
   const guide=root.querySelector('#careerDnaAiGuide');
@@ -166,6 +181,7 @@ function enhanceCareerDNA(){
   enhanceBalanceReselect(root);
   enhanceAiSwot(root);
   enhanceCollapsibles(root);
+  reopenBalanceIfNeeded(root);
   ensureStandardCompatibility();
 }
 
