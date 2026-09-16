@@ -89,8 +89,20 @@ await run('Qualitative and quantitative inputs produce SWOT integration prompt a
   assert(prompt.includes('[내가 생각하는 나의 강점]'),'Self-strength module missing from prompt');assert(prompt.includes('[VIA 성격강점]'),'VIA missing from prompt');assert(prompt.includes('[다중지능]'),'MI missing from prompt');
   assert(prompt.includes('이번 단계는 인터뷰가 아니라'),'Prompt must state Week 3 is not an interview');assert(prompt.includes('직업을 추천하지 않는다'),'Job recommendation guard missing');assert(prompt.includes('4주차 실제 경험으로 확인할 질문 3개'),'Week4 verification questions missing');
   assert(prompt.includes('[추가 출력 · 자기소개서 활용 키워드 + SWOT]'),'SWOT extension missing');assert(prompt.includes('강점 키워드 5개'),'Strength keyword output missing');assert(prompt.includes('약점/보완 키워드 3개'),'Weakness keyword output missing');assert(prompt.includes('SO 전략'),'SWOT strategy output missing');assert(prompt.includes('추가 정보 필요'),'Unsupported opportunity/threat guard missing');
-  await page.locator('#nextStep').click();await page.waitForSelector('#stepRoot h2');const body=(await page.locator('#stepRoot').textContent())||'';assert(body.includes(reflection),'STEP2 reflection bridge broken');
-  const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));assert(saved.assessments.careerDNA.reflection.fit===reflection,'Legacy reflection.fit contract changed');assert(saved.assessments.careerDNA.promptMeta.version==='career-dna-standard-v1','New prompt version missing');
+  const guide=(await page.locator('#careerDnaAiGuide').textContent())||'';assert(guide.includes('08 Career DNA 가설'),'AI guide must tell students where to save reviewed results');
+  await expandModule(page,'Career DNA 가설 v1');
+  await page.locator('#aiHypothesis').fill('학습과 신중함은 가설로 유지하되 실제 경험에서 확인한다.');
+  await page.locator('#verifiedStrengthKeywords').fill('신중한 실행, 학습 민첩성, 협력');
+  await page.locator('#verifiedDevelopmentKeywords').fill('과도한 신중함, 우선순위 조정');
+  await page.locator('#verifiedExperienceQuestions').fill('협업에서도 신중함이 행동으로 나타났는가?\n빠른 판단이 필요할 때 속도가 늦어진 적은 없는가?\n학습한 내용을 실제 과제에 적용한 경험이 있는가?');
+  await page.locator('#saveDNA').click();
+  let saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));const h=saved.assessments.careerDNA.hypothesis;
+  assert(h.strengthKeywords.includes('신중한 실행'),'Verified strength keywords not saved');assert(h.developmentKeywords.includes('과도한 신중함'),'Development keywords not saved');assert(h.verifyQuestions.length===3,'Week4 verification questions not saved');
+  await page.locator('#nextStep').click();await page.waitForSelector('#stepRoot h2');const body=(await page.locator('#stepRoot').textContent())||'';
+  assert(body.includes(reflection),'STEP2 reflection bridge broken');assert(body.includes('신중한 실행'),'Verified strength bridge missing in STEP2');assert(body.includes('과도한 신중함'),'Development bridge missing in STEP2');assert(body.includes('협업에서도 신중함이 행동으로 나타났는가?'),'Verification question bridge missing in STEP2');
+  await page.locator('#makeInterviewPrompt').click();const interview=(await page.locator('#interviewPrompt').textContent())||'';
+  assert(interview.includes('[3주차에서 내가 검토해 둔 자기이해 후보 · 참고만]'),'Structured Career DNA not appended to Week4 interview prompt');assert(interview.includes('신중한 실행'),'Week4 interview prompt missing verified strength');assert(interview.includes('답을 유도하지 말고'),'Week4 interview must guard against confirmation bias');
+  saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));assert(saved.assessments.careerDNA.reflection.fit===reflection,'Legacy reflection.fit contract changed');assert(saved.assessments.careerDNA.promptMeta.version==='career-dna-standard-v1','New prompt version missing');
 });
 
 await browser.close();if(failed)process.exit(1);
