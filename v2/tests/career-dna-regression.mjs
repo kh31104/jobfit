@@ -58,7 +58,10 @@ await run('Balance choice can be corrected and still shows live class aggregate'
   const text=(await page.locator('#vote_0').textContent())||'';assert(text.includes('20명'),'Class total missing after vote');
   assert(await page.locator('[data-balance-choice="B"][data-index="0"]').isDisabled(),'Confirmed choice must stay locked until reselect is used');
   assert(await page.locator('.balanceReselect').first().isVisible(),'Reselect control missing after confirmation');
+  const reloaded=page.waitForNavigation({waitUntil:'networkidle'});
   await page.locator('.balanceReselect').first().click();
+  await reloaded;
+  await page.waitForSelector('.jobfitModuleToggle',{state:'attached'});
   await page.waitForFunction(()=>{
     const b=document.querySelector('[data-balance-choice="B"][data-index="0"]');
     return b&&!b.disabled&&!!(b.offsetWidth||b.offsetHeight||b.getClientRects().length);
