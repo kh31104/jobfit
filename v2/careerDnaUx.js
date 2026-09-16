@@ -1,5 +1,6 @@
 const ROOT_ID='stepRoot';
 const STORAGE_KEY='jobfit:v2:learner';
+const REOPEN_BALANCE_KEY='jobfit:balance-reopen';
 const PROMPT_LABEL='자기이해 + SWOT 통합분석 만들기';
 const GUIDE_HTML='<b>AI LAB 사용 순서</b><br>① 현재 내용 저장 → ② 통합분석 프롬프트 만들기 → ③ 복사 → ④ 수업에서 사용하는 AI에 붙여넣기<br><span class="muted">AI 결과에는 자기이해 가설과 함께 <b>자소서용 강점·약점 키워드</b>, <b>SWOT 분석</b>, <b>SO·ST·WO·WT 전략</b>을 요청합니다. STEP 1 정보만으로 판단할 수 없는 기회(O)·위협(T)은 임의로 만들지 않고 ‘추가 정보 필요’로 표시하도록 설계했습니다. Jobfit이 입력내용을 AI로 자동 전송하지는 않습니다.</span>';
 const SWOT_PROMPT_MARKER='[추가 출력 · 자기소개서 활용 키워드 + SWOT]';
@@ -39,6 +40,10 @@ const SWOT_PROMPT_EXTENSION=`
 주의: 키워드를 자기소개서 문장으로 바로 확정하지 말고, 다음 STEP에서 실제 경험 근거와 연결해 검증한다.`;
 
 let reopenBalanceIndex=null;
+try{
+  const pending=Number(sessionStorage.getItem(REOPEN_BALANCE_KEY));
+  if(Number.isInteger(pending)&&pending>=0&&pending<7)reopenBalanceIndex=pending;
+}catch{}
 
 function parseState(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')}catch{return {}}}
 function writeState(state){
@@ -104,8 +109,9 @@ function reopenBalanceIfNeeded(root){
   const block=findBalanceBlock(root);if(!block||block.dataset.jobfitCollapsible!=='1')return;
   const targetIndex=reopenBalanceIndex;
   reopenBalanceIndex=null;
+  try{sessionStorage.removeItem(REOPEN_BALANCE_KEY)}catch{}
   setBlockExpanded(block,true);
-  requestAnimationFrame(()=>block.querySelector(`.balanceCard:nth-child(${targetIndex+1})`)?.scrollIntoView({block:'center',behavior:'smooth'}));
+  requestAnimationFrame(()=>block.querySelectorAll('.balanceCard')[targetIndex]?.scrollIntoView({block:'center',behavior:'smooth'}));
 }
 function updateBalanceNotice(root){
   const balanceBlock=findBalanceBlock(root);
@@ -134,10 +140,9 @@ function enhanceBalanceReselect(root){
       answers[index]=null;
       state.activeStep=1;
       writeState(state);
+      try{sessionStorage.setItem(REOPEN_BALANCE_KEY,String(index))}catch{}
       try{await window.JobfitStorageContinuity?.syncNow?.()}catch{}
-      reopenBalanceIndex=index;
-      const nav=document.querySelector('.stepBtn[data-step="1"]');
-      if(nav)nav.click();else location.reload();
+      location.reload();
     });
     hint.appendChild(btn);
   });
