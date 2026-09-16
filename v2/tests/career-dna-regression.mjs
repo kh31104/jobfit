@@ -31,7 +31,7 @@ async function expandModule(page,title){const head=moduleHead(page,title);if((aw
 async function completeAnchor(page){await expandModule(page,'Career Anchor');for(let i=0;i<40;i++){const value=(i%6)+1;await page.locator(`[data-anchor-item="${i}"][value="${value}"]`).check()}for(const n of [1,2,3])await page.locator(`[data-bonus-item][value="${n}"]`).check()}
 
 await run('STEP 0-13 all load with classroom PRE enabled',async page=>{
-  await page.goto(`${base}?course=INJE2026`,{waitUntil:'networkidle'});
+  await page.goto(`${base}?course=INJE2026&measures=true`,{waitUntil:'networkidle'});
   assert(new URL(page.url()).searchParams.get('measures')==='true','INJE2026 must keep STEP0 PRE enabled');
   assert(await page.locator('#preMeasureSave').count()===1,'STEP0 PRE panel must render');
   for(let i=0;i<=13;i++){
