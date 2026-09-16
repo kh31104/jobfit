@@ -16,7 +16,7 @@ async function run(name,viewport){
     assert(new URL(page.url()).searchParams.get('measures')==='false','Current semester must keep research measures off');
     assert(await page.locator('.stepBtn').count()===14,'Student navigation must contain 14 steps');
 
-    await page.locator('.stepBtn[data-step="1"]').click();await page.waitForSelector('#makePrompt',{state:'attached'});await page.waitForSelector('[data-anchor-item]',{state:'attached'});await page.waitForSelector('.jobfitModuleToggle',{state:'attached'});
+    await page.locator('.stepBtn[data-step="1"]').click();await page.waitForSelector('#makePrompt',{state:'attached'});await page.waitForSelector('[data-anchor-item]',{state:'attached'});await page.waitForFunction(()=>document.querySelectorAll('.careerDnaStandard .jobfitModuleToggle').length===8);
     const body=(await page.locator('#stepRoot').textContent())||'';
     for(const text of ['Balance Game','Career Anchor','내가 생각하는 나의 강점','VIA 성격강점','다중지능검사','내가 생각하는 나 × 검사에서 나타난 나','AI 통합분석','Career DNA 가설 v1'])assert(body.includes(text),`Missing deployed module: ${text}`);
     assert(!body.includes('직업선호도검사'),'Legacy Work24 S/L content remains in deployed Week3');
