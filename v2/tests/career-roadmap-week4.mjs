@@ -30,7 +30,7 @@ async function run(name,fn){
     await page.goto(`${base}?course=INJE2026`,{waitUntil:'networkidle'});
     await page.evaluate(s=>localStorage.setItem('jobfit:v2:learner',JSON.stringify(s)),seed);
     await page.reload({waitUntil:'networkidle'});
-    await page.locator('.stepBtn[data-step="2"]').click();await page.waitForSelector('#saveRoadmap');
+    await page.locator('.stepBtn[data-step="2"]').click();await page.waitForSelector('.experienceCompetencyWeek4');
     await fn(page);if(errors.length)throw new Error(errors.join('\n'));console.log(`PASS ${name}`)
   }catch(e){failed=true;console.error(`FAIL ${name}\n${e.stack||e}`)}finally{await ctx.close()}
 }
