@@ -9,19 +9,19 @@ SELF → EXPERIENCE → COMPETENCY → JOB → INDUSTRY/COMPANY → FIT → JD �
 ## Modes
 1. **Full Career Roadmap**: STEP 0→13 전체 결과를 누적한다.
 2. **Selective Career Tools**: 현재 필요한 모듈을 선택해 사용한다.
-3. **Course configuration** is not a third mode. A course code can lock the roadmap mode and an instructor URL can specify the S/L interest assessment and future research settings.
+3. **Course configuration** is not a third mode. A course code can lock the roadmap mode and future research settings.
 
 ## Current Inje preset
 Course code: `INJE2026` (alias `INJE-2026-2`)
 - mode: full
 - full roadmap lock: on
-- Work24 interest test: choice until instructor specifies S or L
+- Research-standard Career DNA interest test: Work24 S
 - central research collection: off
-- anonymous Jobfit code: used instead of login
+- Jobfit participant code: pseudonymous continuity code used instead of login
 
 ## STEP 0–13
-- STEP 0 **Career Start**: anonymous code, background profile, course code, career baseline, AI baseline.
-- STEP 1 **Career DNA**: Work24 S or L (not both), Work24 work values, VIA TOP5 for learning use, student reflection.
+- STEP 0 **Career Start**: Jobfit participant code, background profile, course code, career baseline, AI baseline.
+- STEP 1 **Career DNA**: self-reflection before testing → Work24 S interest results → self-reflected work values → Work24 adult work-values results → self-selected strengths → VIA TOP5 for learning use → learner comparison → AI-assisted hypothesis. Career Anchor and multiple-intelligence tests are retired from the research-standard workflow.
 - STEP 2 **Experience & Competency**: raw experience → AI interview → Action/Reason/Result/Evidence/competency; Raw Voice preserved.
 - STEP 3 **Job Explorer**: broad evidence-led job exploration; no fixed occupation mapping; student manually chooses Target Job 1–3.
 - STEP 4 **Job Deep Dive**: source-grounded Task/KSA/KPI/tools/work context/entry experience + Requirement × My Evidence matrix.
@@ -62,14 +62,14 @@ Learning data and Research Core are separated by an explicit allowlist.
 Experience, Raw Voice, competency evidence, job/company/JD analysis, resume, cover letter, interview artifacts and portfolio.
 
 ### Research Core — only after approved consent/collection process
-- anonymous participant code
+- pseudonymous participant code
 - cohort/program/institution metadata
 - age, gender, grade, major/major group, academic status, graduation horizon, optional GPA band
 - career/employment baseline
 - AI-use baseline
-- Work24 S OR L result (never require both in the same administration)
+- Work24 S result for the research-standard Career DNA
 - Work24 work-values result
-- Work24 university career-readiness result when used
+- Work24 job-readiness 9-score result for PRE/POST when used
 - PRE/POST assessment slots
 - K-CAAS-SF only after permission is confirmed
 - Korean Strength Use & Deficit Correction scale only after permission is confirmed
