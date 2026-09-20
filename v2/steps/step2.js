@@ -120,8 +120,8 @@ export async function render(ctx){
     const patch={version:WEEK4_VERSION,best3:collectBest3(),representativeKey:selectedRepresentative(),experiences:exp,updatedAt:new Date().toISOString()};
     ctx.saveState({assessments:{experienceCompetency:patch},artifacts:{experienceMap:experienceMap(exp),competencyMap:competencyMap(exp),experienceDNA:experienceDNA(exp,dna)}});
     if(showToast){
-      document.getElementById('status').textContent='4주차 Experience Map이 이 브라우저에 저장되었습니다.';
-      ctx.toast('4주차 Experience Map을 저장했습니다.');
+      document.getElementById('status').textContent='4주차 Experience DNA가 이 브라우저에 저장되었습니다.';
+      ctx.toast('4주차 Experience DNA를 저장했습니다.');
     }
   }
   function saveExperience(){
@@ -149,7 +149,7 @@ export async function render(ctx){
     document.getElementById('evidenceChecked').checked=!!x.quality?.evidence;
     document.getElementById('noFabrication').checked=!!x.quality?.noFabrication;
     document.getElementById('transferChecked').checked=!!x.quality?.transfer;
-    ['interviewOwnership','interviewNumbers','interviewEvidence'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=!!x.quality?.[id]});
+    [['interviewOwnership','interviewOwnership'],['interviewNumbers','interviewNumbers'],['interviewEvidence','interviewEvidence']].forEach(([id,key])=>{const el=document.getElementById(id);if(el)el.checked=!!x.quality?.[key]});
     document.getElementById('title').focus();
   }
   function deleteExperience(id){
