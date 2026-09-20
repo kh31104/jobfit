@@ -5,3 +5,9 @@ project_id = "hllnoriffbhzpyhpnvsf"
 # plus origin, consent-version, participant sync-token, schema, size, and
 # field allow-list checks implemented inside the function.
 verify_jwt = false
+
+[functions.jobfit-sync]
+# Operational teaching-data sync. No Supabase Auth user is required.
+# Origin, course, participant token, payload size, and server-side allow-list
+# checks are enforced inside the function. Research data remains separate.
+verify_jwt = false
