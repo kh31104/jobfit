@@ -37,7 +37,7 @@ async function run(name,fn){
 
 await run('Week 4 focuses on Experience Map and keeps STEP1 bridge',async page=>{
   const body=(await page.locator('#stepRoot').textContent())||'';
-  for(const text of ['나의 경험에서 직무역량 찾기','지난주 Career DNA 간단히 확인','My Best 3 Experience','AI Experience Interview','행동 → 판단 → 결과 → 증거','강점·역량 키워드와 행동근거','Experience Map'])assert(body.includes(text),`Missing Week4 module: ${text}`);
+  for(const text of ['나의 경험에서 역량 후보 찾기','지난주 Career DNA 간단히 확인','My Best 3 Experience','AI Experience Interview','행동 → 판단 → 결과 → 증거','강점·역량 후보와 행동근거','Experience Map'])assert(body.includes(text),`Missing Week4 module: ${text}`);
   for(const removed of ['Career Story','Career Theme','Career Direction','1개월 Career Experiment'])assert(!body.includes(removed),`Week4 should not include: ${removed}`);
   assert(body.includes('학습과 신중함이 반복된다.'),'STEP1 comparison bridge missing');
   assert(body.includes('전문성을 깊게 쌓고 신중하게 판단'),'STEP1 hypothesis bridge missing');
@@ -57,6 +57,9 @@ await run('Best3 representative feeds one-question Experience Interview',async p
   assert(prompt.includes('팀 전체가 한 일과 내가 직접 한 행동'),'Ownership rule missing');
   assert(prompt.includes('강점이나 역량 이름을 먼저 붙이지 않는다'),'Evidence-before-keyword rule missing');
   assert(prompt.includes('6주차 직무 Task·KSA·KPI'),'Week6 bridge missing');
+  assert(prompt.includes('제3자의 실명'),'Third-party privacy guard missing');
+  assert(prompt.includes('비공개정보나 영업비밀'),'Confidential-information guard missing');
+  assert(prompt.includes('추가 확인 필요'),'Candidate no-overclaim guard missing');
 });
 
 await run('Experience save preserves old data and writes competency evidence map',async page=>{
@@ -72,6 +75,7 @@ await run('Experience save preserves old data and writes competency evidence map
   await page.locator('#evidence').fill('실험 기록');
   await page.locator('#comp_1').fill('문제해결');
   await page.locator('#compEv_1').fill('오류 원인 후보를 비교하고 우선순위를 정했다.');
+  await page.locator('#competencies').fill('리더십');
   await page.locator('#ownershipChecked').check();
   await page.locator('#evidenceChecked').check();
   await page.locator('#noFabrication').check();
@@ -79,13 +83,34 @@ await run('Experience save preserves old data and writes competency evidence map
   await page.waitForSelector('#saveRoadmap');
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   const ec=saved.assessments.experienceCompetency;
-  assert(ec.version==='experience-competency-week4-v2','Week4 version missing');
+  assert(ec.version==='experience-competency-week4-v3','Week4 version missing');
   assert(ec.experiences.some(x=>x.title==='캡스톤 프로젝트'),'New experience not saved');
   assert(ec.experiences.some(x=>x.id==='EXP-OLD'),'Existing experience was overwritten');
   const newExp=ec.experiences.find(x=>x.title==='캡스톤 프로젝트');
   assert(newExp.competencies.includes('문제해결'),'Competency keyword missing');
+  assert(newExp.contributionSource==='learner-self-rating','Contribution self-rating metadata missing');
+  assert(newExp.evidenceGradeSource==='learner-self-rating','Evidence-grade self-rating metadata missing');
+  assert(newExp.learnerFactChecked===true&&newExp.factCheckStatus==='learner-confirmed-with-evidence-check','Learner fact-check metadata missing');
   assert(newExp.competencyEvidence.some(x=>x.keyword==='문제해결'&&x.evidence.includes('원인 후보')),'Competency evidence missing');
+  assert(!newExp.competencies.includes('리더십'),'Unverified competency must not enter grounded competencies');
+  assert(newExp.unverifiedCompetencyCandidates.includes('리더십'),'Unverified competency candidate must be stored separately');
   assert(Array.isArray(saved.artifacts.experienceMap)&&saved.artifacts.experienceMap.length>=2,'experienceMap contract broken');
+});
+
+
+await run('STEP2 does not mark learner fact-check complete without evidence review',async page=>{
+  await page.locator('#title').fill('팀 과제');
+  await page.locator('#action').fill('자료를 정리했다.');
+  await page.locator('#comp_1').fill('정리');
+  await page.locator('#compEv_1').fill('자료를 범주별로 나누었다.');
+  await page.locator('#ownershipChecked').check();
+  await page.locator('#noFabrication').check();
+  await page.locator('#saveExp').click();
+  await page.waitForSelector('#saveRoadmap');
+  const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
+  const item=saved.assessments.experienceCompetency.experiences.find(x=>x.title==='팀 과제');
+  assert(item.learnerFactChecked===false,'Fact-check should require evidence-level review');
+  assert(item.factCheckStatus==='not-confirmed','Fact-check status should remain not-confirmed');
 });
 
 await run('Week4 save stores Best3 in Experience & Competency without creating new Career Roadmap',async page=>{

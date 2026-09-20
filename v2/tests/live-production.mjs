@@ -58,7 +58,7 @@ async function run(name,viewport){
 
     await page.locator('.stepBtn[data-step="2"]').click();await page.waitForSelector('#saveRoadmap');
     const week4=(await page.locator('#stepRoot').textContent())||'';
-    for(const text of ['나의 경험에서 직무역량 찾기','지난주 Career DNA 간단히 확인','My Best 3 Experience','AI Experience Interview','행동 → 판단 → 결과 → 증거','강점·역량 키워드와 행동근거','Experience Map'])assert(week4.includes(text),`Missing deployed Week4 module: ${text}`);
+    for(const text of ['나의 경험에서 역량 후보 찾기','지난주 Career DNA 간단히 확인','My Best 3 Experience','AI Experience Interview','행동 → 판단 → 결과 → 증거','강점·역량 후보와 행동근거','Experience Map'])assert(week4.includes(text),`Missing deployed Week4 module: ${text}`);
     for(const removed of ['Career Story','Career Theme','Career Direction','1개월 Career Experiment'])assert(!week4.includes(removed),`Removed Week4 module remains deployed: ${removed}`);
     assert(await page.locator('#makeInterviewPrompt').count()===1,'Week4 evidence interview control missing');
     assert(await page.locator('#saveRoadmap').count()===1,'Week4 Experience Map save control missing');

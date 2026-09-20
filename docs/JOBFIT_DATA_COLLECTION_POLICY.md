@@ -6,7 +6,7 @@
 |---|---|---|
 | 0 Career Start | Jobfit 참여코드 연결정보, 수업코드, 학년·전공 등 기본정보, 준비상태, 현재 STEP/완료율 | 이름, 학번, 이메일, 전화번호, AI Check-in 원문, PRE 연구측정 원자료 |
 | 1 Career DNA | Balance 선택, 고용24 직업선호도 S형 RIASEC 점수·검사일, 고용24 직업가치관 9개 점수·검사일, 자기선택 강점, VIA TOP5, 확인된 강점·보완 키워드 | 흥미·가치 자기성찰 자유서술 원문, AI 통합분석 전체 원문, 비교·성찰 자유서술 원문, Career Anchor·다중지능 신규자료 |
-| 2 Experience & Competency | 경험 개수, 경험 유형, 참여도, 증거유형·등급, 역량 키워드, Fact Check 상태 | 경험명, 상황·행동·결과·증거 원문, AI 구조화 원문, PRE 연구측정 원자료 |
+| 2 Experience & Competency | 경험 개수, 경험 유형, 참여도 자기평가, 증거유형, 근거 확인 수준(학생 자기평가), 행동근거가 있는 역량 후보 키워드, 학생 사실확인 상태 | 경험명, 상황·행동·결과·증거 원문, AI 구조화 원문, PRE 연구측정 원자료 |
 | 3 Job Explorer | 직무 후보명·직무군, Target Job 선택 | 자유서술 메모 |
 | 4 Job Deep Dive | 직무별 출처·Task·Requirement 개수 | Task/Requirement 자유서술 원문, 출처 메모 원문 |
 | 5 Industry & Company | 산업·기업 후보명, 유형, 연결 직무, Target 선택, 채용근거 상태 | 산업/기업 분석 자유서술 원문, URL·메모 원문 |
