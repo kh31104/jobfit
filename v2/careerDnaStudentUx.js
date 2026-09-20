@@ -130,10 +130,9 @@ function addReturnGuides(root=currentRoot()){
   }
 }
 
-function replacePromptExtension(root=currentRoot()){
-  const box=root?.querySelector('#promptBox');if(!box)return;
-  const text=box.textContent||'',idx=text.indexOf(IMPROVED_MARKER);if(idx<0)return;
-  const next=text.slice(0,idx)+IMPROVED_EXTENSION;if(next!==text)box.textContent=next;
+function replacePromptExtension(){
+  // Canonical Career DNA prompt extension is owned by careerDnaUx.js.
+  // Do not rewrite it here; duplicate writers can race and silently drop safety rules.
 }
 function enhancePromptButton(root=currentRoot()){
   const btn=root?.querySelector('#makePrompt');if(!btn||btn.dataset.resumeReady==='1')return;
