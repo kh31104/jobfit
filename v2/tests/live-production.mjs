@@ -22,7 +22,7 @@ async function run(name,viewport){
     assert(step0.includes('오늘 할 일은 7개뿐입니다.'),'Deployed STEP0 must keep seven-stage sequence');
     const journey=(await page.locator('.journeyStrip span').allTextContents()).map(x=>x.replace(/\s+/g,' ').trim());
     assert(journey.length===7,'Deployed STEP0 journey must contain seven stages');
-    assert(journey[0].includes('수업 연결')&&journey[1].includes('익명코드')&&journey[2].includes('기본정보')&&journey[3].includes('현재 준비상태')&&journey[4].includes('AI Check-in')&&journey[5].includes('PRE 측정')&&journey[6].includes('백업'),'Deployed STEP0 stage order changed');
+    assert(journey[0].includes('수업 연결')&&journey[1].includes('Jobfit 참여코드')&&journey[2].includes('기본정보')&&journey[3].includes('현재 준비상태')&&journey[4].includes('AI Check-in')&&journey[5].includes('PRE 측정')&&journey[6].includes('백업'),'Deployed STEP0 stage order changed');
     assert(await page.locator('[data-measure="pre-work24"]').count()===14,'Deployed Work24 PRE must expose 14 score inputs');
     assert(await page.locator('[data-measure="pre-kcaas"]').count()===12,'Deployed K-CAAS PRE must expose 12 items');
     assert(((await page.locator('#heroMeta').textContent())||'').includes('PRE/POST 측정'),'Deployed PRE/POST status label missing');
