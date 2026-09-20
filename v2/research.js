@@ -95,7 +95,7 @@ function cleanMeasureBlock(block){if(!block||!Object.keys(block).length)return n
   }:null,
   strength_deficit:block.sudco?{
     instrument:block.sudco.instrument||null,
-    item_count:14,
+    item_count:9,
     response_range:block.sudco.responseRange||null,
     response_anchors:block.sudco.responseAnchors||null,
     item_numbers:Array.isArray(block.sudco.itemNumbers)?block.sudco.itemNumbers.slice(0,9):null,
