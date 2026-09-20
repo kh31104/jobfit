@@ -35,7 +35,7 @@ export async function render(ctx){
     ${styleBlock()}
     <div class="sectionHead"><div><div class="kicker">STEP 1 · STANDARD SET v1</div><h2>Career DNA</h2><p>내가 생각하는 나와 검사에서 나타난 나를 비교해 <b>자기이해 가설</b>을 만듭니다.</p></div><span class="badge">3주차</span></div>
     <div class="progress"><span style="width:14%"></span></div>
-    <div class="callout info"><b>오늘의 흐름</b> · Balance Game → Career Anchor → 내가 생각하는 강점 → VIA → 다중지능 → 정성 × 정량 비교 → AI 통합분석</div>
+    <div class="callout info"><b>오늘의 흐름</b> · 커리어 밸런스게임 → 나의 흥미 → 고용24 S형 → 나의 직업가치 → 고용24 직업가치관 → 나의 강점 → VIA → 직접 비교 → AI 통합분석</div>
     <div class="callout good"><b>이번 학기 운영</b> · 개인 검사결과와 활동내용은 교수자에게 자동 전송하지 않습니다. 이 브라우저에 저장하고, 다른 기기에서는 내 학습 백업파일을 사용합니다.</div>
 
     <div class="block"><div class="moduleHead"><span>01</span><div><h3>Balance Game</h3><p>내가 생각하는 중요한 가치관 · 세부 조건은 수업 PPT를 보고 선택하세요.</p></div></div>
@@ -44,31 +44,40 @@ export async function render(ctx){
       <div id="balanceSummary">${balanceSummaryHtml(balanceAnswers,ctx)}</div>
     </div>
 
-    <div class="hr"></div><div class="block"><div class="moduleHead"><span>02</span><div><h3>Career Anchor</h3><p>Jobfit 안에서 40문항에 직접 응답하고 8개 커리어 앵커를 자동 채점합니다.</p></div></div>
-      ${scale?`<div class="callout info"><b>응답방법</b> · 각 문항을 1(결코 아님)–6(항상 해당됨)으로 응답합니다. 40문항을 마친 뒤 나에게 가장 적합한 문항 3개를 골라 각 문항에 +4점을 추가합니다.</div>
-      <div class="anchorProgress" id="anchorProgress"></div>
-      <div class="anchorItems">${anchorItemsHtml(scale,anchorResponses,ctx)}</div>
-      <div class="summaryBox" style="margin-top:14px"><h4>가장 나에게 맞는 문항 3개 선택</h4><p class="help">40문항 중 특히 나를 잘 설명한다고 느끼는 문항 3개를 고르세요. 선택한 문항에는 자료의 채점방식에 따라 +4점이 더해집니다.</p><div class="bonusGrid" id="bonusGrid">${bonusHtml(scale,bonusItems,ctx)}</div><div class="status" id="bonusStatus"></div></div>
-      <div class="summaryBox" style="margin-top:14px"><h4>Career Anchor 결과</h4><div id="anchorResult">${anchorResultHtml(scale,anchorResponses,bonusItems,ctx)}</div></div>`:`<div class="callout warn"><b>Career Anchor를 불러오지 못했습니다.</b><br>${ctx.escapeHtml(scaleError)}<br>새로고침 후 다시 시도해 주세요. 다른 활동은 계속할 수 있습니다.</div>`}
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>02</span><div><h3>내가 생각하는 나의 흥미</h3><p>공식검사 결과를 보기 전에, 평소 자연스럽게 끌리는 활동을 먼저 기록합니다.</p></div></div>
+      <div class="callout info"><b>자기인식 활동</b> · 심리검사가 아닙니다. 검사 결과에 맞추기보다 실제로 좋아하거나 반복해서 선택하는 활동을 적으세요.</div>
+      <div class="grid3">${[0,1,2].map(i=>field(`selfInterest_${i}`,`흥미 단서 ${i+1}`,selfInterest[i]||'','예: 자료를 찾아 비교하기, 사람에게 설명하기',ctx)).join('')}</div>
     </div>
 
-    <div class="hr"></div><div class="block"><div class="moduleHead"><span>03</span><div><h3>내가 생각하는 나의 강점</h3><p>검사결과를 보기 전에, 평소 스스로 생각하는 대표 강점 5개를 선택합니다.</p></div></div>
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>03</span><div><h3>고용24 직업선호도검사 S형</h3><p>고용24 공식검사를 실시한 뒤 결과표의 RIASEC 점수를 입력합니다.</p></div></div>
+      <div class="callout warn"><b>공식검사는 고용24에서 실시합니다.</b> Jobfit은 검사 문항을 복제하지 않으며 결과점수만 저장합니다. 같은 시점에 S형과 L형을 모두 요구하지 않습니다.</div>
+      <div class="actions"><a class="btn secondary" href="${WORK24_URL}" target="_blank" rel="noopener">고용24 직업심리검사 열기 ↗</a></div>
+      <div class="field" style="margin-top:12px"><label>검사일</label><input class="input" id="interestExamDate" type="date" value="${ctx.escapeHtml(interest.examDate||'')}"></div>
+      <div class="summaryBox" style="margin-top:12px"><h4>RIASEC 결과 입력</h4><p class="help">결과표에 원점수와 표준점수가 모두 있으면 둘 다 입력합니다. 한 종류만 확인되면 해당 점수만 입력해도 됩니다.</p><div class="grid3">${RIASEC.map(code=>`<div class="field"><label>${code} 원점수</label><input class="input" type="number" step="0.01" id="riasecRaw_${code}" value="${ctx.escapeHtml(interest.riasecRaw?.[code]??'')}" placeholder="있으면 입력"><label style="margin-top:5px">${code} 표준점수</label><input class="input" type="number" step="0.01" id="riasecStandard_${code}" value="${ctx.escapeHtml(interest.riasecStandard?.[code]??'')}" placeholder="있으면 입력"></div>`).join('')}</div></div>
+    </div>
+
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>04</span><div><h3>내가 생각하는 나의 직업가치</h3><p>공식 직업가치관검사를 보기 전에, 일과 회사를 선택할 때 중요하게 생각하는 기준을 적습니다.</p></div></div>
+      <div class="callout info"><b>자기인식 활동</b> · 정답이나 점수는 없습니다. 현재 중요하게 보는 기준을 최대 5개까지 적습니다.</div>
+      <div class="grid3">${[0,1,2,3,4].map(i=>field(`selfValue_${i}`,`가치 단서 ${i+1}`,selfValues[i]||'','예: 안정성, 성장, 자율성, 관계, 보상',ctx)).join('')}</div>
+    </div>
+
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>05</span><div><h3>고용24 성인용 직업가치관검사</h3><p>공식검사 결과표에 표시된 가치요인 이름과 점수를 그대로 입력합니다.</p></div></div>
+      <div class="callout warn"><b>결과표의 명칭을 그대로 사용하세요.</b> Jobfit이 임의로 가치요인 명칭이나 점수를 바꾸지 않습니다.</div>
+      <div class="actions"><a class="btn secondary" href="${WORK24_URL}" target="_blank" rel="noopener">고용24 직업가치관검사 열기 ↗</a></div>
+      <div class="field" style="margin-top:12px"><label>검사일</label><input class="input" id="workValuesDate" type="date" value="${ctx.escapeHtml(saved.workValuesDate||'')}"></div>
+      <div class="grid2" style="margin-top:12px">${workValueEntries.map(([name,score],i)=>`<div class="summaryBox"><div class="field"><label>가치요인 ${i+1} 이름</label><input class="input" id="workValueName_${i}" value="${ctx.escapeHtml(name||'')}" placeholder="결과표 명칭"></div><div class="field"><label>점수</label><input class="input" type="number" step="0.01" id="workValueScore_${i}" value="${ctx.escapeHtml(score??'')}" placeholder="결과표 점수"></div></div>`).join('')}</div>
+    </div>
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>06</span><div><h3>내가 생각하는 나의 강점</h3><p>검사결과를 보기 전에, 평소 스스로 생각하는 대표 강점 5개를 선택합니다.</p></div></div>
       <div class="strengthCounter" id="strengthCounter">${selfStrengths.length}/5 선택</div><div class="strengthGrid" id="strengthGrid">${strengthHtml(selfStrengths,ctx)}</div>
     </div>
 
-    <div class="hr"></div><div class="block"><div class="moduleHead"><span>04</span><div><h3>VIA 성격강점</h3><p>공식 VIA 검사 후 상위 5개 강점만 Jobfit에 입력합니다.</p></div></div>
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>07</span><div><h3>VIA 성격강점</h3><p>공식 VIA 검사 후 상위 5개 강점만 Jobfit에 입력합니다.</p></div></div>
       <div class="callout info">VIA는 <b>성격강점에 대한 자기보고 검사</b>입니다. 직업이나 역량의 정답으로 사용하지 않습니다.</div>
       <div class="actions"><a class="btn secondary" href="${VIA_URL}" target="_blank" rel="noopener">VIA 공식 검사 열기 ↗</a></div>
       <div class="grid3" style="margin-top:12px">${[0,1,2,3,4].map(i=>field(`via_${i}`,`TOP ${i+1}`,viaTop5[i]||'','결과에 표시된 강점명',ctx)).join('')}</div>
     </div>
 
-    <div class="hr"></div><div class="block"><div class="moduleHead"><span>05</span><div><h3>다중지능검사</h3><p>검사 결과에서 상위 3개 영역을 입력합니다.</p></div></div>
-      <div class="callout info">다중지능 결과는 <b>선호하는 활동·문제해결 방식의 참고자료</b>로 사용합니다. 객관적인 능력의 확정판정으로 해석하지 않습니다.</div>
-      <div class="actions"><a class="btn secondary" href="${MI_URL}" target="_blank" rel="noopener">다중지능검사 한국어로 열기 ↗</a></div>
-      <div class="grid3" style="margin-top:12px">${[0,1,2].map(i=>selectField(`mi_${i}`,`TOP ${i+1}`,miTop3[i]||'',MI_AREAS)).join('')}</div>
-    </div>
-
-    <div class="hr"></div><div class="block"><div class="moduleHead"><span>06</span><div><h3>내가 생각하는 나 × 검사에서 나타난 나</h3><p>AI보다 먼저 직접 비교합니다. 검사가 ‘실제 나’의 정답은 아닙니다.</p></div></div>
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>08</span><div><h3>내가 생각하는 나 × 검사에서 나타난 나</h3><p>AI보다 먼저 직접 비교합니다. 검사가 ‘실제 나’의 정답은 아닙니다.</p></div></div>
       <div class="compareColumns"><div class="compareCard qualitative"><b>내가 생각하는 나 · 정성</b><div id="qualSummary">${qualSummaryHtml(balanceAnswers,selfStrengths,ctx)}</div></div><div class="compareCard quantitative"><b>검사에서 나타난 나 · 정량</b><div id="quantSummary">${quantSummaryHtml(scale,anchorResponses,bonusItems,viaTop5,miTop3,ctx)}</div></div></div>
       <div class="grid2" style="margin-top:14px">
         ${area('compare_repeat','반복해서 나타난 부분','여러 결과에서 비슷하게 나타난 특징은?',comparison.repeat||saved.reflection?.fit||'',ctx)}
@@ -78,12 +87,12 @@ export async function render(ctx){
       </div>
     </div>
 
-    <div class="hr"></div><div class="block"><div class="moduleHead"><span>07</span><div><h3>AI 통합분석</h3><p>현재 입력된 결과만 사용해 자기이해 가설을 만드는 프롬프트를 생성합니다.</p></div></div>
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>09</span><div><h3>AI 자기이해 통합분석</h3><p>현재 입력된 결과만 사용해 자기이해 가설을 만드는 프롬프트를 생성합니다.</p></div></div>
       <div class="callout info" id="careerDnaAiGuide"><b>AI LAB 사용 순서</b><br>① 현재 내용 저장 → ② 통합분석 프롬프트 만들기 → ③ 복사 → ④ 수업에서 사용하는 AI에 붙여넣기<br><span class="muted">Jobfit이 입력내용을 AI로 자동 전송하지는 않습니다.</span></div>
       <div class="actions"><button class="btn secondary" id="makePrompt">현재 결과로 자기이해 통합하기</button><button class="btn outline hidden" id="copyPrompt">프롬프트 복사</button></div><div class="promptBox hidden" id="promptBox"></div>
     </div>
 
-    <div class="hr"></div><div class="block"><div class="moduleHead"><span>08</span><div><h3>Career DNA 가설 v1</h3><p>AI 통합분석 결과를 검토한 뒤 필요한 부분만 저장합니다. 4주차에는 실제 경험으로 이 가설을 확인합니다.</p></div></div>
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>10</span><div><h3>Career DNA 가설 v1</h3><p>AI 통합분석 결과를 검토한 뒤 필요한 부분만 저장합니다. 4주차에는 실제 경험으로 이 가설을 확인합니다.</p></div></div>
       <div class="field"><label>AI 통합분석 결과 · 내가 확인한 내용</label><textarea id="aiHypothesis" placeholder="AI 결과를 그대로 믿지 말고, 읽어본 뒤 맞는 부분·확인이 필요한 부분을 남기세요.">${ctx.escapeHtml(saved.hypothesis?.text||'')}</textarea></div>
       <div class="field" style="margin-top:12px"><label>현재 결과가 나를 얼마나 잘 설명하나요?</label><select class="input" id="hypothesisFit"><option value="">선택</option>${['매우 맞음','어느 정도 맞음','잘 모르겠음','맞지 않음'].map(x=>`<option ${saved.hypothesis?.selfCheck===x?'selected':''}>${x}</option>`).join('')}</select></div>
     </div>
