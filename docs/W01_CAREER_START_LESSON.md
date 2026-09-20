@@ -20,7 +20,7 @@ Jobfit STEP 0. 오리엔테이션을 길게 하지 않고 첫 수업부터 학�
 ## 학습목표
 학생은 수업 후 다음을 할 수 있다.
 1. 한 학기 흐름 SELF → EXPERIENCE → JOB → INDUSTRY/COMPANY → JD → APPLICATION → INTERVIEW → PORTFOLIO를 설명할 수 있다.
-2. 자신의 익명 Jobfit Code를 생성하고 백업할 수 있다.
+2. 자신의 Jobfit 참여코드를 생성하고 백업할 수 있다.
 3. 현재 진로·취업 준비상태를 과장하지 않고 기록할 수 있다.
 4. AI를 답안 작성자가 아니라 질문자·구조화 도구로 사용할 수 있다.
 5. 고용24 대학생진로준비도검사 PRE 결과를 Jobfit에 저장할 수 있다.
