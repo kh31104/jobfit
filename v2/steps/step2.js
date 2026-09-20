@@ -1,6 +1,22 @@
 import {prepareResearchMeasures,renderStrengthMeasure,bindStrengthMeasure} from '../researchMeasures.js';
 
-const WEEK4_VERSION='experience-competency-week4-v3';
+const WEEK4_VERSION='experience-competency-week4-v4';
+const COMPETENCY_DICTIONARY=[
+  ['C01','의사소통','설명·질문·경청·문서작성·정보전달'],
+  ['C02','협업','공동작업·정보공유·역할협조·동료지원'],
+  ['C03','조정·협상','의견차 조정·갈등대응·합의·이해관계 조율'],
+  ['C04','문제해결','문제파악·원인분석·대안탐색·해결 실행'],
+  ['C05','분석·수리','자료비교·수치계산·데이터해석·근거기반 판단'],
+  ['C06','기획','목표설정·방법설계·절차구성·실행계획 수립'],
+  ['C07','업무관리','우선순위·일정·진행상황·자원 관리'],
+  ['C08','정보·디지털 활용','정보탐색·선별·SW·디지털도구·AI 활용'],
+  ['C09','학습·자기관리','새 지식 습득·피드백 반영·자기점검'],
+  ['C10','리더십','방향제시·역할배분·의사결정·구성원 지원'],
+  ['C11','고객·사용자 대응','요구파악·문의·불만 대응·서비스 개선'],
+  ['C12','책임·직업윤리','규칙 준수·책임 있는 업무처리·윤리적 판단']
+].map(([code,label,cues])=>({code,label,cues}));
+function competencyByCode(code){return COMPETENCY_DICTIONARY.find(x=>x.code===code)}
+function competencyByLabel(label){return COMPETENCY_DICTIONARY.find(x=>x.label===label)}
 const CATEGORIES=['수업·과제','팀프로젝트','캡스톤·연구','동아리·학생회','공모전·대외활동','인턴·현장실습','아르바이트·근로','봉사활동','개인프로젝트','기타'];
 const EVIDENCE_TYPES=['수치·지표','산출물·문서','교수·상사·고객 피드백','수상·선발·평가결과','작업기록·로그','동료·팀 피드백','자기기억만'];
 
@@ -19,7 +35,7 @@ export async function render(ctx){
     ${styleBlock()}
     <div class="sectionHead"><div><div class="kicker">STEP 2 · EXPERIENCE & COMPETENCY</div><h2>나의 경험에서 직무역량 찾기</h2><p>3주차 Career DNA를 정답으로 확정하지 않고, <b>내가 실제로 한 행동</b>에서 강점과 역량의 근거를 찾습니다.</p></div><span class="badge">4주차</span></div>
     <div class="progress"><span style="width:21%"></span></div>
-    <div class="callout info"><b>오늘의 흐름</b> · Career DNA 간단히 확인 → My Best 3 Experience → 대표 경험 선택 → AI Experience Interview → 행동·결과·증거 정리 → 강점·역량 키워드 → Experience Map</div>
+    <div class="callout info"><b>오늘의 흐름</b> · Career DNA 간단히 확인 → My Best 3 Experience → 대표 경험 선택 → AI Experience Interview → 사실확인 → 행동·결과·증거 정리 → 표준 역량 확인 → Experience Map → Competency Map → Experience DNA</div>
     <div class="callout good"><b>4주차의 도착점</b> · 직업을 정하는 시간이 아닙니다. <b>어떤 경험에서 내가 무엇을 했고, 그 행동이 어떤 강점·역량을 보여주는지</b> 근거와 함께 정리합니다.</div>
 
     <div class="block"><div class="moduleHead"><span>01</span><div><h3>지난주 Career DNA 간단히 확인</h3><p>검사점수를 다시 해석하지 않습니다. 3주차에서 내가 남긴 자기이해 가설만 참고합니다.</p></div></div>
@@ -51,16 +67,16 @@ export async function render(ctx){
       </div>
     </div>
 
-    <div class="hr"></div><div class="block"><div class="moduleHead"><span>04</span><div><h3>행동 → 판단 → 결과 → 증거</h3><p>AI와 대화한 뒤 확인된 사실만 내 경험카드에 정리합니다.</p></div></div>
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>04</span><div><h3>AI가 이해한 내 경험 사실확인</h3><p>AI와 대화한 뒤 확인된 사실만 내 경험카드에 정리합니다.</p></div></div>
       <div class="grid2">${area('challenge','문제·과제','내가 해결하거나 달성해야 했던 핵심 과제는?','',ctx)}${area('action','내가 직접 한 행동','내가 실제로 한 행동을 동사 중심으로 적으세요.','',ctx)}${area('reason','판단·이유','왜 그 행동을 선택했나요? 비교한 대안이나 판단기준은?','',ctx)}${area('result','결과','무엇이 달라졌나요? 확인 가능한 결과만 적으세요.','',ctx)}${area('evidence','증거','수치·산출물·피드백·기록 등 결과를 입증하는 근거는?','',ctx)}${area('learning','다시 쓸 수 있는 방식','다른 상황에서도 반복해서 사용할 수 있는 행동방식은?','',ctx)}</div>
       <div class="grid3" style="margin-top:12px">${sel('evidenceType','가장 강한 증거 유형','',EVIDENCE_TYPES,ctx)}${sel('evidenceGrade','증거 강도','',['A · 객관적 자료로 확인 가능','B · 타인의 피드백/평가로 확인','C · 본인 설명 중심'],ctx)}${txt('actionVerbs','핵심 행동동사','','예: 비교했다, 분석했다, 조율했다',ctx)}</div>
       <div class="field" style="margin-top:12px"><label>내 원래 말 · Raw Voice</label><textarea id="rawVoice" placeholder="AI가 다듬기 전 내가 실제로 설명한 문장이나 메모"></textarea><span class="hint">나중에 자기소개서·면접답변을 내 말로 복원할 때 사용합니다.</span></div>
       <div class="field" style="margin-top:12px"><label>AI 구조화 결과 <span class="muted">(선택)</span></label><textarea id="aiStructured" placeholder="AI가 정리한 내용이 있다면 붙여넣고, 사실과 다른 부분은 직접 수정하세요."></textarea></div>
     </div>
 
-    <div class="hr"></div><div class="block"><div class="moduleHead"><span>05</span><div><h3>강점·역량 키워드와 행동근거</h3><p>키워드만 남기지 않습니다. <b>왜 그 역량이라고 볼 수 있는지 실제 행동 한 문장</b>을 반드시 함께 저장합니다.</p></div></div>
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>05</span><div><h3>경험에서 확인된 역량</h3><p>Jobfit 표준역량 C01~C12 중 <b>실제 행동근거가 있는 역량만</b> 선택합니다. 직책·성격표현만으로 역량을 판정하지 않습니다.</p></div></div>
       <div class="grid3">${competencyRow(1)}${competencyRow(2)}${competencyRow(3)}</div>
-      <div class="field" style="margin-top:12px"><label>추가 역량 키워드 <span class="muted">(선택)</span></label><input class="input" id="competencies" placeholder="예: 데이터분석, 조율, 책임감"><span class="hint">쉼표로 구분. 6주차에 실제 직무의 Task·KSA·KPI와 다시 대조합니다.</span></div>
+      <div class="callout info" style="margin-top:12px"><b>판정 기준</b> · 행동 확인 / 추가 확인 필요 / 현재 경험에서 확인되지 않음. 경험에서 확인되지 않았다는 것은 역량이 낮거나 없다는 뜻이 아닙니다.</div>
       <div class="qualityBox" style="margin-top:14px">
         ${check('ownershipChecked','팀의 행동과 내가 직접 한 행동을 구분했다.')}
         ${check('evidenceChecked','결과를 뒷받침하는 증거 수준을 확인했다.')}
@@ -128,9 +144,8 @@ export async function render(ctx){
     const title=v('title');if(!title){ctx.toast('경험 이름을 먼저 입력해 주세요.');return}
     saveWeek4(false);
     const oldId=v('editId');
-    const competencyEvidence=[1,2,3].map(i=>({keyword:v(`comp_${i}`),evidence:v(`compEv_${i}`)})).filter(x=>x.keyword||x.evidence);
-    const extra=v('competencies').split(',').map(x=>x.trim()).filter(Boolean);
-    const competencies=[...new Set([...competencyEvidence.map(x=>x.keyword).filter(Boolean),...extra])];
+    const competencyEvidence=[1,2,3].map(i=>{const code=v(`comp_${i}`),def=competencyByCode(code);return {code,label:def?.label||'',keyword:def?.label||'',evidence:v(`compEv_${i}`),status:v(`compStatus_${i}`)||'행동 확인',studentVerified:ck(`compVerified_${i}`)};}).filter(x=>x.code||x.evidence);
+    const competencies=[...new Set(competencyEvidence.filter(x=>x.status==='행동 확인').map(x=>x.label).filter(Boolean))];
     const quality={ownership:ck('ownershipChecked'),evidence:ck('evidenceChecked'),noFabrication:ck('noFabrication'),transfer:ck('transferChecked'),interviewOwnership:ck('interviewOwnership'),interviewNumbers:ck('interviewNumbers'),interviewEvidence:ck('interviewEvidence')};
     const item={id:oldId||`EXP-${Date.now()}`,category:v('category'),title,period:v('period'),workMode:v('workMode'),contribution:n('contribution'),roleTitle:v('roleTitle'),context:v('context'),role:v('role'),challenge:v('challenge'),action:v('action'),reason:v('reason'),result:v('result'),evidence:v('evidence'),evidenceType:v('evidenceType'),evidenceGrade:v('evidenceGrade'),actionVerbs:v('actionVerbs'),learning:v('learning'),rawVoice:v('rawVoice'),aiStructured:v('aiStructured'),competencies,competencyEvidence,quality,factChecked:quality.noFabrication&&quality.ownership&&quality.interviewNumbers,updatedAt:new Date().toISOString()};
     const arr=[...currentExperiences()];const idx=arr.findIndex(x=>x.id===item.id);if(idx>=0)arr[idx]=item;else arr.push(item);
@@ -143,8 +158,7 @@ export async function render(ctx){
     set('editId',x.id);
     ['category','title','period','workMode','roleTitle','context','role','challenge','action','reason','result','evidence','evidenceType','evidenceGrade','actionVerbs','learning','rawVoice','aiStructured'].forEach(k=>set(k,x[k]||''));
     set('contribution',x.contribution||3);
-    set('competencies',(x.competencies||[]).filter(c=>!(x.competencyEvidence||[]).some(e=>e.keyword===c)).join(', '));
-    [1,2,3].forEach((i,idx)=>{set(`comp_${i}`,x.competencyEvidence?.[idx]?.keyword||'');set(`compEv_${i}`,x.competencyEvidence?.[idx]?.evidence||'')});
+    [1,2,3].forEach((i,idx)=>{const ce=x.competencyEvidence?.[idx]||{},def=competencyByCode(ce.code)||competencyByLabel(ce.label||ce.keyword);set(`comp_${i}`,ce.code||def?.code||'');set(`compEv_${i}`,ce.evidence||'');set(`compStatus_${i}`,ce.status||'행동 확인');const verified=document.getElementById(`compVerified_${i}`);if(verified)verified.checked=!!ce.studentVerified});
     document.getElementById('ownershipChecked').checked=!!x.quality?.ownership;
     document.getElementById('evidenceChecked').checked=!!x.quality?.evidence;
     document.getElementById('noFabrication').checked=!!x.quality?.noFabrication;
@@ -161,9 +175,9 @@ export async function render(ctx){
     ctx.toast('삭제했습니다.');ctx.navigate(2);
   }
   function clearForm(){
-    ['editId','category','title','period','workMode','roleTitle','context','role','challenge','action','reason','result','evidence','evidenceType','evidenceGrade','actionVerbs','learning','rawVoice','aiStructured','competencies','comp_1','compEv_1','comp_2','compEv_2','comp_3','compEv_3'].forEach(k=>set(k,''));
+    ['editId','category','title','period','workMode','roleTitle','context','role','challenge','action','reason','result','evidence','evidenceType','evidenceGrade','actionVerbs','learning','rawVoice','aiStructured','comp_1','compEv_1','compStatus_1','compStatus_2','compStatus_3','comp_2','compEv_2','comp_3','compEv_3'].forEach(k=>set(k,''));
     set('contribution',3);
-    ['ownershipChecked','evidenceChecked','noFabrication','transferChecked','interviewOwnership','interviewNumbers','interviewEvidence'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false});
+    ['ownershipChecked','evidenceChecked','noFabrication','transferChecked','interviewOwnership','interviewNumbers','interviewEvidence','compVerified_1','compVerified_2','compVerified_3'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false});
     document.getElementById('title')?.focus();
   }
   function useRepresentative(){
@@ -195,7 +209,8 @@ function competencyMap(arr){
   (arr||[]).forEach(x=>{
     const seen=new Set();
     (x.competencyEvidence||[]).forEach(e=>{
-      const k=(e.keyword||'').trim(); if(!k||seen.has(k))return; seen.add(k);
+      if(e.status&&e.status!=='행동 확인')return;
+      const k=(e.label||e.keyword||'').trim(); if(!k||seen.has(k))return; seen.add(k);
       if(!map[k])map[k]={keyword:k,experienceIds:[],experienceTitles:[],evidence:[]};
       map[k].experienceIds.push(x.id); map[k].experienceTitles.push(x.title);
       if(e.evidence)map[k].evidence.push({experienceId:x.id,text:e.evidence});
@@ -244,7 +259,7 @@ function dnaBridgeHtml(dna,ctx){
   return `<div class="dnaBridge"><div class="dnaBridgeHead"><b>STEP 1 → STEP 2</b><span>가설은 참고만 하고 경험으로 확인합니다.</span></div>${rows.map(([k,val])=>`<div class="dnaBridgeRow"><small>${ctx.escapeHtml(k)}</small><p>${ctx.escapeHtml(val)}</p></div>`).join('')}</div>`;
 }
 function best3Row(key,label,saved,ctx){return `<div class="best3Row"><div class="best3Label"><b>${ctx.escapeHtml(label)}</b></div><input class="input" id="best3_${key}_title" value="${ctx.escapeHtml(saved?.title||'')}" placeholder="경험 이름"><textarea id="best3_${key}_summary" placeholder="무엇을 했고 왜 이 경험이 떠오르는지 한두 문장">${ctx.escapeHtml(saved?.summary||'')}</textarea></div>`}
-function competencyRow(i){return `<div class="metricCard"><b>역량 ${i}</b><div class="field"><label>키워드</label><input class="input" id="comp_${i}" placeholder="예: 문제해결"></div><div class="field" style="margin-top:8px"><label>근거 행동</label><textarea id="compEv_${i}" placeholder="이 역량을 보여주는 실제 행동 한 문장"></textarea></div></div>`}
+function competencyRow(i){return `<div class="metricCard"><b>역량 ${i}</b><div class="field"><label>Jobfit 표준역량</label><select id="comp_${i}"><option value="">선택</option>${COMPETENCY_DICTIONARY.map(x=>`<option value="${x.code}">${x.code} · ${x.label}</option>`).join('')}</select><span class="hint">선택 후 근거 행동이 실제 경험에 있는지 확인하세요.</span></div><div class="field" style="margin-top:8px"><label>판정</label><select id="compStatus_${i}"><option>행동 확인</option><option>추가 확인 필요</option><option>현재 경험에서 확인되지 않음</option></select></div><div class="field" style="margin-top:8px"><label>근거 행동</label><textarea id="compEv_${i}" placeholder="이 역량을 보여주는 실제 행동 한 문장"></textarea></div><label class="checkRow"><input type="checkbox" id="compVerified_${i}"><div><b>이 역량과 근거를 내가 확인했습니다.</b></div></label></div>`}
 function score(id,label){return `<div class="field"><label>${label} <span class="muted">1–5</span></label><select id="${id}">${[1,2,3,4,5].map(n=>`<option value="${n}" ${n===3?'selected':''}>${n}${n===1?' 낮음':n===5?' 높음':''}</option>`).join('')}</select></div>`}
 function check(id,text){return `<label class="checkRow"><input type="checkbox" id="${id}"><div><b>${text}</b></div></label>`}
 function txt(id,label,value,ph,ctx){return `<div class="field"><label>${label}</label><input class="input" id="${id}" value="${ctx.escapeHtml(value||'')}" placeholder="${ctx.escapeHtml(ph||'')}"></div>`}
