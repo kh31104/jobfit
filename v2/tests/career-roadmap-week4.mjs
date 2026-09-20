@@ -79,7 +79,7 @@ await run('Experience save preserves old data and writes competency evidence map
   await page.waitForSelector('#saveRoadmap');
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   const ec=saved.assessments.experienceCompetency;
-  assert(ec.version==='experience-competency-week4-v2','Week4 version missing');
+  assert(ec.version==='experience-competency-week4-v3','Week4 version missing');
   assert(ec.experiences.some(x=>x.title==='캡스톤 프로젝트'),'New experience not saved');
   assert(ec.experiences.some(x=>x.id==='EXP-OLD'),'Existing experience was overwritten');
   const newExp=ec.experiences.find(x=>x.title==='캡스톤 프로젝트');
