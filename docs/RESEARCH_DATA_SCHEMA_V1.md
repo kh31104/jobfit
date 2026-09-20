@@ -73,29 +73,35 @@ For legacy records, retain the original `interest_test_type` and never merge S/L
 
 Store all subscale scores; TOP values are display derivatives only.
 
-## Work24 구직준비도검사 — PRIMARY PRE/POST OUTCOME
+## Work24 대학생진로준비도검사 — PRIMARY PRE/POST OUTCOME
 Administration principle:
 - Student completes the official test on Work24.
 - Jobfit does not reproduce the official question items.
-- Jobfit stores the result date and nine official result-score fields.
-- Use the same test name at PRE and POST.
+- Jobfit stores the result date and 14 reported subfactor T-scores.
+- Use the same test name and score structure at PRE and POST.
 
 Store:
-- instrument = 고용24 구직준비도검사
+- instrument = 고용24 대학생진로준비도검사
 - exam_date
-- score_1 경제적 취약성 적응도
-- score_2 가족의 지지
-- score_3 사회적 지지
-- score_4 자아 존중감
-- score_5 자기 효능감
-- score_6 구직기술
-- score_7 의사전달
-- score_8 대인관계 활용
-- score_9 구직정보 수집
+- score_type = T-score
+- score_1 계획성
+- score_2 독립성
+- score_3 자신지식(자기이해)
+- score_4 진로활동경험
+- score_5 자기이해노력
+- score_6 진로수업경험
+- score_7 사회적 지지자 지원
+- score_8 진로의사결정
+- score_9 적극적 직업탐색
+- score_10 비공식적 직업탐색
+- score_11 예비적 직업탐색
+- score_12 공식적 직업탐색
+- score_13 취업준비노력
+- score_14 취업준비강도
 - score_schema/version metadata when available
 - timepoint PRE / POST
 
-Do not collapse the nine scores into one unvalidated total unless a scoring manual explicitly supports that total.
+Do not collapse the 14 scores into an ad hoc total. Preserve the official subfactor T-scores for analysis.
 
 # Additional PRE/POST instruments
 
