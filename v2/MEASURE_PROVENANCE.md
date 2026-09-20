@@ -12,6 +12,7 @@
 - Response scale in Korean validation: 1 (전혀 그렇지 않다) to 5 (매우 그렇다).
 - Jobfit version: `K-CAAS-SF-KR-2020-v1`
 - Rule: do not replace, reorder, shorten, or paraphrase the 12 Korean items without a newly documented primary source and a new version identifier.
+- Web delivery / reuse permission status: **verification pending**. Publication of wording in an article appendix does not by itself establish permission to redistribute items through a web application. Do not describe permission as cleared until the relevant rights conditions are documented.
 
 ## 2. Korean strengths use / deficit correction — final 9 items
 
@@ -27,6 +28,7 @@
 - Reliability reported for final 9 items: total α=.87; strengths use α=.88; deficit correction α=.83.
 - Jobfit version: `SUDCO-CHO-KR-2019-9-v1`
 - The previous Jobfit 10-item Korean classroom translation (`SUDCO-STUDENT-2017-KOCLASS-v1`) is retired and must not be automatically migrated into the 9-item Korean validation version.
+- Web delivery / reuse permission status: **verification pending**. Validation and citation do not substitute for checking reuse conditions of the item wording.
 - PRE timing lock: **4주차 STEP 2 Experience & Competency 수업에서 경험·강점 분석 활동을 시작하기 직전에 측정한다.** 1주차 전체수업 시작점 측정으로 해석하지 않는다.
 - POST timing lock: 학기 말 STEP 13에서 동일한 9문항·동일 응답척도로 측정한다.
 - Analysis rule: SUDCO의 PRE–POST 해석은 ‘4주차 강점·경험 교육 직전 → 학기 말’ 변화로 정의하고, 측정일시(capturedAt)와 버전 정보를 함께 보존한다.
