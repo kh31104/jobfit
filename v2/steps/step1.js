@@ -78,7 +78,7 @@ export async function render(ctx){
     </div>
 
     <div class="hr"></div><div class="block"><div class="moduleHead"><span>08</span><div><h3>내가 생각하는 나 × 검사에서 나타난 나</h3><p>AI보다 먼저 직접 비교합니다. 검사가 ‘실제 나’의 정답은 아닙니다.</p></div></div>
-      <div class="compareColumns"><div class="compareCard qualitative"><b>내가 생각하는 나 · 정성</b><div id="qualSummary">${qualSummaryHtml(balanceAnswers,selfStrengths,ctx)}</div></div><div class="compareCard quantitative"><b>검사에서 나타난 나 · 정량</b><div id="quantSummary">${quantSummaryHtml(scale,anchorResponses,bonusItems,viaTop5,miTop3,ctx)}</div></div></div>
+      <div class="compareColumns"><div class="compareCard qualitative"><b>내가 생각하는 나 · 정성</b><div id="qualSummary">${qualSummaryHtml(balanceAnswers,selfInterest,selfValues,selfStrengths,ctx)}</div></div><div class="compareCard quantitative"><b>검사에서 나타난 나 · 정량</b><div id="quantSummary">${quantSummaryHtml(interest,saved.workValues||{},viaTop5,ctx)}</div></div></div>
       <div class="grid2" style="margin-top:14px">
         ${area('compare_repeat','반복해서 나타난 부분','여러 결과에서 비슷하게 나타난 특징은?',comparison.repeat||saved.reflection?.fit||'',ctx)}
         ${area('compare_connect','서로 연결된다고 느끼는 부분','표현은 달라도 서로 연결된다고 느끼는 결과는?',comparison.connect||'',ctx)}
@@ -92,7 +92,7 @@ export async function render(ctx){
       <div class="actions"><button class="btn secondary" id="makePrompt">현재 결과로 자기이해 통합하기</button><button class="btn outline hidden" id="copyPrompt">프롬프트 복사</button></div><div class="promptBox hidden" id="promptBox"></div>
     </div>
 
-    <div class="hr"></div><div class="block"><div class="moduleHead"><span>10</span><div><h3>Career DNA 가설 v1</h3><p>AI 통합분석 결과를 검토한 뒤 필요한 부분만 저장합니다. 4주차에는 실제 경험으로 이 가설을 확인합니다.</p></div></div>
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>10</span><div><h3>Career DNA 가설 v1</h3><p>자기인식과 검사결과를 바탕으로 만든 현재 시점의 가설입니다. 개인의 고정적 특성이나 직무적합성 판정이 아니며, 4주차 실제 경험에서 수정·확인합니다.</p></div></div>
       <div class="field"><label>AI 통합분석 결과 · 내가 확인한 내용</label><textarea id="aiHypothesis" placeholder="AI 결과를 그대로 믿지 말고, 읽어본 뒤 맞는 부분·확인이 필요한 부분을 남기세요.">${ctx.escapeHtml(saved.hypothesis?.text||'')}</textarea></div>
       <div class="field" style="margin-top:12px"><label>현재 결과가 나를 얼마나 잘 설명하나요?</label><select class="input" id="hypothesisFit"><option value="">선택</option>${['매우 맞음','어느 정도 맞음','잘 모르겠음','맞지 않음'].map(x=>`<option ${saved.hypothesis?.selfCheck===x?'selected':''}>${x}</option>`).join('')}</select></div>
     </div>
@@ -103,12 +103,11 @@ export async function render(ctx){
   let strengthSelection=[...selfStrengths];
   let voteTimer=null;
   bindBalance();
-  if(scale)bindAnchor();
   bindStrengths();
-  ['via_0','via_1','via_2','via_3','via_4','mi_0','mi_1','mi_2'].forEach(id=>document.getElementById(id)?.addEventListener('change',refreshCompare));
+  ['via_0','via_1','via_2','via_3','via_4',...RIASEC.flatMap(code=>[`riasecRaw_${code}`,`riasecStandard_${code}`]),...Array.from({length:9},(_,i)=>`workValueScore_${i}`)].forEach(id=>document.getElementById(id)?.addEventListener('change',refreshCompare));
   document.getElementById('saveDNA').addEventListener('click',()=>saveData(true));
   document.getElementById('nextStep').addEventListener('click',()=>{saveData(false);ctx.navigate(2)});
-  document.getElementById('makePrompt').addEventListener('click',()=>{const data=saveData(false);const prompt=buildPrompt(data,scale);const box=document.getElementById('promptBox');box.textContent=prompt;box.classList.remove('hidden');document.getElementById('copyPrompt').classList.remove('hidden')});
+  document.getElementById('makePrompt').addEventListener('click',()=>{const data=saveData(false);const prompt=buildPrompt(data);const box=document.getElementById('promptBox');box.textContent=prompt;box.classList.remove('hidden');document.getElementById('copyPrompt').classList.remove('hidden')});
   document.getElementById('copyPrompt').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(document.getElementById('promptBox').textContent);ctx.toast('프롬프트를 복사했습니다.')}catch{ctx.toast('복사가 차단되었습니다. 직접 선택해 복사해 주세요.')}});
 
   function bindBalance(){
@@ -128,33 +127,24 @@ export async function render(ctx){
   async function updateVote(i){try{const c=await getBalanceCounts(ctx.courseConfig.course||'INJE2026',i),el=document.getElementById(`vote_${i}`);if(el)el.innerHTML=`<div><b>A ${c.aPercent.toFixed(1)}%</b> · ${c.a}명</div><div><b>B ${c.bPercent.toFixed(1)}%</b> · ${c.b}명</div><small>현재 수업 ${c.total}명 기준 · 약 2.5초 간격 업데이트</small>`}catch{setVoteMessage(i,'수업 선택 비율 연결 확인 중...')}}
   function setVoteMessage(i,msg){const el=document.getElementById(`vote_${i}`);if(el)el.innerHTML=`<small>${ctx.escapeHtml(msg)}</small>`}
 
-  function bindAnchor(){
-    root.querySelectorAll('[data-anchor-item]').forEach(input=>input.addEventListener('change',()=>{anchorResponses[Number(input.dataset.anchorItem)]=Number(input.value);refreshAnchor()}));
-    root.querySelectorAll('[data-bonus-item]').forEach(input=>input.addEventListener('change',()=>{
-      const n=Number(input.value);if(input.checked){if(bonusItems.length>=3){input.checked=false;ctx.toast('가장 적합한 문항은 3개만 선택합니다.');return}bonusItems.push(n)}else{const k=bonusItems.indexOf(n);if(k>=0)bonusItems.splice(k,1)}refreshAnchor();
-    }));
-    refreshAnchor();
-  }
-  function refreshAnchor(){
-    const p=document.getElementById('anchorProgress'),done=anchorResponses.filter(x=>Number.isFinite(x)&&x>=1&&x<=6).length;if(p)p.innerHTML=`<b>${done}/40 응답</b><span>${done===40?'40문항 완료 · 이제 가장 적합한 문항 3개를 선택하세요.':'모든 문항에 응답하면 결과가 계산됩니다.'}</span>`;
-    const bs=document.getElementById('bonusStatus');if(bs)bs.textContent=`${bonusItems.length}/3 선택`;
-    const r=document.getElementById('anchorResult');if(r)r.innerHTML=anchorResultHtml(scale,anchorResponses,bonusItems,ctx);refreshCompare();
-  }
   function bindStrengths(){root.querySelectorAll('[data-strength]').forEach(btn=>btn.addEventListener('click',()=>{const s=btn.dataset.strength,i=strengthSelection.indexOf(s);if(i>=0)strengthSelection.splice(i,1);else{if(strengthSelection.length>=5){ctx.toast('대표 강점은 5개까지 선택합니다.');return}strengthSelection.push(s)}const g=document.getElementById('strengthGrid');if(g)g.innerHTML=strengthHtml(strengthSelection,ctx);const c=document.getElementById('strengthCounter');if(c)c.textContent=`${strengthSelection.length}/5 선택`;bindStrengths();refreshCompare()}))}
-  function refreshCompare(){const via=readVia(),mi=readMi();const q=document.getElementById('qualSummary');if(q)q.innerHTML=qualSummaryHtml(balanceAnswers,strengthSelection,ctx);const n=document.getElementById('quantSummary');if(n)n.innerHTML=quantSummaryHtml(scale,anchorResponses,bonusItems,via,mi,ctx)}
+  function refreshCompare(){const via=readVia(),selfI=readSelfInterest(),selfV=readSelfValues(),interestData=readInterest(),workValueData=readWorkValues();const q=document.getElementById('qualSummary');if(q)q.innerHTML=qualSummaryHtml(balanceAnswers,selfI,selfV,strengthSelection,ctx);const n=document.getElementById('quantSummary');if(n)n.innerHTML=quantSummaryHtml(interestData,workValueData.scores,via,ctx)}
   function readVia(){return [0,1,2,3,4].map(i=>document.getElementById(`via_${i}`)?.value?.trim()||'').filter(Boolean)}
-  function readMi(){return [0,1,2].map(i=>document.getElementById(`mi_${i}`)?.value?.trim()||'').filter(Boolean)}
+  function readSelfInterest(){return [0,1,2].map(i=>v(`selfInterest_${i}`)).filter(Boolean)}
+  function readSelfValues(){return [0,1,2,3,4].map(i=>v(`selfValue_${i}`)).filter(Boolean)}
+  function readInterest(){const raw={},standard={};RIASEC.forEach(code=>{const rv=document.getElementById(`riasecRaw_${code}`)?.value,sv=document.getElementById(`riasecStandard_${code}`)?.value;if(rv!==''&&Number.isFinite(Number(rv)))raw[code]=Number(rv);if(sv!==''&&Number.isFinite(Number(sv)))standard[code]=Number(sv)});return {type:'S',examDate:v('interestExamDate'),riasecRaw:raw,riasecStandard:standard,resultVersion:'Work24-S-current'}}
+  function readWorkValues(){const scores={};for(let i=0;i<9;i++){const name=v(`workValueName_${i}`),raw=document.getElementById(`workValueScore_${i}`)?.value;if(name&&raw!==''&&Number.isFinite(Number(raw)))scores[name]=Number(raw)}return {scores,date:v('workValuesDate')}}
   function saveData(showToast){
-    const via=readVia(),mi=readMi(),anchor=scale?scoreAnchor(scale,anchorResponses,bonusItems):{complete:false,scores:{},ranking:[]};
+    const via=readVia(),selfInterestData=readSelfInterest(),selfValueData=readSelfValues(),interestData=readInterest(),workValueData=readWorkValues();
     const data={...saved,
-      standard:{version:'career-dna-standard-set-v1',savedAt:new Date().toISOString(),sourceModules:['balance','careerAnchor','selfStrengths','via','multipleIntelligence','comparison','aiIntegration']},
-      balance:{answers:balanceAnswers,sessionCode:classSessionCode(ctx.courseConfig.course||'INJE2026'),policy:'classroom-live-aggregate-not-research'},
-      careerAnchor:{version:scale?.version||saved.careerAnchor?.version||'',responses:[...anchorResponses],bonusItems:[...bonusItems],scores:anchor.scores,ranking:anchor.ranking,complete:anchor.complete,source:scale?.source||saved.careerAnchor?.source||{}},
-      selfStrengths:[...strengthSelection],viaTop5:via,multipleIntelligence:{top3:mi},
+      standard:{version:'career-dna-research-v1',savedAt:new Date().toISOString(),sourceModules:['balanceWarmup','selfInterest','work24InterestS','selfValues','work24Values','selfStrengths','via','comparison','aiIntegration']},
+      balance:{answers:balanceAnswers,sessionCode:classSessionCode(ctx.courseConfig.course||'INJE2026'),policy:'warmup-only-not-core-psychometric-evidence'},
+      selfInterest:{clues:selfInterestData},interest:interestData,selfValues:{items:selfValueData},workValues:workValueData.scores,workValuesDate:workValueData.date,workValuesVersion:'Work24-adult-work-values-current',
+      selfStrengths:[...strengthSelection],viaTop5:via,
       comparison:{repeat:v('compare_repeat'),connect:v('compare_connect'),unexpected:v('compare_unexpected'),verify:v('compare_verify')},
       reflection:{fit:v('compare_repeat'),question:v('compare_verify'),disagree:v('compare_unexpected')},
       hypothesis:{text:v('aiHypothesis'),selfCheck:v('hypothesisFit'),version:'career-dna-hypothesis-v1',updatedAt:new Date().toISOString()},
-      promptMeta:{version:PROMPT_VERSION,moduleStatus:moduleStatus(balanceAnswers,anchor,strengthSelection,via,mi)}
+      promptMeta:{version:PROMPT_VERSION,moduleStatus:moduleStatus(selfInterestData,interestData,selfValueData,workValueData.scores,strengthSelection,via)}
     };
     const profile=buildProfile(data);
     ctx.saveState({assessments:{careerDNA:data},artifacts:{careerDNAProfile:profile}});document.getElementById('status').textContent='3주차 Career DNA가 이 브라우저에 저장되었습니다.';if(showToast)ctx.toast('3주차 Career DNA를 저장했습니다.');return data;
