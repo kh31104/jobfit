@@ -105,58 +105,44 @@ Do not collapse the nine scores into one unvalidated total unless a scoring manu
 
 # Additional PRE/POST instruments
 
-## Career Adapt-Abilities Short Form slot — SECONDARY OUTCOME
+## K-CAAS-SF — SECONDARY OUTCOME
 Current implementation:
-- 12 response items
-- Concern 3
-- Control 3
-- Curiosity 3
-- Confidence 3
+- Korean validation source: 김민선·고은영(2020)
+- 12 items = Concern 3 + Control 3 + Curiosity 3 + Confidence 3
 - 1–5 response range
-- four subscale means + overall mean
+- Jobfit wording version: `K-CAAS-SF-KR-2020-v1`
+- item order, wording, response range and scoring are locked to the documented Korean validation source
 
-Current wording version:
-`provisional-ko-v1-from-published-caas-sf-english`
-
-Important version rule:
-- Current Korean statements are a provisional educational translation based on publicly available CAAS-SF English items.
-- They must not automatically be labelled as the validated Korean K-CAAS-SF in a paper.
-- When the Korean validator/author provides official wording or permission conditions, replace wording and increment the version.
-- Never pool different wording versions without first evaluating measurement comparability.
+Rights rule:
+- psychometric validity and web redistribution permission are separate questions.
+- Item delivery remains restricted; full item wording is not committed in the public repository.
+- Before research publication or broader web distribution, document the applicable author/publisher/original-scale permission conditions in `v2/MEASURE_PROVENANCE.md`.
+- Do not state that reuse permission has been confirmed until it has actually been confirmed.
 
 Preferred storage:
 - 12 item responses
-- Concern
-- Control
-- Curiosity
-- Confidence
+- Concern / Control / Curiosity / Confidence
 - total/mean
-- wording_version
-- wording_status
+- wording_version / wording_status / source
 - administration date/timepoint
 
-## Strength Use & Deficit Correction Behaviour slot — EXPLORATORY / MECHANISM
+## Korean Strength Use & Deficit Correction — EXPLORATORY / MECHANISM
 Current implementation:
-- undergraduate/student 5 + 5 structure
-- Strength Use 5 items
-- Deficit Correction 5 items
-- provisional 0–6 response range
+- Korean validation source: 조영아(2019)
+- final 9 items = Strength Use 5 + Deficit Correction 4
+- original item 6 deleted in the Korean validation
+- 0–6 response range
+- Jobfit wording version: `SUDCO-CHO-KR-2019-9-v1`
 
-Current wording version:
-`provisional-student-ko-v1`
-
-Important version rule:
-- Current Korean statements are provisional learning-context wording based on the published student structure and original construct/items.
-- They must not automatically be labelled as the final validated Korean scale in a paper.
-- Replace wording/scoring metadata when the Korean validation author provides the official version.
-- Keep pre-existing provisional data separated by wording version.
+Version rule:
+- legacy provisional 10-item responses must remain separate and must not be auto-converted to the validated 9-item version.
+- wording/order/scoring changes require a new version identifier and source check.
 
 Preferred storage:
-- 10 item responses
+- 9 item responses
 - Strength Use mean
 - Deficit Correction mean
-- wording_version
-- wording_status
+- wording_version / wording_status / source
 - administration date/timepoint
 
 # PRE/POST analysis safeguards
@@ -191,7 +177,9 @@ Recommended structure when central research collection is enabled:
 - consent record separate from research response rows
 - participant_code used in research table
 - no name/student-number map inside the research dataset
-- refusal/non-participation does not disable learning functions
+- refusal/non-participation/withdrawal does not disable learning functions, grades, feedback, or course participation
+- consent status is stored separately; withdrawal is timestamped
+- treatment of already-collected data after withdrawal follows the approved consent/IRB protocol and is not silently assumed
 
 ## Multi-university sampling metadata
 Retain where appropriate:
