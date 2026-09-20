@@ -53,7 +53,7 @@ export async function render(ctx){
 
     <div class="hr"></div><div class="block"><div class="moduleHead"><span>05</span><div><h3>강점·역량 후보와 행동근거</h3><p>키워드만 남기지 않습니다. <b>왜 그 역량이라고 볼 수 있는지 실제 행동 한 문장</b>을 반드시 함께 저장합니다.</p></div></div>
       <div class="grid3">${competencyRow(1)}${competencyRow(2)}${competencyRow(3)}</div>
-      <div class="field" style="margin-top:12px"><label>추가 역량 후보 <span class="muted">(선택)</span></label><input class="input" id="competencies" placeholder="예: 데이터분석, 조율, 책임감"><span class="hint">쉼표로 구분. 6주차에 실제 직무의 Task·KSA·KPI와 다시 대조합니다.</span></div>
+      <div class="field" style="margin-top:12px"><label>추가 역량 후보 <span class="muted">(근거 미확인 · 선택)</span></label><input class="input" id="competencies" placeholder="예: 데이터분석, 조율, 책임감"><span class="hint">아직 행동근거를 붙이지 않은 후보입니다. 위 ‘역량 후보 + 근거행동’ 칸으로 옮겨 근거를 적기 전에는 확인된 역량 후보로 취급하지 않습니다.</span></div>
       <div class="qualityBox" style="margin-top:14px">
         ${check('ownershipChecked','팀의 행동과 내가 직접 한 행동을 구분했다.')}
         ${check('evidenceChecked','결과를 뒷받침하는 증거 수준을 확인했다.')}
@@ -112,11 +112,12 @@ export async function render(ctx){
     saveWeek4(false);
     const oldId=v('editId');
     const competencyEvidence=[1,2,3].map(i=>({keyword:v(`comp_${i}`),evidence:v(`compEv_${i}`)})).filter(x=>x.keyword||x.evidence);
-    const extra=v('competencies').split(',').map(x=>x.trim()).filter(Boolean);
-    const competencies=[...new Set([...competencyEvidence.map(x=>x.keyword).filter(Boolean),...extra])];
+    const unverifiedCompetencyCandidates=[...new Set(v('competencies').split(',').map(x=>x.trim()).filter(Boolean))];
+    const groundedCompetencyEvidence=competencyEvidence.filter(x=>x.keyword&&x.evidence);
+    const competencies=[...new Set(groundedCompetencyEvidence.map(x=>x.keyword))];
     const quality={ownership:ck('ownershipChecked'),evidence:ck('evidenceChecked'),noFabrication:ck('noFabrication'),transfer:ck('transferChecked')};
-    const learnerConfirmed=quality.noFabrication&&quality.ownership;
-    const item={id:oldId||`EXP-${Date.now()}`,category:v('category'),title,period:v('period'),workMode:v('workMode'),contribution:n('contribution'),contributionSource:'learner-self-rating',roleTitle:v('roleTitle'),context:v('context'),role:v('role'),challenge:v('challenge'),action:v('action'),reason:v('reason'),result:v('result'),evidence:v('evidence'),evidenceType:v('evidenceType'),evidenceGrade:v('evidenceGrade'),evidenceGradeSource:'learner-self-rating',actionVerbs:v('actionVerbs'),learning:v('learning'),rawVoice:v('rawVoice'),aiStructured:v('aiStructured'),competencies,competencyEvidence,quality,learnerFactChecked:learnerConfirmed,factCheckStatus:learnerConfirmed?'learner-confirmed':'not-confirmed',factChecked:learnerConfirmed,updatedAt:new Date().toISOString()};
+    const learnerConfirmed=quality.noFabrication&&quality.ownership&&quality.evidence;
+    const item={id:oldId||`EXP-${Date.now()}`,category:v('category'),title,period:v('period'),workMode:v('workMode'),contribution:n('contribution'),contributionSource:'learner-self-rating',roleTitle:v('roleTitle'),context:v('context'),role:v('role'),challenge:v('challenge'),action:v('action'),reason:v('reason'),result:v('result'),evidence:v('evidence'),evidenceType:v('evidenceType'),evidenceGrade:v('evidenceGrade'),evidenceGradeSource:'learner-self-rating',actionVerbs:v('actionVerbs'),learning:v('learning'),rawVoice:v('rawVoice'),aiStructured:v('aiStructured'),competencies,competencyEvidence:groundedCompetencyEvidence,unverifiedCompetencyCandidates,quality,learnerFactChecked:learnerConfirmed,factCheckStatus:learnerConfirmed?'learner-confirmed-with-evidence-check':'not-confirmed',factChecked:learnerConfirmed,updatedAt:new Date().toISOString()};
     const arr=[...currentExperiences()];const idx=arr.findIndex(x=>x.id===item.id);if(idx>=0)arr[idx]=item;else arr.push(item);
     const current=ctx.getState().assessments?.experienceCompetency||{};
     ctx.saveState({assessments:{experienceCompetency:{...current,version:WEEK4_VERSION,best3:collectBest3(),representativeKey:selectedRepresentative(),experiences:arr,updatedAt:new Date().toISOString()}},artifacts:{experienceMap:experienceMap(arr)}});
@@ -127,7 +128,7 @@ export async function render(ctx){
     set('editId',x.id);
     ['category','title','period','workMode','roleTitle','context','role','challenge','action','reason','result','evidence','evidenceType','evidenceGrade','actionVerbs','learning','rawVoice','aiStructured'].forEach(k=>set(k,x[k]||''));
     set('contribution',x.contribution||3);
-    set('competencies',(x.competencies||[]).filter(c=>!(x.competencyEvidence||[]).some(e=>e.keyword===c)).join(', '));
+    set('competencies',(x.unverifiedCompetencyCandidates||[]).join(', '));
     [1,2,3].forEach((i,idx)=>{set(`comp_${i}`,x.competencyEvidence?.[idx]?.keyword||'');set(`compEv_${i}`,x.competencyEvidence?.[idx]?.evidence||'')});
     document.getElementById('ownershipChecked').checked=!!x.quality?.ownership;
     document.getElementById('evidenceChecked').checked=!!x.quality?.evidence;
@@ -172,7 +173,7 @@ export async function render(ctx){
 }
 
 function normalizeBest3(x){return{best:{title:x?.best?.title||'',summary:x?.best?.summary||''},flow:{title:x?.flow?.title||'',summary:x?.flow?.summary||''},recognition:{title:x?.recognition?.title||'',summary:x?.recognition?.summary||''}}}
-function experienceMap(arr){return arr.map(x=>({id:x.id,title:x.title,category:x.category,roleTitle:x.roleTitle,action:x.action,actionVerbs:x.actionVerbs,result:x.result,evidence:x.evidence,evidenceGrade:x.evidenceGrade,evidenceGradeSource:x.evidenceGradeSource||'legacy-or-learner-self-rating',competencies:x.competencies,competencyEvidence:x.competencyEvidence,learning:x.learning,learnerFactChecked:x.learnerFactChecked??x.factChecked,factCheckStatus:x.factCheckStatus||(x.factChecked?'legacy-learner-confirmed':'not-confirmed'),factChecked:x.factChecked}))}
+function experienceMap(arr){return arr.map(x=>({id:x.id,title:x.title,category:x.category,roleTitle:x.roleTitle,action:x.action,actionVerbs:x.actionVerbs,result:x.result,evidence:x.evidence,evidenceGrade:x.evidenceGrade,evidenceGradeSource:x.evidenceGradeSource||'legacy-or-learner-self-rating',competencies:x.competencies,competencyEvidence:x.competencyEvidence,unverifiedCompetencyCandidates:x.unverifiedCompetencyCandidates||[],learning:x.learning,learnerFactChecked:x.learnerFactChecked??x.factChecked,factCheckStatus:x.factCheckStatus||(x.factChecked?'legacy-learner-confirmed':'not-confirmed'),factChecked:x.factChecked}))}
 function dnaBridgeHtml(dna,ctx){
   const h=dna.hypothesis||{},c=dna.comparison||{},r=dna.reflection||{};
   const rows=[];
