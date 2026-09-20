@@ -17,7 +17,7 @@ async function run(name,viewport){
     await page.goto(`${base}?course=INJE2026&measures=true`,{waitUntil:'networkidle'});
     assert(new URL(page.url()).searchParams.get('course')==='INJE2026','Course URL parameter changed');
     assert(new URL(page.url()).searchParams.get('measures')==='true','INJE2026 must keep STEP0 PRE enabled');
-    assert(await page.locator('.stepBtn').count()===9,'STEP navigation must contain 14 steps');
+    assert(await page.locator('.stepBtn').count()===14,'STEP navigation must contain 14 steps');
     const hero=(await page.locator('.hero').textContent())||'';assert(hero.includes('일부 구조화 결과는 수업 운영용 중앙 서버에도 저장됩니다.'),'Operational central storage notice missing');
 
     await page.waitForSelector('#preMeasureSave');
