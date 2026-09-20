@@ -18,11 +18,13 @@ async function run(name,viewport){
     assert(new URL(page.url()).searchParams.get('course')==='INJE2026','Course URL parameter changed');
     assert(new URL(page.url()).searchParams.get('measures')==='true','INJE2026 must keep STEP0 PRE enabled');
     assert(await page.locator('.stepBtn').count()===14,'STEP navigation must contain 14 steps');
-    const hero=(await page.locator('.hero').textContent())||'';assert(hero.includes('교수자에게 자동 전송되지 않습니다.'),'Local-only learner data contract missing');
+    const hero=(await page.locator('.hero').textContent())||'';assert(hero.includes('일부 구조화 결과는 수업 운영용 중앙 서버에도 저장됩니다.'),'Operational central storage notice missing');
 
     await page.waitForSelector('#preMeasureSave');
     const step0=(await page.locator('#stepRoot').textContent())||'';
     assert(step0.includes('오늘 할 일은 7개뿐입니다.'),'STEP0 must keep seven-stage sequence');
+    assert(step0.includes('수업 데이터 저장 안내'),'STEP0 central storage notice missing');
+    assert(step0.includes('별도 연구참여 동의'),'STEP0 future research consent notice missing');
     const journey=(await page.locator('.journeyStrip span').allTextContents()).map(x=>x.replace(/\s+/g,' ').trim());
     assert(journey.length===7,'STEP0 journey must contain seven stages');
     assert(journey[0].includes('수업 연결')&&journey[1].includes('익명코드')&&journey[2].includes('기본정보')&&journey[3].includes('현재 준비상태')&&journey[4].includes('AI Check-in')&&journey[5].includes('PRE 측정')&&journey[6].includes('백업'),'STEP0 stage order changed');
