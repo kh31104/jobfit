@@ -4,8 +4,8 @@
 
 | STEP | 중앙 운영 DB에 저장 | 저장하지 않음 |
 |---|---|---|
-| 0 Career Start | 익명코드 연결정보, 수업코드, 학년·전공 등 기본정보, 준비상태, 현재 STEP/완료율 | 이름, 학번, 이메일, 전화번호, AI Check-in 원문, PRE 연구측정 원자료 |
-| 1 Career DNA | Balance 선택, Career Anchor 응답·점수, 자기선택 강점, VIA TOP5, 다중지능 TOP3, 확인된 강점·보완 키워드 | AI 통합분석 전체 원문, 자유서술 비교·성찰 원문 |
+| 0 Career Start | Jobfit 참여코드 연결정보, 수업코드, 학년·전공 등 기존 기본정보, 준비상태, 현재 STEP/완료율 | 이름, 학번, 이메일, 전화번호, AI Check-in 원문, PRE 연구측정 원자료 |
+| 1 Career DNA | Balance 워밍업 선택, 자기인식 흥미·가치·강점, 고용24 S형 결과, 고용24 직업가치관 결과, VIA TOP5, Career DNA 가설의 구조화 키워드 | AI 통합분석 전체 원문, 자유서술 비교·성찰 원문, Career Anchor·다중지능 신규 연구자료 |
 | 2 Experience & Competency | 경험 개수, 경험 유형, 참여도, 증거유형·등급, 역량 키워드, Fact Check 상태 | 경험명, 상황·행동·결과·증거 원문, AI 구조화 원문, PRE 연구측정 원자료 |
 | 3 Job Explorer | 직무 후보명·직무군, Target Job 선택 | 자유서술 메모 |
 | 4 Job Deep Dive | 직무별 출처·Task·Requirement 개수 | Task/Requirement 자유서술 원문, 출처 메모 원문 |
@@ -32,4 +32,4 @@ Edge Function에서 허용목록 방식으로 정제한다. 브라우저가 전�
 
 ## 연구 활용
 
-jobfit_* 운영 DB에 쌓인 자료가 자동으로 연구자료가 되는 것은 아니다. 연구 활용은 승인된 연구계획, 동의 범위, IRB 필요 여부를 별도로 확인한 뒤 research_* 파이프라인으로 분리한다.
+jobfit_* 운영 DB에 쌓인 자료가 자동으로 연구자료가 되는 것은 아니다. 연구 활용은 승인된 연구계획, 동의 범위, IRB 필요 여부를 별도로 확인한 뒤 research_* 파이프라인으로 분리한다. 연구 미동의·철회는 수업기능, 성적, 피드백에 영향을 주지 않는다.

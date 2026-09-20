@@ -18,3 +18,14 @@ export async function submitResearchSnapshot(payload,{consent=false,syncToken}={
   const text=await response.text();if(!response.ok)throw new Error(`중앙 저장 실패 (${response.status}) ${text}`.trim());
   return text?JSON.parse(text):{ok:true};
 }
+
+
+export async function withdrawResearchConsent(payload,{syncToken}={}){
+  if(!isResearchSyncConfigured())throw new Error('중앙 연구 DB 연결이 아직 활성화되지 않았습니다.');
+  if(!/^[a-f0-9]{64}$/i.test(syncToken||''))throw new Error('연구 동기화 키가 없습니다.');
+  const config=window.JOBFIT_RESEARCH_CONFIG||{},base=String(config.supabaseUrl||'').replace(/\/$/,'');
+  const res=await fetch(`${base}/functions/v1/research-sync`,{method:'POST',headers:{'Content-Type':'application/json','apikey':config.publishableKey},body:JSON.stringify({action:'withdraw',sync_token:syncToken,payload})});
+  const body=await res.json().catch(()=>({}));
+  if(!res.ok||!body?.ok)throw new Error(body?.error||'연구 참여 철회 처리에 실패했습니다.');
+  return body;
+}

@@ -12,6 +12,7 @@
 - Response scale in Korean validation: 1 (전혀 그렇지 않다) to 5 (매우 그렇다).
 - Jobfit version: `K-CAAS-SF-KR-2020-v1`
 - Rule: do not replace, reorder, shorten, or paraphrase the 12 Korean items without a newly documented primary source and a new version identifier.
+- Rights status: psychometric provenance is verified, but permission for web redistribution/research-program delivery must be documented separately before publication or broader deployment. Do not describe permission as confirmed until written conditions are checked.
 
 ## 2. Korean strengths use / deficit correction — final 9 items
 
@@ -61,3 +62,11 @@ Any future change to item wording, order, number, response anchors, scoring, or 
 2. be given a new version identifier;
 3. update the restricted measure service, research export metadata, and tests together;
 4. never be inferred solely from an author name, secondary summary, search snippet, or an unverified prior ChatGPT answer.
+
+
+## 6. Career DNA research-version exclusions
+
+- Career Anchor 40-item content is not part of the research-version STEP 1 core.
+- Multiple-intelligence test results are not part of the research-version STEP 1 core.
+- Work24 interest/work-values assessments are completed on the official Work24 service; Jobfit stores only learner-entered result data and test metadata.
+- VIA is used as an external educational self-understanding aid. Jobfit does not reproduce VIA item wording, and VIA TOP5 is not a required research outcome variable.

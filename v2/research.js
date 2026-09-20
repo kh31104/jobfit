@@ -67,15 +67,15 @@ export async function submitResearchPayload(payload,options){
 
 function cleanMeasureBlock(block){if(!block||!Object.keys(block).length)return null;return {
   captured_at:block.capturedAt||null,
-  work24_college_career_readiness:block.work24CollegeCareerReadiness?{
-    instrument:block.work24CollegeCareerReadiness.instrument||'고용24 대학생진로준비도검사',
-    exam_date:block.work24CollegeCareerReadiness.examDate||null,
-    item_count:14,
-    score_type:block.work24CollegeCareerReadiness.scoreType||'T-score',
-    scores:cleanArray(block.work24CollegeCareerReadiness.scores).slice(0,14),
-    labels:Array.isArray(block.work24CollegeCareerReadiness.labels)?block.work24CollegeCareerReadiness.labels.slice(0,14):null,
-    score_schema:block.work24CollegeCareerReadiness.scoreSchema||null,
-    wording_status:block.work24CollegeCareerReadiness.wordingStatus||null
+  work24_job_readiness:block.work24JobReadiness?{
+    instrument:block.work24JobReadiness.instrument||'고용24 구직준비도검사',
+    exam_date:block.work24JobReadiness.examDate||null,
+    item_count:9,
+    score_type:block.work24JobReadiness.scoreType||'official-result-score',
+    scores:cleanArray(block.work24JobReadiness.scores).slice(0,9),
+    labels:Array.isArray(block.work24JobReadiness.labels)?block.work24JobReadiness.labels.slice(0,9):null,
+    score_schema:block.work24JobReadiness.scoreSchema||null,
+    wording_status:block.work24JobReadiness.wordingStatus||null
   }:null,
   kcaas:block.kcaas?{
     instrument:block.kcaas.instrument||'K-CAAS-SF',

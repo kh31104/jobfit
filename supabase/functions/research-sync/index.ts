@@ -13,10 +13,24 @@ Deno.serve(async req=>{
     const declaredSize=Number(req.headers.get('content-length')||0);if(declaredSize>maxBodyBytes)return json({error:'payload_too_large'},413);
     const raw=await req.text();if(new TextEncoder().encode(raw).byteLength>maxBodyBytes)return json({error:'payload_too_large'},413);
     let body:Record<string,unknown>;try{body=JSON.parse(raw)}catch{return json({error:'invalid_json'},400)}
-    const {consent,sync_token,payload}=body as {consent?:unknown,sync_token?:string,payload?:Record<string,unknown>};
-    if(consent!==true)return json({error:'consent_required'},400);
+    const {action,consent,sync_token,payload}=body as {action?:string,consent?:unknown,sync_token?:string,payload?:Record<string,unknown>};
+    if(action!=='withdraw'&&consent!==true)return json({error:'consent_required'},400);
     if(!/^[a-f0-9]{64}$/i.test(sync_token||''))return json({error:'invalid_sync_token'},400);
     if(!String(payload?.schema_version||'').startsWith('jobfit-research-v1.')||payload?.export_metadata?.excludes_activity_text!==true)return json({error:'invalid_research_payload'},400);
+    if(action==='withdraw'){
+      if(!/^[a-f0-9]{64}$/i.test(sync_token||''))return json({error:'invalid_sync_token'},400);
+      const code=String(payload?.participant_code||'').slice(0,40),cohortCode=String(payload?.context?.cohort_id||'').slice(0,80);
+      if(!code||!cohortCode)return json({error:'participant_and_cohort_required'},400);
+      const tokenHash=await sha256(sync_token||''),admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+      const {data:cohort,error:cohortError}=await admin.from('research_cohorts').select('id,is_active').eq('cohort_code',cohortCode).single();
+      if(cohortError||!cohort)return json({error:'cohort_not_found'},404);
+      const {data:existing}=await admin.from('research_participants').select('id,sync_token_hash').eq('cohort_id',cohort.id).eq('participant_code',code).maybeSingle();
+      if(!existing||existing.sync_token_hash!==tokenHash)return json({error:'participant_token_mismatch'},409);
+      const now=new Date().toISOString();
+      const {error}=await admin.from('research_consents').insert({participant_id:existing.id,consent_version:String(payload?.consent_version||'withdrawal').slice(0,100),consented:false,status:'withdrawn',consented_at:now,withdrawn_at:now});
+      if(error)throw error;
+      return json({ok:true,participant_code:code,withdrawn_at:now});
+    }
     const approvedConsentVersion=String(Deno.env.get('RESEARCH_CONSENT_VERSION')||'').trim();
     if(approvedConsentVersion.length<3)return json({error:'research_collection_not_open'},503);
     if(String(payload?.consent_version||'')!==approvedConsentVersion)return json({error:'consent_version_mismatch'},409);
@@ -31,7 +45,7 @@ Deno.serve(async req=>{
     if(!participantId){const {data:created,error}=await admin.from('research_participants').insert({cohort_id:cohort.id,participant_code:code,sync_token_hash:tokenHash}).select('id').single();if(error)throw error;participantId=created.id}
     else await admin.from('research_participants').update({last_received_at:new Date().toISOString()}).eq('id',participantId);
     const consentVersion=approvedConsentVersion.slice(0,100),consentedAt=new Date().toISOString();
-    const {error:consentError}=await admin.from('research_consents').insert({participant_id:participantId,consent_version:consentVersion,consented:true,consented_at:consentedAt});if(consentError)throw consentError;
+    const {error:consentError}=await admin.from('research_consents').insert({participant_id:participantId,consent_version:consentVersion,consented:true,status:'consented',consented_at:consentedAt});if(consentError)throw consentError;
     const snapshot={participant_id:participantId,schema_version:payload.schema_version,demographics:pick(payload.demographics,['age','gender','grade','major_raw','major_group','enrollment_status','graduation_horizon','gpa_band']),work24_interest:pick(payload.work24_interest,['test_type','test_date','riasec_raw','riasec_standard','big5','validity','facets','life_history']),work24_values:pick(payload.work24_values,['scores','test_date','version']),pre_measurements:measurements(payload.pre_measurements),post_measurements:measurements(payload.post_measurements),progress:pick(payload.progress,['current_step','completed_steps','completed_step_count','total_steps','completion_percent','last_saved_at']),source_exported_at:payload.export_metadata?.exported_at||null};
     const {error:snapshotError}=await admin.from('research_snapshots').insert(snapshot);if(snapshotError)throw snapshotError;
     return json({ok:true,participant_code:code,received_at:new Date().toISOString()});
