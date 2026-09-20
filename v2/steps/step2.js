@@ -42,6 +42,13 @@ export async function render(ctx){
       <div class="grid3" style="margin-top:12px">${sel('workMode','진행 방식','',['개인','팀','조직/부서'],ctx)}${score('contribution','내 기여도')}${txt('roleTitle','내 역할 한 줄','','예: 자료분석 / 고객응대 / 일정조율',ctx)}</div>
       <div class="grid2" style="margin-top:12px">${area('context','경험 배경','무엇을 하기 위한 경험이었나요? 목적과 상황만 짧게.','',ctx)}${area('role','내 책임 범위','팀 전체가 아니라 내가 맡은 책임과 의사결정 범위는 무엇이었나요?','',ctx)}</div>
       <div class="actions" style="margin-top:12px"><button class="btn secondary" id="makeInterviewPrompt">AI 경험 인터뷰 프롬프트 만들기</button><button class="btn outline hidden" id="copyInterviewPrompt">프롬프트 복사</button></div><div class="promptBox hidden" id="interviewPrompt"></div>
+      <div class="summaryBox" style="margin-top:12px"><h4>인터뷰 후 사실확인</h4><p class="help">AI가 정리한 문장을 그대로 저장하지 말고, 아래 항목을 확인한 뒤 경험카드에 반영하세요.</p>
+        <div class="qualityBox">
+          ${check('interviewOwnership','AI 정리에서 팀 전체의 행동과 내가 직접 한 행동이 구분되어 있다.')}
+          ${check('interviewNumbers','AI 정리에 내가 말하지 않은 수치·성과·역할이 추가되지 않았다.')}
+          ${check('interviewEvidence','결과와 증거가 내가 실제로 확인할 수 있는 내용이다.')}
+        </div>
+      </div>
     </div>
 
     <div class="hr"></div><div class="block"><div class="moduleHead"><span>04</span><div><h3>행동 → 판단 → 결과 → 증거</h3><p>AI와 대화한 뒤 확인된 사실만 내 경험카드에 정리합니다.</p></div></div>
@@ -124,8 +131,8 @@ export async function render(ctx){
     const competencyEvidence=[1,2,3].map(i=>({keyword:v(`comp_${i}`),evidence:v(`compEv_${i}`)})).filter(x=>x.keyword||x.evidence);
     const extra=v('competencies').split(',').map(x=>x.trim()).filter(Boolean);
     const competencies=[...new Set([...competencyEvidence.map(x=>x.keyword).filter(Boolean),...extra])];
-    const quality={ownership:ck('ownershipChecked'),evidence:ck('evidenceChecked'),noFabrication:ck('noFabrication'),transfer:ck('transferChecked')};
-    const item={id:oldId||`EXP-${Date.now()}`,category:v('category'),title,period:v('period'),workMode:v('workMode'),contribution:n('contribution'),roleTitle:v('roleTitle'),context:v('context'),role:v('role'),challenge:v('challenge'),action:v('action'),reason:v('reason'),result:v('result'),evidence:v('evidence'),evidenceType:v('evidenceType'),evidenceGrade:v('evidenceGrade'),actionVerbs:v('actionVerbs'),learning:v('learning'),rawVoice:v('rawVoice'),aiStructured:v('aiStructured'),competencies,competencyEvidence,quality,factChecked:quality.noFabrication&&quality.ownership,updatedAt:new Date().toISOString()};
+    const quality={ownership:ck('ownershipChecked'),evidence:ck('evidenceChecked'),noFabrication:ck('noFabrication'),transfer:ck('transferChecked'),interviewOwnership:ck('interviewOwnership'),interviewNumbers:ck('interviewNumbers'),interviewEvidence:ck('interviewEvidence')};
+    const item={id:oldId||`EXP-${Date.now()}`,category:v('category'),title,period:v('period'),workMode:v('workMode'),contribution:n('contribution'),roleTitle:v('roleTitle'),context:v('context'),role:v('role'),challenge:v('challenge'),action:v('action'),reason:v('reason'),result:v('result'),evidence:v('evidence'),evidenceType:v('evidenceType'),evidenceGrade:v('evidenceGrade'),actionVerbs:v('actionVerbs'),learning:v('learning'),rawVoice:v('rawVoice'),aiStructured:v('aiStructured'),competencies,competencyEvidence,quality,factChecked:quality.noFabrication&&quality.ownership&&quality.interviewNumbers,updatedAt:new Date().toISOString()};
     const arr=[...currentExperiences()];const idx=arr.findIndex(x=>x.id===item.id);if(idx>=0)arr[idx]=item;else arr.push(item);
     const current=ctx.getState().assessments?.experienceCompetency||{};
     ctx.saveState({assessments:{experienceCompetency:{...current,version:WEEK4_VERSION,best3:collectBest3(),representativeKey:selectedRepresentative(),experiences:arr,updatedAt:new Date().toISOString()}},artifacts:{experienceMap:experienceMap(arr),competencyMap:competencyMap(arr),experienceDNA:experienceDNA(arr,dna)}});
@@ -142,6 +149,7 @@ export async function render(ctx){
     document.getElementById('evidenceChecked').checked=!!x.quality?.evidence;
     document.getElementById('noFabrication').checked=!!x.quality?.noFabrication;
     document.getElementById('transferChecked').checked=!!x.quality?.transfer;
+    ['interviewOwnership','interviewNumbers','interviewEvidence'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=!!x.quality?.[id]});
     document.getElementById('title').focus();
   }
   function deleteExperience(id){
@@ -155,7 +163,7 @@ export async function render(ctx){
   function clearForm(){
     ['editId','category','title','period','workMode','roleTitle','context','role','challenge','action','reason','result','evidence','evidenceType','evidenceGrade','actionVerbs','learning','rawVoice','aiStructured','competencies','comp_1','compEv_1','comp_2','compEv_2','comp_3','compEv_3'].forEach(k=>set(k,''));
     set('contribution',3);
-    ['ownershipChecked','evidenceChecked','noFabrication','transferChecked'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false});
+    ['ownershipChecked','evidenceChecked','noFabrication','transferChecked','interviewOwnership','interviewNumbers','interviewEvidence'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false});
     document.getElementById('title')?.focus();
   }
   function useRepresentative(){
@@ -172,7 +180,7 @@ export async function render(ctx){
       c.repeat&&`반복해서 나타난다고 본 부분: ${c.repeat}`,
       c.verify&&`더 확인하고 싶은 부분: ${c.verify}`
     ].filter(Boolean);
-    return `지금부터 내 경험에서 실제 행동과 직무역량의 근거를 찾는 인터뷰어가 되어줘. 자소서를 대신 쓰거나 직업을 추천하지 말고, 내가 실제로 한 일을 구체적으로 확인해줘.\n\n[대표 경험 기본정보]\n경험명: ${v('title')||'미입력'}\n유형: ${v('category')||'미입력'}\n기간: ${v('period')||'미입력'}\n진행방식: ${v('workMode')||'미입력'}\n내 역할: ${v('roleTitle')||'미입력'}\n배경: ${v('context')||'미입력'}\n책임범위: ${v('role')||'미입력'}${dnaLines.length?`\n\n[3주차 자기이해 가설 · 참고만]\n${dnaLines.join('\n')}`:''}\n\n[인터뷰 규칙]\n1. 한 번에 질문 하나만 한다.\n2. 먼저 이 경험에서 내가 실제로 맡은 역할과 해결해야 했던 문제를 확인한다.\n3. 팀 전체가 한 일과 내가 직접 한 행동을 반드시 분리한다.\n4. 문제·과제 → 내 행동 → 판단이유 → 결과 → 증거 순서로 질문한다.\n5. 내가 말하지 않은 행동·수치·성과를 만들어내지 않는다.\n6. 강점이나 역량 이름을 먼저 붙이지 않는다. 행동이 충분히 확인된 뒤에만 후보를 제시한다.\n7. 가능하면 \"무엇을 비교했는지, 어떻게 판단했는지, 누구와 어떻게 조율했는지\"처럼 행동을 더 구체화한다.\n8. 마지막에는 확인된 사실만 사용해 정리한다.\n\n[마지막 정리 형식]\n- 핵심 상황·과제\n- 내가 직접 한 행동 3~5개\n- 판단이유\n- 결과\n- 확인 가능한 증거\n- 핵심 행동동사\n- 강점·역량 후보 최대 3개\n- 각 역량의 근거 행동 한 문장\n- 6주차 직무 Task·KSA·KPI와 대조할 때 확인할 질문 1~2개\n\n첫 질문부터 시작해줘.`;
+    return `지금부터 내 경험에서 실제 행동과 직무역량의 근거를 찾는 인터뷰어가 되어줘. 자소서를 대신 쓰거나 직업을 추천하지 말고, 내가 실제로 한 일을 구체적으로 확인해줘.\n\n[대표 경험 기본정보]\n경험명: ${v('title')||'미입력'}\n유형: ${v('category')||'미입력'}\n기간: ${v('period')||'미입력'}\n진행방식: ${v('workMode')||'미입력'}\n내 역할: ${v('roleTitle')||'미입력'}\n배경: ${v('context')||'미입력'}\n책임범위: ${v('role')||'미입력'}${dnaLines.length?`\n\n[3주차 자기이해 가설 · 참고만]\n${dnaLines.join('\n')}`:''}\n\n[인터뷰 규칙]\n1. 한 번에 질문 하나만 한다.\n2. 먼저 이 경험에서 내가 실제로 맡은 역할과 해결해야 했던 문제를 확인한다.\n3. 팀 전체가 한 일과 내가 직접 한 행동을 반드시 분리한다.\n4. 문제·과제 → 내 행동 → 판단이유 → 결과 → 증거 순서로 질문한다.\n5. 답이 추상적이면 다음 질문을 분기한다. 행동이 모호하면 '정확히 무엇을 했는지', 판단이 모호하면 '무엇을 기준으로 선택했는지', 협업이 모호하면 '누구와 무엇을 어떻게 조율했는지', 결과가 모호하면 '전후 차이와 확인 가능한 근거가 무엇인지'를 한 가지씩 묻는다.\n6. 사용자가 '잘 모르겠다'고 답하면 예시 답을 대신 만들지 말고, 기억을 돕는 사실 질문 1개만 제시한다.\n7. 내가 말하지 않은 행동·수치·성과를 만들어내지 않는다.\n8. 강점이나 역량 이름을 먼저 붙이지 않는다. 행동이 충분히 확인된 뒤에만 후보를 제시한다.\n9. 같은 경험에서 행동근거가 부족하면 역량 후보를 억지로 3개 채우지 않는다.\n10. 마지막에는 확인된 사실만 사용해 정리하고, 추정이 섞인 문장은 '확인 필요'로 표시한다.\n\n[마지막 정리 형식]\n- 핵심 상황·과제\n- 내가 직접 한 행동 3~5개\n- 판단이유\n- 결과\n- 확인 가능한 증거\n- 핵심 행동동사\n- 강점·역량 후보 최대 3개\n- 각 역량의 근거 행동 한 문장\n- 6주차 직무 Task·KSA·KPI와 대조할 때 확인할 질문 1~2개\n\n첫 질문부터 시작해줘.`;
   }
   function v(id){return document.getElementById(id)?.value?.trim?.()||''}
   function n(id){return Number(document.getElementById(id)?.value||0)}
