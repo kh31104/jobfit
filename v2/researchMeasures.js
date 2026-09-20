@@ -35,7 +35,7 @@ export function renderMeasurePanel(ctx,timepoint='pre'){
       <div class="actions"><a class="btn secondary" href="${WORK24_URL}" target="_blank" rel="noopener">대학생진로준비도검사 화면 열기 ↗</a><a class="btn outline" href="https://www.work24.go.kr/wk/r/c/1000/jobPsyExamRsltList.do" target="_blank" rel="noopener">내 검사 결과 확인 ↗</a></div>
       <div class="callout warn"><b>고용24에서 ‘대학생진로준비도검사’를 선택하세요.</b><br>검사명을 반드시 확인하세요. 직업선호도검사·직업가치관검사와 구분하여 PRE와 POST에서 동일한 ‘대학생진로준비도검사’를 사용합니다.</div>
       <div class="grid3" style="margin-top:12px"><div class="field"><label>검사일</label><input class="input" id="${prefix}Work24Date" type="date" value="${ctx.escapeHtml(w.examDate||'')}"></div>${WORK24_LABELS.map((label,i)=>`<div class="field"><label>${i+1}. ${label}</label><input class="input scoreInput" type="number" step="0.01" data-measure="${prefix}-work24" data-key="w${i+1}" value="${ctx.escapeHtml(w.scores?.[i]??'')}" placeholder="결과표 점수"></div>`).join('')}</div>
-      <div class="status" id="${prefix}Work24Status">${complete(w.scores,9)?'14개 하위요인 T점수 입력 완료':''}</div>
+      <div class="status" id="${prefix}Work24Status">${complete(w.scores,14)?'14개 하위요인 T점수 입력 완료':''}</div>
     </div>
 
     <details class="summaryBox" style="margin-top:14px" ${timepoint==='pre'?'open':''} data-scale-version="${KCAAS_SCALE.version}">
