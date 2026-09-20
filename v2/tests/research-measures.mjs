@@ -35,7 +35,7 @@ try{
   assert((await attrs(preK,'min')).every(v=>v==='1')&&(await attrs(preK,'max')).every(v=>v==='5'),'K-CAAS range mismatch');
 
   await page.locator('#preWork24Date').fill('2026-09-07');
-  for(let i=0;i<14;i++)await page.locator('[data-measure="pre-work24"]').nth(i).fill(String(40+i));
+  for(let i=0;i<9;i++)await page.locator('[data-measure="pre-work24"]').nth(i).fill(String(40+i));
   for(let i=0;i<12;i++)await preK.nth(i).fill(String((i%5)+1));
   await page.locator('#preMeasureSave').click();
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')).research?.measurements?.pre?.kcaas?.items?.length===12);
