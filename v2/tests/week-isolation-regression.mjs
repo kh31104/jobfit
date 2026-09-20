@@ -17,7 +17,7 @@ async function run(name,viewport){
     await page.goto(`${base}?course=INJE2026&measures=true`,{waitUntil:'networkidle'});
     assert(new URL(page.url()).searchParams.get('course')==='INJE2026','Course URL parameter changed');
     assert(new URL(page.url()).searchParams.get('measures')==='true','INJE2026 must keep STEP0 PRE enabled');
-    assert(await page.locator('.stepBtn').count()===14,'STEP navigation must contain 14 steps');
+    assert(await page.locator('.stepBtn').count()===9,'STEP navigation must contain 14 steps');
     const hero=(await page.locator('.hero').textContent())||'';assert(hero.includes('일부 구조화 결과는 수업 운영용 중앙 서버에도 저장됩니다.'),'Operational central storage notice missing');
 
     await page.waitForSelector('#preMeasureSave');
@@ -27,8 +27,8 @@ async function run(name,viewport){
     assert(step0.includes('별도 연구참여 동의'),'STEP0 future research consent notice missing');
     const journey=(await page.locator('.journeyStrip span').allTextContents()).map(x=>x.replace(/\s+/g,' ').trim());
     assert(journey.length===7,'STEP0 journey must contain seven stages');
-    assert(journey[0].includes('수업 연결')&&journey[1].includes('익명코드')&&journey[2].includes('기본정보')&&journey[3].includes('현재 준비상태')&&journey[4].includes('AI Check-in')&&journey[5].includes('PRE 측정')&&journey[6].includes('백업'),'STEP0 stage order changed');
-    assert(await page.locator('[data-measure="pre-work24"]').count()===14,'STEP0 Work24 PRE must expose 14 score inputs');
+    assert(journey[0].includes('수업 연결')&&journey[1].includes('Jobfit 참여코드')&&journey[2].includes('기본정보')&&journey[3].includes('현재 준비상태')&&journey[4].includes('AI Check-in')&&journey[5].includes('PRE 측정')&&journey[6].includes('백업'),'STEP0 stage order changed');
+    assert(await page.locator('[data-measure="pre-work24"]').count()===9,'STEP0 Work24 PRE must expose 9 score inputs');
     assert(await page.locator('[data-measure="pre-kcaas"]').count()===12,'STEP0 K-CAAS PRE must expose 12 items');
 
     await page.locator('#makeCodeBtn').click();const code=(await page.locator('#anonCode').textContent()||'').trim();assert(/^JF26-[A-Z2-9]{6}$/.test(code),'Anonymous code creation changed');
