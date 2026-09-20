@@ -20,11 +20,11 @@ el('centralLoadBtn').addEventListener('click',async()=>{try{setCentralStatus('�
 el('signOutBtn').addEventListener('click',async()=>{await signOutInstructor();updateCentralPanel()});
 
 function render(){
-  const rows=researchRows(records),preWork=records.map(r=>average(r.pre_measurements?.work24_college_career_readiness?.scores)),preCaas=records.map(r=>r.pre_measurements?.kcaas?.total);
-  el('count').textContent=records.length;el('preCount').textContent=records.filter(r=>r.pre_measurements?.work24_college_career_readiness||r.pre_measurements?.kcaas).length;el('postCount').textContent=records.filter(r=>r.post_measurements?.work24_college_career_readiness||r.post_measurements?.kcaas).length;el('progressMean').textContent=`${mean(records.map(r=>r.progress?.completion_percent))}%`;el('work24Mean').textContent=mean(preWork);el('caasMean').textContent=mean(preCaas);
+  const rows=researchRows(records),preWorkComplete=records.filter(r=>completeWork24(r.pre_measurements?.work24_college_career_readiness?.scores)).length,preCaas=records.map(r=>r.pre_measurements?.kcaas?.total);
+  el('count').textContent=records.length;el('preCount').textContent=records.filter(r=>r.pre_measurements?.work24_college_career_readiness||r.pre_measurements?.kcaas).length;el('postCount').textContent=records.filter(r=>r.post_measurements?.work24_college_career_readiness||r.post_measurements?.kcaas).length;el('progressMean').textContent=`${mean(records.map(r=>r.progress?.completion_percent))}%`;el('work24Mean').textContent=`${preWorkComplete}/${records.length}`;el('caasMean').textContent=mean(preCaas);
   el('csvBtn').disabled=!records.length;el('jsonBtn').disabled=!records.length;el('clearBtn').disabled=!records.length;
   el('empty').hidden=records.length>0;el('tableWrap').hidden=!records.length;
-  el('tbody').innerHTML=rows.map((r,i)=>`<tr data-index="${i}"><td><button class="codeLink" data-index="${i}">${safe(r.익명코드)}</button></td><td>${safe(r.학년)}</td><td>${safe(r.전공계열)}</td><td>${safe(average(records[i].pre_measurements?.work24_college_career_readiness?.scores))}</td><td>${safe(r.PRE_진로적응성_전체)}</td><td>${safe(r.PRE_강점활용)}</td><td>${safe(r.PRE_약점교정)}</td><td>${safe(r.진행률)}%</td><td>STEP ${safe(r.현재STEP)}</td></tr>`).join('');
+  el('tbody').innerHTML=rows.map((r,i)=>`<tr data-index="${i}"><td><button class="codeLink" data-index="${i}">${safe(r.참여코드)}</button></td><td>${safe(r.학년)}</td><td>${safe(r.전공계열)}</td><td>${safe(completeWork24(records[i].pre_measurements?.work24_college_career_readiness?.scores)?'완료':'—')}</td><td>${safe(r.PRE_진로적응성_전체)}</td><td>${safe(r.PRE_강점활용)}</td><td>${safe(r.PRE_약점교정)}</td><td>${safe(r.진행률)}%</td><td>STEP ${safe(r.현재STEP)}</td></tr>`).join('');
   document.querySelectorAll('.codeLink').forEach(b=>b.addEventListener('click',()=>showDetail(records[Number(b.dataset.index)])));
 }
 function showDetail(r){
@@ -34,7 +34,7 @@ function showDetail(r){
   el('detail').showModal();
 }
 function metric(label,value){return `<div class="metric"><span>${safe(label)}</span><b>${safe(value)}</b></div>`}
-function average(values){const nums=(values||[]).map(Number).filter(Number.isFinite);return nums.length===9?nums.reduce((a,b)=>a+b,0)/nums.length:null}
+function completeWork24(values){return Array.isArray(values)&&values.length===14&&values.every(v=>Number.isFinite(Number(v)))}
 function safe(v){return escapeHtml(fmt(v))}function escapeHtml(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function download(blob,name){if(!records.length)return;const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}function date(){return new Date().toISOString().slice(0,10)}
 function setCentralStatus(message,type=''){el('centralStatus').textContent=message;el('centralStatus').className=type}
