@@ -20,8 +20,8 @@ if(isInjeCourse){
   }
 }
 
-await import('./app.js?v=15');
-await import('./injeClassroom.js?v=16');
+await import('./app.js?v=16');
+await import('./injeClassroom.js?v=17');
 await import('./careerDnaUx.js?v=7');
 await import('./careerDnaStudentUx.js?v=1');
 await import('./careerDnaLearningFlowUx.js?v=4');
