@@ -1,11 +1,10 @@
-import {loadCareerAnchorScale} from '../careerDnaMeasures.js';
 import {castBalanceVote,getBalanceCounts,classSessionCode} from '../classroomVotes.js';
 
-const PROMPT_VERSION='career-dna-standard-v1';
+const PROMPT_VERSION='career-dna-research-v1';
 const VIA_URL='https://www.viacharacter.org/Survey//Account/Register';
-const MI_URL='https://multiiqtest.com/';
+const WORK24_URL='https://www.work24.go.kr/wk/r/c/1000/jobPsyExamList.do';
+const RIASEC=['R','I','A','S','E','C'];
 const STRENGTHS=['감사','공감','도전','사랑','시간관리','온화함','자기관리','조화','추진력','학습','감수성','글쓰기','동기부여','설득력','신중함','용기','자신감','진정성','친절','행동력','개인화','끈기','리더십','설명력','심미안','유머','자제력','진행력','통찰력','협력','겸손','낙관주의','박학다식','섬세함','연결성','유쾌함','적응력','집중력','평등심','호기심','경청','논리성','분석력','성장','열린 마음','의사소통','전략','창의성','포용력','활력','계획','대중성','사교성','승부욕','열정','이해력','정리정돈','책임감','피드백','회복탄력성'];
-const MI_AREAS=['언어지능','논리수학지능','공간지능','신체운동지능','음악지능','자기성찰지능','인간친화지능','자연지능'];
 const BALANCE=[
   {title:'고연봉 vs 저녁이 있는 삶',a:'연봉 7,500만 원',b:'저녁이 있는 삶',av:'보상',bv:'일과 삶의 균형'},
   {title:'빠른 성장 vs 오래 다닐 안정성',a:'3년 뒤 몸값 2배',b:'평생 다닐 수 있는 회사',av:'성장',bv:'안정성'},
@@ -19,16 +18,17 @@ const BALANCE=[
 export async function render(ctx){
   const state=ctx.getState();
   const saved=state.assessments?.careerDNA||{};
-  let scale=null,scaleError='';
-  try{scale=await loadCareerAnchorScale(ctx.courseConfig.course||'INJE2026')}catch(e){scaleError=e?.message||'Career Anchor 문항을 불러오지 못했습니다.'}
   const root=document.getElementById('stepRoot');
   const balanceAnswers=normalizeBalance(saved.balance?.answers);
   const selfStrengths=Array.isArray(saved.selfStrengths)?saved.selfStrengths.slice(0,5):[];
-  const anchorResponses=Array.isArray(saved.careerAnchor?.responses)?saved.careerAnchor.responses.slice(0,40):Array(40).fill(null);
-  while(anchorResponses.length<40)anchorResponses.push(null);
-  const bonusItems=Array.isArray(saved.careerAnchor?.bonusItems)?saved.careerAnchor.bonusItems.slice(0,3):[];
+  const selfInterest=Array.isArray(saved.selfInterest?.clues)?saved.selfInterest.clues.slice(0,3):[];
+  while(selfInterest.length<3)selfInterest.push('');
+  const interest=saved.interest||{};
+  const selfValues=Array.isArray(saved.selfValues?.items)?saved.selfValues.items.slice(0,5):[];
+  while(selfValues.length<5)selfValues.push('');
+  const workValueEntries=Object.entries(saved.workValues||{}).slice(0,9);
+  while(workValueEntries.length<9)workValueEntries.push(['','']);
   const viaTop5=Array.isArray(saved.viaTop5)?saved.viaTop5.slice(0,5):[];
-  const miTop3=Array.isArray(saved.multipleIntelligence?.top3)?saved.multipleIntelligence.top3.slice(0,3):[];
   const comparison=saved.comparison||{};
 
   root.innerHTML=`<section class="card careerDnaStandard">
