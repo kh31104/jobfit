@@ -150,22 +150,11 @@ function sanitizeCareerDna(dna:unknown){
   const answers=Array.isArray(d.balance?.answers)?d.balance.answers.slice(0,7).map((x:any)=>x&&typeof x==='object'?{
     questionId:cleanNumber(x.questionId),choice:cleanText(x.choice,1),label:cleanText(x.label,60),value:cleanText(x.value,60),confirmedAt:cleanDate(x.confirmedAt)
   }:null):[];
-  const anchor=d.careerAnchor||{};
-  const ranking=Array.isArray(anchor.ranking)?anchor.ranking.slice(0,8).map((x:any)=>({code:cleanText(x?.code,4),name:cleanText(x?.name,80),score:cleanNumber(x?.score)})):[];
-  const scores:Record<string,number>={};
-  if(anchor.scores&&typeof anchor.scores==='object')for(const [k,v] of Object.entries(anchor.scores))if(/^[A-H]$/.test(k)&&Number.isFinite(Number(v)))scores[k]=Number(v);
   return {
     standard:pick(d.standard,['version','savedAt'],100),
     balance:{answers},
-    careerAnchor:{
-      version:cleanText(anchor.version,100),
-      responses:Array.isArray(anchor.responses)?anchor.responses.slice(0,40).map((x:any)=>Number.isFinite(Number(x))?Number(x):null):[],
-      bonusItems:Array.isArray(anchor.bonusItems)?anchor.bonusItems.slice(0,3).map(Number).filter((x:number)=>x>=1&&x<=40):[],
-      scores,ranking,complete:!!anchor.complete
-    },
     selfStrengths:cleanStringArray(d.selfStrengths,5,40),
     viaTop5:cleanStringArray(d.viaTop5,5,60),
-    multipleIntelligence:{top3:cleanStringArray(d.multipleIntelligence?.top3,3,60)},
     hypothesis:{
       selfCheck:cleanText(d.hypothesis?.selfCheck,40),
       strengthKeywords:cleanStringArray(d.hypothesis?.strengthKeywords,5,50),
@@ -175,10 +164,13 @@ function sanitizeCareerDna(dna:unknown){
     },
     interest:{
       type:cleanText(d.interest?.type,40),
+      examDate:cleanText(d.interest?.examDate,20),
       riasecRaw:numericObject(d.interest?.riasecRaw),
       riasecStandard:numericObject(d.interest?.riasecStandard)
     },
     workValues:numericObject(d.workValues),
+    workValuesDate:cleanText(d.workValuesDate,20),
+    workValuesVersion:cleanText(d.workValuesVersion,100),
     promptMeta:{version:cleanText(d.promptMeta?.version,80),moduleStatus:safeJson(d.promptMeta?.moduleStatus,3)}
   };
 }
@@ -205,10 +197,10 @@ function sanitizeArtifacts(a:unknown){
     careerDNAProfile:{
       version:cleanText(v.careerDNAProfile?.version,80),
       valueClues:cleanStringArray(v.careerDNAProfile?.valueClues,12,60),
-      careerAnchorTop:Array.isArray(v.careerDNAProfile?.careerAnchorTop)?v.careerDNAProfile.careerAnchorTop.slice(0,3).map((x:any)=>({code:cleanText(x?.code,4),name:cleanText(x?.name,80),score:cleanNumber(x?.score)})):[],
+      riasecTop:Array.isArray(v.careerDNAProfile?.riasecTop)?v.careerDNAProfile.riasecTop.slice(0,3).map((x:any)=>({code:cleanText(x?.code,4),score:cleanNumber(x?.score)})):[],
+      valueTop:Array.isArray(v.careerDNAProfile?.valueTop)?v.careerDNAProfile.valueTop.slice(0,3).map((x:any)=>({name:cleanText(x?.name,80),score:cleanNumber(x?.score)})):[],
       selfStrengths:cleanStringArray(v.careerDNAProfile?.selfStrengths,5,50),
       viaTop5:cleanStringArray(v.careerDNAProfile?.viaTop5,5,60),
-      multipleIntelligenceTop3:cleanStringArray(v.careerDNAProfile?.multipleIntelligenceTop3,3,60),
       updatedAt:cleanDate(v.careerDNAProfile?.updatedAt)
     },
     jobExplorer:{
