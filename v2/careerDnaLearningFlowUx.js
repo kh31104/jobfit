@@ -31,12 +31,12 @@ const STEP2_COPY=[
     description:'AI와 대화한 뒤 확인된 사실만 남기고, 내가 직접 한 행동과 그 결과를 근거와 함께 정리합니다.'
   },
   {
-    title:'강점·역량 키워드와 행동근거 · 경험에서 찾기',
-    description:'키워드를 먼저 붙이지 않고, 실제 행동이 충분히 확인된 뒤 강점·역량 후보와 근거를 함께 저장합니다.'
+    title:'강점·역량 후보와 행동근거 · 경험에서 찾기',
+    description:'키워드를 먼저 붙이지 않고, 실제 행동이 충분히 확인된 뒤 강점·역량 후보와 근거를 함께 저장합니다. 직무 관련성은 이후 실제 직무정보와 대조합니다.'
   },
   {
     title:'Experience Map · 내 근거 모아보기',
-    description:'저장한 경험을 한눈에 보고, 어떤 강점·역량에 실제 행동근거가 있는지 확인합니다.'
+    description:'저장한 경험을 한눈에 보고, 어떤 강점·역량 후보에 실제 행동근거가 있는지 확인합니다.'
   }
 ];
 
@@ -105,7 +105,7 @@ function enhanceStep2(section){
       const box=document.createElement('div');
       box.className='callout info jobfitInterviewSafetyGuide';
       box.style.marginTop='10px';
-      box.innerHTML='<b>인터뷰 원칙</b> · STEP 1의 강점 후보에 맞는 경험을 만들어내지 않습니다. 먼저 실제 행동을 확인하고, 마지막에만 강점·역량 후보와 일치하는지 판단합니다.';
+      box.innerHTML='<b>인터뷰 원칙</b> · STEP 1의 강점 후보에 맞는 경험을 만들어내지 않습니다. 먼저 실제 행동을 확인하고, 마지막에만 강점·역량 후보와 연결되는지 봅니다. 외부 AI에는 개인 식별정보·제3자 실명·회사 비공개정보를 입력하지 않습니다.';
       actions.insertAdjacentElement('beforebegin',box);
     }
   }
