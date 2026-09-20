@@ -49,6 +49,7 @@ jobs:
           set -e
           node --check v2/bootstrap.js
           node --check v2/storageContinuity.js
+          node --check v2/operationalSync.js
           node --check v2/app.js
           node --check v2/research.js
           node --check v2/researchBackend.js
@@ -85,6 +86,7 @@ jobs:
           test -f v2/portfolio.css
           test -f v2/bootstrap.js
           test -f v2/storageContinuity.js
+          test -f v2/operationalSync.js
           test -f v2/careerDnaUx.js
           test -f v2/research.js
           test -f v2/researchMeasures.js
@@ -128,6 +130,8 @@ jobs:
           grep -q './v2/portfolio.css' index.html
           grep -q './v2/bootstrap.js' index.html
           grep -q 'storageContinuity.js' v2/bootstrap.js
+          grep -q 'operationalSync.js' v2/bootstrap.js
+          grep -q "PRODUCTION_HOST='kh31104.github.io'" v2/operationalSync.js
           grep -q 'app.js' v2/bootstrap.js
           grep -q 'injeClassroom.js' v2/bootstrap.js
           grep -q 'careerDnaUx.js' v2/bootstrap.js
