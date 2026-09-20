@@ -36,9 +36,14 @@ create table if not exists public.research_consents (
   participant_id uuid not null references public.research_participants(id) on delete cascade,
   consent_version text not null check (char_length(consent_version) between 3 and 100),
   consented boolean not null,
+  status text not null default 'consented' check (status in ('consented','withdrawn')),
   consented_at timestamptz not null,
+  withdrawn_at timestamptz,
   received_at timestamptz not null default now()
 );
+
+alter table public.research_consents add column if not exists status text not null default 'consented';
+alter table public.research_consents add column if not exists withdrawn_at timestamptz;
 
 create table if not exists public.research_snapshots (
   id bigint generated always as identity primary key,
