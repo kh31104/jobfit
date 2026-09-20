@@ -33,12 +33,12 @@ export async function render(ctx){
 
   root.innerHTML=`<section class="card careerDnaStandard">
     ${styleBlock()}
-    <div class="sectionHead"><div><div class="kicker">STEP 1 · STANDARD SET v1</div><h2>Career DNA</h2><p>내가 생각하는 나와 검사에서 나타난 나를 비교해 <b>자기이해 가설</b>을 만듭니다.</p></div><span class="badge">3주차</span></div>
+    <div class="sectionHead"><div><div class="kicker">STEP 1 · RESEARCH-SAFE v1</div><h2>Career DNA</h2><p>내가 생각하는 나와 검사에서 나타난 나를 비교해 <b>자기이해 가설</b>을 만듭니다.</p></div><span class="badge">3주차</span></div>
     <div class="progress"><span style="width:14%"></span></div>
     <div class="callout info"><b>오늘의 흐름</b> · 커리어 밸런스게임 → 나의 흥미 → 고용24 S형 → 나의 직업가치 → 고용24 직업가치관 → 나의 강점 → VIA → 직접 비교 → AI 통합분석</div>
     <div class="callout good"><b>이번 학기 운영</b> · 개인 검사결과와 활동내용은 교수자에게 자동 전송하지 않습니다. 이 브라우저에 저장하고, 다른 기기에서는 내 학습 백업파일을 사용합니다.</div>
 
-    <div class="block"><div class="moduleHead"><span>01</span><div><h3>Balance Game</h3><p>내가 생각하는 중요한 가치관 · 세부 조건은 수업 PPT를 보고 선택하세요.</p></div></div>
+    <div class="block"><div class="moduleHead"><span>01</span><div><h3>커리어 밸런스게임 (Balance Game)</h3><p>수업용 워밍업입니다. 심리검사나 직업적합성 판정에 사용하지 않습니다.</p></div></div>
       <div class="callout warn"><b>먼저 내 선택을 확정합니다.</b> 다른 참여자의 비율은 선택한 뒤에만 보입니다. 한 번 확정한 선택은 친구들의 결과를 보고 바꾸지 않습니다.</div>
       <div id="balanceQuestions">${balanceHtml(balanceAnswers,ctx)}</div>
       <div id="balanceSummary">${balanceSummaryHtml(balanceAnswers,ctx)}</div>
@@ -72,7 +72,7 @@ export async function render(ctx){
     </div>
 
     <div class="hr"></div><div class="block"><div class="moduleHead"><span>07</span><div><h3>VIA 성격강점</h3><p>공식 VIA 검사 후 상위 5개 강점만 Jobfit에 입력합니다.</p></div></div>
-      <div class="callout info">VIA는 <b>성격강점에 대한 자기보고 검사</b>입니다. 직업이나 역량의 정답으로 사용하지 않습니다.</div>
+      <div class="callout info">VIA는 <b>성격강점에 대한 자기보고 자료</b>입니다. 현재 결과에서 상대적으로 상위에 나타난 강점으로 읽고, 직업·역량·성격의 확정판정에 사용하지 않습니다.</div>
       <div class="actions"><a class="btn secondary" href="${VIA_URL}" target="_blank" rel="noopener">VIA 공식 검사 열기 ↗</a></div>
       <div class="grid3" style="margin-top:12px">${[0,1,2,3,4].map(i=>field(`via_${i}`,`TOP ${i+1}`,viaTop5[i]||'','결과에 표시된 강점명',ctx)).join('')}</div>
     </div>
@@ -93,7 +93,7 @@ export async function render(ctx){
     </div>
 
     <div class="hr"></div><div class="block"><div class="moduleHead"><span>10</span><div><h3>Career DNA 가설 v1</h3><p>자기인식과 검사결과를 바탕으로 만든 현재 시점의 가설입니다. 개인의 고정적 특성이나 직무적합성 판정이 아니며, 4주차 실제 경험에서 수정·확인합니다.</p></div></div>
-      <div class="field"><label>AI 통합분석 결과 · 내가 확인한 내용</label><textarea id="aiHypothesis" placeholder="AI 결과를 그대로 믿지 말고, 읽어본 뒤 맞는 부분·확인이 필요한 부분을 남기세요.">${ctx.escapeHtml(saved.hypothesis?.text||'')}</textarea></div>
+      <div class="field"><label>AI 통합분석 결과 · 내가 확인한 내용</label><textarea id="aiHypothesis" placeholder="AI 결과를 그대로 믿지 말고, 입력자료와 맞는지 확인한 뒤 가설로 유지할 부분·수정할 부분·실제 경험에서 확인할 부분을 남기세요.">${ctx.escapeHtml(saved.hypothesis?.text||'')}</textarea></div>
       <div class="field" style="margin-top:12px"><label>현재 결과가 나를 얼마나 잘 설명하나요?</label><select class="input" id="hypothesisFit"><option value="">선택</option>${['매우 맞음','어느 정도 맞음','잘 모르겠음','맞지 않음'].map(x=>`<option ${saved.hypothesis?.selfCheck===x?'selected':''}>${x}</option>`).join('')}</select></div>
     </div>
 
