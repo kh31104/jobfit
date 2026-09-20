@@ -69,7 +69,7 @@ Experience, Raw Voice, competency evidence, job/company/JD analysis, resume, cov
 - AI-use baseline
 - Work24 S result for the research-standard Career DNA
 - Work24 work-values result
-- Work24 job-readiness 9-score result for PRE/POST when used
+- Work24 대학생진로준비도검사 14개 하위요인 T점수 for PRE/POST when used
 - PRE/POST assessment slots
 - K-CAAS-SF only after permission is confirmed
 - Korean Strength Use & Deficit Correction scale only after permission is confirmed
