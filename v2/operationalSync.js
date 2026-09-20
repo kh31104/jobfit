@@ -1,5 +1,6 @@
 const STORAGE_KEY='jobfit:v2:learner';
 const SCHEMA_VERSION='jobfit-operational-v1.0';
+const PRODUCTION_HOST='kh31104.github.io';
 const ALLOWED_COURSES=new Set(['INJE2026','INJE-2026-2']);
 const POLL_MS=3000;
 const RETRY_MS=30000;
@@ -10,7 +11,7 @@ let lastSyncedRaw='';
 let retryAfter=0;
 
 export function startOperationalSync(){
-  if(timer)return;
+  if(timer||location.hostname!==PRODUCTION_HOST)return;
   tick();
   timer=setInterval(tick,POLL_MS);
   window.addEventListener('online',()=>{retryAfter=0;tick()});
