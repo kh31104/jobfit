@@ -17,7 +17,7 @@ async function scenario(name,fill,check){
   const ctx=await browser.newContext();const page=await ctx.newPage();page.on('dialog',d=>d.accept());
   try{
     await setup(page);await fill(page);await expandModule(page,'AI 자기이해 통합분석');await page.locator('#makePrompt').click();
-    await page.waitForFunction(()=>document.querySelector('#promptBox')?.textContent?.includes('[출력 형식 · Career DNA 가설 v1]'));
+    await page.waitForFunction(()=>{const t=document.querySelector('#promptBox')?.textContent||'';return t.includes('[출력 형식 · Career DNA 가설 v1]')&&t.includes('[추가 출력 · 자기소개서 활용 키워드 + SWOT]')});
     const prompt=(await page.locator('#promptBox').textContent())||'';
     await check({page,prompt});console.log(`PASS ${name}`);
   }catch(e){failed=true;console.error(`FAIL ${name}\n${e.stack||e}`)}finally{await ctx.close()}
