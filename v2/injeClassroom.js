@@ -62,7 +62,7 @@ if(isInjeClass){
     root.querySelectorAll('.callout.info').forEach(box=>{
       if(box.dataset.noResearchNotice)return;
       if(box.textContent.includes('연구 활용')||box.textContent.includes('중앙 연구')){
-        box.innerHTML='<b>이번 학기에는 연구용 데이터를 제출하지 않습니다.</b><br>STEP 0의 PRE는 학생 본인의 수업 시작점을 확인하기 위한 학습용 측정이며, 검사결과·작성내용·AI 결과는 교수자나 연구 DB로 자동 전송되지 않습니다. 이 브라우저와 개인 백업파일에만 저장합니다.';
+        box.innerHTML='<b>이번 학기에는 연구용 데이터를 자동 제출하지 않습니다.</b><br>STEP 0의 PRE 연구측정 원자료와 자유서술·AI 결과는 연구 DB로 자동 전송되지 않습니다. 다만 수업 운영을 위해 익명코드, STEP 진행상태와 일부 구조화 결과는 운영용 중앙 DB에 저장됩니다.';
         box.dataset.noResearchNotice='1';
       }
     });
