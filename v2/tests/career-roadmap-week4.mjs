@@ -37,7 +37,7 @@ async function run(name,fn){
 
 await run('Week 4 focuses on Experience Map and keeps STEP1 bridge',async page=>{
   const body=(await page.locator('#stepRoot').textContent())||'';
-  for(const text of ['나의 경험에서 직무역량 찾기','지난주 Career DNA 간단히 확인','My Best 3 Experience','AI Experience Interview','행동 → 판단 → 결과 → 증거','강점·역량 키워드와 행동근거','Experience Map'])assert(body.includes(text),`Missing Week4 module: ${text}`);
+  for(const text of ['나의 경험에서 직무역량 찾기','지난주 Career DNA 간단히 확인','My Best 3 Experience','AI Experience Interview','AI가 이해한 내 경험 사실확인','경험에서 확인된 역량','Experience Map'])assert(body.includes(text),`Missing Week4 module: ${text}`);
   for(const removed of ['Career Story','Career Theme','Career Direction','1개월 Career Experiment'])assert(!body.includes(removed),`Week4 should not include: ${removed}`);
   assert(body.includes('학습과 신중함이 반복된다.'),'STEP1 comparison bridge missing');
   assert(body.includes('전문성을 깊게 쌓고 신중하게 판단'),'STEP1 hypothesis bridge missing');
@@ -70,8 +70,9 @@ await run('Experience save preserves old data and writes competency evidence map
   await page.locator('#action').fill('원인 후보를 비교했다.');
   await page.locator('#result').fill('오류 범위를 좁혔다.');
   await page.locator('#evidence').fill('실험 기록');
-  await page.locator('#comp_1').fill('문제해결');
+  await page.locator('#comp_1').selectOption('C04');
   await page.locator('#compEv_1').fill('오류 원인 후보를 비교하고 우선순위를 정했다.');
+  await page.locator('#compVerified_1').check();
   await page.locator('#ownershipChecked').check();
   await page.locator('#evidenceChecked').check();
   await page.locator('#noFabrication').check();
@@ -79,12 +80,12 @@ await run('Experience save preserves old data and writes competency evidence map
   await page.waitForSelector('#saveRoadmap');
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   const ec=saved.assessments.experienceCompetency;
-  assert(ec.version==='experience-competency-week4-v3','Week4 version missing');
+  assert(ec.version==='experience-competency-week4-v4','Week4 version missing');
   assert(ec.experiences.some(x=>x.title==='캡스톤 프로젝트'),'New experience not saved');
   assert(ec.experiences.some(x=>x.id==='EXP-OLD'),'Existing experience was overwritten');
   const newExp=ec.experiences.find(x=>x.title==='캡스톤 프로젝트');
   assert(newExp.competencies.includes('문제해결'),'Competency keyword missing');
-  assert(newExp.competencyEvidence.some(x=>x.keyword==='문제해결'&&x.evidence.includes('원인 후보')),'Competency evidence missing');
+  assert(newExp.competencyEvidence.some(x=>x.code==='C04'&&x.label==='문제해결'&&x.evidence.includes('원인 후보')&&x.studentVerified),'Standard competency evidence missing');
   assert(Array.isArray(saved.artifacts.experienceMap)&&saved.artifacts.experienceMap.length>=2,'experienceMap contract broken');
 });
 
