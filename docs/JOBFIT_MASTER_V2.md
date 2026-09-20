@@ -22,7 +22,7 @@ Course code: `INJE2026` (alias `INJE-2026-2`)
 ## STEP 0–13
 - STEP 0 **Career Start**: Jobfit participant code, background profile, course code, career baseline, AI baseline.
 - STEP 1 **Career DNA**: self-reflection before testing → Work24 S interest results → self-reflected work values → Work24 adult work-values results → self-selected strengths → VIA TOP5 for learning use → learner comparison → AI-assisted hypothesis. Career Anchor and multiple-intelligence tests are retired from the research-standard workflow.
-- STEP 2 **Experience & Competency**: raw experience → AI interview → Action/Reason/Result/Evidence/competency; Raw Voice preserved.
+- STEP 2 **Experience & Competency**: raw experience → AI interview → Action/Reason/Result/Evidence → strength/competency candidates; Raw Voice preserved. Job relevance is checked later against actual Task/KSA/KPI.
 - STEP 3 **Job Explorer**: broad evidence-led job exploration; no fixed occupation mapping; student manually chooses Target Job 1–3.
 - STEP 4 **Job Deep Dive**: source-grounded Task/KSA/KPI/tools/work context/entry experience + Requirement × My Evidence matrix.
 - STEP 5 **Industry & Company Explorer**: industry/customer/business/job connection + company pool and official-source analysis.
