@@ -27,7 +27,7 @@ export function renderMeasurePanel(ctx,timepoint='pre'){
   const title=timepoint==='post'?'POST · 수업 후(학기 말) 측정':'PRE · 수업 전(시작점) 측정';
   const timing=timepoint==='post'?'수업을 모두 마친 뒤':'수업 시작 전';
   return `<div class="hr"></div><div class="block researchMeasurePanel" data-timepoint="${prefix}">
-    <div class="sectionHead"><div><h3>${title}</h3><p class="help"><b>PRE는 수업 전(Before), POST는 수업 후(After)</b>를 뜻합니다. ${timing} 같은 익명코드로 측정하며 두 결과를 비교해 변화를 확인합니다.</p></div><span class="badge">수업 전 / 수업 후</span></div>
+    <div class="sectionHead"><div><h3>${title}</h3><p class="help"><b>PRE는 수업 전(Before), POST는 수업 후(After)</b>를 뜻합니다. ${timing} 같은 Jobfit 참여코드로 측정하며 두 결과를 비교해 변화를 확인합니다.</p></div><span class="badge">수업 전 / 수업 후</span></div>
     <div class="callout info"><b>권장 순서</b><br>${includeStrengthDeficit?'① 고용24 대학생진로준비도검사 → ② 진로적응성 12문항 → ③ 강점활용·약점교정 9문항 → ④ 한 번에 저장':'① 고용24 대학생진로준비도검사 → ② 진로적응성 12문항 → ③ 한 번에 저장'}</div>
 
     <div class="summaryBox">
