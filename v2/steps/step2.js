@@ -1,6 +1,6 @@
 import {prepareResearchMeasures,renderStrengthMeasure,bindStrengthMeasure} from '../researchMeasures.js';
 
-const WEEK4_VERSION='experience-competency-week4-v2';
+const WEEK4_VERSION='experience-competency-week4-v3';
 const CATEGORIES=['수업·과제','팀프로젝트','캡스톤·연구','동아리·학생회','공모전·대외활동','인턴·현장실습','아르바이트·근로','봉사활동','개인프로젝트','기타'];
 const EVIDENCE_TYPES=['수치·지표','산출물·문서','교수·상사·고객 피드백','수상·선발·평가결과','작업기록·로그','동료·팀 피드백','자기기억만'];
 
@@ -68,7 +68,17 @@ export async function render(ctx){
       <div class="callout warn" style="margin-top:12px"><b>다음 연결</b> · 6주차에는 여기에서 만든 강점·역량과 행동근거를 가지고 직무 후보를 탐색하고, 실제 직무의 Task·KSA·KPI와 매칭합니다.</div>
     </div>
 
-    <div class="actions"><button class="btn primary" id="saveRoadmap">4주차 Experience Map 저장</button><button class="btn secondary" id="nextStep">STEP 3 직무탐색 →</button></div><div class="status" id="status"></div>
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>07</span><div><h3>Competency Map</h3><p>여러 경험에서 같은 행동이 반복되는지 확인합니다. 경험 횟수는 역량 점수가 아닙니다.</p></div></div>
+      <div id="competencyMapPreview">${competencyMapHtml(experiences,ctx)}</div>
+    </div>
+
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>08</span><div><h3>My Experience DNA</h3><p>내가 생각한 강점과 실제 경험에서 확인된 행동을 구분해 다음 직무탐색 단계로 가져갑니다.</p></div></div>
+      <div id="experienceDnaPreview">${experienceDnaHtml(experiences,dna,ctx)}</div>
+      <div class="callout info" style="margin-top:12px"><b>해석 주의</b> · 이 결과는 역량검사 점수나 능력의 높고 낮음을 뜻하지 않습니다. 지금까지 입력한 경험에서 확인된 행동을 정리한 결과입니다.</div>
+      <div class="callout warn" style="margin-top:12px"><b>다음 연결</b> · 다음 단계에서는 Career DNA와 Experience DNA를 실제 직무정보·채용공고의 요구역량과 비교합니다.</div>
+    </div>
+
+    <div class="actions"><button class="btn primary" id="saveRoadmap">4주차 Experience DNA 저장</button><button class="btn secondary" id="nextStep">STEP 3 직무탐색 →</button></div><div class="status" id="status"></div>
   </section>`;
 
   root.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>loadExperience(b.dataset.edit)));
@@ -101,7 +111,7 @@ export async function render(ctx){
   function saveWeek4(showToast){
     const exp=currentExperiences();
     const patch={version:WEEK4_VERSION,best3:collectBest3(),representativeKey:selectedRepresentative(),experiences:exp,updatedAt:new Date().toISOString()};
-    ctx.saveState({assessments:{experienceCompetency:patch},artifacts:{experienceMap:experienceMap(exp)}});
+    ctx.saveState({assessments:{experienceCompetency:patch},artifacts:{experienceMap:experienceMap(exp),competencyMap:competencyMap(exp),experienceDNA:experienceDNA(exp,dna)}});
     if(showToast){
       document.getElementById('status').textContent='4주차 Experience Map이 이 브라우저에 저장되었습니다.';
       ctx.toast('4주차 Experience Map을 저장했습니다.');
@@ -118,7 +128,7 @@ export async function render(ctx){
     const item={id:oldId||`EXP-${Date.now()}`,category:v('category'),title,period:v('period'),workMode:v('workMode'),contribution:n('contribution'),roleTitle:v('roleTitle'),context:v('context'),role:v('role'),challenge:v('challenge'),action:v('action'),reason:v('reason'),result:v('result'),evidence:v('evidence'),evidenceType:v('evidenceType'),evidenceGrade:v('evidenceGrade'),actionVerbs:v('actionVerbs'),learning:v('learning'),rawVoice:v('rawVoice'),aiStructured:v('aiStructured'),competencies,competencyEvidence,quality,factChecked:quality.noFabrication&&quality.ownership,updatedAt:new Date().toISOString()};
     const arr=[...currentExperiences()];const idx=arr.findIndex(x=>x.id===item.id);if(idx>=0)arr[idx]=item;else arr.push(item);
     const current=ctx.getState().assessments?.experienceCompetency||{};
-    ctx.saveState({assessments:{experienceCompetency:{...current,version:WEEK4_VERSION,best3:collectBest3(),representativeKey:selectedRepresentative(),experiences:arr,updatedAt:new Date().toISOString()}},artifacts:{experienceMap:experienceMap(arr)}});
+    ctx.saveState({assessments:{experienceCompetency:{...current,version:WEEK4_VERSION,best3:collectBest3(),representativeKey:selectedRepresentative(),experiences:arr,updatedAt:new Date().toISOString()}},artifacts:{experienceMap:experienceMap(arr),competencyMap:competencyMap(arr),experienceDNA:experienceDNA(arr,dna)}});
     ctx.toast('경험과 역량근거를 Experience Map에 저장했습니다.');ctx.navigate(2);
   }
   function loadExperience(id){
@@ -139,7 +149,7 @@ export async function render(ctx){
     saveWeek4(false);
     const arr=currentExperiences().filter(x=>x.id!==id);
     const current=ctx.getState().assessments?.experienceCompetency||{};
-    ctx.saveState({assessments:{experienceCompetency:{...current,experiences:arr,updatedAt:new Date().toISOString()}},artifacts:{experienceMap:experienceMap(arr)}});
+    ctx.saveState({assessments:{experienceCompetency:{...current,experiences:arr,updatedAt:new Date().toISOString()}},artifacts:{experienceMap:experienceMap(arr),competencyMap:competencyMap(arr),experienceDNA:experienceDNA(arr,dna)}});
     ctx.toast('삭제했습니다.');ctx.navigate(2);
   }
   function clearForm(){
@@ -172,6 +182,49 @@ export async function render(ctx){
 
 function normalizeBest3(x){return{best:{title:x?.best?.title||'',summary:x?.best?.summary||''},flow:{title:x?.flow?.title||'',summary:x?.flow?.summary||''},recognition:{title:x?.recognition?.title||'',summary:x?.recognition?.summary||''}}}
 function experienceMap(arr){return arr.map(x=>({id:x.id,title:x.title,category:x.category,roleTitle:x.roleTitle,action:x.action,actionVerbs:x.actionVerbs,result:x.result,evidence:x.evidence,evidenceGrade:x.evidenceGrade,competencies:x.competencies,competencyEvidence:x.competencyEvidence,learning:x.learning,factChecked:x.factChecked}))}
+function competencyMap(arr){
+  const map={};
+  (arr||[]).forEach(x=>{
+    const seen=new Set();
+    (x.competencyEvidence||[]).forEach(e=>{
+      const k=(e.keyword||'').trim(); if(!k||seen.has(k))return; seen.add(k);
+      if(!map[k])map[k]={keyword:k,experienceIds:[],experienceTitles:[],evidence:[]};
+      map[k].experienceIds.push(x.id); map[k].experienceTitles.push(x.title);
+      if(e.evidence)map[k].evidence.push({experienceId:x.id,text:e.evidence});
+    });
+    (x.competencies||[]).forEach(raw=>{
+      const k=(raw||'').trim(); if(!k||seen.has(k))return; seen.add(k);
+      if(!map[k])map[k]={keyword:k,experienceIds:[],experienceTitles:[],evidence:[]};
+      map[k].experienceIds.push(x.id); map[k].experienceTitles.push(x.title);
+    });
+  });
+  return Object.values(map).sort((a,b)=>b.experienceIds.length-a.experienceIds.length||a.keyword.localeCompare(b.keyword,'ko'));
+}
+function experienceDNA(arr,dna){
+  const cm=competencyMap(arr);
+  return {
+    representativeExperiences:(arr||[]).slice(0,3).map(x=>({id:x.id,title:x.title,category:x.category})),
+    repeatedCompetencies:cm.filter(x=>x.experienceIds.length>=2),
+    observedCompetencies:cm,
+    careerDnaHypothesis:dna?.hypothesis?.text||'',
+    interpretationRule:'경험 횟수는 역량 수준 점수가 아니라 현재 입력한 경험에서 관련 행동이 확인된 빈도입니다.',
+    updatedAt:new Date().toISOString()
+  };
+}
+function competencyMapHtml(items,ctx){
+  const rows=competencyMap(items);
+  if(!rows.length)return '<div class="placeholder"><b>아직 확인된 역량이 없습니다.</b> 경험을 저장하고 각 역량의 근거 행동을 확인해 주세요.</div>';
+  return `<div class="experienceMapGrid">${rows.map(x=>`<div class="mapCard"><h4>${ctx.escapeHtml(x.keyword)}</h4><p><b>${x.experienceIds.length}개 경험</b>에서 관련 행동 확인</p><div class="pillRow">${x.experienceTitles.map(t=>`<span class="pill">${ctx.escapeHtml(t)}</span>`).join('')}</div>${x.evidence.length?`<div style="margin-top:10px"><small>근거 행동</small><ul>${x.evidence.slice(0,3).map(e=>`<li>${ctx.escapeHtml(e.text)}</li>`).join('')}</ul></div>`:''}</div>`).join('')}</div>`;
+}
+function experienceDnaHtml(items,dna,ctx){
+  const result=experienceDNA(items,dna);
+  if(!items.length)return '<div class="placeholder"><b>Experience DNA를 만들 경험이 없습니다.</b> 먼저 경험을 2개 이상 저장해 주세요.</div>';
+  const repeated=result.repeatedCompetencies;
+  const hypothesis=result.careerDnaHypothesis;
+  return `<div class="summaryBox"><h4>대표 경험</h4><div class="pillRow">${result.representativeExperiences.map(x=>`<span class="pill">${ctx.escapeHtml(x.title)}</span>`).join('')}</div></div>
+    <div class="summaryBox" style="margin-top:10px"><h4>반복해서 확인된 역량</h4>${repeated.length?repeated.map(x=>`<p><b>${ctx.escapeHtml(x.keyword)}</b> · ${x.experienceIds.length}개 경험에서 관련 행동 확인</p>`).join(''):'<p class="help">아직 두 개 이상의 경험에서 반복 확인된 역량이 없습니다. 경험을 추가하면 비교할 수 있습니다.</p>'}</div>
+    <div class="summaryBox" style="margin-top:10px"><h4>3주차 Career DNA와 비교</h4><p class="help">${hypothesis?ctx.escapeHtml(hypothesis):'저장된 Career DNA 가설이 없습니다.'}</p><p>Career DNA는 자기이해 가설이고, Experience DNA는 현재 입력한 경험에서 확인한 행동 근거입니다. 두 결과가 다르면 어느 한쪽을 틀렸다고 판단하지 말고 추가 경험에서 확인합니다.</p></div>`;
+}
 function dnaBridgeHtml(dna,ctx){
   const h=dna.hypothesis||{},c=dna.comparison||{},r=dna.reflection||{};
   const rows=[];
