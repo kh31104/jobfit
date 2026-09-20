@@ -143,7 +143,7 @@ function enhanceCollapsibles(root){
   });
 }
 function findBalanceBlock(root){
-  return [...root.querySelectorAll('.careerDnaStandard .block')].find(block=>block.querySelector('.moduleHead h3')?.textContent.trim()==='Balance Game')||null;
+  return [...root.querySelectorAll('.careerDnaStandard .block')].find(block=>block.querySelector('.moduleHead h3')?.textContent.includes('Balance Game'))||null;
 }
 function reopenBalanceIfNeeded(root){
   if(!Number.isInteger(reopenBalanceIndex))return;
