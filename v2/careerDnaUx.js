@@ -203,7 +203,7 @@ function enhanceAiSwot(root){
     if(makePrompt.textContent!==PROMPT_LABEL)makePrompt.textContent=PROMPT_LABEL;
     if(!makePrompt.dataset.swotExtension){
       makePrompt.dataset.swotExtension='1';
-      makePrompt.addEventListener('click',()=>appendSwotPrompt(root));
+      makePrompt.addEventListener('click',()=>setTimeout(()=>appendSwotPrompt(root),0));
     }
   }
   const guide=root.querySelector('#careerDnaAiGuide');
