@@ -91,8 +91,8 @@ function mountStatus(){
   const found=hasLearningData(state),code=String(state.profile?.anonCode||'');
   const restored=sessionStorage.getItem('jobfit:continuity-restored')==='1';
   const html=found
-    ? `<b>${restored?'이 브라우저의 보조 저장에서 이전 자료를 복구했습니다.':'이 브라우저의 이전 Jobfit 자료를 찾았습니다.'}</b><br>${code?`익명코드 <b>${code}</b> · `:''}마지막 저장 ${formatSavedAt(state.meta?.updatedAt)}<br><span class="muted">같은 기기에서도 <b>매주 같은 브라우저</b>로 접속하면 이전 결과가 이어집니다. 기기나 브라우저를 바꿀 때는 내 학습 백업파일(JSON)을 불러오세요.</span>`
-    : `<b>이 브라우저에서 이전 Jobfit 자료를 찾지 못했습니다.</b><br><span class="muted">다른 기기·다른 브라우저에서 접속했거나 브라우저 자료가 지워졌다면 <b>내 학습 백업파일(JSON)</b>을 불러오세요. 저장해 둔 익명코드만 있다면 아래 ‘기존 코드 불러오기’로 같은 학생 코드는 유지할 수 있지만, 과거 작성내용 자체는 복구되지 않습니다.</span><div class="actions" style="margin-top:10px"><button class="btn secondary smallBtn" id="continuityImportBtn" type="button">내 학습 백업 불러오기</button></div>`;
+    ? `<b>${restored?'이 브라우저의 보조 저장에서 이전 자료를 복구했습니다.':'이 브라우저의 이전 Jobfit 자료를 찾았습니다.'}</b><br>${code?`Jobfit 참여코드 <b>${code}</b> · `:''}마지막 저장 ${formatSavedAt(state.meta?.updatedAt)}<br><span class="muted">같은 기기에서도 <b>매주 같은 브라우저</b>로 접속하면 이전 결과가 이어집니다. 기기나 브라우저를 바꿀 때는 내 학습 백업파일(JSON)을 불러오세요.</span>`
+    : `<b>이 브라우저에서 이전 Jobfit 자료를 찾지 못했습니다.</b><br><span class="muted">다른 기기·다른 브라우저에서 접속했거나 브라우저 자료가 지워졌다면 <b>내 학습 백업파일(JSON)</b>을 불러오세요. 저장해 둔 Jobfit 참여코드만 있다면 아래 ‘기존 코드 불러오기’로 같은 학생 코드는 유지할 수 있지만, 과거 작성내용 자체는 복구되지 않습니다.</span><div class="actions" style="margin-top:10px"><button class="btn secondary smallBtn" id="continuityImportBtn" type="button">내 학습 백업 불러오기</button></div>`;
   if(existing){if(existing.dataset.mode!==(found?'found':'missing')){existing.dataset.mode=found?'found':'missing';existing.innerHTML=html}return;}
   const box=document.createElement('div');box.id='jobfitContinuityStatus';box.className=`callout ${found?'good':'warn'}`;box.dataset.mode=found?'found':'missing';box.style.marginTop='12px';box.innerHTML=html;
   const anchor=root.querySelector('.journeyStrip')||root.querySelector('.sectionHead');anchor?.insertAdjacentElement('afterend',box);
