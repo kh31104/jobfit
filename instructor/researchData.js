@@ -4,7 +4,7 @@ export function normalizeResearchRecord(input){
   if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('JSON 객체가 아닙니다.');
   if(!String(input.schema_version||'').startsWith('jobfit-research-v1.'))throw new Error('Jobfit 연구용 파일이 아닙니다.');
   const code=cleanText(input.participant_code,40);
-  if(!code)throw new Error('익명코드가 없습니다.');
+  if(!code)throw new Error('Jobfit 참여코드가 없습니다.');
   return {
     schema_version:cleanText(input.schema_version,40),
     participant_code:code,
