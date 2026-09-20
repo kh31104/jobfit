@@ -12,8 +12,8 @@ if(isInjeClass){
     const s=readState(),p=s.profile||{},b=s.baseline||{},a=s.artifacts?.careerStartProfile||{},pre=s.research?.measurements?.pre||{};
     return !!(
       String(p.anonCode||'').startsWith('JF26-')&&p.age&&p.grade&&b.jobDecision&&b.prepStage&&
-      a.statement&&a.nextAction&&pre.work24JobReadiness?.examDate&&
-      fullFinite(pre.work24JobReadiness?.scores,9)&&
+      a.statement&&a.nextAction&&pre.work24CollegeCareerReadiness?.examDate&&
+      fullFinite(pre.work24CollegeCareerReadiness?.scores,14)&&
       fullFinite(pre.kcaas?.items,12,1,5)&&pre.kcaas?.wordingVersion==='K-CAAS-SF-KR-2020-v1'
     );
   };
