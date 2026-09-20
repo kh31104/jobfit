@@ -23,7 +23,7 @@ async function expandModule(page,title){const head=moduleHead(page,title);if((aw
 await run('STEP 0-13 all load with research PRE enabled',async page=>{
   await page.goto(`${base}?course=INJE2026&measures=true`,{waitUntil:'networkidle'});
   assert(await page.locator('#preMeasureSave').count()===1,'STEP0 PRE panel must render');
-  assert(await page.locator('[data-measure="pre-work24"]').count()===9,'Work24 job-readiness PRE must expose 9 result-score inputs');
+  assert(await page.locator('[data-measure="pre-work24"]').count()===14,'Work24 college career readiness PRE must expose 14 T-score inputs');
   for(let i=0;i<=13;i++){await page.locator(`.stepBtn[data-step="${i}"]`).click();await page.waitForTimeout(60);const body=(await page.locator('#stepRoot').textContent())||'';assert(!body.includes('화면을 불러오지 못했습니다'),`STEP ${i} failed to render`)}
 });
 
