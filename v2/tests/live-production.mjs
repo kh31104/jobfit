@@ -20,6 +20,8 @@ async function run(name,viewport){
     await page.waitForSelector('#preMeasureSave',{timeout:30000});
     const step0=(await page.locator('#stepRoot').textContent())||'';
     assert(step0.includes('오늘 할 일은 7개뿐입니다.'),'Deployed STEP0 must keep seven-stage sequence');
+    assert(step0.includes('수업 데이터 저장 안내'),'Deployed STEP0 central storage notice missing');
+    assert(step0.includes('별도 연구참여 동의'),'Deployed STEP0 future research consent notice missing');
     const journey=(await page.locator('.journeyStrip span').allTextContents()).map(x=>x.replace(/\s+/g,' ').trim());
     assert(journey.length===7,'Deployed STEP0 journey must contain seven stages');
     assert(journey[0].includes('수업 연결')&&journey[1].includes('익명코드')&&journey[2].includes('기본정보')&&journey[3].includes('현재 준비상태')&&journey[4].includes('AI Check-in')&&journey[5].includes('PRE 측정')&&journey[6].includes('백업'),'Deployed STEP0 stage order changed');
