@@ -2,7 +2,7 @@ const ROOT_ID='stepRoot';
 const STORAGE_KEY='jobfit:v2:learner';
 const REOPEN_BALANCE_KEY='jobfit:balance-reopen';
 const PROMPT_LABEL='자기이해 + SWOT 통합분석 만들기';
-const GUIDE_HTML='<b>AI LAB 사용 순서</b><br>① 현재 내용 저장 → ② 통합분석 프롬프트 만들기 → ③ 복사 → ④ 수업에서 사용하는 AI에 붙여넣기 → ⑤ 결과를 읽고 나와 맞는 부분 확인 → ⑥ 08 Career DNA 가설에 핵심 내용 저장<br><span class="muted">AI 결과에는 자기이해 가설과 함께 <b>자소서용 강점·약점 키워드</b>, <b>근거 상태</b>, <b>4주차 경험 확인 질문</b>, <b>SWOT 분석·전략</b>을 요청합니다. STEP 1 정보만으로 판단할 수 없는 기회(O)·위협(T)은 임의로 만들지 않고 ‘추가 정보 필요’로 표시합니다. 아직 실제 경험으로 확인하지 않은 키워드는 자소서 문장으로 확정하지 않습니다. Jobfit이 입력내용을 AI로 자동 전송하지는 않습니다.</span>';
+const GUIDE_HTML='<b>AI LAB 사용 순서</b><br>① 현재 내용 저장 → ② 통합분석 프롬프트 만들기 → ③ 복사 → ④ 수업에서 사용하는 AI에 붙여넣기 → ⑤ 결과를 읽고 나와 맞는 부분 확인 → ⑥ 10 Career DNA 가설에 핵심 내용 저장<br><span class="muted">AI 결과에는 자기이해 가설과 함께 <b>자소서용 강점·보완 키워드 후보</b>, <b>단서 상태</b>, <b>4주차 경험 확인 질문</b>, <b>SWOT 분석·전략</b>을 요청합니다. STEP 1 정보만으로 판단할 수 없는 기회(O)·위협(T)은 임의로 만들지 않고 ‘추가 정보 필요’로 표시합니다. 아직 실제 경험으로 확인하지 않은 키워드는 자소서 문장으로 확정하지 않습니다. Jobfit이 입력내용을 AI로 자동 전송하지는 않습니다.</span>';
 const SWOT_PROMPT_MARKER='[추가 출력 · 자기소개서 활용 키워드 + SWOT]';
 const WEEK4_BRIDGE_MARKER='[3주차에서 내가 검토해 둔 자기이해 후보 · 참고만]';
 const SWOT_PROMPT_EXTENSION=`
@@ -13,10 +13,10 @@ const SWOT_PROMPT_EXTENSION=`
 7. 자기소개서에서 활용할 수 있는 강점 키워드 5개
 - 한 단어 또는 짧은 표현으로 제시한다.
 - 반드시 다음 표 형식으로 작성한다.
-  강점 키워드 | 근거가 된 입력자료 | 근거 상태 | 4주차 실제 경험에서 확인할 질문
-- 근거 상태는 ‘반복 근거’, ‘단일 근거’, ‘경험 확인 필요’ 중 하나만 사용한다.
-- 서로 다른 자료 2개 이상에서 같은 방향의 특징이 반복될 때만 ‘반복 근거’로 표시한다.
-- VIA, Career Anchor, 다중지능 결과 하나만으로 직무역량이라고 표현하지 않는다.
+  강점 키워드 후보 | 현재 입력자료 | 단서 상태 | 4주차 실제 경험에서 확인할 질문
+- 단서 상태는 ‘반복 단서’, ‘단일 단서’, ‘경험 확인 필요’ 중 하나만 사용한다.
+- 서로 다른 자료에서 같은 방향의 특징이 반복될 때는 ‘반복 단서’로 표시하되, 실제 경험에서 확인되기 전에는 행동 근거로 해석하지 않는다.
+- 고용24 또는 VIA 검사결과 하나만으로 직무역량이나 확정 강점이라고 표현하지 않는다.
 - 막연한 칭찬보다 실제 행동으로 확인할 수 있는 표현을 우선한다.
 
 8. 자기소개서·면접에서 다룰 수 있는 약점/보완 키워드 3개
@@ -40,15 +40,15 @@ const SWOT_PROMPT_EXTENSION=`
 - ST 전략: 강점으로 확인된 위험에 대응하는 방법
 - WO 전략: 보완점을 개선하며 확인된 기회를 활용하는 방법
 - WT 전략: 보완점과 확인된 위험이 겹칠 때의 예방 행동
-- 표 형식: 전략 | 현재 가능한 행동 | 연결 단계 | 근거 상태
+- 표 형식: 전략 | 현재 가능한 행동 | 연결 단계 | 단서 상태
 - 각 전략은 1~2개씩 제시한다.
 - O 또는 T의 근거가 없으면 전략을 지어내지 말고 ‘STEP 3 이후 직무·기업 정보 확인 후 작성’이라고 표시한다.
 - 연결 단계는 ‘취업준비 행동’, ‘경험 설계’, ‘자기소개서 소재 개발’ 중 하나로 표시한다.
 
 11. 자소서 소재 준비표
-- 강점 키워드 중 근거가 상대적으로 선명한 3개를 고른다. 순위를 매기는 것이 아니라, 다음 단계에서 먼저 검증할 소재 후보를 정하는 것이다.
-- 표 형식: 강점 소재 후보 | 현재 근거 | 자소서에서 증명해야 할 행동 | 4주차 경험 인터뷰 질문
-- 실제 경험이 아직 확인되지 않았다면 ‘경험 근거 확인 전 문장화 금지’라고 표시한다.
+- 강점 키워드 후보 중 단서가 상대적으로 선명한 3개를 고른다. 순위를 매기는 것이 아니라, 다음 단계에서 먼저 검증할 소재 후보를 정하는 것이다.
+- 표 형식: 강점 소재 후보 | 현재 단서 | 자소서에서 증명해야 할 행동 | 4주차 경험 인터뷰 질문
+- 실제 경험이 아직 확인되지 않았다면 ‘행동 근거 확인 전 문장화 금지’라고 표시한다.
 - 약점/보완 키워드 중 2개를 별도로 정리하고 ‘보완 행동을 보여줄 실제 사례가 있는지’ 확인할 질문을 붙인다.
 
 12. Jobfit 저장용 요약
@@ -87,7 +87,9 @@ function normalizeList(value,max){
 }
 function ensureStandardCompatibility(){
   const state=parseState(),dna=state.assessments?.careerDNA;
-  if(!dna?.standard?.version||dna.interest?.type==='STANDARD')return;
+  if(!dna?.standard?.version)return;
+  if(String(dna.standard.version).startsWith('career-dna-research-v1.0'))return;
+  if(dna.interest?.type==='STANDARD')return;
   state.assessments=state.assessments||{};
   state.assessments.careerDNA={...dna,interest:{...(dna.interest||{}),type:'STANDARD',resultVersion:'Career DNA Standard v1'}};
   writeState(state);
@@ -143,7 +145,7 @@ function enhanceCollapsibles(root){
   });
 }
 function findBalanceBlock(root){
-  return [...root.querySelectorAll('.careerDnaStandard .block')].find(block=>block.querySelector('.moduleHead h3')?.textContent.trim()==='Balance Game')||null;
+  return [...root.querySelectorAll('.careerDnaStandard .block')].find(block=>/밸런스|Balance Game/i.test(block.querySelector('.moduleHead h3')?.textContent||''))||null;
 }
 function reopenBalanceIfNeeded(root){
   if(!Number.isInteger(reopenBalanceIndex))return;
