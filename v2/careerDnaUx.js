@@ -211,7 +211,7 @@ function enhanceAiSwot(root){
   const block=makePrompt?.closest('.block');
   if(block&&!block.querySelector('.swotGuide')){
     const info=document.createElement('div');info.className='callout good swotGuide';
-    info.innerHTML='<b>추가 분석</b> · AI가 강점 키워드 5개, 약점/보완 키워드 3개를 근거 상태와 함께 정리하고, 4주차 실제 경험에서 확인할 질문까지 만듭니다. SWOT(S·W·O·T)과 SO·ST·WO·WT 전략도 포함하되 외부 기회·위협의 근거가 없으면 임의로 만들지 않습니다.';
+    info.innerHTML='<b>추가 분석</b> · AI가 강점 키워드 5개, 약점/보완 키워드 3개를 단서 상태와 함께 정리하고, 4주차 실제 경험에서 확인할 질문까지 만듭니다. SWOT(S·W·O·T)과 SO·ST·WO·WT 전략도 포함하되 외부 기회·위협의 근거가 없으면 임의로 만들지 않습니다.';
     guide?.insertAdjacentElement('afterend',info);
   }
   const hypothesis=root.querySelector('#aiHypothesis');
