@@ -30,7 +30,7 @@ export function mergeResearchRecords(records){
 export function researchRows(records){return records.map(r=>{
   const pre=r.pre_measurements||{},post=r.post_measurements||{};
   const row={
-    익명코드:r.participant_code,수업코드:r.context?.cohort_id,학교:r.context?.institution_code,나이:r.demographics?.age,성별:r.demographics?.gender,학년:r.demographics?.grade,학과:r.demographics?.major_raw,전공계열:r.demographics?.major_group,학적상태:r.demographics?.enrollment_status,
+    참여코드:r.participant_code,수업코드:r.context?.cohort_id,학교:r.context?.institution_code,나이:r.demographics?.age,성별:r.demographics?.gender,학년:r.demographics?.grade,학과:r.demographics?.major_raw,전공계열:r.demographics?.major_group,학적상태:r.demographics?.enrollment_status,
     현재STEP:r.progress?.current_step,완료STEP수:r.progress?.completed_step_count,진행률:r.progress?.completion_percent,마지막저장:r.progress?.last_saved_at
   };
   WORK24_LABELS.forEach((label,i)=>{row[`PRE_고용24_${label}`]=pre.work24_college_career_readiness?.scores?.[i]??null;row[`POST_고용24_${label}`]=post.work24_college_career_readiness?.scores?.[i]??null});
