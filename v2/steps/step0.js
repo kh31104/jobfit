@@ -15,6 +15,7 @@ export async function render(ctx){
 
     <div class="callout good"><b>오늘 할 일은 7개뿐입니다.</b><br>① 수업 연결 확인 → ② 익명코드 → ③ 기본정보 → ④ 현재 준비상태 → ⑤ AI Career Check-in → ⑥ PRE 측정 → ⑦ 백업 저장</div>
     <div class="journeyStrip">${['수업 연결','익명코드','기본정보','현재 준비상태','AI Check-in','PRE 측정','백업'].map((x,i)=>`<span><b>${i+1}</b>${x}</span>`).join('')}</div>
+    <div class="callout info" data-no-research-notice="1"><b>수업 데이터 저장 안내</b><br>수업 운영을 위해 익명코드, STEP 진행상태와 일부 구조화된 활동 결과가 중앙 서버에 저장됩니다.<br>이름·학번·연락처와 경험 서술, AI 대화, 이력서·자기소개서·면접답변 원문은 중앙 서버에 저장하지 않습니다.<br>향후 교육·진로 관련 연구에 활용하려는 경우에는 필요한 IRB 절차와 별도 연구참여 동의를 거친 자료만 사용하며, 연구 참여 여부는 수업 참여와 성적에 영향을 주지 않습니다.</div>
 
     <details class="summaryBox courseSetup" ${c.preset?'':'open'}>
       <summary><b>① 수업 연결 ${c.preset?'완료 ✓':'설정'}</b> <span class="muted">${ctx.escapeHtml(c.institution||p.institution||'일반 이용')}</span></summary>
@@ -51,8 +52,8 @@ export async function render(ctx){
 
     ${c.researchMeasures?`<div class="stepLabel measureStepLabel">⑥</div>${renderMeasurePanel(ctx,'pre')}`:''}
 
-    <div class="hr"></div><div class="block finishBlock"><div class="stepLabel">⑦</div><h3>저장·백업 안내</h3><p class="help">학생의 입력 내용은 먼저 <b>현재 사용 중인 브라우저</b>에 저장됩니다. 교수자에게 자동 전송되지 않습니다.</p>
-      <div class="callout info"><b>학생과 교수자가 하는 일</b><br><b>학생 필수:</b> ‘Career Start 저장’ → ‘내 학습 백업파일 다운로드’ → 본인 이메일·카카오톡·클라우드에 보관<br><b>교수자:</b> 수업 중 저장·백업 완료 여부만 안내합니다. 학생의 활동내용과 검사결과는 교수자에게 자동 전송되지 않습니다.</div>
+    <div class="hr"></div><div class="block finishBlock"><div class="stepLabel">⑦</div><h3>저장·백업 안내</h3><p class="help">학생의 입력 내용은 먼저 <b>현재 사용 중인 브라우저</b>에 저장됩니다. 익명코드 기반 일부 구조화 결과는 수업 운영용 중앙 DB에도 자동 저장됩니다.</p>
+      <div class="callout info"><b>학생과 교수자가 하는 일</b><br><b>학생 필수:</b> ‘Career Start 저장’ → ‘내 학습 백업파일 다운로드’ → 본인 이메일·카카오톡·클라우드에 보관<br><b>교수자:</b> 수업 운영을 위해 익명코드별 진행상태와 일부 구조화 결과를 확인할 수 있습니다. 경험 서술, AI 대화, 지원서·면접답변 원문은 중앙 운영 DB에 저장하지 않습니다.</div>
       <div class="callout good"><b>내 학습 백업파일에 저장되는 정보</b><br>익명코드, 기본정보, 현재 준비상태, 검사 입력값, STEP별 선택·작성 내용과 AI 결과 붙여넣기 내용이 저장됩니다. 이 파일은 학생 본인의 학습을 이어가기 위한 개인 백업이며, 이름·학번·전화번호는 입력하거나 저장하지 않습니다.</div>
       <div class="backupFlow">
         <div class="backupTask"><span class="backupTaskN">1</span><div><b>현재 답변 저장</b><p>입력한 Career Start와 PRE 결과를 이 브라우저에 저장합니다.</p><button class="btn primary" id="saveStart">Career Start 저장</button></div></div>
@@ -65,7 +66,7 @@ export async function render(ctx){
       <div class="callout info"><b>첫 수업 완료 기준</b><br>익명코드 + 기본정보 + 현재 준비상태 + AI Check-in + 고용24 대학생진로준비도·진로적응성 PRE까지 완료하면 됩니다. 내 학습 백업파일의 기기 밖 보관과 확인 체크는 권장사항입니다. 강점활용·약점교정 측정은 STEP 2 경험·역량 수업에서 진행합니다.</div>
     </div>
 
-    <div class="callout info"><b>현재는 수업 실습용입니다.</b> 입력한 자료는 학생의 브라우저와 내 학습 백업파일에만 저장되며 교수자 또는 중앙 DB로 자동 전송되지 않습니다.</div>
+    <div class="callout info" data-no-research-notice="1"><b>현재 중앙 저장은 수업 운영용입니다.</b> 익명코드와 진행상태, 일부 구조화 결과만 중앙 운영 DB에 저장됩니다. 연구용 데이터 제출은 별도 동의와 승인 절차 없이 자동으로 이루어지지 않습니다.</div>
   </section>`;
 
   if(c.lockMode)root.querySelectorAll('.modeCard').forEach(x=>x.style.pointerEvents='none');
