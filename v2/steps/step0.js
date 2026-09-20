@@ -63,7 +63,7 @@ export async function render(ctx){
       </div>
       <div class="backupComplete ${backupComplete?'done':''}" id="backupCompleteState" aria-live="polite"></div>
       <div class="actions"><button class="btn outline" id="nextStep">STEP 1 Career DNA →</button></div><div class="status" id="status"></div>
-      <div class="callout info"><b>첫 수업 완료 기준</b><br>Jobfit 참여코드 + 기본정보 + 현재 준비상태 + AI Check-in + 고용24 구직준비도·진로적응성 PRE까지 완료하면 됩니다. 내 학습 백업파일의 기기 밖 보관과 확인 체크는 권장사항입니다. 강점활용·약점교정 측정은 STEP 2 경험·역량 수업에서 진행합니다.</div>
+      <div class="callout info"><b>첫 수업 완료 기준</b><br>Jobfit 참여코드 + 기본정보 + 현재 준비상태 + AI Check-in + 고용24 대학생진로준비도·진로적응성 PRE까지 완료하면 됩니다. 내 학습 백업파일의 기기 밖 보관과 확인 체크는 권장사항입니다. 강점활용·약점교정 측정은 STEP 2 경험·역량 수업에서 진행합니다.</div>
     </div>
 
     <div class="callout info" data-no-research-notice="1"><b>현재 중앙 저장은 수업 운영용입니다.</b> Jobfit 참여코드와 진행상태, 일부 구조화 결과만 중앙 운영 DB에 저장됩니다. 연구용 데이터 제출은 별도 동의와 승인 절차 없이 자동으로 이루어지지 않습니다.</div>
