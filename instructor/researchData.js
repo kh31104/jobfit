@@ -1,4 +1,4 @@
-export const WORK24_LABELS=['경제적 취약성 적응도','가족의 지지','사회적 지지','자아 존중감','자기 효능감','구직기술','의사전달','대인관계 활용','구직정보 수집'];
+export const WORK24_LABELS=['계획성','독립성','자신지식(자기이해)','진로활동경험','자기이해노력','진로수업경험','사회적 지지자 지원','진로의사결정','적극적 직업탐색','비공식적 직업탐색','예비적 직업탐색','공식적 직업탐색','취업준비노력','취업준비강도'];
 
 export function normalizeResearchRecord(input){
   if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('JSON 객체가 아닙니다.');
@@ -33,7 +33,7 @@ export function researchRows(records){return records.map(r=>{
     익명코드:r.participant_code,수업코드:r.context?.cohort_id,학교:r.context?.institution_code,나이:r.demographics?.age,성별:r.demographics?.gender,학년:r.demographics?.grade,학과:r.demographics?.major_raw,전공계열:r.demographics?.major_group,학적상태:r.demographics?.enrollment_status,
     현재STEP:r.progress?.current_step,완료STEP수:r.progress?.completed_step_count,진행률:r.progress?.completion_percent,마지막저장:r.progress?.last_saved_at
   };
-  WORK24_LABELS.forEach((label,i)=>{row[`PRE_고용24_${label}`]=pre.work24_job_readiness?.scores?.[i]??null;row[`POST_고용24_${label}`]=post.work24_job_readiness?.scores?.[i]??null});
+  WORK24_LABELS.forEach((label,i)=>{row[`PRE_고용24_${label}`]=pre.work24_college_career_readiness?.scores?.[i]??null;row[`POST_고용24_${label}`]=post.work24_college_career_readiness?.scores?.[i]??null});
   for(const [key,label] of [['concern','관심'],['control','통제'],['curiosity','호기심'],['confidence','자신감'],['total','전체']]){row[`PRE_진로적응성_${label}`]=pre.kcaas?.[key]??null;row[`POST_진로적응성_${label}`]=post.kcaas?.[key]??null}
   row.PRE_강점활용=pre.strength_deficit?.strength_use??null;row.PRE_약점교정=pre.strength_deficit?.deficit_correction??null;row.POST_강점활용=post.strength_deficit?.strength_use??null;row.POST_약점교정=post.strength_deficit?.deficit_correction??null;
   return row;
@@ -47,7 +47,7 @@ export function toCsv(records){
 
 function cleanMeasurements(m){if(!m||typeof m!=='object')return null;return {
   captured_at:cleanText(m.captured_at,80),
-  work24_job_readiness:m.work24_job_readiness?{instrument:cleanText(m.work24_job_readiness.instrument,100),exam_date:cleanText(m.work24_job_readiness.exam_date,30),scores:cleanArray(m.work24_job_readiness.scores).slice(0,9),labels:(m.work24_job_readiness.labels||[]).slice(0,9).map(x=>cleanText(x,80)),score_schema:cleanText(m.work24_job_readiness.score_schema,100),wording_status:cleanText(m.work24_job_readiness.wording_status,100)}:null,
+  work24_college_career_readiness:m.work24_college_career_readiness?{instrument:cleanText(m.work24_college_career_readiness.instrument,100),exam_date:cleanText(m.work24_college_career_readiness.exam_date,30),scores:cleanArray(m.work24_college_career_readiness.scores).slice(0,14),labels:(m.work24_college_career_readiness.labels||[]).slice(0,14).map(x=>cleanText(x,80)),score_schema:cleanText(m.work24_college_career_readiness.score_schema,100),wording_status:cleanText(m.work24_college_career_readiness.wording_status,100)}:null,
   kcaas:m.kcaas?{instrument:cleanText(m.kcaas.instrument,100),concern:cleanNumber(m.kcaas.concern),control:cleanNumber(m.kcaas.control),curiosity:cleanNumber(m.kcaas.curiosity),confidence:cleanNumber(m.kcaas.confidence),total:cleanNumber(m.kcaas.total),wording_version:cleanText(m.kcaas.wording_version,120),wording_status:cleanText(m.kcaas.wording_status,120)}:null,
   strength_deficit:m.strength_deficit?{instrument:cleanText(m.strength_deficit.instrument,140),strength_use:cleanNumber(m.strength_deficit.strength_use),deficit_correction:cleanNumber(m.strength_deficit.deficit_correction),wording_version:cleanText(m.strength_deficit.wording_version,120),wording_status:cleanText(m.strength_deficit.wording_status,120)}:null
 }}
