@@ -99,6 +99,9 @@ function neutralizeSelectiveLabels(root){if(state.mode!=='selective')return;root
 let stepAccordionObserver=null;
 function installStepAccordion(root,step){
   stepAccordionObserver?.disconnect?.();stepAccordionObserver=null;
+  // STEP 0은 입력·저장 안정성을 위해 공통 아코디언을 적용하지 않는다.
+  // STEP 1은 Career DNA 전용 토글(careerDnaUx.js)만 사용해 이중 클릭 핸들러를 방지한다.
+  if(step===0||step===1){delete window.JobfitStepAccordion;return;}
   const section=root.querySelector(':scope > .card')||root.querySelector('.card');if(!section)return;
   const storageKey=`jobfit:accordion:${courseConfig.course||'default'}:${step}`;
   const readMode=()=>{try{return sessionStorage.getItem(storageKey)}catch{return null}};
