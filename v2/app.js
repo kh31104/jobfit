@@ -43,7 +43,9 @@ if(state.mode==='selective'&&SELECTIVE_MODULES.length&&!SELECTIVE_MODULES.includ
 function applyCourseConstraints(){if(['full','selective'].includes(courseConfig.mode))state.mode=courseConfig.mode;if(courseConfig.course)state.profile.courseCode=courseConfig.course;if(courseConfig.institution)state.profile.institution=courseConfig.institution;}
 function toBool(v){return ['1','true','yes','on'].includes(String(v||'').toLowerCase())}
 function saveState(patch){if(patch)state=deepMerge(state,patch);applyCourseConstraints();state.meta=state.meta||{};state.meta.updatedAt=new Date().toISOString();localStorage.setItem(STORAGE_KEY,JSON.stringify(state));const el=document.getElementById('saveState');if(el){el.textContent='저장됨';setTimeout(()=>el.textContent='이 브라우저에 자동 저장',900)}renderHeroMeta();renderNav();return state}
-function getState(){return state}function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('on'),2200)}function escapeHtml(s=''){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+function getState(){return state}
+window.JobfitMergeCareerDnaHypothesis=patch=>saveState({assessments:{careerDNA:{hypothesis:{...(state.assessments?.careerDNA?.hypothesis||{}),...(patch||{})}}}});
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('on'),2200)}function escapeHtml(s=''){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function makeAnonCode(){
   const existing=String(state.profile?.anonCode||'');
   if(existing.startsWith('JF26-')){
