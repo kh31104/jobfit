@@ -97,9 +97,9 @@ export async function render(ctx){
   if(scale)bindAnchor();
   bindStrengths();
   ['via_0','via_1','via_2','via_3','via_4','mi_0','mi_1','mi_2'].forEach(id=>document.getElementById(id)?.addEventListener('change',refreshCompare));
-  document.getElementById('saveDNA').addEventListener('click',()=>saveData(true));
-  document.getElementById('nextStep').addEventListener('click',()=>{saveData(false);ctx.navigate(2)});
-  document.getElementById('makePrompt').addEventListener('click',()=>{const data=saveData(false);const prompt=buildPrompt(data,scale);const box=document.getElementById('promptBox');box.textContent=prompt;box.classList.remove('hidden');document.getElementById('copyPrompt').classList.remove('hidden')});
+  document.getElementById('saveDNA').addEventListener('click',()=>{window.JobfitCareerDnaUx?.persistStructuredHypothesis?.();saveData(true)});
+  document.getElementById('nextStep').addEventListener('click',()=>{window.JobfitCareerDnaUx?.persistStructuredHypothesis?.();saveData(false);ctx.navigate(2)});
+  document.getElementById('makePrompt').addEventListener('click',()=>{window.JobfitCareerDnaUx?.persistStructuredHypothesis?.();const data=saveData(false);const prompt=buildPrompt(data,scale);const box=document.getElementById('promptBox');box.textContent=prompt;box.classList.remove('hidden');document.getElementById('copyPrompt').classList.remove('hidden')});
   document.getElementById('copyPrompt').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(document.getElementById('promptBox').textContent);ctx.toast('프롬프트를 복사했습니다.')}catch{ctx.toast('복사가 차단되었습니다. 직접 선택해 복사해 주세요.')}});
 
   function bindBalance(){
@@ -144,7 +144,7 @@ export async function render(ctx){
       selfStrengths:[...strengthSelection],viaTop5:via,multipleIntelligence:{top3:mi},
       comparison:{repeat:v('compare_repeat'),connect:v('compare_connect'),unexpected:v('compare_unexpected'),verify:v('compare_verify')},
       reflection:{fit:v('compare_repeat'),question:v('compare_verify'),disagree:v('compare_unexpected')},
-      hypothesis:{text:v('aiHypothesis'),selfCheck:v('hypothesisFit'),version:'career-dna-hypothesis-v1',updatedAt:new Date().toISOString()},
+      hypothesis:{...(ctx.getState().assessments?.careerDNA?.hypothesis||saved.hypothesis||{}),text:v('aiHypothesis'),selfCheck:v('hypothesisFit'),version:'career-dna-hypothesis-v1',updatedAt:new Date().toISOString()},
       promptMeta:{version:PROMPT_VERSION,moduleStatus:moduleStatus(balanceAnswers,anchor,strengthSelection,via,mi)}
     };
     const profile=buildProfile(data);
