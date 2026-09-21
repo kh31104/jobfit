@@ -104,7 +104,15 @@ export function startContinuity(){
   requestPersistentStorage();
   syncNow();
   const timer=setInterval(()=>syncNow(),1200);
-  const observer=new MutationObserver(()=>mountStatus());observer.observe(document.body,{childList:true,subtree:true});
+  let mountQueued=false;
+  const scheduleMount=()=>{
+    if(mountQueued)return;
+    mountQueued=true;
+    requestAnimationFrame(()=>{mountQueued=false;mountStatus()});
+  };
+  const observer=new MutationObserver(scheduleMount);
+  const observeRoot=document.getElementById('stepRoot')||document.body;
+  observer.observe(observeRoot,{childList:true,subtree:true});
   window.addEventListener('pagehide',()=>syncNow());
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')syncNow()});
   mountStatus();
