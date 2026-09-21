@@ -104,9 +104,9 @@ export function startContinuity(){
   requestPersistentStorage();
   syncNow();
   const timer=setInterval(()=>syncNow(),1200);
-  const statusTimer=setInterval(()=>mountStatus(),350);
+  const observer=new MutationObserver(()=>mountStatus());observer.observe(document.body,{childList:true,subtree:true});
   window.addEventListener('pagehide',()=>syncNow());
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')syncNow()});
   mountStatus();
-  window.JobfitStorageContinuity={syncNow,hasLearningData:()=>hasLearningData(parseState(localStorage.getItem(STORAGE_KEY))),stop:()=>{clearInterval(timer);clearInterval(statusTimer)}};
+  window.JobfitStorageContinuity={syncNow,hasLearningData:()=>hasLearningData(parseState(localStorage.getItem(STORAGE_KEY))),stop:()=>{clearInterval(timer);observer.disconnect()}};
 }
