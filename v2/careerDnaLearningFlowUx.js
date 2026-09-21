@@ -45,16 +45,16 @@ const STEP2_COPY=[
     description:'강점 이름부터 정하지 말고, 내가 실제로 행동했던 경험 세 가지를 먼저 떠올립니다.'
   },
   {
-    title:'AI Experience Interview · 대표 경험 깊게 묻기',
-    description:'AI에게 답을 맡기지 않고, 내가 실제로 한 행동·판단·결과·증거를 한 질문씩 구체화합니다.'
+    title:'STAR 기반 AI Experience Interview · 대표 경험 깊게 묻기',
+    description:'STAR를 직접 작성하는 대신, AI가 빠진 내용을 한 질문씩 묻고 내가 실제로 한 행동·판단·결과를 확인합니다.'
   },
   {
     title:'AI가 이해한 내 경험 사실확인',
-    description:'AI와 대화한 뒤 확인된 사실만 남기고, 내가 직접 한 행동과 그 결과를 근거와 함께 정리합니다.'
+    description:'STAR 인터뷰 결과에서 문제·행동·판단·결과와 확인 가능한 근거만 간단히 정리합니다.'
   },
   {
     title:'경험에서 확인된 역량 · C01~C12',
-    description:'Jobfit 표준역량 중 실제 행동근거가 있는 역량만 고르고, 판정과 근거를 학생이 직접 확인합니다.'
+    description:'04에서 확인한 행동을 보면서 표준역량을 최대 3개까지 연결합니다. 근거가 없으면 선택하지 않아도 됩니다.'
   },
   {
     title:'Experience Map · 내 경험 근거 모아보기',
