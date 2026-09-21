@@ -128,19 +128,12 @@ function enhanceCollapsibles(root){
   const section=root.querySelector('.careerDnaStandard');if(!section)return;
   const blocks=[...section.children].filter(el=>el.classList?.contains('block'));
   blocks.forEach(block=>{
-    const head=block.querySelector(':scope > .moduleHead');
-    if(!head)return;
-    block.dataset.jobfitCollapsible='0';
+    const head=block.querySelector(':scope > .moduleHead');if(!head)return;
+    // STEP 접기/펼치기는 app.js의 공통 아코디언 한 곳에서만 관리한다.
+    block.dataset.jobfitCollapsible='global';
     head.classList.remove('jobfitModuleToggle');
-    head.removeAttribute('role');
-    head.removeAttribute('tabindex');
-    head.setAttribute('aria-expanded','true');
-    head.querySelector('p')?.removeAttribute('hidden');
     head.querySelector('.jobfitModuleToggleIcon')?.remove();
-    [...block.children].filter(el=>el!==head).forEach(el=>{
-      el.classList.remove('jobfitModuleBody');
-      el.removeAttribute('hidden');
-    });
+    [...block.children].filter(el=>el!==head).forEach(el=>el.classList.remove('jobfitModuleBody'));
   });
 }
 function findBalanceBlock(root){
@@ -148,12 +141,14 @@ function findBalanceBlock(root){
 }
 function reopenBalanceIfNeeded(root){
   if(!Number.isInteger(reopenBalanceIndex))return;
-  const block=findBalanceBlock(root);if(!block||block.dataset.jobfitCollapsible!=='1')return;
+  const block=findBalanceBlock(root);if(!block)return;
   const targetIndex=reopenBalanceIndex;
   reopenBalanceIndex=null;
   try{sessionStorage.removeItem(REOPEN_BALANCE_KEY)}catch{}
-  setBlockExpanded(block,true);
-  requestAnimationFrame(()=>block.querySelectorAll('.balanceCard')[targetIndex]?.scrollIntoView({block:'center',behavior:'smooth'}));
+  requestAnimationFrame(()=>{
+    window.JobfitStepAccordion?.openBlock?.(block);
+    requestAnimationFrame(()=>block.querySelectorAll('.balanceCard')[targetIndex]?.scrollIntoView({block:'center',behavior:'smooth'}));
+  });
 }
 function updateBalanceNotice(root){
   const balanceBlock=findBalanceBlock(root);
