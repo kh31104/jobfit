@@ -1,4 +1,4 @@
-import {prepareResearchMeasures,renderMeasurePanel,bindMeasurePanel} from '../researchMeasures.js';
+import {prepareResearchMeasures,renderMeasurePanel,bindMeasurePanel} from '../researchMeasures.js?v=2';
 
 const DEFAULT_AI_CAREER_RULE='AI는 정보 정리와 질문 생성에 활용하고, 경험의 사실 여부와 진로에 대한 최종 판단은 내가 직접 확인한다.';
 
