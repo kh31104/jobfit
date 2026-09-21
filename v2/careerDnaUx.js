@@ -142,9 +142,6 @@ function enhanceCollapsibles(root){
       el.removeAttribute('hidden');
     });
   });
-  section.querySelectorAll('[hidden]').forEach(el=>{
-    if(el.closest('.block'))el.removeAttribute('hidden');
-  });
 }
 function findBalanceBlock(root){
   return [...root.querySelectorAll('.careerDnaStandard .block')].find(block=>block.querySelector('.moduleHead h3')?.textContent.trim()==='Balance Game')||null;
