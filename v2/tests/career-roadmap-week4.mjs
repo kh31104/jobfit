@@ -23,6 +23,12 @@ const seed={
 };
 
 function assert(x,m){if(!x)throw new Error(m)}
+async function openFor(page,selector){
+  await page.locator(selector).evaluate(el=>{
+    const block=el.closest('.block');
+    if(block&&!block.classList.contains('jobfitAccordionOpen'))block.querySelector('.jobfitAccordionTrigger')?.click();
+  });
+}
 async function run(name,fn){
   const ctx=await browser.newContext({viewport:{width:1280,height:1100}});const page=await ctx.newPage();const errors=[];
   page.on('pageerror',e=>errors.push(`pageerror: ${e.message}`));page.on('console',m=>{if(m.type()==='error')errors.push(`console: ${m.text()}`)});page.on('dialog',d=>d.accept());
@@ -45,6 +51,7 @@ await run('Week 4 focuses on Experience Map and keeps STEP1 bridge',async page=>
 });
 
 await run('Best3 representative feeds one-question Experience Interview',async page=>{
+  await openFor(page,'#best3_best_title');
   await page.locator('#best3_best_title').fill('캡스톤 프로젝트');
   await page.locator('#best3_best_summary').fill('센서 오류 원인을 비교하고 팀과 수정했다.');
   await page.locator('input[name="representative"][value="best"]').check();
@@ -53,34 +60,50 @@ await run('Best3 representative feeds one-question Experience Interview',async p
   assert((await page.locator('#context').inputValue()).includes('센서 오류'),'Representative summary not copied');
   await page.locator('#makeInterviewPrompt').click();
   const prompt=(await page.locator('#interviewPrompt').textContent())||'';
-  assert(prompt.includes('한 번에 질문 하나만 한다'),'One-question rule missing');
-  assert(prompt.includes('팀 전체가 한 일과 내가 직접 한 행동'),'Ownership rule missing');
-  assert(prompt.includes('강점이나 역량 이름을 먼저 붙이지 않는다'),'Evidence-before-keyword rule missing');
-  assert(prompt.includes('6주차 직무 Task·KSA·KPI'),'Week6 bridge missing');
+  assert(prompt.includes('한 번에 질문은 반드시 하나만 한다'),'One-question rule missing');
+  assert(prompt.includes('학생에게 질문할 때는 S/T/A/R 같은 기호를 붙이지 않는다'),'Student-friendly STAR rule missing');
+  assert(prompt.includes('팀 전체의 행동과 내가 직접 한 행동'),'Ownership rule missing');
+  assert(prompt.includes('최대 5회까지 질문'),'Five-question ceiling missing');
+  assert(prompt.includes('강점·역량 이름을 확정하지 않는다'),'Evidence-before-competency rule missing');
 });
 
 await run('Experience save preserves old data and writes competency evidence map',async page=>{
+  await openFor(page,'#best3_best_title');
   await page.locator('#best3_best_title').fill('캡스톤 프로젝트');
   await page.locator('#best3_best_summary').fill('센서 오류 원인을 비교하고 팀과 수정했다.');
   await page.locator('input[name="representative"][value="best"]').check();
   await page.locator('#useRepresentative').click();
+  assert(await page.locator('#title').isVisible(),'Representative action should open Interview section');
   await page.locator('#category').selectOption({label:'캡스톤·연구'});
   await page.locator('#workMode').selectOption({label:'팀'});
   await page.locator('#roleTitle').fill('자료분석');
+  await page.locator('#interviewOwnership').check();
+  await page.locator('#interviewNumbers').check();
+  await page.locator('#interviewEvidence').check();
+
+  await openFor(page,'#action');
+  await page.locator('#challenge').fill('센서 오류 원인을 좁혀야 했다.');
   await page.locator('#action').fill('원인 후보를 비교했다.');
+  await page.locator('#reason').fill('반복 발생 여부를 기준으로 우선순위를 정했다.');
   await page.locator('#result').fill('오류 범위를 좁혔다.');
   await page.locator('#evidence').fill('실험 기록');
+  await page.locator('#evidenceType').selectOption({label:'작업기록·로그'});
+  assert((await page.locator('#evidenceGradePreview').textContent()).includes('A · 객관적 자료'),'Evidence grade should be automatic');
+  assert(await page.locator('#evidenceGrade').count()===0,'Manual evidence grade should be removed');
+  assert(await page.locator('#actionVerbs').count()===0,'Manual action verbs field should be removed');
+
+  await openFor(page,'#comp_1');
+  assert((await page.locator('#actionEvidencePreview').textContent()).includes('원인 후보를 비교했다'),'Action should bridge into competency section');
   await page.locator('#comp_1').selectOption('C04');
+  assert((await page.locator('#compCue_1').textContent()).includes('문제파악'),'Competency cue missing');
+  await page.locator('#compStatus_1').selectOption({label:'행동 확인'});
   await page.locator('#compEv_1').fill('오류 원인 후보를 비교하고 우선순위를 정했다.');
-  await page.locator('#compVerified_1').check();
-  await page.locator('#ownershipChecked').check();
-  await page.locator('#evidenceChecked').check();
-  await page.locator('#noFabrication').check();
+  await page.locator('#competencyEvidenceChecked').check();
   await page.locator('#saveExp').click();
   await page.waitForSelector('#saveRoadmap');
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   const ec=saved.assessments.experienceCompetency;
-  assert(ec.version==='experience-competency-week4-v4','Week4 version missing');
+  assert(ec.version==='experience-competency-week4-v6','Week4 version missing');
   assert(ec.experiences.some(x=>x.title==='캡스톤 프로젝트'),'New experience not saved');
   assert(ec.experiences.some(x=>x.id==='EXP-OLD'),'Existing experience was overwritten');
   const newExp=ec.experiences.find(x=>x.title==='캡스톤 프로젝트');
@@ -90,6 +113,7 @@ await run('Experience save preserves old data and writes competency evidence map
 });
 
 await run('Week4 save stores Best3 in Experience & Competency without creating new Career Roadmap',async page=>{
+  await openFor(page,'#best3_flow_title');
   await page.locator('#best3_flow_title').fill('강의자료 만들기');
   await page.locator('#best3_flow_summary').fill('시간 가는 줄 모르고 자료를 정리했다.');
   await page.locator('input[name="representative"][value="flow"]').check();
