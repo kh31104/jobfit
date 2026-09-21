@@ -100,7 +100,7 @@ export function renderStrengthMeasure(ctx,timepoint='pre'){
   const items=lockedSavedItems(saved,SUDCO_SCALE);
   const prefix=timepoint==='post'?'post':'pre';
   return `<div class="hr"></div><div class="block strengthMeasurePanel" data-scale-version="${SUDCO_SCALE.version}">
-    <div class="sectionHead"><div><div class="kicker">STRENGTH BEHAVIOUR CHECK</div><h3>경험에서 강점을 찾기 전, 현재 행동 확인</h3><p class="help">강점을 먼저 설명하기보다 실제 경험을 분석하는 수업에서 측정합니다. 최근 대학생활·학습·진로준비에서의 행동을 기준으로 응답하세요.</p></div><span class="badge">STEP 2 · 약 2–3분</span></div>
+    <div class="sectionHead"><div><div class="kicker">STEP 2 · QUICK CHECK</div><h3>경험 분석 전 강점행동 9문항</h3><p class="help">01 확인 후 02 경험을 떠올리기 전에 한 번만 응답합니다. 최근 대학생활·학습·진로준비에서의 실제 행동을 기준으로 체크하세요.</p></div><span class="badge">약 2–3분</span></div>
     <details class="summaryBox" open>
       <summary><b>강점활용·약점교정 행동 · 9문항</b></summary>
       <div style="margin-top:12px"><div class="callout info"><b>조영아(2019) 최종 한국판 · 5+4 총 9문항</b><br>한국 대학생 650명을 대상으로 번안·타당화한 연구의 최종 척도입니다. 원척도 6번 문항은 타당화 과정에서 삭제되었습니다.</div>
@@ -125,8 +125,13 @@ export function bindStrengthMeasure(ctx,timepoint='pre'){
     const values=vals(inputs),state=ctx.getState(),measurements=state.research?.measurements||{},prior=measurements[timepoint]||{};
     const block={...prior,strengthMeasureCapturedAt:new Date().toISOString(),sudco:strengthDeficitBlock(values,'step2-before-experience-strength-analysis')};
     ctx.saveState({research:{...state.research,measurements:{...measurements,[timepoint]:block}}});
-    document.getElementById(`${prefix}StrengthMeasureStatus`).textContent=complete(values,SUDCO_SCALE.itemCount)?'9문항이 저장되었습니다. 이제 경험에서 강점의 근거를 찾아보세요.':`저장했습니다. ${values.filter(x=>x!==null).length}/9 입력`;
+    const done=complete(values,SUDCO_SCALE.itemCount);
+    document.getElementById(`${prefix}StrengthMeasureStatus`).textContent=done?'9문항이 저장되었습니다. 이제 02에서 경험을 떠올려 보세요.':`저장했습니다. ${values.filter(x=>x!==null).length}/9 입력`;
     ctx.toast('강점활용·약점교정 측정 저장 완료');
+    if(done){
+      const next=[...document.querySelectorAll('.experienceCompetencyWeek4 > .block')].find(b=>b.querySelector(':scope > .moduleHead > span')?.textContent?.trim()==='02');
+      if(next)window.JobfitStepAccordion?.openBlock?.(next);
+    }
   });
 }
 
