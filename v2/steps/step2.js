@@ -1,4 +1,8 @@
-import {prepareResearchMeasures,renderStrengthMeasure,bindStrengthMeasure} from '../researchMeasures.js?v=2';
+let researchMeasureApiPromise=null;
+function loadResearchMeasureApi(){
+  const token=encodeURIComponent(String(globalThis.__JOBFIT_ASSET_TOKEN__||Date.now()));
+  return researchMeasureApiPromise||(researchMeasureApiPromise=import(`../researchMeasures.js?fresh=${token}`));
+}
 
 const WEEK4_VERSION='experience-competency-week4-v7';
 const COMPETENCY_DICTIONARY=[
@@ -21,6 +25,8 @@ const CATEGORIES=['수업·과제','팀프로젝트','캡스톤·연구','동아
 const EVIDENCE_TYPES=['수치·지표','산출물·문서','교수·상사·고객 피드백','수상·선발·평가결과','작업기록·로그','동료·팀 피드백','자기기억만'];
 
 export async function render(ctx){
+  const researchMeasureApi=ctx.courseConfig.researchMeasures?await loadResearchMeasureApi():null;
+  const {prepareResearchMeasures,renderStrengthMeasure,bindStrengthMeasure}=researchMeasureApi||{};
   if(ctx.courseConfig.researchMeasures)await prepareResearchMeasures(ctx);
   const state=ctx.getState();
   const dna=state.assessments?.careerDNA||{};

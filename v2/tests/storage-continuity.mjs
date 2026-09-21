@@ -9,8 +9,12 @@ function assert(v,m){if(!v)throw new Error(m)}
 async function runSavedBrowser(){
   const context=await browser.newContext();
   const page=await context.newPage();
+  page.on('console',msg=>console.log(`[browser console] ${msg.type()}: ${msg.text()}`));
+  page.on('pageerror',err=>console.error(`[browser pageerror] ${err.stack||err.message||err}`));
   try{
     await page.goto(url.toString(),{waitUntil:'domcontentloaded'});
+    await page.waitForTimeout(1500);
+    console.log('[diagnostic] initial stepRoot=',await page.locator('#stepRoot').count(),'continuity=',await page.locator('#jobfitContinuityStatus').count());
     await page.evaluate(()=>{localStorage.clear();indexedDB.deleteDatabase('jobfit-v2-continuity')});
     const saved={version:2.2,activeStep:0,mode:'full',profile:{courseCode:'INJE2026',institution:'인제대학교',anonCode:'JF26-3WKFA9',age:'22',grade:'3학년',major:'경영학과'},baseline:{jobDecision:'탐색 중',prepStage:'정보탐색'},research:{consent:false,measurements:{pre:{}}},assessments:{careerDNA:{},experienceCompetency:{experiences:[]}},artifacts:{careerStartProfile:{statement:'기존 저장 문장'}},meta:{updatedAt:'2026-09-07T02:40:00.000Z'}};
     await page.evaluate(s=>localStorage.setItem('jobfit:v2:learner',JSON.stringify(s)),saved);
@@ -34,8 +38,12 @@ async function runSavedBrowser(){
 async function runMissingBrowser(){
   const context=await browser.newContext();
   const page=await context.newPage();
+  page.on('console',msg=>console.log(`[browser console] ${msg.type()}: ${msg.text()}`));
+  page.on('pageerror',err=>console.error(`[browser pageerror] ${err.stack||err.message||err}`));
   try{
     await page.goto(url.toString(),{waitUntil:'domcontentloaded'});
+    await page.waitForTimeout(1500);
+    console.log('[diagnostic] missing-browser stepRoot=',await page.locator('#stepRoot').count(),'continuity=',await page.locator('#jobfitContinuityStatus').count());
     await page.waitForSelector('#jobfitContinuityStatus');
     const text=(await page.locator('#jobfitContinuityStatus').textContent())||'';
     assert(text.includes('이 브라우저에서 이전 Jobfit 자료를 찾지 못했습니다.'),'Missing-data guidance not shown');

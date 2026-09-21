@@ -1,4 +1,7 @@
-import {restoreBeforeApp,startContinuity} from './storageContinuity.js?v=1';
+const JOBFIT_ASSET_TOKEN=String(globalThis.__JOBFIT_ASSET_TOKEN__||Date.now());
+globalThis.__JOBFIT_ASSET_TOKEN__=JOBFIT_ASSET_TOKEN;
+const fresh=path=>`${path}?fresh=${encodeURIComponent(JOBFIT_ASSET_TOKEN)}`;
+const {restoreBeforeApp,startContinuity}=await import(fresh('./storageContinuity.js'));
 
 await restoreBeforeApp();
 
@@ -20,11 +23,17 @@ if(isInjeCourse){
   }
 }
 
-await import('./app.js?v=26');
-await import('./injeClassroom.js?v=17');
-await import('./careerDnaUx.js?v=9');
-await import('./careerDnaStudentUx.js?v=1');
-await import('./careerDnaLearningFlowUx.js?v=7');
-const {startOperationalSync}=await import('./operationalSync.js?v=2');
+await import(fresh('./app.js'));
+
+// 저장 연속성은 STEP별 보조 UX보다 먼저 시작한다.
+// 이후 보조 모듈 하나가 실패해도 핵심 화면·저장·복구는 계속 동작해야 한다.
 startContinuity();
-startOperationalSync();
+
+for(const modulePath of ['./injeClassroom.js','./careerDnaUx.js','./careerDnaStudentUx.js','./careerDnaLearningFlowUx.js']){
+  try{await import(fresh(modulePath))}
+  catch(err){console.error(`Jobfit optional module failed: ${modulePath}`,err)}
+}
+try{
+  const {startOperationalSync}=await import(fresh('./operationalSync.js'));
+  startOperationalSync();
+}catch(err){console.error('Jobfit operational sync module failed',err)}

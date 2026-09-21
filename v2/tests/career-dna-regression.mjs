@@ -25,7 +25,7 @@ async function run(name,fn){
   await routeClassroom(page);
   try{await fn(page);if(errors.length)throw new Error(errors.join('\n'));console.log(`PASS ${name}`)}catch(e){failed=true;console.error(`FAIL ${name}\n${e.stack||e}`)}finally{await context.close()}
 }
-async function openCareerDNA(page){await page.goto(`${base}?course=INJE2026`,{waitUntil:'networkidle'});await page.locator('.stepBtn[data-step="1"]').click();await page.waitForSelector('#makePrompt',{state:'attached'});await page.waitForFunction(()=>document.querySelectorAll('.careerDnaStandard .jobfitModuleToggle').length===8)}
+async function openCareerDNA(page){await page.goto(`${base}?course=INJE2026`,{waitUntil:'networkidle'});await page.evaluate(()=>sessionStorage.setItem('jobfit:accordion:INJE2026:1','none'));await page.locator('.stepBtn[data-step="1"]').click();await page.waitForSelector('#makePrompt',{state:'attached'});await page.waitForFunction(()=>document.querySelectorAll('.careerDnaStandard .jobfitAccordionTrigger').length===8)}
 function moduleHead(page,title){return page.locator('.careerDnaStandard .moduleHead').filter({has:page.locator('h3',{hasText:title})}).first()}
 async function expandModule(page,title){const head=moduleHead(page,title);if((await head.getAttribute('aria-expanded'))!=='true')await head.click()}
 async function completeAnchor(page){await expandModule(page,'Career Anchor');for(let i=0;i<40;i++){const value=(i%6)+1;await page.locator(`[data-anchor-item="${i}"][value="${value}"]`).check()}for(const n of [1,2,3])await page.locator(`[data-bonus-item][value="${n}"]`).check()}
@@ -47,7 +47,7 @@ await run('Week 3 renders the agreed Career DNA standard sequence collapsed by t
   assert(!body.includes('Career DNA 인터뷰 시작'),'Week 3 must not start the Career DNA interview');
   assert((await page.locator('[data-anchor-item]').count())===240,'40 Career Anchor items x 6 response choices expected');
   assert((await page.locator('[data-strength]').count())>=50,'Strength word picker missing');
-  assert((await page.locator('.careerDnaStandard .jobfitModuleToggle[aria-expanded="false"]').count())===8,'All eight Career DNA modules must start collapsed');
+  assert((await page.locator('.careerDnaStandard .jobfitAccordionTrigger[aria-expanded="false"]').count())===8,'All eight Career DNA modules must start collapsed');
   assert(await moduleHead(page,'Career Anchor').locator('p').isHidden(),'Career Anchor description should be hidden until opened');
   await expandModule(page,'Career Anchor');assert(await moduleHead(page,'Career Anchor').locator('p').isVisible(),'Career Anchor should expand on click');
 });
@@ -64,7 +64,7 @@ await run('Balance choice can be corrected and still shows live class aggregate'
   const reloaded=page.waitForNavigation({waitUntil:'networkidle'});
   await page.locator('.balanceReselect').first().click();
   await reloaded;
-  await page.waitForSelector('.jobfitModuleToggle',{state:'attached'});
+  await page.waitForSelector('.careerDnaStandard .jobfitAccordionTrigger',{state:'attached'});
   await page.waitForFunction(()=>{
     const b=document.querySelector('[data-balance-choice="B"][data-index="0"]');
     return b&&!b.disabled&&!!(b.offsetWidth||b.offsetHeight||b.getClientRects().length);
