@@ -73,6 +73,23 @@ await run('Best3 representative feeds one-question Experience Interview',async p
   await page.locator('#aiStructured').fill('S 상황: 팀 프로젝트\nT 문제·목표와 내 역할: 센서 오류 원인을 좁혀야 했다.\nA 내가 직접 한 행동: 원인 후보를 비교했다.\nWHY 판단·선택 이유: 반복 발생 여부를 기준으로 봤다.\nR 결과: 오류 범위를 좁혔다.\n확인 가능한 증거: 실험 기록');
   await page.locator('#importStarSummary').click();
   assert((await page.locator('#action').inputValue()).includes('원인 후보를 비교했다'),'STAR import should fill Action');
+  assert((await page.locator('#challenge').inputValue())==='센서 오류 원인을 좁혀야 했다.','STAR import should strip the Task label cleanly');
+});
+
+await run('STEP2 draft survives reload before final experience save',async page=>{
+  await openFor(page,'#best3_best_title');
+  await page.locator('#best3_best_title').fill('학생회 행사');
+  await page.locator('#best3_best_summary').fill('행사 신청이 적어 안내 방식을 바꿨다.');
+  await page.locator('input[name="representative"][value="best"]').check();
+  await page.locator('#useRepresentative').click();
+  await page.locator('#roleTitle').fill('홍보 담당');
+  await page.locator('#makeInterviewPrompt').click();
+  let saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
+  assert(saved.assessments.experienceCompetency.draft.title==='학생회 행사','Interview draft not saved before external AI handoff');
+  await page.reload({waitUntil:'networkidle'});
+  await page.locator('.stepBtn[data-step="2"]').click();await page.waitForSelector('.experienceCompetencyWeek4');
+  assert(await page.locator('#title').inputValue()==='학생회 행사','Draft title not restored after reload');
+  assert(await page.locator('#roleTitle').inputValue()==='홍보 담당','Draft role not restored after reload');
 });
 
 await run('Experience save preserves old data and writes competency evidence map',async page=>{
