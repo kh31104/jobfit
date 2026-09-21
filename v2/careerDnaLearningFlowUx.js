@@ -41,8 +41,8 @@ const STEP2_COPY=[
     description:'지난주 강점 후보를 정답으로 쓰지 않고, 실제 경험에서 확인할 가설과 질문만 가져옵니다.'
   },
   {
-    title:'My Best 3 Experience · 경험 3개 꺼내기',
-    description:'강점 이름부터 정하지 말고, 내가 실제로 행동했던 경험 세 가지를 먼저 떠올립니다.'
+    title:'My Best 3 Experience · 경험 후보 꺼내기',
+    description:'강점 이름부터 정하지 말고 실제 경험을 최대 3개 떠올립니다. 1~2개만 떠올라도 대표 경험 1개부터 분석할 수 있습니다.'
   },
   {
     title:'STAR 기반 AI Experience Interview · 대표 경험 깊게 묻기',
@@ -58,7 +58,7 @@ const STEP2_COPY=[
   },
   {
     title:'Experience Map · 내 경험 근거 모아보기',
-    description:'저장한 경험을 한눈에 보고, 경험별 행동·결과·역량근거를 확인합니다.'
+    description:'저장한 경험의 행동·결과·역량근거를 확인합니다. 1개는 기본 분석, 2개 이상부터 반복 여부를 비교합니다.'
   },
   {
     title:'Competency Map · 반복 행동 확인',
