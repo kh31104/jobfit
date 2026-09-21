@@ -1,4 +1,4 @@
-import {prepareResearchMeasures,renderStrengthMeasure,bindStrengthMeasure} from '../researchMeasures.js';
+import {prepareResearchMeasures,renderStrengthMeasure,bindStrengthMeasure} from '../researchMeasures.js?v=2';
 
 const WEEK4_VERSION='experience-competency-week4-v7';
 const COMPETENCY_DICTIONARY=[
