@@ -257,8 +257,9 @@ function enhanceHypothesisStructured(root){
 function persistStructuredHypothesis(){
   if(!structuredDraft)return;
   const state=parseState(),dna=state.assessments?.careerDNA;if(!dna)return;
-  dna.hypothesis={...(dna.hypothesis||{}),strengthKeywords:[...structuredDraft.strengthKeywords],developmentKeywords:[...structuredDraft.developmentKeywords],verifyQuestions:[...structuredDraft.verifyQuestions],structuredVersion:'career-dna-verified-summary-v1'};
-  writeState(state);
+  const patch={...(dna.hypothesis||{}),strengthKeywords:[...structuredDraft.strengthKeywords],developmentKeywords:[...structuredDraft.developmentKeywords],verifyQuestions:[...structuredDraft.verifyQuestions],structuredVersion:'career-dna-verified-summary-v1'};
+  if(typeof window.JobfitMergeCareerDnaHypothesis==='function')window.JobfitMergeCareerDnaHypothesis(patch);
+  else{dna.hypothesis=patch;writeState(state)}
   window.JobfitStorageContinuity?.syncNow?.();
 }
 function enhanceCareerDNA(){
