@@ -65,6 +65,14 @@ await run('Best3 representative feeds one-question Experience Interview',async p
   assert(prompt.includes('팀 전체의 행동과 내가 직접 한 행동'),'Ownership rule missing');
   assert(prompt.includes('최대 5회까지 질문'),'Five-question ceiling missing');
   assert(prompt.includes('강점·역량 이름을 확정하지 않는다'),'Evidence-before-competency rule missing');
+  await page.locator('#interviewOwnership').check();
+  await page.locator('#interviewNumbers').check();
+  await page.locator('#interviewEvidence').check();
+  await page.locator('#goFactCheck').click();
+  assert(await page.locator('#challenge').isVisible(),'03 fact check should open 04');
+  await page.locator('#aiStructured').fill('S 상황: 팀 프로젝트\nT 문제·목표와 내 역할: 센서 오류 원인을 좁혀야 했다.\nA 내가 직접 한 행동: 원인 후보를 비교했다.\nWHY 판단·선택 이유: 반복 발생 여부를 기준으로 봤다.\nR 결과: 오류 범위를 좁혔다.\n확인 가능한 증거: 실험 기록');
+  await page.locator('#importStarSummary').click();
+  assert((await page.locator('#action').inputValue()).includes('원인 후보를 비교했다'),'STAR import should fill Action');
 });
 
 await run('Experience save preserves old data and writes competency evidence map',async page=>{
@@ -75,7 +83,6 @@ await run('Experience save preserves old data and writes competency evidence map
   await page.locator('#useRepresentative').click();
   assert(await page.locator('#title').isVisible(),'Representative action should open Interview section');
   await page.locator('#category').selectOption({label:'캡스톤·연구'});
-  await page.locator('#workMode').selectOption({label:'팀'});
   await page.locator('#roleTitle').fill('자료분석');
   await page.locator('#interviewOwnership').check();
   await page.locator('#interviewNumbers').check();
@@ -103,13 +110,16 @@ await run('Experience save preserves old data and writes competency evidence map
   await page.waitForSelector('#saveRoadmap');
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   const ec=saved.assessments.experienceCompetency;
-  assert(ec.version==='experience-competency-week4-v6','Week4 version missing');
+  assert(ec.version==='experience-competency-week4-v7','Week4 version missing');
   assert(ec.experiences.some(x=>x.title==='캡스톤 프로젝트'),'New experience not saved');
   assert(ec.experiences.some(x=>x.id==='EXP-OLD'),'Existing experience was overwritten');
   const newExp=ec.experiences.find(x=>x.title==='캡스톤 프로젝트');
   assert(newExp.competencies.includes('문제해결'),'Competency keyword missing');
   assert(newExp.competencyEvidence.some(x=>x.code==='C04'&&x.label==='문제해결'&&x.evidence.includes('원인 후보')&&x.studentVerified),'Standard competency evidence missing');
   assert(Array.isArray(saved.artifacts.experienceMap)&&saved.artifacts.experienceMap.length>=2,'experienceMap contract broken');
+  assert(await page.locator('#experienceMapPreview').isVisible(),'Save should move student to Experience Map');
+  const readiness=(await page.locator('.experienceReadiness').textContent())||'';
+  assert(readiness.includes('경험 2개 저장')||readiness.includes('반복 패턴'),'Experience readiness guidance missing');
 });
 
 await run('Week4 save stores Best3 in Experience & Competency without creating new Career Roadmap',async page=>{
