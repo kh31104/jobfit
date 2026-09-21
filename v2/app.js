@@ -121,7 +121,7 @@ function installStepAccordion(root,step){
     block.classList.toggle('jobfitAccordionOpen',!!open);
     const trigger=block.querySelector(':scope > .jobfitAccordionTrigger');
     trigger?.setAttribute('aria-expanded',open?'true':'false');
-    const icon=trigger?.querySelector('.jobfitAccordionChevron');if(icon)icon.textContent=open?'−':'+';
+    const icon=trigger?.querySelector('.jobfitAccordionChevron');const iconText=open?'−':'+';if(icon&&icon.textContent!==iconText)icon.textContent=iconText;
     const group=groups().find(g=>g.block===block);
     (group?.followers||[]).forEach(follower=>follower.classList.toggle('jobfitAccordionFollowerHidden',!open));
   };
