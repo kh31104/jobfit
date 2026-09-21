@@ -136,7 +136,7 @@ await run('Experience save preserves old data and writes competency evidence map
   assert(Array.isArray(saved.artifacts.experienceMap)&&saved.artifacts.experienceMap.length>=2,'experienceMap contract broken');
   assert(await page.locator('#experienceMapPreview').isVisible(),'Save should move student to Experience Map');
   const readiness=(await page.locator('.experienceReadiness').textContent())||'';
-  assert(readiness.includes('경험 2개 저장')||readiness.includes('반복 패턴'),'Experience readiness guidance missing');
+  assert(readiness.includes('사실확인된 경험 2개')||readiness.includes('반복 패턴'),'Experience readiness guidance missing');
 });
 
 await run('Week4 save stores Best3 in Experience & Competency without creating new Career Roadmap',async page=>{
