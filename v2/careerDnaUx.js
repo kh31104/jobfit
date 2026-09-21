@@ -129,17 +129,21 @@ function enhanceCollapsibles(root){
   const blocks=[...section.children].filter(el=>el.classList?.contains('block'));
   blocks.forEach(block=>{
     const head=block.querySelector(':scope > .moduleHead');
-    if(!head||block.dataset.jobfitCollapsible==='1')return;
-    block.dataset.jobfitCollapsible='1';
-    head.classList.add('jobfitModuleToggle');
-    head.setAttribute('role','button');
-    head.setAttribute('tabindex','0');
-    head.setAttribute('aria-expanded','false');
-    const icon=document.createElement('span');icon.className='jobfitModuleToggleIcon';icon.setAttribute('aria-hidden','true');icon.textContent='＋';head.appendChild(icon);
-    const toggle=()=>setBlockExpanded(block,head.getAttribute('aria-expanded')!=='true');
-    head.addEventListener('click',event=>{if(event.target.closest('a,button,input,select,textarea,label'))return;toggle()});
-    head.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();toggle()}});
-    setBlockExpanded(block,false);
+    if(!head)return;
+    block.dataset.jobfitCollapsible='0';
+    head.classList.remove('jobfitModuleToggle');
+    head.removeAttribute('role');
+    head.removeAttribute('tabindex');
+    head.setAttribute('aria-expanded','true');
+    head.querySelector('p')?.removeAttribute('hidden');
+    head.querySelector('.jobfitModuleToggleIcon')?.remove();
+    [...block.children].filter(el=>el!==head).forEach(el=>{
+      el.classList.remove('jobfitModuleBody');
+      el.removeAttribute('hidden');
+    });
+  });
+  section.querySelectorAll('[hidden]').forEach(el=>{
+    if(el.closest('.block'))el.removeAttribute('hidden');
   });
 }
 function findBalanceBlock(root){
