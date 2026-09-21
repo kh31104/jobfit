@@ -5,7 +5,7 @@ export async function render(ctx){
   const s=ctx.getState();
   const dna=s.assessments?.careerDNA||{};
   const exp=s.assessments?.experienceCompetency||{experiences:[]};
-  const experienceMap=Array.isArray(s.artifacts?.experienceMap)?s.artifacts.experienceMap:[];
+  const experienceMap=Array.isArray(s.artifacts?.experienceMap)?s.artifacts.experienceMap.filter(x=>x?.factChecked):[];
   const saved=s.artifacts?.jobExplorer||{candidates:[],targets:[],notes:''};
   const data=structuredClone(saved);
   data.candidates=Array.isArray(data.candidates)?data.candidates:[];
@@ -123,7 +123,7 @@ export async function render(ctx){
 }
 
 function buildPrompt(s){
-  const dna=s.assessments?.careerDNA||{},profile=s.artifacts?.careerDNAProfile||{},exp=s.assessments?.experienceCompetency||{},map=Array.isArray(s.artifacts?.experienceMap)?s.artifacts.experienceMap:[];
+  const dna=s.assessments?.careerDNA||{},profile=s.artifacts?.careerDNAProfile||{},exp=s.assessments?.experienceCompetency||{},map=Array.isArray(s.artifacts?.experienceMap)?s.artifacts.experienceMap.filter(x=>x?.factChecked):[];
   const valueClues=profile.valueClues||((dna.balance?.answers||[]).filter(Boolean).map(x=>x.value));
   const anchorTop=profile.careerAnchorTop||dna.careerAnchor?.ranking?.slice(0,3)||[];
   const selfStrengths=profile.selfStrengths||dna.selfStrengths||[];
@@ -131,7 +131,8 @@ function buildPrompt(s){
   const mi=profile.multipleIntelligenceTop3||dna.multipleIntelligence?.top3||[];
   const comparison=profile.comparison||dna.comparison||{};
   const hypothesis=profile.hypothesis||dna.hypothesis||{};
-  const evidence=(map.length?map:(exp.experiences||[])).slice(0,8).map(x=>({
+  const verifiedExperiences=(exp.experiences||[]).filter(x=>x?.factChecked);
+  const evidence=(map.length?map:verifiedExperiences).slice(0,8).map(x=>({
     experience:x.title||'경험',action:x.action||'',result:x.result||'',competencies:x.competencies||[],competencyEvidence:x.competencyEvidence||[]
   }));
   return `당신은 대학생의 직무탐색을 돕는 조력자다. 목표는 검사결과로 직업을 추천하는 것이 아니라, 학생의 자기이해와 실제 경험근거에서 출발해 서로 다른 업무군의 직무 후보를 넓게 탐색하게 돕는 것이다.\n\n[3주차 Career DNA]\n가치 단서: ${valueClues.length?valueClues.join(', '):'입력 없음'}\nCareer Anchor 상위: ${anchorTop.length?anchorTop.map(x=>x.name||x.code).join(', '):'입력 없음'}\n내가 선택한 강점: ${selfStrengths.length?selfStrengths.join(', '):'입력 없음'}\nVIA TOP5: ${via.length?via.join(', '):'입력 없음'}\n다중지능 TOP3: ${mi.length?mi.join(', '):'입력 없음'}\n반복해서 나타난다고 본 부분: ${comparison.repeat||'입력 없음'}\nCareer DNA 가설: ${hypothesis.text||'입력 없음'}\n\n[4주차 Experience Map]\n${evidence.length?evidence.map((x,i)=>`${i+1}. ${x.experience}\n- 행동: ${x.action||'미입력'}\n- 결과: ${x.result||'미입력'}\n- 역량 후보: ${x.competencies.length?x.competencies.join(', '):'미입력'}\n- 근거행동: ${x.competencyEvidence.length?x.competencyEvidence.map(c=>`${c.keyword}: ${c.evidence}`).join(' / '):'미입력'}`).join('\n'):'저장된 Experience Map 없음'}\n\n[탐색 규칙]\n1. 특정 검사 하나만 보고 직무를 추천하지 않는다.\n2. 직무 후보는 가능하면 8~12개, 최소 4개 이상의 서로 다른 직무군에서 제안한다.\n3. 각 후보는 '내 강점/경험 → 실제로 활용될 가능성이 있는 업무(Task) → 직무 후보' 순서로 설명한다.\n4. 학생이 실제로 보여준 행동근거가 없는 역량을 새로 만들어내지 않는다.\n5. VIA나 다중지능 결과만으로 역량 또는 직무적합성을 단정하지 않는다.\n6. 직무 적합도, 취업성공확률, 추천순위를 만들지 않는다.\n7. 실제 Task·KSA·KPI는 기업·산업마다 다를 수 있으므로 반드시 추가 확인이 필요하다고 표시한다.\n8. NCS·고용24·기업 직무소개·채용공고를 실제로 확인하지 않았다면 출처나 URL을 만들어내지 않는다.\n\n[출력]\n표로 정리해줘.\n열: 직무 후보 / 직무군 / 대표 Task 가설 2~3개 / 연결되는 내 강점·경험 행동 / 왜 더 탐색할 가치가 있는지 / 공식자료에서 확인할 질문\n\n마지막에는 '직접 확인할 것'으로\n- 실제 Task\n- KSA\n- KPI·성과기준\n- 신입에게 요구하는 경험\n을 정리해줘.\n\n학생이 후보를 직접 비교하고 선택할 수 있도록 하고, 최종 직무를 대신 결정하지 마.`;
@@ -145,7 +146,7 @@ function summaryValues(dna,profile){
   const parts=[];if(values.length)parts.push(`가치 단서: ${[...new Set(values)].join(', ')}`);if(anchors.length)parts.push(`Career Anchor: ${anchors.map(x=>x.name||x.code).join(', ')}`);return parts.join(' / ')||'3주차 입력자료 없음';
 }
 function summaryCompetencies(exp,map){
-  const src=map.length?map:(exp.experiences||[]),comps=[...new Set(src.flatMap(x=>x.competencies||[]))];
+  const verified=(exp.experiences||[]).filter(x=>x?.factChecked),src=map.length?map:verified,comps=[...new Set(src.flatMap(x=>x.competencies||[]))];
   const evidenceCount=src.filter(x=>x.action&&(x.evidence||x.result)).length;
   return comps.length?`${comps.join(', ')} · 근거가 정리된 경험 ${evidenceCount}/${src.length}개`:(src.length?`저장 경험 ${src.length}개 · 역량키워드 추가 필요`:'4주차 Experience Map 없음');
 }
