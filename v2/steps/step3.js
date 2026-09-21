@@ -5,7 +5,8 @@ export async function render(ctx){
   const s=ctx.getState();
   const dna=s.assessments?.careerDNA||{};
   const exp=s.assessments?.experienceCompetency||{experiences:[]};
-  const experienceMap=Array.isArray(s.artifacts?.experienceMap)?s.artifacts.experienceMap.filter(x=>x?.factChecked):[];
+  const mappedExperiences=Array.isArray(s.artifacts?.experienceMap)?s.artifacts.experienceMap.filter(x=>x?.factChecked):[];
+  const experienceMap=mappedExperiences.length?mappedExperiences:(exp.experiences||[]).filter(x=>x?.factChecked);
   const saved=s.artifacts?.jobExplorer||{candidates:[],targets:[],notes:''};
   const data=structuredClone(saved);
   data.candidates=Array.isArray(data.candidates)?data.candidates:[];
