@@ -1,8 +1,14 @@
-import {prepareResearchMeasures,renderMeasurePanel,bindMeasurePanel} from '../researchMeasures.js?v=2';
+let researchMeasureApiPromise=null;
+function loadResearchMeasureApi(){
+  const token=encodeURIComponent(String(globalThis.__JOBFIT_ASSET_TOKEN__||Date.now()));
+  return researchMeasureApiPromise||(researchMeasureApiPromise=import(`../researchMeasures.js?fresh=${token}`));
+}
 
 const DEFAULT_AI_CAREER_RULE='AI는 정보 정리와 질문 생성에 활용하고, 경험의 사실 여부와 진로에 대한 최종 판단은 내가 직접 확인한다.';
 
 export async function render(ctx){
+  const researchMeasureApi=ctx.courseConfig.researchMeasures?await loadResearchMeasureApi():null;
+  const {prepareResearchMeasures,renderMeasurePanel,bindMeasurePanel}=researchMeasureApi||{};
   if(ctx.courseConfig.researchMeasures)await prepareResearchMeasures(ctx);
   const s=ctx.getState(),p=s.profile||{},b=s.baseline||{},c=ctx.courseConfig,start=s.artifacts?.careerStartProfile||{};
   const backupMeta=s.meta||{},backupComplete=!!backupMeta.backupConfirmed;
