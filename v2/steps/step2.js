@@ -40,7 +40,7 @@ export async function render(ctx){
 
     <div class="block"><div class="moduleHead"><span>01</span><div><h3>지난주 Career DNA 간단히 확인</h3><p>검사점수를 다시 해석하지 않습니다. 3주차에서 내가 남긴 자기이해 가설만 참고합니다.</p></div></div>
       ${dnaBridgeHtml(dna,ctx)}
-      <div class="actions"><button class="btn secondary" id="goBest3">확인했어요 → 02 경험 떠올리기</button></div>
+      <div class="actions"><button class="btn secondary" id="goBest3">${ctx.courseConfig.researchMeasures?'확인했어요 → 강점행동 9문항':'확인했어요 → 02 경험 떠올리기'}</button></div>
     </div>
 
     ${ctx.courseConfig.researchMeasures?renderStrengthMeasure(ctx,'pre'):''}
@@ -143,7 +143,10 @@ export async function render(ctx){
     if(!ready){ctx.toast('STEP 3로 가기 전에 사실확인을 마친 경험을 1개 이상 저장해 주세요.');openModule(currentExperiences().length?'05':'03');return}
     ctx.navigate(3);
   });
-  document.getElementById('goBest3')?.addEventListener('click',()=>openModule('02'));
+  document.getElementById('goBest3')?.addEventListener('click',()=>{
+    const measure=document.querySelector('.experienceCompetencyWeek4 > .strengthMeasurePanel');
+    if(measure)window.JobfitStepAccordion?.openBlock?.(measure);else openModule('02');
+  });
   document.getElementById('makeInterviewPrompt').addEventListener('click',async()=>{
     saveWeek4(false);
     const box=document.getElementById('interviewPrompt');
