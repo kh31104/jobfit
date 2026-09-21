@@ -108,7 +108,7 @@ export function startContinuity(){
   const scheduleMount=()=>{
     if(mountQueued)return;
     mountQueued=true;
-    requestAnimationFrame(()=>{mountQueued=false;mountStatus()});
+    setTimeout(()=>{mountQueued=false;mountStatus()},0);
   };
   const observer=new MutationObserver(scheduleMount);
   const observeRoot=document.getElementById('stepRoot')||document.body;
