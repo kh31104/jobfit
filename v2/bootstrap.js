@@ -1,4 +1,7 @@
-import {restoreBeforeApp,startContinuity} from './storageContinuity.js?v=1';
+const JOBFIT_ASSET_TOKEN=String(globalThis.__JOBFIT_ASSET_TOKEN__||Date.now());
+globalThis.__JOBFIT_ASSET_TOKEN__=JOBFIT_ASSET_TOKEN;
+const fresh=path=>`${path}?fresh=${encodeURIComponent(JOBFIT_ASSET_TOKEN)}`;
+const {restoreBeforeApp,startContinuity}=await import(fresh('./storageContinuity.js'));
 
 await restoreBeforeApp();
 
@@ -20,11 +23,11 @@ if(isInjeCourse){
   }
 }
 
-await import('./app.js?v=26');
-await import('./injeClassroom.js?v=17');
-await import('./careerDnaUx.js?v=9');
-await import('./careerDnaStudentUx.js?v=1');
-await import('./careerDnaLearningFlowUx.js?v=7');
-const {startOperationalSync}=await import('./operationalSync.js?v=2');
+await import(fresh('./app.js'));
+await import(fresh('./injeClassroom.js'));
+await import(fresh('./careerDnaUx.js'));
+await import(fresh('./careerDnaStudentUx.js'));
+await import(fresh('./careerDnaLearningFlowUx.js'));
+const {startOperationalSync}=await import(fresh('./operationalSync.js'));
 startContinuity();
 startOperationalSync();
