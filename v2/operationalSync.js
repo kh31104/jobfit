@@ -98,7 +98,7 @@ function isStepComplete(i,s){
   switch(i){
     case 0:return !!(s.profile?.anonCode&&s.baseline?.jobDecision);
     case 1:return !!(d.careerDNA?.hypothesis||d.careerDNA?.reflection||d.careerDNA?.selfSelectedStrengths?.length||d.careerDNA?.viaTop5?.length);
-    case 2:return !!d.experienceCompetency?.experiences?.length;
+    case 2:return !!d.experienceCompetency?.experiences?.some?.(x=>x?.factChecked&&String(x?.action||'').trim());
     case 3:return !!a.jobExplorer?.targets?.length;
     case 4:return !!Object.keys(a.jobDeepDive?.analyses||{}).length;
     case 5:return !!(a.industryCompany?.targetIndustries?.length&&a.industryCompany?.targetCompanies?.length);
