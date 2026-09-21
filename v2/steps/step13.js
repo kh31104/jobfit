@@ -1,4 +1,4 @@
-import {prepareResearchMeasures,renderMeasurePanel,bindMeasurePanel} from '../researchMeasures.js';
+import {prepareResearchMeasures,renderMeasurePanel,bindMeasurePanel} from '../researchMeasures.js?v=2';
 
 export async function render(ctx){
   if(ctx.courseConfig.researchMeasures)await prepareResearchMeasures(ctx);
