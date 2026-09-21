@@ -24,10 +24,16 @@ if(isInjeCourse){
 }
 
 await import(fresh('./app.js'));
-await import(fresh('./injeClassroom.js'));
-await import(fresh('./careerDnaUx.js'));
-await import(fresh('./careerDnaStudentUx.js'));
-await import(fresh('./careerDnaLearningFlowUx.js'));
-const {startOperationalSync}=await import(fresh('./operationalSync.js'));
+
+// 저장 연속성은 STEP별 보조 UX보다 먼저 시작한다.
+// 이후 보조 모듈 하나가 실패해도 핵심 화면·저장·복구는 계속 동작해야 한다.
 startContinuity();
-startOperationalSync();
+
+for(const modulePath of ['./injeClassroom.js','./careerDnaUx.js','./careerDnaStudentUx.js','./careerDnaLearningFlowUx.js']){
+  try{await import(fresh(modulePath))}
+  catch(err){console.error(`Jobfit optional module failed: ${modulePath}`,err)}
+}
+try{
+  const {startOperationalSync}=await import(fresh('./operationalSync.js'));
+  startOperationalSync();
+}catch(err){console.error('Jobfit operational sync module failed',err)}
