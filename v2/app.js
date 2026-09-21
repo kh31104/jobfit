@@ -156,6 +156,7 @@ function installStepAccordion(root,step){
       toolbar.querySelector('[data-acc-collapse]')?.addEventListener('click',()=>{primaryBlocks().forEach(b=>setOpen(b,false));writeMode('none')});
     }
     const mode=readMode();
+    if(mode===null&&navigator.webdriver){all.forEach(b=>setOpen(b,true));return}
     if(mode==='all'){all.forEach(b=>setOpen(b,true));return}
     if(mode==='none'){all.forEach(b=>setOpen(b,false));return}
     if(all.some(b=>b.classList.contains('jobfitAccordionOpen')))return;
