@@ -1,5 +1,5 @@
 const WORK24_URL='https://www.work24.go.kr/wk/r/c/1000/jobPsyExamList.do';
-const WORK24_LABELS=['계획성','독립성','자기이해','진로활동경험','자기이해노력','진로수업경험','사회적 지지자원','진로의사결정','적극적 직업탐색','예비적 직업탐색','공식적 직업탐색','비공식적 직업탐색','취업준비노력','취업준비강도'];
+const WORK24_LABELS=['계획성','독립성','자신지식(자기이해)','진로활동경험','자기이해노력','진로수업경험','사회적 지지자 지원','진로의사결정','적극적 직업탐색','비공식적 직업탐색','예비적 직업탐색','공식적 직업탐색','취업준비노력','취업준비강도'];
 const MEASURE_SESSION_KEY='jobfit:research-measures:loaded:v2';
 const MEASURE_FUNCTION_NAME='research-measures';
 let measureBundle=readMeasureSession();
@@ -27,15 +27,15 @@ export function renderMeasurePanel(ctx,timepoint='pre'){
   const title=timepoint==='post'?'POST · 수업 후(학기 말) 측정':'PRE · 수업 전(시작점) 측정';
   const timing=timepoint==='post'?'수업을 모두 마친 뒤':'수업 시작 전';
   return `<div class="hr"></div><div class="block researchMeasurePanel" data-timepoint="${prefix}">
-    <div class="sectionHead"><div><h3>${title}</h3><p class="help"><b>PRE는 수업 전(Before), POST는 수업 후(After)</b>를 뜻합니다. ${timing} 같은 익명코드로 측정하며 두 결과를 비교해 변화를 확인합니다.</p></div><span class="badge">수업 전 / 수업 후</span></div>
+    <div class="sectionHead"><div><h3>${title}</h3><p class="help"><b>PRE는 수업 전(Before), POST는 수업 후(After)</b>를 뜻합니다. ${timing} 같은 Jobfit 참여코드로 측정하며 두 결과를 비교해 변화를 확인합니다.</p></div><span class="badge">수업 전 / 수업 후</span></div>
     <div class="callout info"><b>권장 순서</b><br>${includeStrengthDeficit?'① 고용24 대학생진로준비도검사 → ② 진로적응성 12문항 → ③ 강점활용·약점교정 9문항 → ④ 한 번에 저장':'① 고용24 대학생진로준비도검사 → ② 진로적응성 12문항 → ③ 한 번에 저장'}</div>
 
     <div class="summaryBox">
-      <div class="sectionHead"><div><div class="kicker">PRIMARY OUTCOME · WORK24</div><h3>고용24 대학생진로준비도검사</h3><p class="help">대학생의 <b>진로발달 수준과 취업준비행동 수준</b>을 함께 확인하는 공식 검사입니다. 고용24에서 검사한 뒤 결과표에 표시된 14개 하위요인의 T점수를 이 화면에 그대로 입력합니다.</p></div><span class="badge">대학생 전용 · 88문항 · 약 20분</span></div>
+      <div class="sectionHead"><div><div class="kicker">PRIMARY OUTCOME · WORK24</div><h3>고용24 대학생진로준비도검사</h3><p class="help">진로발달수준과 취업준비행동수준을 확인하는 고용24 공식 검사입니다. 고용24에서 검사한 뒤 결과표에 표시된 14개 하위요인 T점수를 이 화면에 그대로 입력합니다.</p></div><span class="badge">대학생·청년 · 고용24 공식검사</span></div>
       <div class="actions"><a class="btn secondary" href="${WORK24_URL}" target="_blank" rel="noopener">대학생진로준비도검사 화면 열기 ↗</a><a class="btn outline" href="https://www.work24.go.kr/wk/r/c/1000/jobPsyExamRsltList.do" target="_blank" rel="noopener">내 검사 결과 확인 ↗</a></div>
-      <div class="callout warn"><b>고용24에서 ‘대학생진로준비도검사’를 선택하세요.</b><br>필터에서 <b>대학생 → 진로(취업)준비도</b>를 선택하면 찾기 쉽습니다. 구직준비도검사·찾아Dream과 다른 검사이며 PRE와 POST에서 동일한 검사를 사용합니다.</div>
+      <div class="callout warn"><b>고용24에서 ‘대학생진로준비도검사’를 선택하세요.</b><br>검사명을 반드시 확인하세요. 직업선호도검사·직업가치관검사와 구분하여 PRE와 POST에서 동일한 ‘대학생진로준비도검사’를 사용합니다.</div>
       <div class="grid3" style="margin-top:12px"><div class="field"><label>검사일</label><input class="input" id="${prefix}Work24Date" type="date" value="${ctx.escapeHtml(w.examDate||'')}"></div>${WORK24_LABELS.map((label,i)=>`<div class="field"><label>${i+1}. ${label}</label><input class="input scoreInput" type="number" step="0.01" data-measure="${prefix}-work24" data-key="w${i+1}" value="${ctx.escapeHtml(w.scores?.[i]??'')}" placeholder="결과표 점수"></div>`).join('')}</div>
-      <div class="status" id="${prefix}Work24Status">${complete(w.scores,14)?'14개 T점수 입력 완료':''}</div>
+      <div class="status" id="${prefix}Work24Status">${complete(w.scores,14)?'14개 하위요인 T점수 입력 완료':''}</div>
     </div>
 
     <details class="summaryBox" style="margin-top:14px" ${timepoint==='pre'?'open':''} data-scale-version="${KCAAS_SCALE.version}">
@@ -72,7 +72,7 @@ export function bindMeasurePanel(ctx,timepoint='pre'){
     set(`${prefix}KConcern`,ks.concern);set(`${prefix}KControl`,ks.control);set(`${prefix}KCuriosity`,ks.curiosity);set(`${prefix}KConfidence`,ks.confidence);
     const ktEl=document.getElementById(`${prefix}KTotal`);if(ktEl)ktEl.textContent=ks.total===null?'':'진로적응성 전체 평균 '+ks.total.toFixed(2);
     set(`${prefix}StrengthUse`,us.strengthUse);set(`${prefix}DeficitCorrection`,us.deficitCorrection);
-    const ws=document.getElementById(`${prefix}Work24Status`);if(ws)ws.textContent=complete(w,14)?'14개 T점수 입력 완료':`${w.filter(x=>x!==null).length}/14 입력`;
+    const ws=document.getElementById(`${prefix}Work24Status`);if(ws)ws.textContent=complete(w,14)?'14개 하위요인 T점수 입력 완료':`${w.filter(x=>x!==null).length}/14 입력`;
   };
   [...wInputs,...kInputs,...uInputs].forEach(el=>el.addEventListener('input',update));update();
   saveBtn.addEventListener('click',()=>{
@@ -82,7 +82,7 @@ export function bindMeasurePanel(ctx,timepoint='pre'){
     const block={
       ...prior,
       capturedAt:new Date().toISOString(),
-      work24CollegeCareerReadiness:{instrument:'고용24 대학생진로준비도검사',source:'Work24/Korea Employment Information Service',examDate:document.getElementById(`${prefix}Work24Date`)?.value||'',itemCount:14,scores:w,labels:WORK24_LABELS,scoreType:'T-score',scoreSchema:'official-result-subscales-14',wordingStatus:'official-external-test-results-only'},
+      work24CollegeCareerReadiness:{instrument:'고용24 대학생진로준비도검사',source:'Work24/Korea Employment Information Service',examDate:document.getElementById(`${prefix}Work24Date`)?.value||'',itemCount:14,scores:w,labels:WORK24_LABELS,scoreType:'T-score',scoreSchema:'official-subfactor-t-scores-14',wordingStatus:'official-external-test-results-only'},
       kcaas:kcaasBlock(k),
       ...(uInputs.length?{sudco:strengthDeficitBlock(u,'post-course')}: {})
     };

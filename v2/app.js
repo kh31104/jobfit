@@ -1,5 +1,5 @@
 import {buildResearchExportPayload} from './research.js';
-import {createResearchSyncToken,researchSyncStatus,submitResearchSnapshot} from './researchBackend.js';
+import {createResearchSyncToken,researchSyncStatus,submitResearchSnapshot,withdrawResearchParticipation} from './researchBackend.js';
 
 const params=new URLSearchParams(location.search);
 const REQUESTED_MODE=(params.get('mode')||'').toLowerCase();
@@ -63,7 +63,7 @@ function makeBackupFile(){const exportedAt=new Date().toISOString(),backup=struc
 function markBackup(method,exportedAt){saveState({meta:{lastBackupAt:exportedAt,lastBackupMethod:method,backupConfirmed:false,backupConfirmedAt:null}})}
 function downloadJSON(){const {file,exportedAt}=makeBackupFile(),a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500);markBackup('download',exportedAt);toast('백업파일을 저장했습니다. 이메일·카카오톡·클라우드에도 보관하세요.');return file.name}
 function downloadResearchJSON(){
-  if(!state.profile?.anonCode){toast('익명코드를 먼저 생성해 주세요.');return null}
+  if(!state.profile?.anonCode){toast('Jobfit 참여코드를 먼저 생성해 주세요.');return null}
   const completedSteps=STEPS.map((_,i)=>i).filter(i=>isStepComplete(i,state));
   const payload=buildResearchExportPayload(state,{context:{cohortId:courseConfig.course||state.profile?.courseCode,institutionCode:courseConfig.institution||state.profile?.institution,programType:'university-course',programDuration:'semester'},completedSteps});
   const name=`jobfit-research-${state.profile.anonCode}-${new Date().toISOString().slice(0,10)}.json`;
@@ -75,12 +75,19 @@ function downloadResearchJSON(){
 }
 async function syncResearchData(){
   const status=researchSyncStatus();if(!status.enabled)throw new Error('승인된 연구동의와 중앙 DB 연결이 아직 활성화되지 않았습니다.');
-  if(!state.profile?.anonCode)throw new Error('익명코드를 먼저 생성해 주세요.');
+  if(!state.profile?.anonCode)throw new Error('Jobfit 참여코드를 먼저 생성해 주세요.');
   const completedSteps=STEPS.map((_,i)=>i).filter(i=>isStepComplete(i,state)),syncToken=state.research?.syncToken||createResearchSyncToken();
   const payload=buildResearchExportPayload(state,{context:{cohortId:courseConfig.course||state.profile?.courseCode,institutionCode:courseConfig.institution||state.profile?.institution,programType:'university-course',programDuration:'semester'},completedSteps});
   payload.consent_version=status.consentVersion;
   const result=await submitResearchSnapshot(payload,{consent:true,syncToken});
   saveState({research:{...state.research,syncToken,consent:{agreed:true,version:status.consentVersion,agreedAt:new Date().toISOString(),documentUrl:status.consentDocumentUrl}},meta:{lastResearchSyncAt:result.received_at||new Date().toISOString()}});
+  return result;
+}
+async function withdrawResearchData(){
+  const syncToken=state.research?.syncToken;if(!syncToken)throw new Error('철회할 중앙 연구 제출 기록이 없습니다.');
+  const participantCode=state.profile?.anonCode,cohortCode=courseConfig.course||state.profile?.courseCode;
+  const result=await withdrawResearchParticipation({participantCode,syncToken,cohortCode});
+  saveState({research:{...state.research,consent:{agreed:false,withdrawnAt:result.withdrawn_at||new Date().toISOString()}},meta:{lastResearchWithdrawnAt:result.withdrawn_at||new Date().toISOString()}});
   return result;
 }
 async function shareBackup(){const {file,exportedAt}=makeBackupFile();if(!navigator.share||!navigator.canShare?.({files:[file]})){downloadJSON();return {shared:false,fallback:true}}try{await navigator.share({title:'Jobfit 백업파일',text:`Jobfit ${state.profile.anonCode||''} 백업파일입니다. 다음 수업 전까지 보관하세요.`,files:[file]});markBackup('share',exportedAt);toast('공유가 완료되었습니다. 보관 완료 체크를 눌러주세요.');return {shared:true,fallback:false}}catch(err){if(err?.name!=='AbortError')toast('공유하지 못했습니다. 백업 저장 버튼을 이용해 주세요.');return {shared:false,fallback:false,cancelled:err?.name==='AbortError'}}}
@@ -170,5 +177,5 @@ function installStepAccordion(root,step){
 }
 async function navigate(step,{skipSave=false}={}){state.activeStep=resolveNavigationStep(step);if(!skipSave)saveState();else{renderHeroMeta();renderNav()}const root=document.getElementById('stepRoot');root.innerHTML='<div class="card placeholder"><b>불러오는 중</b>선택한 모듈을 준비하고 있습니다.</div>';try{const mod=await import(`./steps/step${state.activeStep}.js?v=23`);root.innerHTML='';await mod.render(context);neutralizeSelectiveLabels(root);installStepAccordion(root,state.activeStep)}catch(err){console.error(err);root.innerHTML=`<div class="card callout warn"><b>선택한 모듈 화면을 불러오지 못했습니다.</b><br>새로고침 후 다시 시도해 주세요.<br><small>${escapeHtml(err.message)}</small></div>`}scrollTo({top:0,behavior:'smooth'})}
 
-const context={STEPS,getState,saveState,toast,escapeHtml,makeAnonCode,courseConfig,navigate,applyCourseCode,downloadJSON,downloadResearchJSON,shareBackup,researchSyncStatus,syncResearchData};
+const context={STEPS,getState,saveState,toast,escapeHtml,makeAnonCode,courseConfig,navigate,applyCourseCode,downloadJSON,downloadResearchJSON,shareBackup,researchSyncStatus,syncResearchData,withdrawResearchData};
 document.getElementById('exportBtn').addEventListener('click',downloadJSON);document.getElementById('researchExportBtn')?.addEventListener('click',downloadResearchJSON);document.getElementById('importBtn').addEventListener('click',requestImport);document.getElementById('importFile').addEventListener('change',e=>importJSONFile(e.target.files?.[0]));renderHeroMeta();renderNav();navigate(state.activeStep||visibleStepIndexes()[0]||0);

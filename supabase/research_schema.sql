@@ -37,6 +37,8 @@ create table if not exists public.research_consents (
   consent_version text not null check (char_length(consent_version) between 3 and 100),
   consented boolean not null,
   consented_at timestamptz not null,
+  withdrawn_at timestamptz,
+  withdrawal_scope text,
   received_at timestamptz not null default now()
 );
 
@@ -204,3 +206,8 @@ on conflict (cohort_code) do update set
 -- No anonymous table policy or grant exists. Anonymous student submissions go
 -- only through research-sync, which validates origin, consent version, token,
 -- payload size, schema version, and an explicit field allow-list.
+
+
+-- Research v1 ethics hardening: preserve explicit withdrawal history.
+alter table public.research_consents add column if not exists withdrawn_at timestamptz;
+alter table public.research_consents add column if not exists withdrawal_scope text;

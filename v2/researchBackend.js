@@ -18,3 +18,16 @@ export async function submitResearchSnapshot(payload,{consent=false,syncToken}={
   const text=await response.text();if(!response.ok)throw new Error(`중앙 저장 실패 (${response.status}) ${text}`.trim());
   return text?JSON.parse(text):{ok:true};
 }
+
+
+export async function withdrawResearchParticipation({participantCode,syncToken,cohortCode}={}){
+  if(!isResearchSyncConfigured())throw new Error('중앙 연구 DB 연결이 아직 활성화되지 않았습니다.');
+  if(!participantCode||!cohortCode)throw new Error('참여코드와 수업코드를 확인해 주세요.');
+  if(!/^[a-f0-9]{64}$/i.test(syncToken||''))throw new Error('연구 동기화 키가 없습니다.');
+  const cfg=config(),response=await fetch(`${cfg.supabaseUrl}/functions/v1/${cfg.functionName||'research-sync'}`,{
+    method:'POST',headers:{'apikey':cfg.publishableKey,'Content-Type':'application/json'},
+    body:JSON.stringify({action:'withdraw',sync_token:syncToken,participant_code:participantCode,cohort_code:cohortCode})
+  });
+  const text=await response.text();if(!response.ok)throw new Error(`연구 참여 철회 실패 (${response.status}) ${text}`.trim());
+  return text?JSON.parse(text):{ok:true};
+}

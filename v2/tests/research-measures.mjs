@@ -34,12 +34,16 @@ try{
   assert((await attrs(preK,'data-scale-version')).every(v=>v===K_VERSION),'K-CAAS version mismatch');
   assert((await attrs(preK,'min')).every(v=>v==='1')&&(await attrs(preK,'max')).every(v=>v==='5'),'K-CAAS range mismatch');
 
+  const preW=page.locator('[data-measure="pre-work24"]');
+  assert(await preW.count()===14,'Work24 college career readiness must expose 14 T-score inputs');
   await page.locator('#preWork24Date').fill('2026-09-07');
-  for(let i=0;i<14;i++)await page.locator('[data-measure="pre-work24"]').nth(i).fill(String(40+i));
+  for(let i=0;i<14;i++)await preW.nth(i).fill(String(40+i));
   for(let i=0;i<12;i++)await preK.nth(i).fill(String((i%5)+1));
   await page.locator('#preMeasureSave').click();
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')).research?.measurements?.pre?.kcaas?.items?.length===12);
   const pre=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')).research.measurements.pre);
+  assert(pre.work24CollegeCareerReadiness?.scores?.length===14,'Work24 14-score save mismatch');
+  assert(pre.work24CollegeCareerReadiness?.instrument==='고용24 대학생진로준비도검사','Work24 instrument mismatch');
   assert(pre.kcaas.items.length===12&&pre.kcaas.wordingVersion===K_VERSION,'K-CAAS save mismatch');
 
   await page.locator('.stepBtn[data-step="2"]').click();
@@ -69,7 +73,7 @@ try{
   assert(await page.locator('[data-measure="pre-kcaas"]').count()===12,'authorization should persist through reload in one tab session');
 
   if(errors.length)throw new Error(errors.join('\n'));
-  console.log('PASS restricted 12+9 measure pipeline');
+  console.log('PASS restricted Work24-14 + K-CAAS-12 + SUDCO-9 measure pipeline');
 }finally{
   await browser.close();
 }

@@ -1,38 +1,16 @@
 const ROOT_ID='stepRoot';
 
 const STEP1_COPY=[
-  {
-    title:'가치 선택 · 밸런스게임 (Balance Game)',
-    description:'둘 중 지금의 나에게 더 중요한 조건을 고르며, 일에서 중요하게 보는 가치 단서를 확인합니다.'
-  },
-  {
-    title:'나의 커리어 기준 · 커리어 앵커 (Career Anchor)',
-    description:'40문항에 응답해 내가 일과 커리어에서 쉽게 포기하기 어려운 기준을 확인합니다.'
-  },
-  {
-    title:'내가 생각하는 나의 강점 · 먼저 고르기',
-    description:'검사결과를 보기 전에 스스로 생각하는 대표 강점 5개를 먼저 고릅니다.'
-  },
-  {
-    title:'VIA 성격강점 · 검사결과 비교하기',
-    description:'공식 VIA 결과의 상위 5개를 입력해 내가 고른 강점과 비교할 자료를 만듭니다.'
-  },
-  {
-    title:'다중지능검사 · 활동 방식 살펴보기',
-    description:'상위 3개 영역을 입력해 내가 선호하는 활동과 문제해결 방식의 단서를 살펴봅니다.'
-  },
-  {
-    title:'내가 생각하는 나 × 검사에서 나타난 나 · 비교하기',
-    description:'반복되는 점·연결되는 점·예상과 다른 점을 직접 비교하고, 실제 경험에서 확인할 질문을 만듭니다.'
-  },
-  {
-    title:'AI 통합분석 · 강점·보완점·SWOT 정리',
-    description:'지금까지의 자료를 AI가 근거 중심으로 정리하도록 하고, 강점·보완점·SWOT을 가설 수준으로 확인합니다.'
-  },
-  {
-    title:'Career DNA 가설 v1 · 내가 확인한 내용만 저장',
-    description:'AI 결과 중 내가 납득한 핵심과 더 확인할 부분만 남기고, 다음 주 실제 경험에서 검증합니다.'
-  }
+  {title:'커리어 밸런스게임 · 워밍업',description:'둘 중 지금의 나에게 더 가까운 선택을 고릅니다. 심리검사가 아니라 수업을 여는 자기성찰 활동입니다.'},
+  {title:'내가 생각하는 나의 흥미 · 먼저 기록하기',description:'공식 검사결과를 보기 전에 좋아하거나 몰입하는 활동을 내 말로 기록합니다.'},
+  {title:'고용24 직업선호도검사 S형 · 흥미 단서 확인',description:'고용24 공식검사 결과의 R·I·A·S·E·C 점수를 입력하고 자기인식과 비교합니다.'},
+  {title:'내가 생각하는 나의 직업가치 · 먼저 기록하기',description:'공식 검사결과를 보기 전에 일과 회사를 선택할 때 중요하게 생각하는 조건을 기록합니다.'},
+  {title:'고용24 성인용 직업가치관검사 · 가치 단서 확인',description:'고용24 공식검사 결과의 9개 가치점수를 입력하고 자기인식과 비교합니다.'},
+  {title:'내가 생각하는 나의 강점 · 먼저 고르기',description:'VIA 결과를 보기 전에 스스로 생각하는 대표 강점 5개를 먼저 고릅니다.'},
+  {title:'VIA 성격강점 TOP5 · 보조자료로 비교하기',description:'공식 VIA 결과의 상위 5개를 입력합니다. 직무역량이나 고정된 성격유형으로 판정하지 않습니다.'},
+  {title:'내가 생각하는 나 × 검사에서 나타난 나 · 직접 비교',description:'반복 단서·연결되는 점·예상과 다른 점을 직접 비교하고 실제 경험에서 확인할 질문을 만듭니다.'},
+  {title:'AI 자기이해 통합분석 · 가설 만들기',description:'현재 입력된 자기인식 단서와 검사 단서를 정리하되 확정판정이 아닌 가설 수준으로 확인합니다.'},
+  {title:'Career DNA 가설 v1 · 내가 확인한 내용만 저장',description:'AI 결과 중 납득한 내용과 확인할 질문만 남기고 다음 STEP의 실제 경험에서 검증합니다.'}
 ];
 
 const STEP2_COPY=[
@@ -101,13 +79,13 @@ function enhanceStep1(section){
 
   const flow=section.querySelector('.callout.info');
   if(flow&&flow.textContent.includes('오늘의 흐름')&&!flow.dataset.learningFlowCopy){
-    flow.innerHTML='<b>오늘의 흐름</b> · 가치 선택 → 커리어 기준 → 내가 보는 강점 → VIA → 다중지능 → 직접 비교 → AI 통합분석 → Career DNA v1';
+    flow.innerHTML='<b>오늘의 흐름</b> · 워밍업 → 흥미 자기인식 → 고용24 흥미검사 → 가치 자기인식 → 고용24 가치검사 → 강점 자기인식 → VIA → 직접 비교 → AI 가설 → Career DNA v1';
     flow.dataset.learningFlowCopy='1';
   }
 
   const guide=section.querySelector('#careerDnaAiGuide');
   if(guide&&!guide.dataset.learningFlowGuide){
-    guide.innerHTML='<b>AI LAB 사용 순서</b><br>① 현재 내용 저장 → ② 통합분석 프롬프트 만들기 → ③ 복사해 수업에서 사용하는 AI에 붙여넣기 → ④ 결과의 근거와 ‘경험 확인 필요’ 표시 검토 → ⑤ 마지막의 Jobfit 저장용 요약을 중심으로 핵심만 정리 → ⑥ 08 Career DNA 가설에 저장<br><span class="muted">AI 결과는 최종 판정이 아닙니다. 실제 경험으로 확인하지 않은 강점·약점·역량은 다음 STEP에서 검증합니다. Jobfit이 입력내용을 AI로 자동 전송하지는 않습니다.</span>';
+    guide.innerHTML='<b>AI LAB 사용 순서</b><br>① 자기인식과 검사 결과 입력 확인 → ② 통합분석 프롬프트 만들기 → ③ 복사해 수업에서 사용하는 AI에 붙여넣기 → ④ 결과에서 자기인식 단서·검사 단서·반복 단서를 구분했는지 확인 → ⑤ 행동 근거가 없는 내용은 STEP 2 확인 질문으로 남기기 → ⑥ Career DNA 가설에 내가 납득한 내용만 저장<br><span class="muted">AI 결과는 최종 판정이 아닙니다. 실제 경험으로 확인하지 않은 강점·약점·역량은 가설로만 다룹니다. Jobfit이 입력내용을 외부 AI로 자동 전송하지 않습니다.</span>';
     guide.dataset.learningFlowGuide='1';
   }
 }

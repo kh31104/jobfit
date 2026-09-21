@@ -1,4 +1,4 @@
-export const RESEARCH_SCHEMA_VERSION='jobfit-research-v1.5';
+export const RESEARCH_SCHEMA_VERSION='jobfit-research-v1.6';
 
 export function buildResearchPayload(state,{timepoint='single',context={}}={}){
   const p=state.profile||{},b=state.baseline||{},d=state.assessments?.careerDNA||{};

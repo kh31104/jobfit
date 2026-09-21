@@ -12,7 +12,7 @@
 
 ## Implemented — Career Roadmap
 - [x] STEP 0 Career Start + guided 7-step first-class flow + AI LAB 00
-- [x] STEP 1 Career DNA — Work24 S/L one-only, values, VIA education input
+- [x] STEP 1 Career DNA — Work24 S interest, Work24 work values, self-reflection, VIA education input
 - [x] STEP 2 Experience & Competency — Evidence Interview / Raw Voice / Fact Check
 - [x] STEP 3 Job Explorer — Anti-Collapse diversity guard / student-selected Target Job
 - [x] STEP 4 Job Deep Dive — sources / Task / KSA / KPI / Tool / Requirement Evidence
@@ -45,9 +45,9 @@
 
 ## Implemented — PRE / POST measurement preparation
 ### Primary
-- [x] Work24 구직준비도검사 external official-test workflow
+- [x] Work24 대학생진로준비도검사 external official-test workflow
 - [x] PRE / POST exam date
-- [x] nine Work24 result score fields
+- [x] 14 Work24 college-career-readiness T-score fields
 - [x] Work24 scores included in Research Core allowlist
 
 ### Secondary
@@ -103,7 +103,7 @@
 - [ ] manual iPhone Safari pass on production URL
 - [ ] verify production QR and `?course=INJE2026` classroom link
 - [ ] confirm Work24 student login/access flow in the actual classroom network
-- [ ] test one complete student path: code → profile → baseline → AI LAB 00 → Work24 9 scores → 12 + 10 measures → save → JSON backup
+- [ ] test one complete student path: code → profile → baseline → AI LAB 00 → Work24 14 T-scores → 12 + 9 measures → save → JSON backup
 
 ## Current deployment rule
 Jobfit v2 is live on `main`. Continue improving production UX while keeping central research submission disabled until the research-governance track is ready.

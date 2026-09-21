@@ -23,24 +23,24 @@ if(isInjeClass){
       const el=document.getElementById(id);if(!el)return;
       if(el.disabled===ready)el.disabled=!ready;
       if(el.getAttribute('aria-disabled')!==String(!ready))el.setAttribute('aria-disabled',String(!ready));
-      if(!ready&&el.title!=='익명코드를 먼저 생성하면 백업할 수 있습니다.')el.title='익명코드를 먼저 생성하면 백업할 수 있습니다.';
+      if(!ready&&el.title!=='Jobfit 참여코드를 먼저 생성하면 백업할 수 있습니다.')el.title='Jobfit 참여코드를 먼저 생성하면 백업할 수 있습니다.';
     });
     const status=document.getElementById('backupFileStatus');
-    if(status&&!ready&&status.textContent!=='익명코드를 먼저 생성하면 백업 버튼이 활성화됩니다.')status.textContent='익명코드를 먼저 생성하면 백업 버튼이 활성화됩니다.';
+    if(status&&!ready&&status.textContent!=='Jobfit 참여코드를 먼저 생성하면 백업 버튼이 활성화됩니다.')status.textContent='Jobfit 참여코드를 먼저 생성하면 백업 버튼이 활성화됩니다.';
   };
   const lockExistingCode=()=>{
     const btn=document.getElementById('makeCodeBtn');if(!btn||!hasAnonCode())return;
     if(!btn.disabled)btn.disabled=true;
     if(btn.getAttribute('aria-disabled')!=='true')btn.setAttribute('aria-disabled','true');
     if(btn.textContent!=='코드 유지됨 ✓')btn.textContent='코드 유지됨 ✓';
-    if(btn.title!=='이 익명코드는 한 학기 동안 같은 학생의 학습 백업을 이어가기 위해 유지합니다.')btn.title='이 익명코드는 한 학기 동안 같은 학생의 학습 백업을 이어가기 위해 유지합니다.';
+    if(btn.title!=='이 Jobfit 참여코드는 한 학기 동안 같은 학생의 학습 백업을 이어가기 위해 유지합니다.')btn.title='이 Jobfit 참여코드는 한 학기 동안 같은 학생의 학습 백업을 이어가기 위해 유지합니다.';
   };
   const restoreAnonCode=()=>{
     const input=document.getElementById('existingAnonCode');if(!input)return;
     const code=String(input.value||'').trim().toUpperCase();
-    if(!/^JF26-[A-Z2-9]{6}$/.test(code)){showToast('기존 익명코드를 확인해 주세요. 예: JF26-ABC234');input.focus();return}
+    if(!/^JF26-[A-Z2-9]{6}$/.test(code)){showToast('기존 Jobfit 참여코드를 확인해 주세요. 예: JF26-ABC234');input.focus();return}
     const s=readState();s.profile=s.profile||{};s.meta=s.meta||{};s.profile.anonCode=code;s.meta.anonCodeLocked=true;s.meta.anonCodeRestoredAt=new Date().toISOString();
-    localStorage.setItem(STORAGE_KEY,JSON.stringify(s));showToast(`기존 익명코드를 불러왔습니다: ${code}`);setTimeout(()=>location.reload(),350);
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(s));showToast(`기존 Jobfit 참여코드를 불러왔습니다: ${code}`);setTimeout(()=>location.reload(),350);
   };
   const addExistingCodeRestore=()=>{
     const box=document.getElementById('anonCode')?.closest('.codeBox');if(!box||document.getElementById('existingAnonCodeWrap'))return;
@@ -62,7 +62,7 @@ if(isInjeClass){
     root.querySelectorAll('.callout.info').forEach(box=>{
       if(box.dataset.noResearchNotice)return;
       if(box.textContent.includes('연구 활용')||box.textContent.includes('중앙 연구')){
-        box.innerHTML='<b>이번 학기에는 연구용 데이터를 자동 제출하지 않습니다.</b><br>STEP 0의 PRE 연구측정 원자료와 자유서술·AI 결과는 연구 DB로 자동 전송되지 않습니다. 다만 수업 운영을 위해 익명코드, STEP 진행상태와 일부 구조화 결과는 운영용 중앙 DB에 저장됩니다.';
+        box.innerHTML='<b>이번 학기에는 연구용 데이터를 자동 제출하지 않습니다.</b><br>STEP 0의 PRE 연구측정 원자료와 자유서술·AI 결과는 연구 DB로 자동 전송되지 않습니다. 다만 수업 운영을 위해 Jobfit 참여코드, STEP 진행상태와 일부 구조화 결과는 운영용 중앙 DB에 저장됩니다.';
         box.dataset.noResearchNotice='1';
       }
     });

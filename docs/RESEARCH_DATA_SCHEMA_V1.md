@@ -58,19 +58,13 @@ Avoid by default:
 # Work24 assessments
 
 ## Work24 interest assessment
-Exactly one assessment per administration:
-- interest_test_type: S or L
+Research-standard Career DNA administration:
+- interest_test_type: S
 - test_date
 - R/I/A/S/E/C raw scores
 - R/I/A/S/E/C standard scores
 
-If L:
-- Big Five reported scores
-- validity/response indices when present
-- personality facets when present
-- life-history scores when present
-
-Never treat S and L as two independent measures from the same student administration. Retain `interest_test_type`.
+For legacy records, retain the original `interest_test_type` and never merge S/L results as if they were the same administration.
 
 ## Work24 work-values assessment
 - test_version if known
@@ -79,50 +73,47 @@ Never treat S and L as two independent measures from the same student administra
 
 Store all subscale scores; TOP values are display derivatives only.
 
-## Work24 구직준비도검사 — PRIMARY PRE/POST OUTCOME
+## Work24 대학생진로준비도검사 — PRIMARY PRE/POST OUTCOME
 Administration principle:
 - Student completes the official test on Work24.
 - Jobfit does not reproduce the official question items.
-- Jobfit stores the result date and nine official result-score fields.
-- Use the same test name at PRE and POST.
+- Jobfit stores the result date and 14 reported subfactor T-scores.
+- Use the same test name and score structure at PRE and POST.
 
 Store:
-- instrument = 고용24 구직준비도검사
+- instrument = 고용24 대학생진로준비도검사
 - exam_date
-- score_1 경제적 취약성 적응도
-- score_2 가족의 지지
-- score_3 사회적 지지
-- score_4 자아 존중감
-- score_5 자기 효능감
-- score_6 구직기술
-- score_7 의사전달
-- score_8 대인관계 활용
-- score_9 구직정보 수집
+- score_type = T-score
+- score_1 계획성
+- score_2 독립성
+- score_3 자신지식(자기이해)
+- score_4 진로활동경험
+- score_5 자기이해노력
+- score_6 진로수업경험
+- score_7 사회적 지지자 지원
+- score_8 진로의사결정
+- score_9 적극적 직업탐색
+- score_10 비공식적 직업탐색
+- score_11 예비적 직업탐색
+- score_12 공식적 직업탐색
+- score_13 취업준비노력
+- score_14 취업준비강도
 - score_schema/version metadata when available
 - timepoint PRE / POST
 
-Do not collapse the nine scores into one unvalidated total unless a scoring manual explicitly supports that total.
+Do not collapse the 14 scores into an ad hoc total. Preserve the official subfactor T-scores for analysis.
 
 # Additional PRE/POST instruments
 
 ## Career Adapt-Abilities Short Form slot — SECONDARY OUTCOME
-Current implementation:
-- 12 response items
-- Concern 3
-- Control 3
-- Curiosity 3
-- Confidence 3
-- 1–5 response range
-- four subscale means + overall mean
-
-Current wording version:
-`provisional-ko-v1-from-published-caas-sf-english`
-
-Important version rule:
-- Current Korean statements are a provisional educational translation based on publicly available CAAS-SF English items.
-- They must not automatically be labelled as the validated Korean K-CAAS-SF in a paper.
-- When the Korean validator/author provides official wording or permission conditions, replace wording and increment the version.
-- Never pool different wording versions without first evaluating measurement comparability.
+Current research-program lock:
+- Korean validation source and 12-item structure are recorded in `v2/MEASURE_PROVENANCE.md`.
+- Jobfit version: `K-CAAS-SF-KR-2020-v1`.
+- 12 items = Concern 3 + Control 3 + Curiosity 3 + Confidence 3.
+- Response range: 1–5.
+- Wording/order/scoring must not be changed without a new version identifier.
+- Web delivery/reuse permission conditions must be separately verified and documented before research collection is opened.
+- Different wording versions must never be pooled without measurement-comparability review.
 
 Preferred storage:
 - 12 item responses
@@ -136,23 +127,18 @@ Preferred storage:
 - administration date/timepoint
 
 ## Strength Use & Deficit Correction Behaviour slot — EXPLORATORY / MECHANISM
-Current implementation:
-- undergraduate/student 5 + 5 structure
-- Strength Use 5 items
-- Deficit Correction 5 items
-- provisional 0–6 response range
-
-Current wording version:
-`provisional-student-ko-v1`
-
-Important version rule:
-- Current Korean statements are provisional learning-context wording based on the published student structure and original construct/items.
-- They must not automatically be labelled as the final validated Korean scale in a paper.
-- Replace wording/scoring metadata when the Korean validation author provides the official version.
-- Keep pre-existing provisional data separated by wording version.
+Current research-program lock:
+- Korean validation source is recorded in `v2/MEASURE_PROVENANCE.md`.
+- Jobfit version: `SUDCO-CHO-KR-2019-9-v1`.
+- Final Korean structure: 9 items = strengths use 5 + deficit correction 4.
+- Response range: 0–6.
+- PRE timing: STEP 2 immediately before experience/strength analysis.
+- POST timing: STEP 13.
+- Web delivery/reuse permission conditions must be separately verified and documented before research collection is opened.
+- Legacy provisional/10-item data remain separate and are not migrated automatically.
 
 Preferred storage:
-- 10 item responses
+- 9 item responses
 - Strength Use mean
 - Deficit Correction mean
 - wording_version
