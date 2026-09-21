@@ -1,7 +1,6 @@
 import {restoreBeforeApp,startContinuity} from './storageContinuity.js?v=1';
 
 await restoreBeforeApp();
-startContinuity();
 
 // INJE2026의 STEP 0 PRE는 학생 개인의 수업용 시작점 측정이다.
 // 중앙 연구데이터 제출은 research:false와 research-sync 설정으로 계속 차단한다.
@@ -22,6 +21,7 @@ if(isInjeCourse){
 }
 
 await import('./app.js?v=26');
+startContinuity();
 await import('./injeClassroom.js?v=17');
 await import('./careerDnaUx.js?v=10');
 await import('./careerDnaStudentUx.js?v=1');
