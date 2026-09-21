@@ -95,7 +95,67 @@ function renderNav(){const nav=document.getElementById('stepNav');if(!nav)return
 function isStepComplete(i,s){const a=s.artifacts||{},d=s.assessments||{};switch(i){case 0:return !!(s.profile?.anonCode&&s.baseline?.jobDecision);case 1:return !!(d.careerDNA?.hypothesis||d.careerDNA?.reflection||d.careerDNA?.selfSelectedStrengths?.length||d.careerDNA?.viaTop5?.length);case 2:return !!d.experienceCompetency?.experiences?.length;case 3:return !!a.jobExplorer?.targets?.length;case 4:return !!Object.keys(a.jobDeepDive?.analyses||{}).length;case 5:return !!(a.industryCompany?.targetIndustries?.length&&a.industryCompany?.targetCompanies?.length);case 6:return !!a.careerFit?.selectedId;case 7:return !!(a.jdAnalyzer?.selectedId&&a.jdAnalyzer?.postings?.length);case 8:return !!a.careerAssets?.assets?.length;case 9:return !!a.resumeLab?.items?.length;case 10:return !!a.coverLetterLab?.questions?.length;case 11:return !!a.interviewLab?.questions?.length;case 12:return !!a.humanFirst?.items?.length;case 13:return !!a.jobPortfolio?.finalChecks?.facts;default:return false}}
 function resolveNavigationStep(requested){const step=Math.max(0,Math.min(13,Number(requested)));if(state.mode!=='selective'||!SELECTIVE_MODULES.length||SELECTIVE_MODULES.includes(step))return step;const current=Number(state.activeStep);if(step>current)return SELECTIVE_MODULES.find(x=>x>current)??current;if(step<current)return [...SELECTIVE_MODULES].reverse().find(x=>x<current)??current;return SELECTIVE_MODULES[0]}
 function neutralizeSelectiveLabels(root){if(state.mode!=='selective')return;root.querySelectorAll('.badge').forEach(el=>{if(/주차/.test(el.textContent||''))el.remove()});root.querySelectorAll('.kicker').forEach(el=>{const t=(el.textContent||'').trim();if(/^STEP\s*\d+/i.test(t))el.textContent='SELECTIVE MODULE';else if(/주차/.test(t))el.textContent=t.replace(/\s*[·•]?\s*\d+(?:\s*[–-]\s*\d+)?주차/g,'').trim()||'SELECTIVE MODULE'});root.querySelectorAll('.stepMeta').forEach(el=>el.remove())}
-async function navigate(step,{skipSave=false}={}){state.activeStep=resolveNavigationStep(step);if(!skipSave)saveState();else{renderHeroMeta();renderNav()}const root=document.getElementById('stepRoot');root.innerHTML='<div class="card placeholder"><b>불러오는 중</b>선택한 모듈을 준비하고 있습니다.</div>';try{const mod=await import(`./steps/step${state.activeStep}.js?v=18`);root.innerHTML='';await mod.render(context);neutralizeSelectiveLabels(root)}catch(err){console.error(err);root.innerHTML=`<div class="card callout warn"><b>선택한 모듈 화면을 불러오지 못했습니다.</b><br>새로고침 후 다시 시도해 주세요.<br><small>${escapeHtml(err.message)}</small></div>`}scrollTo({top:0,behavior:'smooth'})}
+
+let stepAccordionObserver=null;
+function installStepAccordion(root,step){
+  stepAccordionObserver?.disconnect?.();stepAccordionObserver=null;
+  const section=root.querySelector(':scope > .card')||root.querySelector('.card');if(!section)return;
+  const storageKey=`jobfit:accordion:${courseConfig.course||'default'}:${step}`;
+  const readMode=()=>{try{return sessionStorage.getItem(storageKey)}catch{return null}};
+  const writeMode=value=>{try{sessionStorage.setItem(storageKey,String(value))}catch{}};
+  const blocks=()=>[...section.querySelectorAll('.block')].filter(b=>!b.parentElement?.closest('.block'));
+  const setOpen=(block,open)=>{
+    if(!block)return;
+    block.classList.toggle('jobfitAccordionOpen',!!open);
+    const trigger=block.querySelector(':scope > .jobfitAccordionTrigger');
+    trigger?.setAttribute('aria-expanded',open?'true':'false');
+    const icon=trigger?.querySelector('.jobfitAccordionChevron');if(icon)icon.textContent=open?'−':'+';
+  };
+  const openOnly=block=>{
+    const all=blocks();all.forEach(b=>setOpen(b,b===block));
+    const idx=all.indexOf(block);if(idx>=0)writeMode(idx);
+    block?.scrollIntoView?.({behavior:'smooth',block:'start'});
+  };
+  const toggleBlock=block=>{
+    const isOpen=block.classList.contains('jobfitAccordionOpen');
+    if(isOpen){setOpen(block,false);writeMode('none')}else openOnly(block);
+  };
+  const prepare=()=>{
+    const all=blocks();if(!all.length)return;
+    all.forEach(block=>{
+      if(block.dataset.jobfitAccordionReady==='1')return;
+      const trigger=block.querySelector(':scope > .moduleHead')||block.querySelector(':scope > .sectionHead')||block.querySelector(':scope > h3');
+      if(!trigger)return;
+      block.dataset.jobfitAccordionReady='1';block.classList.add('jobfitAccordionBlock');
+      trigger.classList.add('jobfitAccordionTrigger');trigger.setAttribute('role','button');trigger.setAttribute('tabindex','0');trigger.setAttribute('aria-expanded','false');
+      if(!trigger.querySelector(':scope > .jobfitAccordionChevron')){
+        const icon=document.createElement('span');icon.className='jobfitAccordionChevron';icon.textContent='+';icon.setAttribute('aria-hidden','true');trigger.appendChild(icon);
+      }
+      trigger.addEventListener('click',e=>{if(e.target.closest('button,a,input,select,textarea'))return;toggleBlock(block)});
+      trigger.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleBlock(block)}});
+      setOpen(block,false);
+    });
+    let toolbar=section.querySelector(':scope > .jobfitAccordionToolbar');
+    if(!toolbar){
+      toolbar=document.createElement('div');toolbar.className='jobfitAccordionToolbar';
+      toolbar.innerHTML='<span>항목 제목을 눌러 필요한 내용만 펼쳐보세요.</span><div><button type="button" class="btn outline smallBtn" data-acc-expand>전체 펼치기</button><button type="button" class="btn outline smallBtn" data-acc-collapse>전체 접기</button></div>';
+      const head=section.querySelector(':scope > .sectionHead');(head||section.firstElementChild)?.insertAdjacentElement('afterend',toolbar);
+      toolbar.querySelector('[data-acc-expand]')?.addEventListener('click',()=>{blocks().forEach(b=>setOpen(b,true));writeMode('all')});
+      toolbar.querySelector('[data-acc-collapse]')?.addEventListener('click',()=>{blocks().forEach(b=>setOpen(b,false));writeMode('none')});
+    }
+    const mode=readMode();
+    if(mode==='all'){all.forEach(b=>setOpen(b,true));return}
+    if(mode==='none'){all.forEach(b=>setOpen(b,false));return}
+    if(all.some(b=>b.classList.contains('jobfitAccordionOpen')))return;
+    const idx=mode!==null&&/^\d+$/.test(mode)?Number(mode):0;
+    setOpen(all[Math.min(idx,all.length-1)],true);
+  };
+  window.JobfitStepAccordion={openBlock:block=>{prepare();if(block)openOnly(block)},refresh:prepare};
+  prepare();
+  stepAccordionObserver=new MutationObserver(()=>prepare());
+  stepAccordionObserver.observe(section,{childList:true,subtree:true});
+}
+async function navigate(step,{skipSave=false}={}){state.activeStep=resolveNavigationStep(step);if(!skipSave)saveState();else{renderHeroMeta();renderNav()}const root=document.getElementById('stepRoot');root.innerHTML='<div class="card placeholder"><b>불러오는 중</b>선택한 모듈을 준비하고 있습니다.</div>';try{const mod=await import(`./steps/step${state.activeStep}.js?v=18`);root.innerHTML='';await mod.render(context);neutralizeSelectiveLabels(root);installStepAccordion(root,state.activeStep)}catch(err){console.error(err);root.innerHTML=`<div class="card callout warn"><b>선택한 모듈 화면을 불러오지 못했습니다.</b><br>새로고침 후 다시 시도해 주세요.<br><small>${escapeHtml(err.message)}</small></div>`}scrollTo({top:0,behavior:'smooth'})}
 
 const context={STEPS,getState,saveState,toast,escapeHtml,makeAnonCode,courseConfig,navigate,applyCourseCode,downloadJSON,downloadResearchJSON,shareBackup,researchSyncStatus,syncResearchData};
 document.getElementById('exportBtn').addEventListener('click',downloadJSON);document.getElementById('researchExportBtn')?.addEventListener('click',downloadResearchJSON);document.getElementById('importBtn').addEventListener('click',requestImport);document.getElementById('importFile').addEventListener('change',e=>importJSONFile(e.target.files?.[0]));renderHeroMeta();renderNav();navigate(state.activeStep||visibleStepIndexes()[0]||0);
