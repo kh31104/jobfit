@@ -148,7 +148,7 @@ export async function render(ctx){
     if(measure)window.JobfitStepAccordion?.openBlock?.(measure);else openModule('02');
   });
   document.getElementById('makeInterviewPrompt').addEventListener('click',async()=>{
-    saveWeek4(false);
+    saveDraft();
     const box=document.getElementById('interviewPrompt');
     box.textContent=makeExperiencePrompt();
     box.classList.remove('hidden');
@@ -162,16 +162,17 @@ export async function render(ctx){
   });
   document.getElementById('goFactCheck')?.addEventListener('click',()=>{
     if(!ck('interviewOwnership')||!ck('interviewNumbers')||!ck('interviewEvidence')){ctx.toast('세 가지 사실확인을 먼저 체크해 주세요.');return}
-    openModule('04');
+    saveDraft();openModule('04');
   });
   document.getElementById('importStarSummary')?.addEventListener('click',importStarSummary);
-  document.getElementById('goCompetency')?.addEventListener('click',()=>{if(!v('action')){ctx.toast('내가 직접 한 행동을 먼저 확인해 주세요.');return}openModule('05')});
+  document.getElementById('goCompetency')?.addEventListener('click',()=>{if(!v('action')){ctx.toast('내가 직접 한 행동을 먼저 확인해 주세요.');return}saveDraft();openModule('05')});
   document.getElementById('analyzeAnother')?.addEventListener('click',()=>openModule('02'));
   document.getElementById('goCompetencyMap')?.addEventListener('click',()=>openModule('07'));
   document.getElementById('goExperienceDna')?.addEventListener('click',()=>openModule('08'));
     document.getElementById('action')?.addEventListener('input',updateActionEvidencePreview);
   document.getElementById('evidenceType')?.addEventListener('change',updateEvidenceGradePreview);
   [1,2,3].forEach(i=>document.getElementById(`comp_${i}`)?.addEventListener('change',()=>updateCompetencyCue(i)));
+  restoreDraft();
   updateActionEvidencePreview();updateEvidenceGradePreview();[1,2,3].forEach(updateCompetencyCue);
   if(ctx.courseConfig.researchMeasures)bindStrengthMeasure(ctx,'pre');
 
@@ -184,7 +185,8 @@ export async function render(ctx){
   function selectedRepresentative(){return document.querySelector('input[name="representative"]:checked')?.value||''}
   function saveWeek4(showToast){
     const exp=currentExperiences();
-    const patch={version:WEEK4_VERSION,best3:collectBest3(),representativeKey:selectedRepresentative(),experiences:exp,updatedAt:new Date().toISOString()};
+    const current=ctx.getState().assessments?.experienceCompetency||{};
+    const patch={...current,version:WEEK4_VERSION,best3:collectBest3(),representativeKey:selectedRepresentative(),experiences:exp,updatedAt:new Date().toISOString()};
     ctx.saveState({assessments:{experienceCompetency:patch},artifacts:{experienceMap:experienceMap(exp),competencyMap:competencyMap(exp),experienceDNA:experienceDNA(exp,dna)}});
     if(showToast){
       document.getElementById('status').textContent='4주차 Experience DNA가 이 브라우저에 저장되었습니다.';
@@ -207,7 +209,7 @@ export async function render(ctx){
     const item={id:oldId||`EXP-${Date.now()}`,category:v('category'),title,period:v('period'),workMode:v('workMode'),contribution:n('contribution'),roleTitle:v('roleTitle'),context:v('context'),role:v('role'),challenge:v('challenge'),action:v('action'),reason:v('reason'),result:v('result'),evidence:v('evidence'),evidenceType,evidenceGrade:evidenceGradeFor(evidenceType),actionVerbs:'',learning:v('learning'),rawVoice:v('rawVoice'),aiStructured:v('aiStructured'),competencies,competencyEvidence,quality,factChecked:quality.interviewOwnership&&quality.interviewNumbers&&quality.interviewEvidence,updatedAt:new Date().toISOString()};
     const arr=[...currentExperiences()];const idx=arr.findIndex(x=>x.id===item.id);if(idx>=0)arr[idx]=item;else arr.push(item);
     const current=ctx.getState().assessments?.experienceCompetency||{};
-    ctx.saveState({assessments:{experienceCompetency:{...current,version:WEEK4_VERSION,best3:collectBest3(),representativeKey:selectedRepresentative(),experiences:arr,updatedAt:new Date().toISOString()}},artifacts:{experienceMap:experienceMap(arr),competencyMap:competencyMap(arr),experienceDNA:experienceDNA(arr,dna)}});
+    ctx.saveState({assessments:{experienceCompetency:{...current,version:WEEK4_VERSION,best3:collectBest3(),representativeKey:selectedRepresentative(),experiences:arr,draft:{},updatedAt:new Date().toISOString()}},artifacts:{experienceMap:experienceMap(arr),competencyMap:competencyMap(arr),experienceDNA:experienceDNA(arr,dna)}});
     await ctx.navigate(2);
     openModule('06');
     ctx.toast(`경험을 저장했습니다. 현재 ${arr.length}개 경험이 Experience Map에 있습니다.`);
@@ -237,6 +239,7 @@ export async function render(ctx){
     set('contribution',3);
     ['interviewOwnership','interviewNumbers','interviewEvidence','competencyEvidenceChecked'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false});
     updateActionEvidencePreview();updateEvidenceGradePreview();[1,2,3].forEach(updateCompetencyCue);
+    clearDraft();
     document.getElementById('title')?.focus();
   }
   function useRepresentative(){
@@ -314,7 +317,35 @@ R · Result: 그 행동 뒤 무엇이 달라졌는가
 
 첫 질문부터 시작해줘.`;
   }
-  function openModule(number){
+  function draftSnapshot(){
+    const fields=['category','title','period','workMode','roleTitle','context','role','challenge','action','reason','result','evidence','evidenceType','learning','rawVoice','aiStructured'];
+    const values={};fields.forEach(id=>values[id]=v(id));
+    values.contribution=n('contribution')||3;
+    values.interviewChecks={ownership:ck('interviewOwnership'),numbers:ck('interviewNumbers'),evidence:ck('interviewEvidence')};
+    values.competencyEvidenceChecked=ck('competencyEvidenceChecked');
+    values.competencies=[1,2,3].map(i=>({code:v(`comp_${i}`),status:v(`compStatus_${i}`),evidence:v(`compEv_${i}`)}));
+    return values;
+  }
+  function saveDraft(){
+    const state=ctx.getState(),current=state.assessments?.experienceCompetency||{};
+    ctx.saveState({assessments:{experienceCompetency:{...current,version:WEEK4_VERSION,best3:collectBest3(),representativeKey:selectedRepresentative(),experiences:currentExperiences(),draft:draftSnapshot(),updatedAt:new Date().toISOString()}}});
+  }
+  function clearDraft(){
+    const state=ctx.getState(),current=state.assessments?.experienceCompetency||{};
+    if(!current.draft||!Object.keys(current.draft).length)return;
+    ctx.saveState({assessments:{experienceCompetency:{...current,draft:{},updatedAt:new Date().toISOString()}}});
+  }
+  function restoreDraft(){
+    const d=ctx.getState().assessments?.experienceCompetency?.draft||{};
+    if(!d||!Object.keys(d).length)return;
+    ['category','title','period','workMode','roleTitle','context','role','challenge','action','reason','result','evidence','evidenceType','learning','rawVoice','aiStructured'].forEach(id=>{if(d[id]!==undefined&&d[id]!==null)set(id,d[id])});
+    set('contribution',d.contribution||3);
+    const checks=d.interviewChecks||{};
+    const own=document.getElementById('interviewOwnership'),nums=document.getElementById('interviewNumbers'),ev=document.getElementById('interviewEvidence'),verified=document.getElementById('competencyEvidenceChecked');
+    if(own)own.checked=!!checks.ownership;if(nums)nums.checked=!!checks.numbers;if(ev)ev.checked=!!checks.evidence;if(verified)verified.checked=!!d.competencyEvidenceChecked;
+    (d.competencies||[]).slice(0,3).forEach((x,idx)=>{const i=idx+1;set(`comp_${i}`,x?.code||'');set(`compStatus_${i}`,x?.status||'');set(`compEv_${i}`,x?.evidence||'')});
+  }
+    function openModule(number){
     const block=[...document.querySelectorAll('.experienceCompetencyWeek4 > .block')].find(b=>b.querySelector(':scope > .moduleHead > span')?.textContent?.trim()===number);
     if(block)window.JobfitStepAccordion?.openBlock?.(block);
   }
@@ -328,6 +359,7 @@ R · Result: 그 행동 뒤 무엇이 달라졌는가
     if(parsed.evidence)set('evidence',parsed.evidence);
     updateActionEvidencePreview();
     const filled=[parsed.task,parsed.action,parsed.why,parsed.result,parsed.evidence].filter(Boolean).length;
+    saveDraft();
     ctx.toast(filled?`STAR 정리에서 ${filled}개 항목을 불러왔습니다. 실제 경험과 맞는지 수정해 주세요.`:'STAR 제목을 찾지 못했습니다. 아래 칸에 직접 정리해 주세요.');
   }
   function parseStarSummary(raw){
