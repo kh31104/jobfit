@@ -104,17 +104,9 @@ export function startContinuity(){
   requestPersistentStorage();
   syncNow();
   const timer=setInterval(()=>syncNow(),1200);
-  let mountQueued=false;
-  const scheduleMount=()=>{
-    if(mountQueued)return;
-    mountQueued=true;
-    setTimeout(()=>{mountQueued=false;mountStatus()},0);
-  };
-  const observer=new MutationObserver(scheduleMount);
-  const observeRoot=document.getElementById('stepRoot')||document.body;
-  observer.observe(observeRoot,{childList:true,subtree:true});
+  const statusTimer=setInterval(()=>mountStatus(),350);
   window.addEventListener('pagehide',()=>syncNow());
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')syncNow()});
   mountStatus();
-  window.JobfitStorageContinuity={syncNow,hasLearningData:()=>hasLearningData(parseState(localStorage.getItem(STORAGE_KEY))),stop:()=>{clearInterval(timer);observer.disconnect()}};
+  window.JobfitStorageContinuity={syncNow,hasLearningData:()=>hasLearningData(parseState(localStorage.getItem(STORAGE_KEY))),stop:()=>{clearInterval(timer);clearInterval(statusTimer)}};
 }
