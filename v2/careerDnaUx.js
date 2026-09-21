@@ -137,8 +137,8 @@ function enhanceCollapsibles(root){
     head.setAttribute('aria-expanded','false');
     const icon=document.createElement('span');icon.className='jobfitModuleToggleIcon';icon.setAttribute('aria-hidden','true');icon.textContent='＋';head.appendChild(icon);
     const toggle=()=>setBlockExpanded(block,head.getAttribute('aria-expanded')!=='true');
-    head.onclick=event=>{if(event.target.closest('a,button,input,select,textarea,label'))return;event.preventDefault();toggle()};
-    head.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();toggle()}};
+    head.addEventListener('click',event=>{if(event.target.closest('a,button,input,select,textarea,label'))return;toggle()});
+    head.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();toggle()}});
     setBlockExpanded(block,false);
   });
 }
