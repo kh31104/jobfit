@@ -22,7 +22,7 @@ if(isInjeCourse){
 
 await import('./app.js?v=26');
 await import('./injeClassroom.js?v=17');
-await import('./careerDnaUx.js?v=8');
+await import('./careerDnaUx.js?v=9');
 await import('./careerDnaStudentUx.js?v=1');
 await import('./careerDnaLearningFlowUx.js?v=7');
 const {startOperationalSync}=await import('./operationalSync.js?v=2');
