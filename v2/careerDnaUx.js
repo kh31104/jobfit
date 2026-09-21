@@ -145,10 +145,16 @@ function reopenBalanceIfNeeded(root){
   const targetIndex=reopenBalanceIndex;
   reopenBalanceIndex=null;
   try{sessionStorage.removeItem(REOPEN_BALANCE_KEY)}catch{}
-  requestAnimationFrame(()=>{
-    window.JobfitStepAccordion?.openBlock?.(block);
-    requestAnimationFrame(()=>block.querySelectorAll('.balanceCard')[targetIndex]?.scrollIntoView({block:'center',behavior:'smooth'}));
-  });
+  const openWhenReady=(attempt=0)=>{
+    const accordion=window.JobfitStepAccordion;
+    if(accordion?.openBlock){
+      accordion.openBlock(block);
+      requestAnimationFrame(()=>block.querySelectorAll('.balanceCard')[targetIndex]?.scrollIntoView({block:'center',behavior:'smooth'}));
+      return;
+    }
+    if(attempt<20)setTimeout(()=>openWhenReady(attempt+1),25);
+  };
+  requestAnimationFrame(()=>openWhenReady());
 }
 function updateBalanceNotice(root){
   const balanceBlock=findBalanceBlock(root);
