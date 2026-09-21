@@ -1,6 +1,6 @@
 import {prepareResearchMeasures,renderStrengthMeasure,bindStrengthMeasure} from '../researchMeasures.js';
 
-const WEEK4_VERSION='experience-competency-week4-v4';
+const WEEK4_VERSION='experience-competency-week4-v5';
 const COMPETENCY_DICTIONARY=[
   ['C01','의사소통','설명·질문·경청·문서작성·정보전달'],
   ['C02','협업','공동작업·정보공유·역할협조·동료지원'],
@@ -51,7 +51,7 @@ export async function render(ctx){
       <div class="summaryBox" style="margin-top:12px"><h4>오늘 깊게 분석할 대표 경험 1개</h4><p class="help">세 경험 중 하나를 골라 아래 Experience Interview의 시작자료로 가져옵니다.</p><div class="repChoices">${['best','flow','recognition'].map(k=>`<label><input type="radio" name="representative" value="${k}" ${representativeKey===k?'checked':''}><span>${k==='best'?'잘한 경험':k==='flow'?'몰입 경험':'인정받은 경험'}</span></label>`).join('')}</div><div class="actions"><button class="btn outline" id="useRepresentative">선택한 경험을 분석칸으로 가져오기</button></div></div>
     </div>
 
-    <div class="hr"></div><div class="block"><div class="moduleHead"><span>03</span><div><h3>AI Experience Interview</h3><p>AI가 답을 쓰는 것이 아니라, 경험 속 <b>내 행동·판단·결과·증거</b>를 한 질문씩 구체화하도록 사용합니다.</p></div></div>
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>03</span><div><h3>STAR 기반 AI Experience Interview</h3><p>STAR 문장을 대신 쓰는 단계가 아닙니다. AI가 <b>상황(S) → 문제·내 역할(T) → 내 행동(A) → 판단(WHY) → 결과(R)</b>에서 빠진 내용을 한 질문씩 확인합니다.</p></div></div>
       <div id="experienceList">${listHtml(experiences,ctx)}</div><div class="actions"><button class="btn secondary" id="newExp">+ 새 경험 추가</button></div>
       <input type="hidden" id="editId" value="">
       <div class="grid3" style="margin-top:14px">${sel('category','경험 유형','',CATEGORIES,ctx)}${txt('title','경험 이름','','예: 캡스톤 프로젝트',ctx)}${txt('period','기간','','예: 2026.03–06',ctx)}</div>
@@ -194,7 +194,61 @@ export async function render(ctx){
       c.repeat&&`반복해서 나타난다고 본 부분: ${c.repeat}`,
       c.verify&&`더 확인하고 싶은 부분: ${c.verify}`
     ].filter(Boolean);
-    return `지금부터 내 경험에서 실제 행동과 직무역량의 근거를 찾는 인터뷰어가 되어줘. 자소서를 대신 쓰거나 직업을 추천하지 말고, 내가 실제로 한 일을 구체적으로 확인해줘.\n\n[대표 경험 기본정보]\n경험명: ${v('title')||'미입력'}\n유형: ${v('category')||'미입력'}\n기간: ${v('period')||'미입력'}\n진행방식: ${v('workMode')||'미입력'}\n내 역할: ${v('roleTitle')||'미입력'}\n배경: ${v('context')||'미입력'}\n책임범위: ${v('role')||'미입력'}${dnaLines.length?`\n\n[3주차 자기이해 가설 · 참고만]\n${dnaLines.join('\n')}`:''}\n\n[인터뷰 규칙]\n1. 한 번에 질문 하나만 한다.\n2. 먼저 이 경험에서 내가 실제로 맡은 역할과 해결해야 했던 문제를 확인한다.\n3. 팀 전체가 한 일과 내가 직접 한 행동을 반드시 분리한다.\n4. 문제·과제 → 내 행동 → 판단이유 → 결과 → 증거 순서로 질문한다.\n5. 답이 추상적이면 다음 질문을 분기한다. 행동이 모호하면 '정확히 무엇을 했는지', 판단이 모호하면 '무엇을 기준으로 선택했는지', 협업이 모호하면 '누구와 무엇을 어떻게 조율했는지', 결과가 모호하면 '전후 차이와 확인 가능한 근거가 무엇인지'를 한 가지씩 묻는다.\n6. 사용자가 '잘 모르겠다'고 답하면 예시 답을 대신 만들지 말고, 기억을 돕는 사실 질문 1개만 제시한다.\n7. 내가 말하지 않은 행동·수치·성과를 만들어내지 않는다.\n8. 강점이나 역량 이름을 먼저 붙이지 않는다. 행동이 충분히 확인된 뒤에만 후보를 제시한다.\n9. 같은 경험에서 행동근거가 부족하면 역량 후보를 억지로 3개 채우지 않는다.\n10. 마지막에는 확인된 사실만 사용해 정리하고, 추정이 섞인 문장은 '확인 필요'로 표시한다.\n\n[마지막 정리 형식]\n- 핵심 상황·과제\n- 내가 직접 한 행동 3~5개\n- 판단이유\n- 결과\n- 확인 가능한 증거\n- 핵심 행동동사\n- 강점·역량 후보 최대 3개\n- 각 역량의 근거 행동 한 문장\n- 6주차 직무 Task·KSA·KPI와 대조할 때 확인할 질문 1~2개\n\n첫 질문부터 시작해줘.`;
+    return `지금부터 내 경험에서 실제 행동의 근거를 찾는 Jobfit Experience Interviewer가 되어줘. 자소서를 대신 쓰거나 직업·역량을 먼저 추천하지 말고, 내가 실제로 한 일을 STAR 방식으로 구체적으로 확인해줘.
+
+[대표 경험 기본정보]
+경험명: ${v('title')||'미입력'}
+유형: ${v('category')||'미입력'}
+기간: ${v('period')||'미입력'}
+진행방식: ${v('workMode')||'미입력'}
+내 역할: ${v('roleTitle')||'미입력'}
+배경: ${v('context')||'미입력'}
+책임범위: ${v('role')||'미입력'}${dnaLines.length?`\n\n[3주차 자기이해 가설 · 참고만]\n${dnaLines.join('\n')}`:''}
+
+[STAR + WHY 확인 기준]
+S · Situation: 어떤 상황이었는가
+T · Task: 해결해야 했던 문제·목표와 내 역할은 무엇이었는가
+A · Action: 내가 직접 무엇을 했는가
+WHY · Judgment: 왜 그 방법을 선택했는가
+R · Result: 그 행동 뒤 무엇이 달라졌는가
+
+[인터뷰 규칙]
+1. 한 번에 질문은 반드시 하나만 한다.
+2. 먼저 현재 입력내용을 읽고 S/T/A/WHY/R 중 이미 확인된 내용과 빠진 내용을 구분한다.
+3. 이미 말한 내용은 다시 묻지 않는다. STAR 순서를 기계적으로 처음부터 반복하지 않는다.
+4. 가장 부족한 정보 하나만 다음 질문으로 묻는다.
+5. 특히 A(Action)를 가장 중요하게 확인한다. 팀 전체의 행동과 내가 직접 한 행동을 반드시 분리한다.
+6. '소통했다, 협업했다, 노력했다, 해결했다, 책임감 있게 했다, 리더십을 발휘했다'처럼 추상적인 표현이 나오면 역량으로 해석하지 말고 '정확히 무엇을 했는지'를 묻는다.
+7. 판단이 모호하면 '무엇을 기준으로 그 방법을 선택했는지', 협업이 모호하면 '누구와 무엇을 어떻게 조율했는지', 결과가 모호하면 '행동 전후 무엇이 달라졌고 무엇으로 확인할 수 있는지'를 묻는다.
+8. 결과에 숫자가 반드시 필요한 것은 아니다. 수치가 없으면 전후 변화, 완료 여부, 타인의 반응, 피드백, 작업기록처럼 실제 확인 가능한 결과를 찾는다.
+9. 사용자가 '잘 모르겠다'고 하면 예시 답을 대신 만들지 말고 기억을 돕는 사실 질문 하나만 한다.
+10. 내가 말하지 않은 행동·역할·수치·성과를 만들거나 보완하지 않는다.
+11. 기본적으로 3회 안팎의 질문으로 핵심을 확인하되, 부족한 정보가 있으면 최대 5회까지 질문한다.
+12. S/T/A/R이 충분히 확인되면 5회를 채우지 않고 종료한다. 결과를 확인할 수 없는 경우에는 '결과 확인 어려움' 자체를 사실로 기록하고 종료할 수 있다.
+13. 5회 질문 후에도 부족한 정보는 추측하지 말고 '확인 필요'로 표시한다.
+14. 이 인터뷰 단계에서는 강점·역량 이름을 확정하지 않는다. 먼저 사실을 정리하고 학생이 확인한 뒤 다음 단계에서 행동근거와 역량을 연결한다.
+
+[인터뷰 종료 기준]
+- S: 경험의 맥락을 이해할 수 있다.
+- T: 해결해야 했던 문제·목표와 내 역할이 구분된다.
+- A: 내가 직접 한 구체적인 행동이 최소 1개 이상 확인된다.
+- R: 행동 이후 확인 가능한 결과·변화가 있거나, 결과 확인이 어렵다는 사실이 확인된다.
+위 네 요소가 충족되면 인터뷰를 종료한다.
+
+[마지막 정리 형식]
+- S 상황
+- T 문제·목표와 내 역할
+- A 내가 직접 한 행동 3~5개
+- WHY 판단·선택 이유
+- R 결과
+- 확인 가능한 증거
+- 핵심 행동동사
+- 확인 필요 사항
+
+마지막 정리는 내가 말한 사실만 사용한다. 추정이 섞일 수 있는 문장은 반드시 '확인 필요'로 표시한다.
+정리 후에는 '이 내용이 실제 경험과 맞나요? 틀리거나 과장된 부분이 있으면 수정해 주세요.'라고 묻는다.
+
+첫 질문부터 시작해줘.`;
   }
   function v(id){return document.getElementById(id)?.value?.trim?.()||''}
   function n(id){return Number(document.getElementById(id)?.value||0)}
