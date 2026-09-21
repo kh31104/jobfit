@@ -1,0 +1,44 @@
+name: Jobfit stabilization smoke
+
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'v2/**'
+      - '.github/workflows/jobfit-stabilization-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jobfit-stabilization-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check targeted test syntax
+        run: node --check v2/tests/stabilization-smoke.mjs
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start static server
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/jobfit-smoke-server.log 2>&1 &
+          sleep 2
+          curl --fail http://127.0.0.1:8765/v2/ >/dev/null
+      - name: Verify STEP1 toggles and learner continuity
+        env:
+          JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
+        run: node v2/tests/stabilization-smoke.mjs
+      - name: Show server log on failure
+        if: failure()
+        run: cat /tmp/jobfit-smoke-server.log || true
