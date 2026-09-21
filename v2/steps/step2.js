@@ -1,6 +1,6 @@
 import {prepareResearchMeasures,renderStrengthMeasure,bindStrengthMeasure} from '../researchMeasures.js';
 
-const WEEK4_VERSION='experience-competency-week4-v5';
+const WEEK4_VERSION='experience-competency-week4-v6';
 const COMPETENCY_DICTIONARY=[
   ['C01','의사소통','설명·질문·경청·문서작성·정보전달'],
   ['C02','협업','공동작업·정보공유·역할협조·동료지원'],
@@ -77,20 +77,21 @@ export async function render(ctx){
         <div><b>R · 결과</b><span>아래 ‘결과’와 ‘증거’로 확인합니다.</span></div>
       </div>
       <div class="callout warn" style="margin-top:12px"><b>중요</b> · AI가 정리한 문장을 그대로 복사하지 마세요. 내가 하지 않은 행동, 기억나지 않는 수치, 과장된 결과가 있으면 삭제하거나 수정합니다.</div>
-      <div class="grid2" style="margin-top:12px">${area('challenge','문제·과제','내가 해결하거나 달성해야 했던 핵심 과제는?','',ctx)}${area('action','내가 직접 한 행동','내가 실제로 한 행동을 동사 중심으로 적으세요.','',ctx)}${area('reason','판단·이유','왜 그 행동을 선택했나요? 비교한 대안이나 판단기준은?','',ctx)}${area('result','결과','무엇이 달라졌나요? 확인 가능한 결과만 적으세요.','',ctx)}${area('evidence','증거','수치·산출물·피드백·기록 등 결과를 입증하는 근거는?','',ctx)}${area('learning','다시 쓸 수 있는 방식','다른 상황에서도 반복해서 사용할 수 있는 행동방식은?','',ctx)}</div>
-      <div class="grid3" style="margin-top:12px">${sel('evidenceType','가장 강한 증거 유형','',EVIDENCE_TYPES,ctx)}${sel('evidenceGrade','증거 강도','',['A · 객관적 자료로 확인 가능','B · 타인의 피드백/평가로 확인','C · 본인 설명 중심'],ctx)}${txt('actionVerbs','핵심 행동동사','','예: 비교했다, 분석했다, 조율했다',ctx)}</div>
-      <div class="field" style="margin-top:12px"><label>내 원래 말 · Raw Voice</label><textarea id="rawVoice" placeholder="AI가 다듬기 전 내가 실제로 설명한 문장이나 메모"></textarea><span class="hint">나중에 자기소개서·면접답변을 내 말로 복원할 때 사용합니다.</span></div>
-      <div class="field" style="margin-top:12px"><label>AI 구조화 결과 <span class="muted">(선택)</span></label><textarea id="aiStructured" placeholder="AI가 정리한 내용이 있다면 붙여넣고, 사실과 다른 부분은 직접 수정하세요."></textarea></div>
+      <div class="grid2" style="margin-top:12px">${area('challenge','T · 문제·과제','내가 해결하거나 달성해야 했던 핵심 과제는?','',ctx)}${area('action','A · 내가 직접 한 행동','내가 실제로 한 행동만 동사 중심으로 적으세요.','',ctx)}${area('reason','WHY · 판단·이유','왜 그 행동을 선택했나요? 핵심 판단기준만 적으세요.','',ctx)}${area('result','R · 결과','행동 뒤 무엇이 달라졌나요? 확인 가능한 결과만 적으세요.','',ctx)}</div>
+      <div class="grid2" style="margin-top:12px">${area('evidence','결과를 확인할 근거','수치·산출물·피드백·기록 등 실제 확인 가능한 근거가 있으면 적으세요.','',ctx)}${sel('evidenceType','증거 유형 · 선택','',EVIDENCE_TYPES,ctx)}</div>
+      <div class="evidenceGradeLine" id="evidenceGradePreview">증거 유형을 선택하면 확인 수준을 자동으로 표시합니다.</div>
+      <details class="detailsBox" style="margin-top:12px"><summary>추가 메모가 필요하면 펼치기 · 선택사항</summary>
+        <div class="grid2">${area('rawVoice','내 원래 말 · Raw Voice','AI가 다듬기 전 내가 실제로 말한 문장이나 메모','',ctx)}${area('learning','다른 상황에서도 다시 쓸 수 있는 방식','이 경험에서 반복해서 사용할 수 있는 행동방식이 있다면 적으세요.','',ctx)}</div>
+        <div class="field" style="margin-top:12px"><label>AI 마지막 정리 보관 <span class="muted">(선택)</span></label><textarea id="aiStructured" placeholder="03 AI 인터뷰의 마지막 STAR 정리를 보관하고 싶다면 붙여넣으세요."></textarea></div>
+      </details>
     </div>
 
     <div class="hr"></div><div class="block"><div class="moduleHead"><span>05</span><div><h3>경험에서 확인된 역량</h3><p>Jobfit 표준역량 C01~C12 중 <b>실제 행동근거가 있는 역량만</b> 선택합니다. 직책·성격표현만으로 역량을 판정하지 않습니다.</p></div></div>
-      <div class="grid3">${competencyRow(1)}${competencyRow(2)}${competencyRow(3)}</div>
-      <div class="callout info" style="margin-top:12px"><b>판정 기준</b> · 행동 확인 / 추가 확인 필요 / 현재 경험에서 확인되지 않음. 경험에서 확인되지 않았다는 것은 역량이 낮거나 없다는 뜻이 아닙니다.</div>
+      <div class="actionSourceBox"><b>역량을 판단할 때 볼 행동</b><p id="actionEvidencePreview">04에서 ‘내가 직접 한 행동’을 입력하면 여기에 표시됩니다.</p></div>
+      <div class="grid3" style="margin-top:12px">${competencyRow(1)}${competencyRow(2)}${competencyRow(3)}</div>
+      <div class="callout info" style="margin-top:12px"><b>판정 기준</b> · 먼저 04의 행동을 보고 역량을 고릅니다. 근거가 약하면 ‘추가 확인 필요’를 선택하고, 세 칸을 억지로 채우지 않아도 됩니다.</div>
       <div class="qualityBox" style="margin-top:14px">
-        ${check('ownershipChecked','팀의 행동과 내가 직접 한 행동을 구분했다.')}
-        ${check('evidenceChecked','결과를 뒷받침하는 증거 수준을 확인했다.')}
-        ${check('noFabrication','내가 하지 않은 행동·확인되지 않은 수치·과장된 결과가 없다.')}
-        ${check('transferChecked','이 행동방식을 다른 상황에서도 어떻게 쓸 수 있는지 설명할 수 있다.')}
+        ${check('competencyEvidenceChecked','선택한 역량은 위 행동에서 확인할 수 있고, 없는 역량을 억지로 추가하지 않았다.')}
       </div>
       <div class="actions"><button class="btn primary" id="saveExp">이 경험 저장</button><button class="btn outline" id="clearForm">입력 초기화</button></div>
     </div>
@@ -131,6 +132,10 @@ export async function render(ctx){
     try{await navigator.clipboard.writeText(document.getElementById('interviewPrompt').textContent||'');ctx.toast('경험 인터뷰 프롬프트를 복사했습니다.')}
     catch{ctx.toast('직접 선택해 복사해 주세요.')}
   });
+  document.getElementById('action')?.addEventListener('input',updateActionEvidencePreview);
+  document.getElementById('evidenceType')?.addEventListener('change',updateEvidenceGradePreview);
+  [1,2,3].forEach(i=>document.getElementById(`comp_${i}`)?.addEventListener('change',()=>updateCompetencyCue(i)));
+  updateActionEvidencePreview();updateEvidenceGradePreview();[1,2,3].forEach(updateCompetencyCue);
   if(ctx.courseConfig.researchMeasures)bindStrengthMeasure(ctx,'pre');
 
   function currentExperiences(){return ctx.getState().assessments?.experienceCompetency?.experiences||[]}
@@ -153,10 +158,12 @@ export async function render(ctx){
     const title=v('title');if(!title){ctx.toast('경험 이름을 먼저 입력해 주세요.');return}
     saveWeek4(false);
     const oldId=v('editId');
-    const competencyEvidence=[1,2,3].map(i=>{const code=v(`comp_${i}`),def=competencyByCode(code);return {code,label:def?.label||'',keyword:def?.label||'',evidence:v(`compEv_${i}`),status:v(`compStatus_${i}`)||'행동 확인',studentVerified:ck(`compVerified_${i}`)};}).filter(x=>x.code||x.evidence);
-    const competencies=[...new Set(competencyEvidence.filter(x=>x.status==='행동 확인').map(x=>x.label).filter(Boolean))];
-    const quality={ownership:ck('ownershipChecked'),evidence:ck('evidenceChecked'),noFabrication:ck('noFabrication'),transfer:ck('transferChecked'),interviewOwnership:ck('interviewOwnership'),interviewNumbers:ck('interviewNumbers'),interviewEvidence:ck('interviewEvidence')};
-    const item={id:oldId||`EXP-${Date.now()}`,category:v('category'),title,period:v('period'),workMode:v('workMode'),contribution:n('contribution'),roleTitle:v('roleTitle'),context:v('context'),role:v('role'),challenge:v('challenge'),action:v('action'),reason:v('reason'),result:v('result'),evidence:v('evidence'),evidenceType:v('evidenceType'),evidenceGrade:v('evidenceGrade'),actionVerbs:v('actionVerbs'),learning:v('learning'),rawVoice:v('rawVoice'),aiStructured:v('aiStructured'),competencies,competencyEvidence,quality,factChecked:quality.noFabrication&&quality.ownership&&quality.interviewNumbers,updatedAt:new Date().toISOString()};
+    const studentVerified=ck('competencyEvidenceChecked');
+    const competencyEvidence=[1,2,3].map(i=>{const code=v(`comp_${i}`),def=competencyByCode(code);return {code,label:def?.label||'',keyword:def?.label||'',evidence:v(`compEv_${i}`),status:v(`compStatus_${i}`),studentVerified};}).filter(x=>x.code||x.evidence);
+    const competencies=[...new Set(competencyEvidence.filter(x=>x.status==='행동 확인'&&x.studentVerified).map(x=>x.label).filter(Boolean))];
+    const quality={ownership:ck('interviewOwnership'),evidence:ck('interviewEvidence'),noFabrication:ck('interviewNumbers'),transfer:!!v('learning'),competencyEvidence:studentVerified,interviewOwnership:ck('interviewOwnership'),interviewNumbers:ck('interviewNumbers'),interviewEvidence:ck('interviewEvidence')};
+    const evidenceType=v('evidenceType');
+    const item={id:oldId||`EXP-${Date.now()}`,category:v('category'),title,period:v('period'),workMode:v('workMode'),contribution:n('contribution'),roleTitle:v('roleTitle'),context:v('context'),role:v('role'),challenge:v('challenge'),action:v('action'),reason:v('reason'),result:v('result'),evidence:v('evidence'),evidenceType,evidenceGrade:evidenceGradeFor(evidenceType),actionVerbs:'',learning:v('learning'),rawVoice:v('rawVoice'),aiStructured:v('aiStructured'),competencies,competencyEvidence,quality,factChecked:quality.interviewOwnership&&quality.interviewNumbers&&quality.interviewEvidence,updatedAt:new Date().toISOString()};
     const arr=[...currentExperiences()];const idx=arr.findIndex(x=>x.id===item.id);if(idx>=0)arr[idx]=item;else arr.push(item);
     const current=ctx.getState().assessments?.experienceCompetency||{};
     ctx.saveState({assessments:{experienceCompetency:{...current,version:WEEK4_VERSION,best3:collectBest3(),representativeKey:selectedRepresentative(),experiences:arr,updatedAt:new Date().toISOString()}},artifacts:{experienceMap:experienceMap(arr),competencyMap:competencyMap(arr),experienceDNA:experienceDNA(arr,dna)}});
@@ -165,14 +172,13 @@ export async function render(ctx){
   function loadExperience(id){
     const x=currentExperiences().find(e=>e.id===id);if(!x)return;
     set('editId',x.id);
-    ['category','title','period','workMode','roleTitle','context','role','challenge','action','reason','result','evidence','evidenceType','evidenceGrade','actionVerbs','learning','rawVoice','aiStructured'].forEach(k=>set(k,x[k]||''));
+    ['category','title','period','workMode','roleTitle','context','role','challenge','action','reason','result','evidence','evidenceType','learning','rawVoice','aiStructured'].forEach(k=>set(k,x[k]||''));
     set('contribution',x.contribution||3);
-    [1,2,3].forEach((i,idx)=>{const ce=x.competencyEvidence?.[idx]||{},def=competencyByCode(ce.code)||competencyByLabel(ce.label||ce.keyword);set(`comp_${i}`,ce.code||def?.code||'');set(`compEv_${i}`,ce.evidence||'');set(`compStatus_${i}`,ce.status||'행동 확인');const verified=document.getElementById(`compVerified_${i}`);if(verified)verified.checked=!!ce.studentVerified});
-    document.getElementById('ownershipChecked').checked=!!x.quality?.ownership;
-    document.getElementById('evidenceChecked').checked=!!x.quality?.evidence;
-    document.getElementById('noFabrication').checked=!!x.quality?.noFabrication;
-    document.getElementById('transferChecked').checked=!!x.quality?.transfer;
+    [1,2,3].forEach((i,idx)=>{const ce=x.competencyEvidence?.[idx]||{},def=competencyByCode(ce.code)||competencyByLabel(ce.label||ce.keyword);set(`comp_${i}`,ce.code||def?.code||'');set(`compEv_${i}`,ce.evidence||'');set(`compStatus_${i}`,ce.status||'')});
+    const verified=document.getElementById('competencyEvidenceChecked');if(verified)verified.checked=!!(x.quality?.competencyEvidence||(x.competencyEvidence?.length&&x.competencyEvidence.every(e=>e.studentVerified)));
     [['interviewOwnership','interviewOwnership'],['interviewNumbers','interviewNumbers'],['interviewEvidence','interviewEvidence']].forEach(([id,key])=>{const el=document.getElementById(id);if(el)el.checked=!!x.quality?.[key]});
+    updateActionEvidencePreview();updateEvidenceGradePreview();[1,2,3].forEach(updateCompetencyCue);
+    window.JobfitStepAccordion?.openBlock?.(document.getElementById('title')?.closest('.block'));
     document.getElementById('title').focus();
   }
   function deleteExperience(id){
@@ -184,9 +190,10 @@ export async function render(ctx){
     ctx.toast('삭제했습니다.');ctx.navigate(2);
   }
   function clearForm(){
-    ['editId','category','title','period','workMode','roleTitle','context','role','challenge','action','reason','result','evidence','evidenceType','evidenceGrade','actionVerbs','learning','rawVoice','aiStructured','comp_1','compEv_1','compStatus_1','compStatus_2','compStatus_3','comp_2','compEv_2','comp_3','compEv_3'].forEach(k=>set(k,''));
+    ['editId','category','title','period','workMode','roleTitle','context','role','challenge','action','reason','result','evidence','evidenceType','learning','rawVoice','aiStructured','comp_1','compEv_1','compStatus_1','compStatus_2','compStatus_3','comp_2','compEv_2','comp_3','compEv_3'].forEach(k=>set(k,''));
     set('contribution',3);
-    ['ownershipChecked','evidenceChecked','noFabrication','transferChecked','interviewOwnership','interviewNumbers','interviewEvidence','compVerified_1','compVerified_2','compVerified_3'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false});
+    ['interviewOwnership','interviewNumbers','interviewEvidence','competencyEvidenceChecked'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false});
+    updateActionEvidencePreview();updateEvidenceGradePreview();[1,2,3].forEach(updateCompetencyCue);
     document.getElementById('title')?.focus();
   }
   function useRepresentative(){
@@ -194,7 +201,8 @@ export async function render(ctx){
     const title=v(`best3_${key}_title`),summary=v(`best3_${key}_summary`);
     if(!title&&!summary){ctx.toast('선택한 경험의 제목이나 설명을 먼저 적어 주세요.');return}
     if(!v('title'))set('title',title);if(!v('context'))set('context',summary);
-    document.getElementById('title')?.scrollIntoView({behavior:'smooth',block:'center'});
+    const target=document.getElementById('title');window.JobfitStepAccordion?.openBlock?.(target?.closest('.block'));
+    target?.scrollIntoView({behavior:'smooth',block:'center'});target?.focus();
     ctx.toast('대표 경험을 분석칸에 가져왔습니다.');
   }
   function makeExperiencePrompt(){
@@ -262,7 +270,16 @@ R · Result: 그 행동 뒤 무엇이 달라졌는가
 
 첫 질문부터 시작해줘.`;
   }
-  function v(id){return document.getElementById(id)?.value?.trim?.()||''}
+  function evidenceGradeFor(type){
+    if(['수치·지표','산출물·문서','수상·선발·평가결과','작업기록·로그'].includes(type))return 'A · 객관적 자료로 확인 가능';
+    if(['교수·상사·고객 피드백','동료·팀 피드백'].includes(type))return 'B · 타인의 피드백/평가로 확인';
+    if(type==='자기기억만')return 'C · 본인 설명 중심';
+    return '';
+  }
+  function updateEvidenceGradePreview(){const el=document.getElementById('evidenceGradePreview');if(!el)return;const grade=evidenceGradeFor(v('evidenceType'));el.textContent=grade?`확인 수준 · ${grade}`:'증거 유형을 선택하면 확인 수준을 자동으로 표시합니다.'}
+  function updateActionEvidencePreview(){const el=document.getElementById('actionEvidencePreview');if(!el)return;el.textContent=v('action')||'04에서 ‘내가 직접 한 행동’을 입력하면 여기에 표시됩니다.'}
+  function updateCompetencyCue(i){const code=v(`comp_${i}`),def=competencyByCode(code),el=document.getElementById(`compCue_${i}`);if(el)el.textContent=def?`확인할 행동 예: ${def.cues}`:'역량을 선택하면 확인할 행동 예시가 표시됩니다.'}
+    function v(id){return document.getElementById(id)?.value?.trim?.()||''}
   function n(id){return Number(document.getElementById(id)?.value||0)}
   function ck(id){return !!document.getElementById(id)?.checked}
   function set(id,val){const el=document.getElementById(id);if(el)el.value=val}
@@ -325,7 +342,7 @@ function dnaBridgeHtml(dna,ctx){
   return `<div class="dnaBridge"><div class="dnaBridgeHead"><b>STEP 1 → STEP 2</b><span>가설은 참고만 하고 경험으로 확인합니다.</span></div>${rows.map(([k,val])=>`<div class="dnaBridgeRow"><small>${ctx.escapeHtml(k)}</small><p>${ctx.escapeHtml(val)}</p></div>`).join('')}</div>`;
 }
 function best3Row(key,label,saved,ctx){return `<div class="best3Row"><div class="best3Label"><b>${ctx.escapeHtml(label)}</b></div><input class="input" id="best3_${key}_title" value="${ctx.escapeHtml(saved?.title||'')}" placeholder="경험 이름"><textarea id="best3_${key}_summary" placeholder="무엇을 했고 왜 이 경험이 떠오르는지 한두 문장">${ctx.escapeHtml(saved?.summary||'')}</textarea></div>`}
-function competencyRow(i){return `<div class="metricCard"><b>역량 ${i}</b><div class="field"><label>Jobfit 표준역량</label><select id="comp_${i}"><option value="">선택</option>${COMPETENCY_DICTIONARY.map(x=>`<option value="${x.code}">${x.code} · ${x.label}</option>`).join('')}</select><span class="hint">선택 후 근거 행동이 실제 경험에 있는지 확인하세요.</span></div><div class="field" style="margin-top:8px"><label>판정</label><select id="compStatus_${i}"><option>행동 확인</option><option>추가 확인 필요</option><option>현재 경험에서 확인되지 않음</option></select></div><div class="field" style="margin-top:8px"><label>근거 행동</label><textarea id="compEv_${i}" placeholder="이 역량을 보여주는 실제 행동 한 문장"></textarea></div><label class="checkRow"><input type="checkbox" id="compVerified_${i}"><div><b>이 역량과 근거를 내가 확인했습니다.</b></div></label></div>`}
+function competencyRow(i){return `<div class="metricCard compactCompetency"><b>역량 후보 ${i}</b><div class="field"><label>Jobfit 표준역량</label><select id="comp_${i}"><option value="">선택하지 않아도 됨</option>${COMPETENCY_DICTIONARY.map(x=>`<option value="${x.code}">${x.code} · ${x.label}</option>`).join('')}</select><span class="hint" id="compCue_${i}">역량을 선택하면 확인할 행동 예시가 표시됩니다.</span></div><div class="field" style="margin-top:8px"><label>판정</label><select id="compStatus_${i}"><option value="">판정 선택</option><option>행동 확인</option><option>추가 확인 필요</option><option>현재 경험에서 확인되지 않음</option></select></div><div class="field" style="margin-top:8px"><label>근거 행동 한 줄</label><input class="input" id="compEv_${i}" placeholder="04의 실제 행동 중 근거가 되는 부분"></div></div>`}
 function score(id,label){return `<div class="field"><label>${label} <span class="muted">1–5</span></label><select id="${id}">${[1,2,3,4,5].map(n=>`<option value="${n}" ${n===3?'selected':''}>${n}${n===1?' 낮음':n===5?' 높음':''}</option>`).join('')}</select></div>`}
 function check(id,text){return `<label class="checkRow"><input type="checkbox" id="${id}"><div><b>${text}</b></div></label>`}
 function txt(id,label,value,ph,ctx){return `<div class="field"><label>${label}</label><input class="input" id="${id}" value="${ctx.escapeHtml(value||'')}" placeholder="${ctx.escapeHtml(ph||'')}"></div>`}
@@ -340,5 +357,5 @@ function experienceMapHtml(items,ctx){
   return `<div class="experienceMapGrid">${items.map((x,i)=>`<div class="mapCard"><span class="rankTag">Experience ${i+1}</span><h4>${ctx.escapeHtml(x.title)}</h4><div><small>내 행동</small><p>${ctx.escapeHtml(x.action||'아직 정리하지 않음')}</p></div><div><small>결과·증거</small><p>${ctx.escapeHtml(x.result||'결과 미입력')}${x.evidence?` · ${ctx.escapeHtml(x.evidence)}`:''}</p></div><div><small>역량 + 근거</small>${(x.competencyEvidence||[]).length?`<ul>${x.competencyEvidence.map(c=>`<li><b>${ctx.escapeHtml(c.keyword||'역량')}</b> · ${ctx.escapeHtml(c.evidence||'근거행동 미입력')}</li>`).join('')}</ul>`:`<p>${(x.competencies||[]).map(c=>ctx.escapeHtml(c)).join(', ')||'아직 추출하지 않음'}</p>`}</div></div>`).join('')}</div>`;
 }
 function styleBlock(){return `<style>
-.experienceCompetencyWeek4 .moduleHead{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}.experienceCompetencyWeek4 .moduleHead>span{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#eef0ff;color:#4940b8;font-weight:900;flex:0 0 auto}.experienceCompetencyWeek4 .moduleHead h3{margin:0 0 3px}.experienceCompetencyWeek4 .moduleHead p{margin:0;color:var(--muted);font-size:13px}.dnaBridge{border:1px solid var(--line);border-radius:16px;overflow:hidden}.dnaBridgeHead{display:flex;justify-content:space-between;gap:10px;padding:12px 14px;background:#f7f8ff}.dnaBridgeHead span{font-size:12px;color:var(--muted)}.dnaBridgeRow{padding:10px 14px;border-top:1px solid var(--line)}.dnaBridgeRow small{color:var(--muted);font-weight:800}.dnaBridgeRow p{margin:4px 0 0;white-space:pre-wrap}.best3Row{display:grid;grid-template-columns:220px 1fr 1.5fr;gap:9px;align-items:stretch;margin-top:9px}.best3Label{display:flex;align-items:center;padding:10px 12px;background:#fafafa;border:1px solid var(--line);border-radius:12px}.best3Row textarea{min-height:70px}.repChoices{display:flex;flex-wrap:wrap;gap:8px}.repChoices label input{position:absolute;opacity:0}.repChoices label span{display:block;padding:8px 12px;border:1px solid var(--line);border-radius:999px;cursor:pointer}.repChoices label input:checked+span{background:#5b50dd;color:#fff;border-color:#5b50dd}.qualityBox{border:1px solid var(--line);border-radius:14px;padding:10px}.starHandoff{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.starHandoff>div{border:1px solid var(--line);border-radius:12px;padding:10px;background:#fafbff}.starHandoff b{display:block;margin-bottom:4px}.starHandoff span{display:block;font-size:12px;line-height:1.45;color:var(--muted)}.summaryBox{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fafbff}.summaryBox h4{margin:0 0 6px}.experienceMapGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.mapCard{border:1px solid var(--line);border-radius:14px;padding:12px}.mapCard h4{margin:8px 0 12px}.mapCard small{color:var(--muted);font-weight:800}.mapCard p{margin:4px 0 10px;line-height:1.55}.mapCard ul{margin:6px 0 0;padding-left:18px}.mapCard li{margin:5px 0}@media(max-width:760px){.best3Row,.experienceMapGrid,.starHandoff{grid-template-columns:1fr}.dnaBridgeHead{display:block}.dnaBridgeHead span{display:block;margin-top:4px}}
+.experienceCompetencyWeek4 .moduleHead{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}.experienceCompetencyWeek4 .moduleHead>span{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#eef0ff;color:#4940b8;font-weight:900;flex:0 0 auto}.experienceCompetencyWeek4 .moduleHead h3{margin:0 0 3px}.experienceCompetencyWeek4 .moduleHead p{margin:0;color:var(--muted);font-size:13px}.dnaBridge{border:1px solid var(--line);border-radius:16px;overflow:hidden}.dnaBridgeHead{display:flex;justify-content:space-between;gap:10px;padding:12px 14px;background:#f7f8ff}.dnaBridgeHead span{font-size:12px;color:var(--muted)}.dnaBridgeRow{padding:10px 14px;border-top:1px solid var(--line)}.dnaBridgeRow small{color:var(--muted);font-weight:800}.dnaBridgeRow p{margin:4px 0 0;white-space:pre-wrap}.best3Row{display:grid;grid-template-columns:220px 1fr 1.5fr;gap:9px;align-items:stretch;margin-top:9px}.best3Label{display:flex;align-items:center;padding:10px 12px;background:#fafafa;border:1px solid var(--line);border-radius:12px}.best3Row textarea{min-height:70px}.repChoices{display:flex;flex-wrap:wrap;gap:8px}.repChoices label input{position:absolute;opacity:0}.repChoices label span{display:block;padding:8px 12px;border:1px solid var(--line);border-radius:999px;cursor:pointer}.repChoices label input:checked+span{background:#5b50dd;color:#fff;border-color:#5b50dd}.qualityBox{border:1px solid var(--line);border-radius:14px;padding:10px}.evidenceGradeLine{margin-top:8px;font-size:12px;color:var(--muted);font-weight:750}.actionSourceBox{border:1px solid #dbe4ff;background:#f7f9ff;border-radius:14px;padding:12px}.actionSourceBox b{display:block;margin-bottom:5px}.actionSourceBox p{margin:0;white-space:pre-wrap;line-height:1.55;color:#41547f}.compactCompetency .field{gap:5px}.starHandoff{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.starHandoff>div{border:1px solid var(--line);border-radius:12px;padding:10px;background:#fafbff}.starHandoff b{display:block;margin-bottom:4px}.starHandoff span{display:block;font-size:12px;line-height:1.45;color:var(--muted)}.summaryBox{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fafbff}.summaryBox h4{margin:0 0 6px}.experienceMapGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.mapCard{border:1px solid var(--line);border-radius:14px;padding:12px}.mapCard h4{margin:8px 0 12px}.mapCard small{color:var(--muted);font-weight:800}.mapCard p{margin:4px 0 10px;line-height:1.55}.mapCard ul{margin:6px 0 0;padding-left:18px}.mapCard li{margin:5px 0}@media(max-width:760px){.best3Row,.experienceMapGrid,.starHandoff{grid-template-columns:1fr}.dnaBridgeHead{display:block}.dnaBridgeHead span{display:block;margin-top:4px}}
 </style>`}
