@@ -20,11 +20,11 @@ if(isInjeCourse){
   }
 }
 
-await import('./app.js?v=20');
+await import('./app.js?v=21');
 await import('./injeClassroom.js?v=17');
 await import('./careerDnaUx.js?v=7');
 await import('./careerDnaStudentUx.js?v=1');
-await import('./careerDnaLearningFlowUx.js?v=5');
+await import('./careerDnaLearningFlowUx.js?v=6');
 const {startOperationalSync}=await import('./operationalSync.js?v=1');
 startContinuity();
 startOperationalSync();
