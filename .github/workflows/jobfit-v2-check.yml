@@ -12,6 +12,12 @@ on:
       - 'docs/JOBFIT_DEVELOPMENT_RULES.md'
       - 'docs/JOBFIT_RELEASE_GATE.md'
       - '.github/workflows/jobfit-v2-check.yml'
+      - '.github/workflows/main-pr-guard.yml'
+      - '.github/pull_request_template.md'
+      - 'docs/JOBFIT_RELEASE_RULES.md'
+      - '.github/workflows/main-pr-guard.yml'
+      - '.github/pull_request_template.md'
+      - 'docs/JOBFIT_RELEASE_RULES.md'
   push:
     branches:
       - main

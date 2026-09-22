@@ -1,0 +1,28 @@
+name: Main PR guard
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  require-merge-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Reject direct pushes to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          parents=$(git rev-list --parents -n 1 "$GITHUB_SHA")
+          parent_count=$(awk '{print NF-1}' <<< "$parents")
+          echo "main commit $GITHUB_SHA has $parent_count parent(s)"
+          if [ "$parent_count" -lt 2 ]; then
+            echo "::error::Direct/squash/rebase push detected on main. Jobfit production changes must enter through a PR using a merge commit after required checks pass."
+            exit 1
+          fi
+          echo "PASS: main was updated by a merge commit."
