@@ -6,6 +6,9 @@ on:
       - 'index.html'
       - 'v2/**'
       - '.github/workflows/jobfit-stabilization-smoke.yml'
+      - '.github/workflows/main-pr-guard.yml'
+      - '.github/pull_request_template.md'
+      - 'docs/JOBFIT_RELEASE_RULES.md'
   workflow_dispatch:
 
 permissions:
