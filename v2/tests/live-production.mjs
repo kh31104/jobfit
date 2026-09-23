@@ -6,7 +6,7 @@ let failed=false;
 function assert(value,message){if(!value)throw new Error(message)}
 function moduleHead(page,title){return page.locator('.careerDnaStandard .moduleHead').filter({has:page.locator('h3',{hasText:title})}).first()}
 async function expandModule(page,title){const head=moduleHead(page,title);if((await head.getAttribute('aria-expanded'))!=='true')await head.click()}
-async function waitCareerUx(page){await page.waitForFunction(()=>document.querySelectorAll('.careerDnaStandard .jobfitModuleToggle').length===8&&document.querySelectorAll('.careerDnaStandard .jobfitModuleStatus').length===8&&!!document.querySelector('.jobfitStepProgressText'))}
+async function waitCareerUx(page){await page.waitForFunction(()=>document.querySelectorAll('.careerDnaStandard .jobfitModuleToggle').length===7&&document.querySelectorAll('.careerDnaStandard .jobfitModuleStatus').length===7&&!!document.querySelector('.jobfitStepProgressText'))}
 
 async function run(name,viewport){
   const context=await browser.newContext({viewport});const page=await context.newPage();const errors=[];
@@ -31,15 +31,16 @@ async function run(name,viewport){
 
     await page.locator('.stepBtn[data-step="1"]').click();await page.waitForSelector('#makePrompt',{state:'attached'});await page.waitForSelector('[data-anchor-item]',{state:'attached'});await waitCareerUx(page);
     const body=(await page.locator('#stepRoot').textContent())||'';
-    for(const text of ['Balance Game','Career Anchor','내가 생각하는 나의 강점','VIA 성격강점','다중지능검사','내가 생각하는 나 × 검사에서 나타난 나','AI 통합분석','Career DNA 가설 v1'])assert(body.includes(text),`Missing deployed module: ${text}`);
+    for(const text of ['Balance Game','Career Anchor','내가 생각하는 나의 강점','VIA 성격강점','내가 생각하는 나 × 검사에서 나타난 나','AI 통합분석','Career DNA 가설 v1'])assert(body.includes(text),`Missing deployed module: ${text}`);
     assert(body.includes('밸런스게임'),'Korean-first Balance Game label missing');
     assert(body.includes('커리어 앵커'),'Korean-first Career Anchor label missing');
     assert(!body.includes('직업선호도검사'),'Legacy Work24 S/L content remains in deployed Week3');
+    assert(!body.includes('다중지능검사'),'Removed multiple-intelligence module remains in deployed Week3');
     assert((await page.locator('[data-anchor-item]').count())===240,'Deployed Career Anchor must expose 40 items x 6 choices');
-    assert((await page.locator('.careerDnaStandard .jobfitModuleToggle[aria-expanded="false"]').count())===8,'Deployed Career DNA modules must start collapsed');
-    assert((await page.locator('.careerDnaStandard .jobfitModuleStatus').count())===8,'Module progress badges missing');
-    assert((await page.locator('.jobfitReturnGuide').count())===2,'External-test return guidance missing');
-    assert((await page.locator('.jobfitStepProgressText').textContent()).includes('0/8 완료'),'Initial Career DNA progress text incorrect');
+    assert((await page.locator('.careerDnaStandard .jobfitModuleToggle[aria-expanded="false"]').count())===7,'Deployed Career DNA modules must start collapsed');
+    assert((await page.locator('.careerDnaStandard .jobfitModuleStatus').count())===7,'Module progress badges missing');
+    assert((await page.locator('.jobfitReturnGuide').count())===1,'External-test return guidance missing');
+    assert((await page.locator('.jobfitStepProgressText').textContent()).includes('0/7 완료'),'Initial Career DNA progress text incorrect');
     assert((await page.locator('#makePrompt').textContent()).includes('SWOT 통합분석'),'Week3 SWOT prompt button label incorrect');
     if(viewport.width<=480){const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);assert(overflow<=2,`Week3 mobile horizontal overflow detected: ${overflow}px`)}
 
@@ -51,10 +52,9 @@ async function run(name,viewport){
 
     await expandModule(page,'내가 생각하는 나의 강점');for(const i of [1,2,3,4])await page.locator('[data-strength]').nth(i).click();
     await expandModule(page,'VIA 성격강점');await page.locator('#via_0').fill('학구열');await page.locator('#via_1').fill('신중성');
-    await expandModule(page,'다중지능검사');await page.locator('#mi_0').selectOption({label:'자기성찰지능'});
     await expandModule(page,'내가 생각하는 나 × 검사에서 나타난 나');await page.locator('#compare_repeat').fill('학습과 신중함이 반복해서 보인다.');
     await expandModule(page,'AI 통합분석');assert((await page.locator('.jobfitAiReadiness').textContent()).includes('분석 준비도'),'AI readiness guidance missing');await page.locator('#makePrompt').click();await page.waitForFunction(()=>document.querySelector('#promptBox')?.textContent?.includes('자소서 소재 연결표 3개'));const prompt=(await page.locator('#promptBox').textContent())||'';
-    assert(prompt.includes('[내가 생각하는 나의 강점]'),'Self-strength module missing from deployed prompt');assert(prompt.includes('[VIA 성격강점]'),'VIA missing from deployed prompt');assert(prompt.includes('[다중지능]'),'MI missing from deployed prompt');assert(prompt.includes('이번 단계는 인터뷰가 아니라'),'Week3 must be one-shot integration, not interview');assert(prompt.includes('직업을 추천하지 않는다.'),'No-job-recommendation guard missing');assert(prompt.includes('[추가 출력 · 자기소개서 활용 키워드 + SWOT]'),'Deployed SWOT extension missing');assert(prompt.includes('약점/보완 키워드 3개'),'Deployed weakness keyword output missing');assert(prompt.includes('SO 전략'),'Deployed SWOT strategy output missing');assert(prompt.includes('자소서 소재 연결표 3개'),'Resume material mapping table missing');assert(prompt.includes('바로 활용 가능 / 경험 확인 필요'),'Resume evidence classification missing');assert(prompt.includes('STEP 2 경험 확인 필요'),'STEP2 evidence guard missing');assert(prompt.includes('완성된 자소서 문장을 쓰지 않는다'),'Unsupported finished cover-letter sentence guard missing');assert(!/\bNaN\b|\bnull\b|undefined/.test(prompt),'Prompt contains invalid placeholder values');
+    assert(prompt.includes('[내가 생각하는 나의 강점]'),'Self-strength module missing from deployed prompt');assert(prompt.includes('[VIA 성격강점]'),'VIA missing from deployed prompt');assert(!prompt.includes('[다중지능]'),'Removed MI module leaked into deployed prompt');assert(prompt.includes('이번 단계는 인터뷰가 아니라'),'Week3 must be one-shot integration, not interview');assert(prompt.includes('직업을 추천하지 않는다.'),'No-job-recommendation guard missing');assert(prompt.includes('[추가 출력 · 자기소개서 활용 키워드 + SWOT]'),'Deployed SWOT extension missing');assert(prompt.includes('약점/보완 키워드 3개'),'Deployed weakness keyword output missing');assert(prompt.includes('SO 전략'),'Deployed SWOT strategy output missing');assert(prompt.includes('자소서 소재 연결표 3개'),'Resume material mapping table missing');assert(prompt.includes('바로 활용 가능 / 경험 확인 필요'),'Resume evidence classification missing');assert(prompt.includes('STEP 2 경험 확인 필요'),'STEP2 evidence guard missing');assert(prompt.includes('완성된 자소서 문장을 쓰지 않는다'),'Unsupported finished cover-letter sentence guard missing');assert(!/\bNaN\b|\bnull\b|undefined/.test(prompt),'Prompt contains invalid placeholder values');
     const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));assert(saved?.assessments?.careerDNA?.promptMeta?.version==='career-dna-standard-v1','Prompt version not persisted');
     await page.locator('#saveDNA').click();await page.waitForTimeout(100);const saved2=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));assert(saved2?.assessments?.careerDNA?.interest?.type==='STANDARD','STEP1 compatibility completion marker missing');
 
