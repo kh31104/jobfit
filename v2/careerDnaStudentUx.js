@@ -93,16 +93,15 @@ function moduleState(block,index,blocks){
   if(index===1){const n=block.querySelectorAll('[data-anchor-item]:checked').length,b=block.querySelectorAll('[data-bonus-item]:checked').length;if(n===40&&b===3)return{label:'완료',complete:true,partial:false};if(n===40)return{label:`추가선택 ${b}/3`,complete:false,partial:true};return n?{label:`${n}/40`,complete:false,partial:true}:{label:'시작 전',complete:false,partial:false}}
   if(index===2){const n=block.querySelectorAll('.strengthPick.selected').length;return n===5?{label:'완료',complete:true,partial:false}:n?{label:`${n}/5`,complete:false,partial:true}:{label:'시작 전',complete:false,partial:false}}
   if(index===3){const n=countFilled([0,1,2,3,4].map(i=>block.querySelector(`#via_${i}`)));return n===5?{label:'완료',complete:true,partial:false}:n?{label:`${n}/5`,complete:false,partial:true}:{label:'시작 전',complete:false,partial:false}}
-  if(index===4){const n=countFilled([0,1,2].map(i=>block.querySelector(`#mi_${i}`)));return n===3?{label:'완료',complete:true,partial:false}:n?{label:`${n}/3`,complete:false,partial:true}:{label:'시작 전',complete:false,partial:false}}
-  if(index===5){const n=countFilled(['compare_repeat','compare_connect','compare_unexpected','compare_verify'].map(id=>block.querySelector(`#${id}`)));return n===4?{label:'완료',complete:true,partial:false}:n?{label:`${n}/4`,complete:false,partial:true}:{label:'시작 전',complete:false,partial:false}}
-  if(index===6){const made=!!String(block.querySelector('#promptBox')?.textContent||'').trim();const ready=blocks.slice(0,6).filter((b,i)=>moduleState(b,i,blocks).complete).length;return made?{label:'생성됨',complete:true,partial:false}:{label:`준비 ${ready}/6`,complete:false,partial:ready>0}}
-  if(index===7){const n=countFilled([block.querySelector('#aiHypothesis'),block.querySelector('#hypothesisFit')]);return n===2?{label:'완료',complete:true,partial:false}:n?{label:`${n}/2`,complete:false,partial:true}:{label:'저장 전',complete:false,partial:false}}
+  if(index===4){const n=countFilled(['compare_repeat','compare_connect','compare_unexpected','compare_verify'].map(id=>block.querySelector(`#${id}`)));return n===4?{label:'완료',complete:true,partial:false}:n?{label:`${n}/4`,complete:false,partial:true}:{label:'시작 전',complete:false,partial:false}}
+  if(index===5){const made=!!String(block.querySelector('#promptBox')?.textContent||'').trim();const ready=blocks.slice(0,5).filter((b,i)=>moduleState(b,i,blocks).complete).length;return made?{label:'생성됨',complete:true,partial:false}:{label:`준비 ${ready}/5`,complete:false,partial:ready>0}}
+  if(index===6){const n=countFilled([block.querySelector('#aiHypothesis'),block.querySelector('#hypothesisFit')]);return n===2?{label:'완료',complete:true,partial:false}:n?{label:`${n}/2`,complete:false,partial:true}:{label:'저장 전',complete:false,partial:false}}
   return{label:'',complete:false,partial:false};
 }
 
 function updateStatuses(root=currentRoot()){
   const blocks=moduleBlocks(root);
-  if(blocks.length!==8)return;
+  if(blocks.length!==7)return;
   adjustLabels(blocks);
   const states=blocks.map((block,i)=>moduleState(block,i,blocks));
   blocks.forEach((block,i)=>{
@@ -116,29 +115,28 @@ function updateStatuses(root=currentRoot()){
   });
   const completed=states.filter(x=>x.complete).length;
   const section=careerSection(root),bar=section?.querySelector('.progress > span');
-  if(bar){const width=`${Math.round(completed/8*100)}%`;if(bar.style.width!==width)bar.style.width=width}
+  if(bar){const width=`${Math.round(completed/7*100)}%`;if(bar.style.width!==width)bar.style.width=width}
   const progress=section?.querySelector('.progress');
   if(progress){
     let text=section.querySelector('.jobfitStepProgressText');
     if(!text){text=document.createElement('div');text.className='jobfitStepProgressText';progress.insertAdjacentElement('afterend',text)}
-    setTextIfChanged(text,`Career DNA 진행 ${completed}/8 완료 · 제목을 눌러 필요한 항목을 이어서 진행하세요.`);
+    setTextIfChanged(text,`Career DNA 진행 ${completed}/7 완료 · 제목을 눌러 필요한 항목을 이어서 진행하세요.`);
   }
-  const ai=blocks[6];
+  const ai=blocks[5];
   if(ai){
     let panel=ai.querySelector('.jobfitAiReadiness');
     if(!panel){panel=document.createElement('div');panel.className='callout info jobfitAiReadiness';ai.querySelector('#careerDnaAiGuide')?.insertAdjacentElement('afterend',panel)}
-    const ready=states.slice(0,6).filter(x=>x.complete).length;
-    const html=ready===6?'<b>분석 준비 완료</b> · 01~06 입력이 모두 완료되었습니다. 현재 결과로 통합분석을 만들 수 있습니다.':`<b>분석 준비도 ${ready}/6</b> · 일부 자료만으로도 프롬프트는 만들 수 있지만, 비어 있는 항목은 해석에서 제외됩니다. 가능하면 01~06을 먼저 확인하세요.`;
+    const ready=states.slice(0,5).filter(x=>x.complete).length;
+    const html=ready===5?'<b>분석 준비 완료</b> · 01~05 입력이 모두 완료되었습니다. 현재 결과로 통합분석을 만들 수 있습니다.':`<b>분석 준비도 ${ready}/5</b> · 일부 자료만으로도 프롬프트는 만들 수 있지만, 비어 있는 항목은 해석에서 제외됩니다. 가능하면 01~05를 먼저 확인하세요.`;
     setHtmlIfChanged(panel,html);
   }
 }
 
 function addReturnGuides(root=currentRoot()){
   const blocks=moduleBlocks(root);
-  if(blocks.length!==8)return;
+  if(blocks.length!==7)return;
   const guides=[
-    [3,'검사를 새 탭에서 마친 뒤 이 화면으로 돌아와 <b>결과표의 TOP 5 강점명만</b> 입력하세요. 전체 결과를 복사해 넣을 필요는 없습니다.'],
-    [4,'검사를 새 탭에서 마친 뒤 이 화면으로 돌아와 <b>상위 3개 영역만</b> 선택하세요. 점수 전체를 입력할 필요는 없습니다.']
+    [3,'검사를 새 탭에서 마친 뒤 이 화면으로 돌아와 <b>결과표의 TOP 5 강점명만</b> 입력하세요. 전체 결과를 복사해 넣을 필요는 없습니다.']
   ];
   guides.forEach(([i,html])=>{
     const block=blocks[i];
@@ -146,7 +144,7 @@ function addReturnGuides(root=currentRoot()){
     const box=document.createElement('div');box.className='callout good jobfitReturnGuide';box.innerHTML=html;
     block.querySelector('.actions')?.insertAdjacentElement('afterend',box);
   });
-  const last=blocks[7];
+  const last=blocks[6];
   if(last&&!last.querySelector('.jobfitHypothesisGuide')){
     const box=document.createElement('div');box.className='callout info jobfitHypothesisGuide';
     box.innerHTML='<b>저장 방법</b> · AI 답변 전체를 붙여넣을 필요는 없습니다. 내가 확인한 강점·보완점·추가 확인 질문 중 맞는 내용만 남기고, 아래 자기평가까지 선택하세요.';
@@ -194,7 +192,7 @@ function markDirty(event){
     setTimeout(()=>updateStatuses(root),0);
     return;
   }
-  if(target?.closest?.('.strengthPick')||target?.matches?.('[data-anchor-item],[data-bonus-item],#via_0,#via_1,#via_2,#via_3,#via_4,#mi_0,#mi_1,#mi_2,#compare_repeat,#compare_connect,#compare_unexpected,#compare_verify,#aiHypothesis,#hypothesisFit'))dirty=true;
+  if(target?.closest?.('.strengthPick')||target?.matches?.('[data-anchor-item],[data-bonus-item],#via_0,#via_1,#via_2,#via_3,#via_4,#compare_repeat,#compare_connect,#compare_unexpected,#compare_verify,#aiHypothesis,#hypothesisFit'))dirty=true;
   setTimeout(()=>updateStatuses(root),0);
 }
 
