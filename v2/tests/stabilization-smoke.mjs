@@ -25,10 +25,11 @@ async function run(name,fn){
 await run('STEP1 collapsed modules open on click',async page=>{
   await page.goto(`${base}?course=INJE2026&measures=false`,{waitUntil:'domcontentloaded'});
   await page.locator('.stepBtn[data-step="1"]').click();
-  await page.waitForFunction(()=>document.querySelectorAll('.careerDnaStandard .jobfitModuleToggle').length===8);
+  await page.waitForFunction(()=>document.querySelectorAll('.careerDnaStandard .jobfitModuleToggle').length===7);
   const heads=page.locator('.careerDnaStandard .jobfitModuleToggle');
-  assert(await heads.count()===8,'STEP1 must expose 8 clickable module headers');
-  for(let i=0;i<8;i++)assert(await heads.nth(i).getAttribute('aria-expanded')==='false',`module ${i+1} must start collapsed`);
+  assert(await heads.count()===7,'STEP1 must expose 7 clickable module headers');
+  assert(!((await page.locator('#stepRoot').textContent())||'').includes('다중지능검사'),'STEP1 must not render multiple-intelligence module');
+  for(let i=0;i<7;i++)assert(await heads.nth(i).getAttribute('aria-expanded')==='false',`module ${i+1} must start collapsed`);
   await heads.nth(0).click();
   assert(await heads.nth(0).getAttribute('aria-expanded')==='true','first STEP1 module did not expand');
   const block=heads.nth(0).locator('..');
@@ -40,12 +41,13 @@ await run('STEP1 collapsed modules open on click',async page=>{
 await run('STEP1 learner data survives reload and IndexedDB recovery',async page=>{
   await page.goto(`${base}?course=INJE2026&measures=false`,{waitUntil:'domcontentloaded'});
   await page.waitForSelector('#makeCodeBtn');
-  const sample={version:2.2,activeStep:1,mode:'full',profile:{courseCode:'INJE2026',institution:'인제대학교',anonCode:'JF26-SAFE22',age:'22',grade:'3학년'},baseline:{jobDecision:'탐색 중',prepStage:'정보탐색'},research:{consent:false,measurements:{pre:{}}},assessments:{careerDNA:{balance:{answers:[{questionId:1,choice:'A',label:'선택 A',value:'안정',confirmedAt:'2026-09-21T04:00:00.000Z'},null,null,null,null,null,null]},selfStrengths:['학구열','신중성'],viaTop5:['학구열','신중성','진실성','희망','친절'],multipleIntelligence:{top3:['자기성찰지능','언어지능','인간친화지능']},comparison:{repeat:'오늘 STEP1 저장 내용'},hypothesis:{text:'오늘 STEP1 저장 가설',selfCheck:'어느 정도 맞음'}},experienceCompetency:{experiences:[]}},artifacts:{},meta:{updatedAt:new Date().toISOString()}};
+  const sample={version:2.2,activeStep:1,mode:'full',profile:{courseCode:'INJE2026',institution:'인제대학교',anonCode:'JF26-SAFE22',age:'22',grade:'3학년'},baseline:{jobDecision:'탐색 중',prepStage:'정보탐색'},research:{consent:false,measurements:{pre:{}}},assessments:{careerDNA:{balance:{answers:[{questionId:1,choice:'A',label:'선택 A',value:'안정',confirmedAt:'2026-09-21T04:00:00.000Z'},null,null,null,null,null,null]},selfStrengths:['학습','신중함'],viaTop5:['학구열','신중성','진실성','희망','친절'],multipleIntelligence:{top3:['자기성찰지능','언어지능','인간친화지능']},comparison:{repeat:'오늘 STEP1 저장 내용'},hypothesis:{text:'오늘 STEP1 저장 가설',selfCheck:'어느 정도 맞음'}},experienceCompetency:{experiences:[]}},artifacts:{},meta:{updatedAt:new Date().toISOString()}};
   await page.evaluate(s=>localStorage.setItem('jobfit:v2:learner',JSON.stringify(s)),sample);
   await page.reload({waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.JobfitStorageContinuity);
   let s=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   assert(s.profile.anonCode==='JF26-SAFE22','anonymous code lost after reload');
+  assert(s.assessments.careerDNA.selfStrengths[0]==='학습','Self-strength selection lost after reload');
   assert(s.assessments.careerDNA.viaTop5[0]==='학구열','VIA lost after reload');
   assert(s.assessments.careerDNA.comparison.repeat==='오늘 STEP1 저장 내용','comparison lost after reload');
   assert(s.assessments.careerDNA.hypothesis.text==='오늘 STEP1 저장 가설','hypothesis lost after reload');
@@ -56,6 +58,7 @@ await run('STEP1 learner data survives reload and IndexedDB recovery',async page
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')||'{}')?.profile?.anonCode==='JF26-SAFE22');
   s=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   assert(s.assessments.careerDNA.balance.answers[0].choice==='A','balance answer lost after IndexedDB recovery');
+  assert(s.assessments.careerDNA.selfStrengths[0]==='학습','Self-strength selection lost after IndexedDB recovery');
   assert(s.assessments.careerDNA.hypothesis.text==='오늘 STEP1 저장 가설','STEP1 hypothesis lost after IndexedDB recovery');
 });
 

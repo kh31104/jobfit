@@ -18,10 +18,6 @@ const STEP1_COPY=[
     description:'공식 VIA 결과의 상위 5개를 입력해 내가 고른 강점과 비교할 자료를 만듭니다.'
   },
   {
-    title:'다중지능검사 · 활동 방식 살펴보기',
-    description:'상위 3개 영역을 입력해 내가 선호하는 활동과 문제해결 방식의 단서를 살펴봅니다.'
-  },
-  {
     title:'내가 생각하는 나 × 검사에서 나타난 나 · 비교하기',
     description:'반복되는 점·연결되는 점·예상과 다른 점을 직접 비교하고, 실제 경험에서 확인할 질문을 만듭니다.'
   },
@@ -101,13 +97,13 @@ function enhanceStep1(section){
 
   const flow=section.querySelector('.callout.info');
   if(flow&&flow.textContent.includes('오늘의 흐름')&&!flow.dataset.learningFlowCopy){
-    flow.innerHTML='<b>오늘의 흐름</b> · 가치 선택 → 커리어 기준 → 내가 보는 강점 → VIA → 다중지능 → 직접 비교 → AI 통합분석 → Career DNA v1';
+    flow.innerHTML='<b>오늘의 흐름</b> · 가치 선택 → 커리어 기준 → 내가 보는 강점 → VIA → 직접 비교 → AI 통합분석 → Career DNA v1';
     flow.dataset.learningFlowCopy='1';
   }
 
   const guide=section.querySelector('#careerDnaAiGuide');
   if(guide&&!guide.dataset.learningFlowGuide){
-    guide.innerHTML='<b>AI LAB 사용 순서</b><br>① 현재 내용 저장 → ② 통합분석 프롬프트 만들기 → ③ 복사해 수업에서 사용하는 AI에 붙여넣기 → ④ 결과의 근거와 ‘경험 확인 필요’ 표시 검토 → ⑤ 마지막의 Jobfit 저장용 요약을 중심으로 핵심만 정리 → ⑥ 08 Career DNA 가설에 저장<br><span class="muted">AI 결과는 최종 판정이 아닙니다. 실제 경험으로 확인하지 않은 강점·약점·역량은 다음 STEP에서 검증합니다. Jobfit이 입력내용을 AI로 자동 전송하지는 않습니다.</span>';
+    guide.innerHTML='<b>AI LAB 사용 순서</b><br>① 현재 내용 저장 → ② 통합분석 프롬프트 만들기 → ③ 복사해 수업에서 사용하는 AI에 붙여넣기 → ④ 결과의 근거와 ‘경험 확인 필요’ 표시 검토 → ⑤ 마지막의 Jobfit 저장용 요약을 중심으로 핵심만 정리 → ⑥ 07 Career DNA 가설에 저장<br><span class="muted">AI 결과는 최종 판정이 아닙니다. 실제 경험으로 확인하지 않은 강점·약점·역량은 다음 STEP에서 검증합니다. Jobfit이 입력내용을 AI로 자동 전송하지는 않습니다.</span>';
     guide.dataset.learningFlowGuide='1';
   }
 }
