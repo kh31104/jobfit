@@ -23,7 +23,7 @@ Jobfit STEP 3–4. 3주차 Career DNA와 4주차 Experience Map을 바탕으로 
 
 ### 01. 나의 직무탐색 근거 확인
 3주차와 4주차 자료를 세 묶음으로 본다.
-- 강점 단서: 내가 선택한 강점, VIA, 다중지능
+- 강점 단서: 내가 선택한 강점, VIA
 - 가치·커리어 기준: Balance Game, Career Anchor
 - 경험에서 확인한 역량: Experience Map의 행동·결과·역량·근거행동
 
