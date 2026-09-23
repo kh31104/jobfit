@@ -6,10 +6,20 @@ const INJE_CODES=new Set(['INJE2026','INJE-2026-2']);
 
 function parseState(raw){try{return raw?JSON.parse(raw):null}catch{return null}}
 function nonEmpty(v){return v!==undefined&&v!==null&&String(v).trim()!==''}
+function hasCareerDnaData(s){
+  const d=s?.assessments?.careerDNA||{};
+  if((d.balance?.answers||[]).some(Boolean))return true;
+  if((d.selfStrengths||[]).length||(d.viaTop5||[]).length)return true;
+  if((d.careerAnchor?.responses||[]).some(nonEmpty))return true;
+  if(Object.values(d.comparison||{}).some(nonEmpty))return true;
+  const h=d.hypothesis||{};
+  return nonEmpty(h.text)||nonEmpty(h.selfCheck)||(h.strengthKeywords||[]).length||(h.developmentKeywords||[]).length||(h.verifyQuestions||[]).length;
+}
 function hasLearningData(s){
   if(!s||typeof s!=='object')return false;
   if(nonEmpty(s.profile?.anonCode))return true;
   if(Object.values(s.baseline||{}).some(nonEmpty))return true;
+  if(hasCareerDnaData(s))return true;
   if(nonEmpty(s.assessments?.careerDNA?.interest?.type))return true;
   if((s.assessments?.experienceCompetency?.experiences||[]).length)return true;
   if(Object.keys(s.artifacts||{}).length)return true;
@@ -24,6 +34,7 @@ function richness(s){
   score+=Object.values(s.baseline||{}).filter(nonEmpty).length*2;
   score+=Object.keys(s.artifacts||{}).length*3;
   score+=(s.assessments?.experienceCompetency?.experiences||[]).length*3;
+  if(hasCareerDnaData(s))score+=8;
   if(nonEmpty(s.assessments?.careerDNA?.interest?.type))score+=5;
   return score;
 }
