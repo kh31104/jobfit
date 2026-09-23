@@ -25,7 +25,7 @@ async function run(name,fn){
   await routeClassroom(page);
   try{await fn(page);if(errors.length)throw new Error(errors.join('\n'));console.log(`PASS ${name}`)}catch(e){failed=true;console.error(`FAIL ${name}\n${e.stack||e}`)}finally{await context.close()}
 }
-async function openCareerDNA(page){await page.goto(`${base}?course=INJE2026`,{waitUntil:'networkidle'});await page.locator('.stepBtn[data-step="1"]').click();await page.waitForSelector('#makePrompt',{state:'attached'});await page.waitForFunction(()=>document.querySelectorAll('.careerDnaStandard .jobfitModuleToggle').length===8)}
+async function openCareerDNA(page){await page.goto(`${base}?course=INJE2026`,{waitUntil:'networkidle'});await page.locator('.stepBtn[data-step="1"]').click();await page.waitForSelector('#makePrompt',{state:'attached'});await page.waitForFunction(()=>document.querySelectorAll('.careerDnaStandard .jobfitModuleToggle').length===7)}
 function moduleHead(page,title){return page.locator('.careerDnaStandard .moduleHead').filter({has:page.locator('h3',{hasText:title})}).first()}
 async function expandModule(page,title){const head=moduleHead(page,title);if((await head.getAttribute('aria-expanded'))!=='true')await head.click()}
 async function completeAnchor(page){await expandModule(page,'Career Anchor');for(let i=0;i<40;i++){const value=(i%6)+1;await page.locator(`[data-anchor-item="${i}"][value="${value}"]`).check()}for(const n of [1,2,3])await page.locator(`[data-bonus-item][value="${n}"]`).check()}
@@ -42,12 +42,12 @@ await run('STEP 0-13 all load with classroom PRE enabled',async page=>{
 
 await run('Week 3 renders the agreed Career DNA standard sequence collapsed by title',async page=>{
   await openCareerDNA(page);const body=(await page.locator('#stepRoot').textContent())||'';
-  for(const text of ['Balance Game','Career Anchor','내가 생각하는 나의 강점','VIA 성격강점','다중지능검사','내가 생각하는 나 × 검사에서 나타난 나','AI 통합분석','Career DNA 가설 v1'])assert(body.includes(text),`Missing module: ${text}`);
+  for(const text of ['Balance Game','Career Anchor','내가 생각하는 나의 강점','VIA 성격강점','내가 생각하는 나 × 검사에서 나타난 나','AI 통합분석','Career DNA 가설 v1'])assert(body.includes(text),`Missing module: ${text}`);
   assert(!body.includes('직업선호도검사'),'Old Work24 S/L module must not remain in Week 3');
   assert(!body.includes('Career DNA 인터뷰 시작'),'Week 3 must not start the Career DNA interview');
   assert((await page.locator('[data-anchor-item]').count())===240,'40 Career Anchor items x 6 response choices expected');
   assert((await page.locator('[data-strength]').count())>=50,'Strength word picker missing');
-  assert((await page.locator('.careerDnaStandard .jobfitModuleToggle[aria-expanded="false"]').count())===8,'All eight Career DNA modules must start collapsed');
+  assert((await page.locator('.careerDnaStandard .jobfitModuleToggle[aria-expanded="false"]').count())===7,'All seven Career DNA modules must start collapsed');
   assert(await moduleHead(page,'Career Anchor').locator('p').isHidden(),'Career Anchor description should be hidden until opened');
   await expandModule(page,'Career Anchor');assert(await moduleHead(page,'Career Anchor').locator('p').isVisible(),'Career Anchor should expand on click');
 });
@@ -86,13 +86,12 @@ await run('Qualitative and quantitative inputs produce SWOT integration prompt a
   await openCareerDNA(page);
   await expandModule(page,'내가 생각하는 나의 강점');for(const i of [0,1,2,3,4])await page.locator('[data-strength]').nth(i).click();
   await expandModule(page,'VIA 성격강점');for(const [i,v] of ['학구열','신중성','진실성','희망','친절'].entries())await page.locator(`#via_${i}`).fill(v);
-  await expandModule(page,'다중지능검사');for(const [i,v] of ['자기성찰지능','언어지능','인간친화지능'].entries())await page.locator(`#mi_${i}`).selectOption({label:v});
   await expandModule(page,'내가 생각하는 나 × 검사에서 나타난 나');const reflection='학습과 신중함이 여러 결과에서 반복된다.';await page.locator('#compare_repeat').fill(reflection);await page.locator('#compare_verify').fill('협업에서도 같은 강점이 반복되는지 확인하고 싶다.');
   await expandModule(page,'AI 통합분석');await page.locator('#makePrompt').click();const prompt=(await page.locator('#promptBox').textContent())||'';
-  assert(prompt.includes('[내가 생각하는 나의 강점]'),'Self-strength module missing from prompt');assert(prompt.includes('[VIA 성격강점]'),'VIA missing from prompt');assert(prompt.includes('[다중지능]'),'MI missing from prompt');
-  assert(prompt.includes('이번 단계는 인터뷰가 아니라'),'Prompt must state Week 3 is not an interview');assert(prompt.includes('직업을 추천하지 않는다'),'Job recommendation guard missing');assert(prompt.includes('4주차 실제 경험으로 확인할 질문 3개'),'Week4 verification questions missing');
+  assert(prompt.includes('[내가 생각하는 나의 강점]'),'Self-strength module missing from prompt');assert(prompt.includes('[VIA 성격강점]'),'VIA missing from prompt');assert(!prompt.includes('[다중지능]'),'Removed MI must not appear in prompt');
+  assert(prompt.includes('이번 단계는 인터뷰가 아니라'),'Prompt must state Week 3 is not an interview');assert(prompt.includes('직업을 추천하지 않는다'),'Job recommendation guard missing');assert(prompt.includes('4주차 STEP 2 실제 경험으로 확인할 질문 3개'),'Week4 verification questions missing');
   assert(prompt.includes('[추가 출력 · 자기소개서 활용 키워드 + SWOT]'),'SWOT extension missing');assert(prompt.includes('강점 키워드 5개'),'Strength keyword output missing');assert(prompt.includes('약점/보완 키워드 3개'),'Weakness keyword output missing');assert(prompt.includes('SO 전략'),'SWOT strategy output missing');assert(prompt.includes('추가 정보 필요'),'Unsupported opportunity/threat guard missing');
-  const guide=(await page.locator('#careerDnaAiGuide').textContent())||'';assert(guide.includes('08 Career DNA 가설'),'AI guide must tell students where to save reviewed results');
+  const guide=(await page.locator('#careerDnaAiGuide').textContent())||'';assert(guide.includes('07 Career DNA 가설'),'AI guide must tell students where to save reviewed results');
   await expandModule(page,'Career DNA 가설 v1');
   await page.locator('#aiHypothesis').fill('학습과 신중함은 가설로 유지하되 실제 경험에서 확인한다.');
   await page.locator('#verifiedStrengthKeywords').fill('신중한 실행, 학습 민첩성, 협력');
