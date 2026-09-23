@@ -21,9 +21,14 @@ async function runSavedBrowser(){
     assert(await page.locator('#age').inputValue()==='22','Saved profile was not restored on same browser');
     let persisted=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
     assert(persisted?.assessments?.careerDNA?.balance?.answers?.[0]?.choice==='A','STEP 1 balance answer was lost after same-browser reload');
+    assert(persisted?.assessments?.careerDNA?.selfStrengths?.[0]==='학구열','STEP 1 self-strength selection was lost after same-browser reload');
     assert(persisted?.assessments?.careerDNA?.viaTop5?.[0]==='학구열','STEP 1 VIA result was lost after same-browser reload');
     assert(persisted?.assessments?.careerDNA?.comparison?.repeat==='오늘 STEP 1에서 저장한 비교 내용','STEP 1 comparison text was lost after same-browser reload');
     assert(persisted?.assessments?.careerDNA?.hypothesis?.text==='오늘 STEP 1에서 저장한 가설','STEP 1 hypothesis was lost after same-browser reload');
+    await page.locator('.stepBtn[data-step="1"]').click();await page.waitForSelector('[data-strength]');
+    assert(await page.locator('.strengthPick.selected').count()===2,'Saved self-strengths were not rendered selected after same-browser return');
+    assert(!((await page.locator('#stepRoot').textContent())||'').includes('다중지능검사'),'Removed multiple-intelligence module rendered after same-browser return');
+    await page.locator('.stepBtn[data-step="0"]').click();await page.waitForSelector('#anonCode');
     await page.evaluate(()=>window.JobfitStorageContinuity?.syncNow());
     await page.waitForTimeout(250);
     await page.evaluate(()=>localStorage.removeItem('jobfit:v2:learner'));
@@ -34,6 +39,7 @@ async function runSavedBrowser(){
     assert(await page.locator('#age').inputValue()==='22','IndexedDB mirror did not recover profile');
     persisted=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
     assert(persisted?.assessments?.careerDNA?.balance?.answers?.[0]?.choice==='A','IndexedDB recovery lost STEP 1 balance answer');
+    assert(persisted?.assessments?.careerDNA?.selfStrengths?.[0]==='학구열','IndexedDB recovery lost STEP 1 self-strength selection');
     assert(persisted?.assessments?.careerDNA?.viaTop5?.[0]==='학구열','IndexedDB recovery lost STEP 1 VIA result');
     assert(persisted?.assessments?.careerDNA?.comparison?.repeat==='오늘 STEP 1에서 저장한 비교 내용','IndexedDB recovery lost STEP 1 comparison text');
     assert(persisted?.assessments?.careerDNA?.hypothesis?.text==='오늘 STEP 1에서 저장한 가설','IndexedDB recovery lost STEP 1 hypothesis');
