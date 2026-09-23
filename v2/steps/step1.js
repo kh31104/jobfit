@@ -85,7 +85,7 @@ export async function render(ctx){
   let strengthSelection=[...selfStrengths];
   let voteTimer=null;
   let autoSaveTimer=null;
-  const scheduleAutoSave=()=>{clearTimeout(autoSaveTimer);autoSaveTimer=setTimeout(()=>{window.JobfitCareerDnaUx?.persistStructuredHypothesis?.();saveData(false)},300)};
+  const scheduleAutoSave=()=>{clearTimeout(autoSaveTimer);autoSaveTimer=setTimeout(()=>{if(!root.querySelector('.careerDnaStandard'))return;window.JobfitCareerDnaUx?.persistStructuredHypothesis?.();saveData(false)},300)};
   root.addEventListener('input',scheduleAutoSave);
   root.addEventListener('change',scheduleAutoSave);
   bindBalance();
