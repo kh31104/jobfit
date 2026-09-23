@@ -37,6 +37,17 @@ await run('STEP1 collapsed modules open on click',async page=>{
   assert(await heads.nth(0).getAttribute('aria-expanded')==='false','first STEP1 module did not collapse again');
 });
 
+await run('STEP1 strength selection autosaves without navigation',async page=>{
+  await page.goto(`${base}?course=INJE2026&measures=false`,{waitUntil:'domcontentloaded'});
+  await page.locator('.stepBtn[data-step="1"]').click();
+  await page.waitForFunction(()=>document.querySelectorAll('.careerDnaStandard .jobfitModuleToggle').length===7);
+  const head=page.locator('.careerDnaStandard .moduleHead').filter({has:page.locator('h3',{hasText:'내가 생각하는 나의 강점'})}).first();
+  await head.click();
+  await page.locator('[data-strength]').nth(0).click();
+  await page.waitForFunction(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')||'{}')?.assessments?.careerDNA?.selfStrengths?.length===1);
+  const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
+  assert(saved.assessments.careerDNA.selfStrengths.length===1,'STEP1 strength did not autosave in place');
+});
 await run('STEP1 learner data survives reload and IndexedDB recovery',async page=>{
   await page.goto(`${base}?course=INJE2026&measures=false`,{waitUntil:'domcontentloaded'});
   await page.waitForSelector('#makeCodeBtn');

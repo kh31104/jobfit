@@ -24,7 +24,14 @@ function richness(s){
   score+=Object.values(s.baseline||{}).filter(nonEmpty).length*2;
   score+=Object.keys(s.artifacts||{}).length*3;
   score+=(s.assessments?.experienceCompetency?.experiences||[]).length*3;
-  if(nonEmpty(s.assessments?.careerDNA?.interest?.type))score+=5;
+  const dna=s.assessments?.careerDNA||{};
+  score+=(dna.balance?.answers||[]).filter(Boolean).length;
+  score+=(dna.careerAnchor?.responses||[]).filter(nonEmpty).length;
+  score+=(dna.selfStrengths||[]).filter(nonEmpty).length*2;
+  score+=(dna.viaTop5||[]).filter(nonEmpty).length*2;
+  score+=Object.values(dna.comparison||{}).filter(nonEmpty).length*2;
+  if(nonEmpty(dna.hypothesis?.text))score+=5;
+  if(nonEmpty(dna.interest?.type))score+=5;
   return score;
 }
 function openDb(){
