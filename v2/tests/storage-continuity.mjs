@@ -25,7 +25,7 @@ async function runSavedBrowser(){
     assert(persisted?.assessments?.careerDNA?.viaTop5?.[0]==='학구열','STEP 1 VIA result was lost after same-browser reload');
     assert(persisted?.assessments?.careerDNA?.comparison?.repeat==='오늘 STEP 1에서 저장한 비교 내용','STEP 1 comparison text was lost after same-browser reload');
     assert(persisted?.assessments?.careerDNA?.hypothesis?.text==='오늘 STEP 1에서 저장한 가설','STEP 1 hypothesis was lost after same-browser reload');
-    await page.locator('.stepBtn[data-step="1"]').click();await page.waitForSelector('[data-strength]');
+    await page.locator('.stepBtn[data-step="1"]').click();await page.waitForSelector('[data-strength]',{state:'attached'});
     assert(await page.locator('.strengthPick.selected').count()===2,'Saved self-strengths were not rendered selected after same-browser return');
     assert(!((await page.locator('#stepRoot').textContent())||'').includes('다중지능검사'),'Removed multiple-intelligence module rendered after same-browser return');
     await page.locator('.stepBtn[data-step="0"]').click();await page.waitForSelector('#anonCode');
