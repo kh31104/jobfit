@@ -84,6 +84,10 @@ export async function render(ctx){
 
   let strengthSelection=[...selfStrengths];
   let voteTimer=null;
+  let autoSaveTimer=null;
+  const scheduleAutoSave=()=>{clearTimeout(autoSaveTimer);autoSaveTimer=setTimeout(()=>{window.JobfitCareerDnaUx?.persistStructuredHypothesis?.();saveData(false)},300)};
+  root.addEventListener('input',scheduleAutoSave);
+  root.addEventListener('change',scheduleAutoSave);
   bindBalance();
   if(scale)bindAnchor();
   bindStrengths();
@@ -122,7 +126,7 @@ export async function render(ctx){
     const bs=document.getElementById('bonusStatus');if(bs)bs.textContent=`${bonusItems.length}/3 선택`;
     const r=document.getElementById('anchorResult');if(r)r.innerHTML=anchorResultHtml(scale,anchorResponses,bonusItems,ctx);refreshCompare();
   }
-  function bindStrengths(){root.querySelectorAll('[data-strength]').forEach(btn=>btn.addEventListener('click',()=>{const s=btn.dataset.strength,i=strengthSelection.indexOf(s);if(i>=0)strengthSelection.splice(i,1);else{if(strengthSelection.length>=5){ctx.toast('대표 강점은 5개까지 선택합니다.');return}strengthSelection.push(s)}const g=document.getElementById('strengthGrid');if(g)g.innerHTML=strengthHtml(strengthSelection,ctx);const c=document.getElementById('strengthCounter');if(c)c.textContent=`${strengthSelection.length}/5 선택`;bindStrengths();refreshCompare()}))}
+  function bindStrengths(){root.querySelectorAll('[data-strength]').forEach(btn=>btn.addEventListener('click',()=>{const s=btn.dataset.strength,i=strengthSelection.indexOf(s);if(i>=0)strengthSelection.splice(i,1);else{if(strengthSelection.length>=5){ctx.toast('대표 강점은 5개까지 선택합니다.');return}strengthSelection.push(s)}const g=document.getElementById('strengthGrid');if(g)g.innerHTML=strengthHtml(strengthSelection,ctx);const c=document.getElementById('strengthCounter');if(c)c.textContent=`${strengthSelection.length}/5 선택`;bindStrengths();refreshCompare();scheduleAutoSave()}))}
   function refreshCompare(){const via=readVia();const q=document.getElementById('qualSummary');if(q)q.innerHTML=qualSummaryHtml(balanceAnswers,strengthSelection,ctx);const n=document.getElementById('quantSummary');if(n)n.innerHTML=quantSummaryHtml(scale,anchorResponses,bonusItems,via,ctx)}
   function readVia(){return [0,1,2,3,4].map(i=>document.getElementById(`via_${i}`)?.value?.trim()||'').filter(Boolean)}
   function saveData(showToast){
