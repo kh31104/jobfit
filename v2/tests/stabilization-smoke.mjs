@@ -25,10 +25,11 @@ async function run(name,fn){
 await run('STEP1 collapsed modules open on click',async page=>{
   await page.goto(`${base}?course=INJE2026&measures=false`,{waitUntil:'domcontentloaded'});
   await page.locator('.stepBtn[data-step="1"]').click();
-  await page.waitForFunction(()=>document.querySelectorAll('.careerDnaStandard .jobfitModuleToggle').length===8);
+  await page.waitForFunction(()=>document.querySelectorAll('.careerDnaStandard .jobfitModuleToggle').length===7);
   const heads=page.locator('.careerDnaStandard .jobfitModuleToggle');
-  assert(await heads.count()===8,'STEP1 must expose 8 clickable module headers');
-  for(let i=0;i<8;i++)assert(await heads.nth(i).getAttribute('aria-expanded')==='false',`module ${i+1} must start collapsed`);
+  assert(await heads.count()===7,'STEP1 must expose 7 clickable module headers');
+  assert(!((await page.locator('#stepRoot').textContent())||'').includes('다중지능검사'),'STEP1 must not render multiple-intelligence module');
+  for(let i=0;i<7;i++)assert(await heads.nth(i).getAttribute('aria-expanded')==='false',`module ${i+1} must start collapsed`);
   await heads.nth(0).click();
   assert(await heads.nth(0).getAttribute('aria-expanded')==='true','first STEP1 module did not expand');
   const block=heads.nth(0).locator('..');
@@ -46,6 +47,7 @@ await run('STEP1 learner data survives reload and IndexedDB recovery',async page
   await page.waitForFunction(()=>window.JobfitStorageContinuity);
   let s=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   assert(s.profile.anonCode==='JF26-SAFE22','anonymous code lost after reload');
+  assert(s.assessments.careerDNA.selfStrengths[0]==='학구열','Self-strength selection lost after reload');
   assert(s.assessments.careerDNA.viaTop5[0]==='학구열','VIA lost after reload');
   assert(s.assessments.careerDNA.comparison.repeat==='오늘 STEP1 저장 내용','comparison lost after reload');
   assert(s.assessments.careerDNA.hypothesis.text==='오늘 STEP1 저장 가설','hypothesis lost after reload');
@@ -56,6 +58,7 @@ await run('STEP1 learner data survives reload and IndexedDB recovery',async page
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')||'{}')?.profile?.anonCode==='JF26-SAFE22');
   s=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   assert(s.assessments.careerDNA.balance.answers[0].choice==='A','balance answer lost after IndexedDB recovery');
+  assert(s.assessments.careerDNA.selfStrengths[0]==='학구열','Self-strength selection lost after IndexedDB recovery');
   assert(s.assessments.careerDNA.hypothesis.text==='오늘 STEP1 저장 가설','STEP1 hypothesis lost after IndexedDB recovery');
 });
 
