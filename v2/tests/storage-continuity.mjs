@@ -26,6 +26,14 @@ async function runSavedBrowser(){
     assert(persisted?.assessments?.careerDNA?.hypothesis?.text==='오늘 STEP 1에서 저장한 가설','STEP 1 hypothesis was lost after same-browser reload');
     await page.evaluate(()=>window.JobfitStorageContinuity?.syncNow());
     await page.waitForTimeout(250);
+    const partial=structuredClone(saved);partial.assessments.careerDNA={};partial.meta.updatedAt=new Date().toISOString();
+    await page.evaluate(s=>localStorage.setItem('jobfit:v2:learner',JSON.stringify(s)),partial);
+    await page.reload({waitUntil:'domcontentloaded'});
+    await page.waitForFunction(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')||'{}')?.assessments?.careerDNA?.selfStrengths?.[0]==='학구열');
+    persisted=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
+    assert(persisted?.assessments?.careerDNA?.selfStrengths?.[0]==='학구열','Richer IndexedDB mirror did not restore partial STEP1 loss');
+    await page.evaluate(()=>window.JobfitStorageContinuity?.syncNow());
+    await page.waitForTimeout(250);
     await page.evaluate(()=>localStorage.removeItem('jobfit:v2:learner'));
     await page.reload({waitUntil:'domcontentloaded'});
     await page.waitForSelector('#anonCode');
