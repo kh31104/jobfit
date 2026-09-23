@@ -79,7 +79,7 @@ await run('Career Anchor scores all 40 items plus three +4 bonus items',async pa
   const result=(await page.locator('#anchorResult').textContent())||'';assert(result.includes('주 앵커'),'Primary anchor missing');assert(result.includes('가장 낮은 앵커'),'Lowest anchor missing');
   await page.locator('#saveDNA').click();
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));const a=saved.assessments.careerDNA.careerAnchor;
-  assert(a.responses.length===40,'40 Career Anchor responses not saved');assert(a.bonusItems.length===3,'Three bonus items not saved');assert(Object.keys(a.scores).length===7,'Eight anchor scores not saved');assert(a.complete===true,'Career Anchor completion not saved');
+  assert(a.responses.length===40,'40 Career Anchor responses not saved');assert(a.bonusItems.length===3,'Three bonus items not saved');assert(Object.keys(a.scores).length===8,'Eight anchor scores not saved');assert(a.complete===true,'Career Anchor completion not saved');
 });
 
 await run('Qualitative and quantitative inputs produce SWOT integration prompt and preserve STEP2 bridge',async page=>{
