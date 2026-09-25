@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#315df4" />
+  <title>Jobfit FLEX | Job Analysis</title>
+  <link rel="stylesheet" href="./styles.css?v=1" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <div class="brand"><div class="logo">J</div><div><b>Jobfit FLEX</b><span>JOB ANALYSIS</span></div></div>
+      <div class="topActions">
+        <span id="saveState">이 브라우저에 자동 저장</span>
+        <button class="btn ghost" id="exportJsonBtn">백업 저장</button>
+        <button class="btn ghost" id="importJsonBtn">백업 불러오기</button>
+        <input id="importFile" type="file" accept=".json,application/json" hidden />
+      </div>
+    </header>
+    <section class="hero">
+      <div class="eyebrow">JOBFIT FLEX · JOB ANALYSIS</div>
+      <h1>채용공고를 읽고,<br />내 취업 준비에 남기는 직무분석</h1>
+      <p>산업·기업의 변화에서 직무를 보고, 실제 채용공고의 요구를 내 경험과 연결합니다. 입력한 내용은 이 기기의 브라우저에만 저장됩니다.</p>
+      <div class="heroChips"><span>산업 맥락</span><span>직무 해부</span><span>채용공고</span><span>요구역량</span><span>Fit & Gap</span><span>결과파일</span></div>
+    </section>
+    <div class="shell">
+      <aside class="side"><nav class="card navCard" id="stepNav"></nav></aside>
+      <main class="main">
+        <div class="card progressCard">
+          <div><b id="progressLabel">진행 0%</b><span>필수 입력만 채워도 결과파일을 만들 수 있습니다.</span></div>
+          <div class="progress"><span id="progressBar"></span></div>
+        </div>
+        <div id="stepRoot"></div>
+      </main>
+    </div>
+  </div>
+  <div id="toast" class="toast" aria-live="polite"></div>
+  <script type="module" src="./app.js?v=1"></script>
+</body>
+</html>
