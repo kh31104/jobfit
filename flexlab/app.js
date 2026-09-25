@@ -211,33 +211,49 @@ function jobAnalysisPrompt(){
     "반드시 [공고 직접근거]와 [추론]을 구분하고, 공고에 없는 사실을 공고에 적혀 있는 것처럼 표현하지 마.\n"+
     "확인되지 않는 KPI·KBI는 '공고만으로 확인 불가'라고 표시해줘.";
 }
+function jobAnalysisPrompt(){
+  const p=state.postings[activePosting];
+  return [
+    "나는 대학생이며 "+(state.target.job||"희망 직무")+"를 분석하고 있다.","",
+    "아래는 실제 채용공고 원문이다.","[채용공고]",p.text||"(공고 원문을 입력하세요)","",
+    "다음 기준으로 분석해줘.",
+    "1. 공고에서 직접 확인되는 TASK(담당업무)",
+    "2. GATE(필수·지원자격)",
+    "3. PREFERENCE(우대조건)",
+    "4. Knowledge / Skill / Behavior / Experience",
+    "5. 반복되거나 강조되는 SIGNAL",
+    "6. 업무 내용에서 추정할 수 있는 KPI/KBI 후보",
+    "7. 대학생이 준비할 수 있는 Evidence","",
+    "반드시 [공고 직접근거]와 [추론]을 구분해줘.",
+    "공고에 없는 사실을 공고에 적혀 있는 것처럼 표현하지 말고, 확인할 수 없는 KPI·KBI는 '공고만으로 확인 불가'라고 표시해줘."
+  ].join("\n");
+}
 function step3(){
   const p=state.postings[activePosting];
   const tabs=state.postings.map((_,i)=>'<button class="tabBtn '+(i===activePosting?"active":"")+'" data-tab="'+i+'">'+(i===0?"공고 1 · 기본 분석":"공고 "+(i+1)+" · 심화 선택")+'</button>').join("");
   const cards=Object.entries(signals()).map(([cat,items])=>'<div class="signalCard"><h4>'+cat+'</h4><div class="pills">'+(items.length?items.slice(0,10).map(x=>'<span class="pill">'+h(x.w)+' <strong>'+x.count+'</strong></span>').join(""):'<span class="hint">발견된 후보가 없습니다.</span>')+'</div></div>').join("");
   const evidence=evidenceRows();
-  const trs=evidence.length?evidence.slice(0,45).map(r=>'<tr><td>공고 '+r.posting+'</td><td>'+h(r.section)+'</td><td>'+h(r.line)+'</td><td>'+signalLabel(r.signals)+'</td></tr>').join(""):'<tr><td colspan="4">공고를 입력하면 원문 근거표가 만들어집니다.</td></tr>';
-  const body=
+  const trs=evidence.length?evidence.slice(0,45).map(r=>'<tr><td>공고 '+r.posting+'</td><td>'+h(r.section)+'</td><td>'+h(r.line)+'</td><td>'+signalLabel(r.signals)+'</td></tr>').join(""):'<tr><td colspan="4">채용공고를 입력하면 원문 근거표가 만들어집니다.</td></tr>';
+  return shell(3,"JD Analyzer","TASK → GATE/PREFERENCE → KSA → SIGNAL 순서로 회사가 원하는 것을 분리합니다.",
     '<div class="postingTabs">'+tabs+'</div>'+
-    '<div class="grid2"><div class="field"><label>기업명</label><input class="input" data-pf="company" value="'+h(p.company)+'" placeholder="기업명" /></div><div class="field"><label>공고 직무명</label><input class="input" data-pf="title" value="'+h(p.title)+'" placeholder="직무명" /></div></div>'+
-    '<div class="block"><div class="field"><label>채용공고 원문</label><textarea class="input tall" data-pf="text" placeholder="담당업무, 자격요건, 우대사항이 보이도록 붙여넣으세요.">'+h(p.text)+'</textarea></div><div class="actions compactActions"><button class="btn secondary" id="parsePostingBtn">공고 구조 자동 나누기</button><button class="btn secondary" id="copyJobPromptBtn">AI 심층분석 프롬프트 복사</button></div></div>'+
-    '<div class="block"><h3>① TASK · GATE · PREFERENCE · SELECTION</h3><div class="grid2">'+
+    '<div class="grid2"><div class="field"><label>기업명</label><input class="input" data-pf="company" value="'+h(p.company)+'" /></div><div class="field"><label>공고 직무명</label><input class="input" data-pf="title" value="'+h(p.title)+'" /></div></div>'+
+    '<div class="block"><div class="field"><label>채용공고 원문</label><textarea class="input tall" data-pf="text" placeholder="담당업무, 자격요건, 우대사항이 보이도록 붙여넣으세요.">'+h(p.text)+'</textarea></div><div class="actions compactActions"><button class="btn secondary" id="parsePostingBtn">TASK·조건 자동 나누기</button></div></div>'+
+    '<div class="block"><h3>① TASK · GATE · PREFERENCE</h3><div class="grid2">'+
       '<div class="field"><label>TASK · 담당업무</label><textarea class="input" data-pf="tasks" placeholder="실제로 하게 될 일">'+h(p.tasks)+'</textarea></div>'+
-      '<div class="field"><label>GATE · 필수·지원자격</label><textarea class="input" data-pf="required" placeholder="지원 가능한 최소 조건">'+h(p.required)+'</textarea></div>'+
+      '<div class="field"><label>GATE · 필수/지원자격</label><textarea class="input" data-pf="required" placeholder="지원 가능한 최소 조건">'+h(p.required)+'</textarea></div>'+
       '<div class="field"><label>PREFERENCE · 우대사항</label><textarea class="input" data-pf="preferred" placeholder="있으면 경쟁력이 되는 조건">'+h(p.preferred)+'</textarea></div>'+
-      '<div class="field"><label>SELECTION · 전형·기타</label><textarea class="input" data-pf="other" placeholder="필기·면접·근무조건·전형절차 등">'+h(p.other)+'</textarea></div>'+
+      '<div class="field"><label>내가 읽어낸 핵심</label><textarea class="input" data-pf="notes" placeholder="이 회사가 이 직무 사람에게 실제로 시키려는 일은?">'+h(p.notes)+'</textarea></div>'+
     '</div></div>'+
-    '<div class="divider"></div><div class="block"><h3>② KSA · 업무수행에 필요한 역량</h3><div class="grid2">'+
-      field("competency.knowledge","Knowledge · 무엇을 알아야 하나?","전공지식, 산업·제품·공정 지식")+
-      field("competency.skill","Skill · 무엇을 할 수 있어야 하나?","분석, 설계, Tool, 문서작성 등")+
-      field("competency.behavior","Behavior · 어떻게 일해야 하나?","공고에서 직접 확인되는 행동·업무방식")+
-      field("competency.experience","Experience · 어떤 경험을 요구하나?","프로젝트, 현장실습, 인턴, 연구 등")+
-    '</div><div class="callout warn"><b>근거 원칙:</b> 공고에서 직접 확인되지 않으면 “확인되지 않음”이라고 적어도 됩니다. KPI·KBI 등 공고에 없는 내용은 <b>FLEX 해석/추론</b>으로 구분합니다.</div>'+
-    '<div class="block">'+field("competency.top5","핵심 요구 TOP 5","공고 원문에서 근거를 찾을 수 있는 항목을 우선")+'</div></div>'+
-    '<div class="block"><div class="field"><label>③ 내가 읽어낸 직무의 핵심</label><textarea class="input" data-pf="notes" placeholder="이 회사가 이 직무 사람에게 실제로 해결해 달라고 하는 문제는 무엇인가요?">'+h(p.notes)+'</textarea></div></div>'+
-    '<details class="optionBox"><summary>근거 확인 · 원문 문장과 반복 키워드 보기</summary><div class="optionBody"><div class="tableWrap"><table><thead><tr><th>공고</th><th>구분</th><th>원문 근거</th><th>분류 후보</th></tr></thead><tbody>'+trs+'</tbody></table></div><div class="signalGrid">'+cards+'</div></div></details>'+
-    optionalComparison();
-  return shell(3,"JD Analyzer","실제 공고를 TASK → GATE → KSA → EVIDENCE 관점으로 읽고 회사가 원하는 것을 분리합니다.",body,"핵심 실습");
+    '<div class="divider"></div><div class="block"><h3>② KSA · 업무수행에 필요한 것</h3><div class="grid2">'+
+      field("competency.knowledge","Knowledge · 지식","전공지식, 산업·공정·제품·법규 등")+
+      field("competency.skill","Skill · 기술","설계, 데이터분석, CAD, Excel, Python 등")+
+      field("competency.behavior","Behavior · 행동/업무방식","공고에서 직접 확인되는 협업·정확성·문제해결 등")+
+      field("competency.experience","Experience · 경험","인턴, 프로젝트, 실험, 현장실습 등")+
+    '</div><div class="callout warn"><b>근거 원칙:</b> 공고에서 직접 확인되지 않는 Behavior는 “확인되지 않음”으로 두어도 됩니다.</div></div>'+
+    '<div class="block"><h3>③ SIGNAL · 반복·강조 신호</h3>'+field("competency.signal","이 회사·직무가 강조하는 신호","예: 안전, 데이터, 품질, 공정개선, 글로벌, 고객")+field("competency.top5","핵심 요구 TOP 5","공고 원문에서 근거를 찾을 수 있는 항목 5개")+'</div>'+
+    '<details class="optionBox"><summary>근거 확인 · 원문 문장과 키워드 보기</summary><div class="optionBody"><div class="tableWrap"><table><thead><tr><th>공고</th><th>구분</th><th>원문 근거</th><th>분류 후보</th></tr></thead><tbody>'+trs+'</tbody></table></div><div class="signalGrid">'+cards+'</div></div></details>'+
+    '<details class="optionBox"><summary>AI로 더 깊게 분석하기 · 프롬프트 생성</summary><div class="optionBody"><p class="help">FLEX가 공고 내용을 바탕으로 복사용 프롬프트를 만듭니다. AI 결과는 다시 공고 원문과 대조하세요.</p><pre class="promptBox">'+h(jobAnalysisPrompt())+'</pre><button class="btn secondary" id="copyJobPromptBtn">AI 분석 프롬프트 복사</button></div></details>'+
+    optionalComparison());
 }
 const dict={
   "지식(Knowledge)":["공정","품질","회계","재무","마케팅","시장","전기","전자","기계","화학","에너지","안전","환경","법규","제품","산업","원가","생산","설비","전력","전공"],
