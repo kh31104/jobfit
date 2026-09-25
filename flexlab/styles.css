@@ -7,3 +7,21 @@
 @media(max-width:940px){.shell{grid-template-columns:1fr}.side{position:static}.navCard{display:flex;overflow:auto;gap:6px;padding:9px}.navTitle{display:none}.stepBtn{min-width:155px}.exportGrid{grid-template-columns:1fr}}
 @media(max-width:650px){.wrap{padding:10px 10px 60px}.topbar{align-items:flex-start}.topActions>span{display:none}.hero{border-radius:22px;padding:23px 20px}.hero:after{font-size:70px}.card{padding:17px;border-radius:18px}.grid2,.signalGrid{grid-template-columns:1fr}.sectionHead{flex-direction:column}.sectionHead h2{font-size:24px}.progressCard>div:first-child{align-items:flex-start;flex-direction:column}.exportGrid{grid-template-columns:1fr}}
 @media print{body{background:#fff}.topbar,.hero,.side,.progressCard,.actions,.exportGrid,.noPrint{display:none!important}.shell{display:block;margin:0}.wrap{max-width:none;padding:0}.card{box-shadow:none;border:0;padding:0}#stepRoot{display:block}.stepCard{display:none}.stepCard.printTarget{display:block}.preview{max-height:none;overflow:visible;border:0;padding:0;background:#fff;font-size:11pt}}
+.sourceGuide{margin:0 0 20px;padding:16px;border:1px solid #dbe4ff;background:#f8faff;border-radius:18px}
+.sourceGuideHead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}
+.sourceGuideHead b{display:block;font-size:16px}
+.sourceGuideHead span{display:block;margin-top:4px;color:var(--muted);font-size:12px}
+.sourceGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.sourceCard{display:grid;grid-template-columns:30px 1fr;gap:10px;padding:13px;border:1px solid #e1e7f2;background:#fff;border-radius:15px}
+.sourceN{width:28px;height:28px;display:grid;place-items:center;border-radius:9px;background:var(--soft);color:#3152c9;font-weight:950;font-size:12px}
+.sourceCard b{display:block;font-size:13px}
+.sourceCard p{margin:5px 0 7px;color:var(--muted);font-size:12px;line-height:1.55}
+.sourceCard a{font-size:12px;font-weight:900;color:var(--primary);text-decoration:none}
+.optionBox{margin-top:16px;border:1px solid #dfe5ef;border-radius:16px;background:#fbfcff;overflow:hidden}
+.optionBox summary{cursor:pointer;padding:14px 16px;font-weight:900;color:#344054;list-style:none}
+.optionBox summary::-webkit-details-marker{display:none}
+.optionBox summary:after{content:"＋";float:right;color:#667085}
+.optionBox[open] summary:after{content:"−"}
+.optionBody{padding:0 16px 16px}
+.comparisonOption{background:#fff}
+@media(max-width:650px){.sourceGrid{grid-template-columns:1fr}}
