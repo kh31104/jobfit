@@ -1,24 +1,30 @@
 const STORAGE_KEY = "jobfit:flexlab:job-analysis:v1";
 const steps = [
   ["분석대상 선택","Target Job"],
-  ["산업·기업·직무 맥락","Context"],
-  ["채용공고 분석","Job Posting"],
-  ["요구역량 찾기","K·S·B·E"],
-  ["나와 연결","Evidence·Gap"],
-  ["결과물 만들기","Portfolio"]
+  ["채용공고 찾기","Find JD"],
+  ["JD Analyzer","Task·Gate·KSA"],
+  ["나의 경험 찾기","My Evidence"],
+  ["경험 분해","STAR+ Interview"],
+  ["Career Asset Match","Requirement × Evidence"],
+  ["GAP & Portfolio","Action Plan"]
 ];
-const emptyPosting=()=>({company:"",title:"",text:"",notes:"",tasks:"",required:"",preferred:"",other:""});
+const emptyPosting=()=>({company:"",title:"",sourceUrl:"",text:"",notes:"",tasks:"",required:"",preferred:"",other:""});
+const emptyExperience=()=>({title:"",type:"",summary:""});
+const emptyMatch=()=>({requirement:"",evidence:"",status:""});
 const defaults=()=>({
-  version:4,currentStep:1,updatedAt:"",
+  version:5,currentStep:1,updatedAt:"",
   target:{industry:"",job:"",company:"",initialView:""},
   context:{money:"",change:"",problem:"",impact:""},
   profile:{manage:"",solve:"",collab:"",data:"",output:"",risk:""},
   postings:[emptyPosting(),emptyPosting(),emptyPosting()],
   competency:{knowledge:"",skill:"",behavior:"",experience:"",top5:""},
   comparison:{common:"",differences:""},
+  experiences:[emptyExperience(),emptyExperience(),emptyExperience()],
+  selectedExperience:0,
   fit:{assets:"",evidence:"",gaps:"",actions:""},
   requirements:[0,1,2,3].map(()=>({condition:"",status:"",note:""})),
-  star:{competency:"",experience:"",situationTask:"",action:"",result:""}
+  star:{competency:"",experience:"",situation:"",task:"",actionWhat:"",actionWhy:"",actionHow:"",result:"",evidence:""},
+  matchRows:[0,1,2,3,4].map(emptyMatch)
 });
 let state=load(), activePosting=0;
 
@@ -28,14 +34,44 @@ function load(){
     if(!x)return defaults();
     const b=defaults();
     const legacyStep=Number(x.currentStep||1);
-    const mappedStep=(x.version||1)<3
+    const oldSix=(x.version||1)<3
       ? ({1:1,2:2,3:2,4:3,5:4,6:4,7:5,8:6}[legacyStep]||1)
       : Math.max(1,Math.min(6,legacyStep));
+    const mappedStep=(x.version||1)<5
+      ? ({1:1,2:1,3:3,4:3,5:5,6:7}[oldSix]||1)
+      : Math.max(1,Math.min(7,legacyStep));
     const req=Array.isArray(x.requirements)&&x.requirements.length
       ? [0,1,2,3].map(i=>({condition:"",status:"",note:"",...(x.requirements[i]||{})}))
       : b.requirements;
+    const oldStar=x.star||{};
     const legacyEvidence=(x.fit&&x.fit.evidence)||"";
-    return {...b,...x,version:4,currentStep:mappedStep,target:{...b.target,...(x.target||{})},context:{...b.context,...(x.context||{})},profile:{...b.profile,...(x.profile||{})},competency:{...b.competency,...(x.competency||{})},comparison:{...b.comparison,...(x.comparison||{})},fit:{...b.fit,...(x.fit||{})},requirements:req,star:{...b.star,...(x.star||{}),experience:(x.star&&x.star.experience)||legacyEvidence},postings:[0,1,2].map(i=>({...emptyPosting(),...(x.postings?.[i]||{})}))};
+    const exps=Array.isArray(x.experiences)&&x.experiences.length
+      ? [0,1,2].map(i=>({...emptyExperience(),...(x.experiences[i]||{})}))
+      : [0,1,2].map(i=>i===0?{...emptyExperience(),title:oldStar.experience||legacyEvidence}:emptyExperience());
+    const matches=Array.isArray(x.matchRows)&&x.matchRows.length
+      ? [0,1,2,3,4].map(i=>({...emptyMatch(),...(x.matchRows[i]||{})}))
+      : b.matchRows;
+    return {
+      ...b,...x,version:5,currentStep:mappedStep,
+      target:{...b.target,...(x.target||{})},
+      context:{...b.context,...(x.context||{})},
+      profile:{...b.profile,...(x.profile||{})},
+      competency:{...b.competency,...(x.competency||{})},
+      comparison:{...b.comparison,...(x.comparison||{})},
+      fit:{...b.fit,...(x.fit||{})},
+      requirements:req,
+      experiences:exps,
+      selectedExperience:Number.isInteger(x.selectedExperience)?Math.max(0,Math.min(2,x.selectedExperience)):0,
+      star:{
+        ...b.star,...oldStar,
+        experience:oldStar.experience||legacyEvidence||exps[0].title||"",
+        situation:oldStar.situation||oldStar.situationTask||"",
+        actionWhat:oldStar.actionWhat||oldStar.action||"",
+        result:oldStar.result||""
+      },
+      matchRows:matches,
+      postings:[0,1,2].map(i=>({...emptyPosting(),...(x.postings?.[i]||{})}))
+    };
   }catch(e){return defaults();}
 }
 function save(){
@@ -58,11 +94,12 @@ function field(path,label,ph,area=true,optional=false){
 }
 function done(n){
   if(n===1)return filled(state.target.industry)&&filled(state.target.job);
-  if(n===2)return filled(state.context.change)||filled(state.context.impact)||filled(state.profile.solve)||filled(state.profile.output);
+  if(n===2)return state.postings.some(p=>filled(p.sourceUrl)||filled(p.company)||filled(p.title)||filled(p.text));
   if(n===3)return state.postings.some(p=>filled(p.text));
-  if(n===4)return Object.values(state.competency).some(filled);
-  if(n===5)return Object.values(state.fit).some(filled)||Object.values(state.star||{}).some(filled)||(state.requirements||[]).some(r=>filled(r.status));
-  if(n===6)return done(1)&&done(3);
+  if(n===4)return state.experiences.some(e=>filled(e.title));
+  if(n===5)return filled(state.star.experience)&&filled(state.star.actionWhat);
+  if(n===6)return state.matchRows.some(r=>filled(r.status));
+  if(n===7)return filled(state.fit.gaps)||filled(state.fit.actions)||done(6);
 }
 function nav(){
   document.getElementById("stepNav").innerHTML='<div class="navTitle">JOB ANALYSIS</div>'+steps.map((s,i)=>{
@@ -72,14 +109,14 @@ function nav(){
   document.querySelectorAll("[data-step]").forEach(b=>b.onclick=()=>go(Number(b.dataset.step)));
 }
 function progress(){
-  const n=steps.filter((_,i)=>done(i+1)).length,p=Math.round(n/6*100);
+  const n=steps.filter((_,i)=>done(i+1)).length,p=Math.round(n/7*100);
   const l=document.getElementById("progressLabel"),b=document.getElementById("progressBar");
-  if(l)l.textContent="진행 "+p+"% · "+n+"/6";
+  if(l)l.textContent="진행 "+p+"% · "+n+"/7";
   if(b)b.style.width=p+"%";
   nav();
 }
 function shell(n,title,desc,body,badge="실습"){
-  return '<section class="card stepCard"><div class="sectionHead"><div><div class="kicker">STEP '+String(n).padStart(2,"0")+'</div><h2>'+title+'</h2><p>'+desc+'</p></div><span class="badge">'+badge+'</span></div>'+body+'<div class="actions">'+(n>1?'<button class="btn secondary" data-prev="'+(n-1)+'">이전</button>':"")+(n<6?'<button class="btn primary" data-next="'+(n+1)+'">저장하고 다음</button>':"")+'</div></section>';
+  return '<section class="card stepCard"><div class="sectionHead"><div><div class="kicker">STEP '+String(n).padStart(2,"0")+'</div><h2>'+title+'</h2><p>'+desc+'</p></div><span class="badge">'+badge+'</span></div>'+body+'<div class="actions">'+(n>1?'<button class="btn secondary" data-prev="'+(n-1)+'">이전</button>':"")+(n<7?'<button class="btn primary" data-next="'+(n+1)+'">저장하고 다음</button>':"")+'</div></section>';
 }
 function step1(){
   return shell(1,"분석대상 선택","오늘 깊게 볼 산업과 직무를 하나 정합니다.",
