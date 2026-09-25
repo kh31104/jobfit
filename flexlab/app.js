@@ -526,27 +526,35 @@ function step7(){
     '<div class="divider noPrint"></div><div class="exportGrid noPrint"><div class="exportCard"><b>Word용 문서</b><p>Word에서 열고 수정할 수 있는 .doc 파일입니다.</p><button class="btn primary" id="docBtn">Word 파일 저장</button></div><div class="exportCard"><b>PDF</b><p>인쇄 화면에서 ‘PDF로 저장’을 선택하세요.</p><button class="btn secondary" id="printBtn">PDF 저장 화면</button></div><div class="exportCard"><b>학습 백업</b><p>다시 불러올 수 있는 FLEX 전용 JSON입니다.</p><button class="btn secondary" id="jsonBtn2">JSON 백업 저장</button></div></div>'+
     '<div class="actions noPrint"><button class="btn secondary" data-prev="6">이전</button><button class="btn secondary" id="copyBtn">결과 텍스트 복사</button><button class="btn danger" id="resetBtn">FLEX 데이터 새로 시작</button></div></section>';
 }
+async function copyText(text,msg){
+  try{await navigator.clipboard.writeText(text);toast(msg);}catch(e){toast("복사 권한을 확인해 주세요.");}
+}
 function bind(){
   document.querySelectorAll("[data-path]").forEach(e=>e.oninput=()=>{set(e.dataset.path,e.value);save();});
   document.querySelectorAll("[data-pf]").forEach(e=>e.oninput=()=>{state.postings[activePosting][e.dataset.pf]=e.value;save();});
-  document.querySelectorAll("[data-req]").forEach(e=>e.onchange=e.oninput=()=>{const i=Number(e.dataset.req),k=e.dataset.reqkey;state.requirements[i]??={condition:"",status:"",note:""};state.requirements[i][k]=e.value;save();});
   document.querySelectorAll("[data-tab]").forEach(e=>e.onclick=()=>{save();activePosting=Number(e.dataset.tab);render();});
+  document.querySelectorAll("[data-exp]").forEach(e=>e.onchange=e.oninput=()=>{const i=Number(e.dataset.exp),k=e.dataset.expkey;state.experiences[i]??=emptyExperience();state.experiences[i][k]=e.value;save();});
+  document.querySelectorAll("[data-exp-select]").forEach(e=>e.onchange=()=>{if(e.checked){state.selectedExperience=Number(e.dataset.expSelect);const title=state.experiences[state.selectedExperience]?.title||"";if(title)state.star.experience=title;save();render();}});
+  document.querySelectorAll("[data-req]").forEach(e=>e.onchange=e.oninput=()=>{const i=Number(e.dataset.req),k=e.dataset.reqkey;state.requirements[i]??={condition:"",status:"",note:""};state.requirements[i][k]=e.value;save();});
+  document.querySelectorAll("[data-match]").forEach(e=>e.onchange=e.oninput=()=>{const i=Number(e.dataset.match),k=e.dataset.matchkey;state.matchRows[i]??=emptyMatch();state.matchRows[i][k]=e.value;save();});
   document.querySelectorAll("[data-next]").forEach(e=>e.onclick=()=>go(Number(e.dataset.next)));
   document.querySelectorAll("[data-prev]").forEach(e=>e.onclick=()=>go(Number(e.dataset.prev)));
   document.getElementById("parsePostingBtn")?.addEventListener("click",autoParsePosting);
+  document.getElementById("copyJobPromptBtn")?.addEventListener("click",()=>copyText(jobAnalysisPrompt(),"직무분석 AI 프롬프트를 복사했습니다."));
+  document.getElementById("copyExpPromptBtn")?.addEventListener("click",()=>copyText(experiencePrompt(),"경험 심층질문 AI 프롬프트를 복사했습니다."));
   document.getElementById("docBtn")?.addEventListener("click",exportDoc);
   document.getElementById("printBtn")?.addEventListener("click",()=>window.print());
   document.getElementById("jsonBtn2")?.addEventListener("click",exportJson);
-  document.getElementById("copyBtn")?.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(portfolio());toast("결과 텍스트를 복사했습니다.");}catch(e){toast("복사 권한을 확인해 주세요.");}});
+  document.getElementById("copyBtn")?.addEventListener("click",()=>copyText(portfolio(),"결과 텍스트를 복사했습니다."));
   document.getElementById("resetBtn")?.addEventListener("click",()=>{if(confirm("Jobfit FLEX 직무분석 데이터만 새로 시작할까요? INJE Jobfit 데이터에는 영향을 주지 않습니다.")){localStorage.removeItem(STORAGE_KEY);state=defaults();activePosting=0;render();toast("FLEX 데이터만 초기화했습니다.");}});
 }
 function render(){
   nav();
-  const f=[null,step1,step2,step3,step4,step5,step6];
+  const f=[null,step1,step2,step3,step4,step5,step6,step7];
   document.getElementById("stepRoot").innerHTML=f[state.currentStep]();
   bind();progress();
 }
-function go(n){save();state.currentStep=Math.max(1,Math.min(6,n));save();render();window.scrollTo({top:280,behavior:"smooth"});}
+function go(n){save();state.currentStep=Math.max(1,Math.min(7,n));save();render();window.scrollTo({top:280,behavior:"smooth"});}
 function download(name,content,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),500);}
 function base(){return "Jobfit_FLEX_"+(state.target.job||"직무분석").replace(/[\\/:*?"<>|]/g,"_");}
 function exportJson(){save();download(base()+"_backup.json",JSON.stringify(state,null,2),"application/json;charset=utf-8");toast("FLEX 백업파일을 저장했습니다.");}
