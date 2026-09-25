@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
+      - 'flexlab/**'
       - 'index.html'
       - 'v2/**'
       - 'instructor/**'
@@ -23,6 +24,7 @@ on:
       - main
       - jobfit-v2-build
     paths:
+      - 'flexlab/**'
       - 'index.html'
       - 'v2/**'
       - 'instructor/**'
@@ -53,6 +55,7 @@ jobs:
         shell: bash
         run: |
           set -e
+          node --check flexlab/app.js
           node --check v2/bootstrap.js
           node --check v2/storageContinuity.js
           node --check v2/operationalSync.js
