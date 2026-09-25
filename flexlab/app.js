@@ -348,7 +348,7 @@ function step3(){
     '</div><div class="callout warn"><b>근거 원칙:</b> 공고에서 직접 확인되지 않는 Behavior는 “확인되지 않음”으로 두어도 됩니다.</div></div>'+
     '<div class="block"><h3>③ SIGNAL · 반복·강조 신호</h3>'+field("competency.signal","이 회사·직무가 강조하는 신호","예: 안전, 데이터, 품질, 공정개선, 글로벌, 고객")+field("competency.top5","핵심 요구 TOP 5","공고 원문에서 근거를 찾을 수 있는 항목 5개")+'</div>'+
     '<details class="optionBox"><summary>근거 확인 · 원문 문장과 키워드 보기</summary><div class="optionBody"><div class="tableWrap"><table><thead><tr><th>공고</th><th>구분</th><th>원문 근거</th><th>분류 후보</th></tr></thead><tbody>'+trs+'</tbody></table></div><div class="signalGrid">'+cards+'</div></div></details>'+
-    '<details class="optionBox"><summary>AI로 더 깊게 분석하기 · 프롬프트 확인</summary><div class="optionBody"><p class="help">아래 프롬프트 전체를 먼저 읽고 필요하면 직접 수정하세요. 확인한 뒤에만 복사합니다.</p><textarea class="promptBox promptEditor" id="jobPromptPreview">'+h(jobAnalysisPrompt())+'</textarea><button class="btn secondary" id="copyReviewedJobPromptBtn">내용 확인 후 프롬프트 복사</button></div></details>'+
+    '<details class="optionBox"><summary>AI로 더 깊게 분석하기 · 프롬프트 확인</summary><div class="optionBody"><p class="help">아래 프롬프트 전체를 먼저 읽고 필요하면 직접 수정하세요. 확인한 뒤에만 복사합니다.</p><textarea class="promptBox promptEditor" id="jobPromptPreview">'+h(jobAnalysisPrompt())+'</textarea><div class="actions compactActions"><button class="btn ghost" id="refreshJobPromptBtn">현재 입력으로 다시 만들기</button><button class="btn secondary" id="copyReviewedJobPromptBtn">내용 확인 후 프롬프트 복사</button></div></div></details>'+
     optionalComparison());
 }
 
@@ -420,7 +420,7 @@ function step4(){
       field("star.evidence","EVIDENCE · 확인 가능한 근거","수치, 보고서, 회로도, 시뮬레이션 결과, 기록, 피드백 등이 있나요?")+
     '</div>'+
     '<div class="block"><h3>직무 맞춤 꼬리질문</h3><ul class="questionList">'+hints+'</ul></div>'+
-    '<details class="optionBox"><summary>AI로 경험을 더 깊게 질문하기 · 프롬프트 확인</summary><div class="optionBody"><p class="help">아래 문장을 먼저 읽고 필요하면 직접 수정하세요. 바로 복사되지 않습니다.</p><textarea class="promptBox promptEditor" id="experiencePromptPreview">'+h(experiencePrompt())+'</textarea><button class="btn secondary" id="copyReviewedExpPromptBtn">내용 확인 후 프롬프트 복사</button></div></details>'+
+    '<details class="optionBox"><summary>AI로 경험을 더 깊게 질문하기 · 프롬프트 확인</summary><div class="optionBody"><p class="help">아래 문장을 먼저 읽고 필요하면 직접 수정하세요. 바로 복사되지 않습니다.</p><textarea class="promptBox promptEditor" id="experiencePromptPreview">'+h(experiencePrompt())+'</textarea><div class="actions compactActions"><button class="btn ghost" id="refreshExpPromptBtn">현재 입력으로 다시 만들기</button><button class="btn secondary" id="copyReviewedExpPromptBtn">내용 확인 후 프롬프트 복사</button></div></div></details>'+
     '<div class="callout warn"><b>AI 사용 원칙:</b> AI는 질문과 정리를 돕습니다. 학생이 말하지 않은 경험·수치·성과를 만들어내지 않습니다.</div></div>');
 }
 
@@ -458,7 +458,7 @@ function matchRows(){
 }
 
 function step5(){
-  return shell(6,"Career Asset Match","회사가 요구하는 것과 내가 실제로 증명할 수 있는 것을 나란히 놓고 Fit과 Gap을 구분합니다.",
+  return shell(5,"Career Asset Match","회사가 요구하는 것과 내가 실제로 증명할 수 있는 것을 나란히 놓고 Fit과 Gap을 구분합니다.",
     '<div class="block"><h3>① 지원 가능 여부 · GATE 확인</h3><div class="requirementList">'+requirementRows()+'</div></div>'+
     '<div class="divider"></div><div class="block"><h3>② JD Requirement × 나의 Evidence</h3><p class="help">숫자 점수 대신 근거 수준으로 판정합니다.</p><div class="matchList">'+matchRows()+'</div></div>'+
     '<div class="callout info"><b>판정 기준:</b> ● 직접 근거 있음 = 실제 행동·결과로 설명 가능 / ◐ 부분적으로 연결됨 = 수업·기초경험 등은 있으나 깊이가 부족 / ○ 현재 근거 없음 = 새 Evidence가 필요</div>');
@@ -582,7 +582,7 @@ function bind(){
   });
   document.querySelectorAll("[data-tab]").forEach(e=>e.onclick=()=>{save();activePosting=Number(e.dataset.tab);render();});
   document.querySelectorAll("[data-exp]").forEach(e=>{
-    const handler=()=>{const i=Number(e.dataset.exp),k=e.dataset.expkey;state.experiences[i]??=emptyExperience();state.experiences[i][k]=e.value;save();};
+    const handler=()=>{const i=Number(e.dataset.exp),k=e.dataset.expkey;state.experiences[i]??=emptyExperience();state.experiences[i][k]=e.value;if(i===state.selectedExperience&&k==="title")state.star.experience=e.value;save();};
     e.oninput=handler;e.onchange=handler;
   });
   document.querySelectorAll("[data-exp-select]").forEach(e=>e.onchange=()=>{
@@ -605,7 +605,9 @@ function bind(){
   document.querySelectorAll("[data-prev]").forEach(e=>e.onclick=()=>go(Number(e.dataset.prev)));
 
   document.getElementById("parsePostingBtn")?.addEventListener("click",autoParsePosting);
+  document.getElementById("refreshJobPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("jobPromptPreview");if(e)e.value=jobAnalysisPrompt();toast("현재 입력으로 프롬프트를 다시 만들었습니다.");});
   document.getElementById("copyReviewedJobPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("jobPromptPreview")?.value||jobAnalysisPrompt(),"확인한 직무분석 AI 프롬프트를 복사했습니다."));
+  document.getElementById("refreshExpPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("experiencePromptPreview");if(e)e.value=experiencePrompt();toast("현재 입력으로 프롬프트를 다시 만들었습니다.");});
   document.getElementById("copyReviewedExpPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("experiencePromptPreview")?.value||experiencePrompt(),"확인한 경험 심층질문 AI 프롬프트를 복사했습니다."));
   document.getElementById("docBtn")?.addEventListener("click",exportDoc);
   document.getElementById("printBtn")?.addEventListener("click",()=>window.print());
