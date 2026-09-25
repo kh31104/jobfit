@@ -165,9 +165,9 @@ function postingLines(text=""){
 }
 const sectionRules=[
   ["tasks",/(담당\s*업무|주요\s*업무|업무\s*내용|직무\s*내용|수행\s*업무|주요\s*역할|하는\s*일)/i],
-  ["required",/(자격\s*요건|지원\s*자격|필수\s*요건|필수\s*사항|필수\s*조건|요구\s*사항)/i],
-  ["preferred",/(우대\s*사항|우대\s*조건|우대\s*요건|preferred)/i],
-  ["other",/(기타|근무\s*조건|복리\s*후생|채용\s*절차|전형\s*절차)/i]
+  ["required",/(자격\s*요건|지원\s*자격|필수\s*요건|필수\s*사항|필수\s*조건|요구\s*사항|응시\s*자격)/i],
+  ["preferred",/(우대\s*사항|우대\s*조건|우대\s*요건|가점|preferred)/i],
+  ["other",/(기타|근무\s*조건|복리\s*후생|채용\s*절차|전형\s*절차|전형\s*방법)/i]
 ];
 function lineSection(line,current="other"){
   const hit=sectionRules.find(([,rx])=>rx.test(line));
@@ -175,7 +175,7 @@ function lineSection(line,current="other"){
   if(current==="tasks"||current==="required"||current==="preferred")return current;
   if(/우대|가점|preferred/i.test(line))return "preferred";
   if(/필수|자격|졸업|학위|전공|경력\s*\d|어학|자격증|지원\s*가능/i.test(line))return "required";
-  if(/담당|수행|관리|분석|기획|개선|운영|개발|설계|검토|대응|지원|최적화|모니터링/i.test(line))return "tasks";
+  if(/담당|수행|관리|분석|기획|개선|운영|개발|설계|검토|대응|지원|최적화|모니터링|정비|점검/i.test(line))return "tasks";
   return current;
 }
 function parsePosting(text=""){
@@ -203,27 +203,54 @@ function autoParsePosting(){
   if(!filled(p.text)){toast("먼저 채용공고 원문을 붙여넣어 주세요.");return;}
   const parsed=parsePosting(p.text);
   ["tasks","required","preferred","other"].forEach(k=>{if(!filled(p[k]))p[k]=parsed[k];});
-  save();render();toast("공고를 4개 영역으로 나눴습니다. 원문과 맞는지 확인해 주세요.");
+  save();render();toast("공고를 TASK · GATE · 우대 · 전형/기타로 나눴습니다.");
+}
+function jobAnalysisPrompt(){
+  const p=state.postings[activePosting],job=state.target.job||p.title||"희망 직무";
+  return "나는 대학생이며 "+job+" 직무를 분석하고 있다.\n\n"+
+    "[실제 채용공고]\n"+(p.text||"(여기에 공고 원문을 붙여넣기)")+"\n\n"+
+    "다음 기준으로 분석해줘.\n"+
+    "1. 공고에서 직접 확인되는 TASK(담당업무)\n"+
+    "2. GATE(필수·지원자격)\n"+
+    "3. PREFERENCE(우대요건)\n"+
+    "4. Knowledge / Skill / Behavior / Experience\n"+
+    "5. 반복해서 강조되는 역량 신호\n"+
+    "6. 업무내용을 바탕으로 추정할 수 있는 KPI·KBI 후보\n"+
+    "7. 대학생이 준비하거나 증명할 수 있는 Evidence\n\n"+
+    "반드시 [공고 직접근거]와 [추론]을 구분하고, 공고에 없는 사실을 공고에 적혀 있는 것처럼 표현하지 마.\n"+
+    "확인되지 않는 KPI·KBI는 '공고만으로 확인 불가'라고 표시해줘.";
 }
 function step3(){
   const p=state.postings[activePosting];
   const tabs=state.postings.map((_,i)=>'<button class="tabBtn '+(i===activePosting?"active":"")+'" data-tab="'+i+'">'+(i===0?"공고 1 · 기본 분석":"공고 "+(i+1)+" · 심화 선택")+'</button>').join("");
-  const body='<div class="postingTabs">'+tabs+'</div>'+
-    '<div class="grid2"><div class="field"><label>기업명 <span class="hint">(선택)</span></label><input class="input" data-pf="company" value="'+h(p.company)+'" placeholder="기업명" /></div><div class="field"><label>공고 직무명 <span class="hint">(선택)</span></label><input class="input" data-pf="title" value="'+h(p.title)+'" placeholder="공고에 적힌 직무명" /></div></div>'+
-    '<div class="block"><div class="field"><label>채용공고 원문</label><textarea class="input tall" data-pf="text" placeholder="담당업무, 자격요건, 우대사항이 보이도록 붙여넣으세요.">'+h(p.text)+'</textarea></div><div class="actions compactActions"><button class="btn secondary" id="parsePostingBtn">공고 구조 자동 나누기</button></div></div>'+
-    '<div class="block"><h3>① 공고 원문을 구조로 나누기</h3><p class="help">자동 분류는 초안입니다. 반드시 원문을 다시 보고 잘못 들어간 문장을 수정하세요.</p><div class="grid2">'+
-      '<div class="field"><label>담당업무</label><textarea class="input" data-pf="tasks" placeholder="실제로 하게 될 일">'+h(p.tasks)+'</textarea></div>'+
-      '<div class="field"><label>필수·지원자격</label><textarea class="input" data-pf="required" placeholder="반드시 충족하거나 지원을 위해 필요한 조건">'+h(p.required)+'</textarea></div>'+
-      '<div class="field"><label>우대사항</label><textarea class="input" data-pf="preferred" placeholder="있으면 유리한 조건">'+h(p.preferred)+'</textarea></div>'+
-      '<div class="field"><label>기타 조건</label><textarea class="input" data-pf="other" placeholder="근무조건·채용절차 등 분석에 참고할 내용">'+h(p.other)+'</textarea></div>'+
+  const cards=Object.entries(signals()).map(([cat,items])=>'<div class="signalCard"><h4>'+cat+'</h4><div class="pills">'+(items.length?items.slice(0,10).map(x=>'<span class="pill">'+h(x.w)+' <strong>'+x.count+'</strong></span>').join(""):'<span class="hint">발견된 후보가 없습니다.</span>')+'</div></div>').join("");
+  const evidence=evidenceRows();
+  const trs=evidence.length?evidence.slice(0,45).map(r=>'<tr><td>공고 '+r.posting+'</td><td>'+h(r.section)+'</td><td>'+h(r.line)+'</td><td>'+signalLabel(r.signals)+'</td></tr>').join(""):'<tr><td colspan="4">공고를 입력하면 원문 근거표가 만들어집니다.</td></tr>';
+  const body=
+    '<div class="postingTabs">'+tabs+'</div>'+
+    '<div class="grid2"><div class="field"><label>기업명</label><input class="input" data-pf="company" value="'+h(p.company)+'" placeholder="기업명" /></div><div class="field"><label>공고 직무명</label><input class="input" data-pf="title" value="'+h(p.title)+'" placeholder="직무명" /></div></div>'+
+    '<div class="block"><div class="field"><label>채용공고 원문</label><textarea class="input tall" data-pf="text" placeholder="담당업무, 자격요건, 우대사항이 보이도록 붙여넣으세요.">'+h(p.text)+'</textarea></div><div class="actions compactActions"><button class="btn secondary" id="parsePostingBtn">공고 구조 자동 나누기</button><button class="btn secondary" id="copyJobPromptBtn">AI 심층분석 프롬프트 복사</button></div></div>'+
+    '<div class="block"><h3>① TASK · GATE · PREFERENCE · SELECTION</h3><div class="grid2">'+
+      '<div class="field"><label>TASK · 담당업무</label><textarea class="input" data-pf="tasks" placeholder="실제로 하게 될 일">'+h(p.tasks)+'</textarea></div>'+
+      '<div class="field"><label>GATE · 필수·지원자격</label><textarea class="input" data-pf="required" placeholder="지원 가능한 최소 조건">'+h(p.required)+'</textarea></div>'+
+      '<div class="field"><label>PREFERENCE · 우대사항</label><textarea class="input" data-pf="preferred" placeholder="있으면 경쟁력이 되는 조건">'+h(p.preferred)+'</textarea></div>'+
+      '<div class="field"><label>SELECTION · 전형·기타</label><textarea class="input" data-pf="other" placeholder="필기·면접·근무조건·전형절차 등">'+h(p.other)+'</textarea></div>'+
     '</div></div>'+
-    '<div class="block"><div class="field"><label>② 내가 읽어낸 핵심</label><textarea class="input" data-pf="notes" placeholder="이 회사가 이 직무 사람에게 실제로 시키려는 일은 무엇인가요?">'+h(p.notes)+'</textarea></div></div>'+
-    '<div class="callout warn"><b>분석 원칙:</b> 담당업무·자격요건·우대사항을 먼저 구분한 뒤 역량을 해석합니다. 공고에 없는 역량은 추가하지 않습니다.</div>';
-  return shell(3,"채용공고 분석","공고 원문을 업무·필수조건·우대조건으로 먼저 나눈 뒤 직무 요구를 읽습니다.",body,"핵심 실습");
+    '<div class="divider"></div><div class="block"><h3>② KSA · 업무수행에 필요한 역량</h3><div class="grid2">'+
+      field("competency.knowledge","Knowledge · 무엇을 알아야 하나?","전공지식, 산업·제품·공정 지식")+
+      field("competency.skill","Skill · 무엇을 할 수 있어야 하나?","분석, 설계, Tool, 문서작성 등")+
+      field("competency.behavior","Behavior · 어떻게 일해야 하나?","공고에서 직접 확인되는 행동·업무방식")+
+      field("competency.experience","Experience · 어떤 경험을 요구하나?","프로젝트, 현장실습, 인턴, 연구 등")+
+    '</div><div class="callout warn"><b>근거 원칙:</b> 공고에서 직접 확인되지 않으면 “확인되지 않음”이라고 적어도 됩니다. KPI·KBI 등 공고에 없는 내용은 <b>FLEX 해석/추론</b>으로 구분합니다.</div>'+
+    '<div class="block">'+field("competency.top5","핵심 요구 TOP 5","공고 원문에서 근거를 찾을 수 있는 항목을 우선")+'</div></div>'+
+    '<div class="block"><div class="field"><label>③ 내가 읽어낸 직무의 핵심</label><textarea class="input" data-pf="notes" placeholder="이 회사가 이 직무 사람에게 실제로 해결해 달라고 하는 문제는 무엇인가요?">'+h(p.notes)+'</textarea></div></div>'+
+    '<details class="optionBox"><summary>근거 확인 · 원문 문장과 반복 키워드 보기</summary><div class="optionBody"><div class="tableWrap"><table><thead><tr><th>공고</th><th>구분</th><th>원문 근거</th><th>분류 후보</th></tr></thead><tbody>'+trs+'</tbody></table></div><div class="signalGrid">'+cards+'</div></div></details>'+
+    optionalComparison();
+  return shell(3,"JD Analyzer","실제 공고를 TASK → GATE → KSA → EVIDENCE 관점으로 읽고 회사가 원하는 것을 분리합니다.",body,"핵심 실습");
 }
 const dict={
-  "지식(Knowledge)":["공정","품질","회계","재무","마케팅","시장","전기","전자","기계","화학","에너지","안전","법규","제품","산업","원가","생산","설비","전력","전공"],
-  "기술(Skill)":["분석","Excel","엑셀","Python","파이썬","SQL","CAD","통계","데이터","보고서","프레젠테이션","영어","어학","문서","설계","개선","최적화","모니터링"],
+  "지식(Knowledge)":["공정","품질","회계","재무","마케팅","시장","전기","전자","기계","화학","에너지","안전","환경","법규","제품","산업","원가","생산","설비","전력","전공"],
+  "기술(Skill)":["분석","Excel","엑셀","Python","파이썬","SQL","CAD","GIS","ArcGIS","Minitab","미니탭","통계","데이터","보고서","프레젠테이션","영어","어학","문서","설계","개선","최적화","모니터링"],
   "행동(Behavior)":["협업","소통","문제해결","문제 해결","주도","책임","고객","커뮤니케이션","조율","적극","논리","꼼꼼","유관부서","유관 부서"],
   "경험(Experience)":["인턴","프로젝트","실험","연구","현장","공모전","아르바이트","실습","경력","경험","캡스톤","교육","자격증"]
 };
@@ -246,7 +273,7 @@ function evidenceRows(){
   state.postings.forEach((p,i)=>{
     if(!filled(p.text))return;
     [
-      ["담당업무","tasks"],["필수·지원자격","required"],["우대사항","preferred"]
+      ["TASK","tasks"],["GATE","required"],["PREFERENCE","preferred"]
     ].forEach(([label,key])=>{
       postingLines(postingSection(p,key)).forEach(line=>{
         rows.push({posting:i+1,section:label,line,signals:lineSignals(line)});
