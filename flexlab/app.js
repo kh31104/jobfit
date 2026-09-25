@@ -61,7 +61,7 @@ function done(n){
   if(n===2)return filled(state.context.change)||filled(state.context.impact)||filled(state.profile.solve)||filled(state.profile.output);
   if(n===3)return state.postings.some(p=>filled(p.text));
   if(n===4)return Object.values(state.competency).some(filled);
-  if(n===5)return Object.values(state.fit).some(filled);
+  if(n===5)return Object.values(state.fit).some(filled)||Object.values(state.star||{}).some(filled)||(state.requirements||[]).some(r=>filled(r.status));
   if(n===6)return done(1)&&done(3);
 }
 function nav(){
