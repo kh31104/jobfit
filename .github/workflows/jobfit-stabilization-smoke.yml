@@ -3,6 +3,7 @@ name: Jobfit stabilization smoke
 on:
   pull_request:
     paths:
+      - 'flexlab/**'
       - 'index.html'
       - 'v2/**'
       - '.github/workflows/jobfit-stabilization-smoke.yml'
@@ -38,6 +39,7 @@ jobs:
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/jobfit-smoke-server.log 2>&1 &
           sleep 2
           curl --fail http://127.0.0.1:8765/v2/ >/dev/null
+          curl --fail http://127.0.0.1:8765/flexlab/ >/dev/null
       - name: Verify STEP1 toggles and learner continuity
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
