@@ -17,14 +17,14 @@ const defaults=()=>({
   context:{money:"",change:"",problem:"",impact:""},
   profile:{manage:"",solve:"",collab:"",data:"",output:"",risk:""},
   postings:[emptyPosting(),emptyPosting(),emptyPosting()],
-  competency:{knowledge:"",skill:"",behavior:"",experience:"",top5:""},
+  competency:{knowledge:"",skill:"",behavior:"",experience:"",top5:"",signal:""},
   comparison:{common:"",differences:""},
-  experiences:[emptyExperience(),emptyExperience(),emptyExperience()],
-  selectedExperience:0,
   fit:{assets:"",evidence:"",gaps:"",actions:""},
   requirements:[0,1,2,3].map(()=>({condition:"",status:"",note:""})),
-  star:{competency:"",experience:"",situation:"",task:"",actionWhat:"",actionWhy:"",actionHow:"",result:"",evidence:""},
-  matchRows:[0,1,2,3,4].map(emptyMatch)
+  experiences:[0,1,2].map(()=>({title:"",type:"",note:""})),
+  selectedExperience:0,
+  star:{competency:"",experience:"",situation:"",task:"",actionWhat:"",actionWhy:"",actionHow:"",result:"",evidence:"",situationTask:"",action:""},
+  matches:[0,1,2,3,4].map(()=>({requirement:"",evidence:"",status:"",note:""}))
 });
 let state=load(), activePosting=0;
 
@@ -34,23 +34,27 @@ function load(){
     if(!x)return defaults();
     const b=defaults();
     const legacyStep=Number(x.currentStep||1);
-    const oldSix=(x.version||1)<3
-      ? ({1:1,2:2,3:2,4:3,5:4,6:4,7:5,8:6}[legacyStep]||1)
-      : Math.max(1,Math.min(6,legacyStep));
     const mappedStep=(x.version||1)<5
-      ? ({1:1,2:1,3:3,4:3,5:5,6:7}[oldSix]||1)
+      ? ({1:1,2:2,3:3,4:3,5:5,6:7,7:7,8:7}[legacyStep]||1)
       : Math.max(1,Math.min(7,legacyStep));
     const req=Array.isArray(x.requirements)&&x.requirements.length
       ? [0,1,2,3].map(i=>({condition:"",status:"",note:"",...(x.requirements[i]||{})}))
       : b.requirements;
     const oldStar=x.star||{};
-    const legacyEvidence=(x.fit&&x.fit.evidence)||"";
-    const exps=Array.isArray(x.experiences)&&x.experiences.length
-      ? [0,1,2].map(i=>({...emptyExperience(),...(x.experiences[i]||{})}))
-      : [0,1,2].map(i=>i===0?{...emptyExperience(),title:oldStar.experience||legacyEvidence}:emptyExperience());
-    const matches=Array.isArray(x.matchRows)&&x.matchRows.length
-      ? [0,1,2,3,4].map(i=>({...emptyMatch(),...(x.matchRows[i]||{})}))
-      : b.matchRows;
+    const experiences=Array.isArray(x.experiences)&&x.experiences.length
+      ? [0,1,2].map(i=>({title:"",type:"",note:"",...(x.experiences[i]||{})}))
+      : [0,1,2].map(i=>i===0?{title:oldStar.experience||x.fit?.evidence||"",type:"",note:""}:{title:"",type:"",note:""});
+    const matches=Array.isArray(x.matches)&&x.matches.length
+      ? [0,1,2,3,4].map(i=>({requirement:"",evidence:"",status:"",note:"",...(x.matches[i]||{})}))
+      : b.matches;
+    const star={
+      ...b.star,...oldStar,
+      experience:oldStar.experience||x.fit?.evidence||experiences[0]?.title||"",
+      situation:oldStar.situation||oldStar.situationTask||"",
+      task:oldStar.task||"",
+      actionWhat:oldStar.actionWhat||oldStar.action||"",
+      result:oldStar.result||""
+    };
     return {
       ...b,...x,version:5,currentStep:mappedStep,
       target:{...b.target,...(x.target||{})},
@@ -59,17 +63,9 @@ function load(){
       competency:{...b.competency,...(x.competency||{})},
       comparison:{...b.comparison,...(x.comparison||{})},
       fit:{...b.fit,...(x.fit||{})},
-      requirements:req,
-      experiences:exps,
-      selectedExperience:Number.isInteger(x.selectedExperience)?Math.max(0,Math.min(2,x.selectedExperience)):0,
-      star:{
-        ...b.star,...oldStar,
-        experience:oldStar.experience||legacyEvidence||exps[0].title||"",
-        situation:oldStar.situation||oldStar.situationTask||"",
-        actionWhat:oldStar.actionWhat||oldStar.action||"",
-        result:oldStar.result||""
-      },
-      matchRows:matches,
+      requirements:req,experiences,
+      selectedExperience:Math.max(0,Math.min(2,Number(x.selectedExperience||0))),
+      star,matches,
       postings:[0,1,2].map(i=>({...emptyPosting(),...(x.postings?.[i]||{})}))
     };
   }catch(e){return defaults();}
@@ -94,12 +90,12 @@ function field(path,label,ph,area=true,optional=false){
 }
 function done(n){
   if(n===1)return filled(state.target.industry)&&filled(state.target.job);
-  if(n===2)return state.postings.some(p=>filled(p.sourceUrl)||filled(p.company)||filled(p.title)||filled(p.text));
-  if(n===3)return state.postings.some(p=>filled(p.text));
+  if(n===2){const p=state.postings[0];return filled(p.url)||filled(p.company)||filled(p.title)||filled(p.text);}
+  if(n===3)return state.postings.some(p=>filled(p.text))&&Object.values(state.competency).some(filled);
   if(n===4)return state.experiences.some(e=>filled(e.title));
-  if(n===5)return filled(state.star.experience)&&filled(state.star.actionWhat);
-  if(n===6)return state.matchRows.some(r=>filled(r.status));
-  if(n===7)return filled(state.fit.gaps)||filled(state.fit.actions)||done(6);
+  if(n===5)return filled(state.star.experience)&&(filled(state.star.actionWhat)||filled(state.star.action)||filled(state.star.result));
+  if(n===6)return state.matches.some(m=>filled(m.requirement)&&filled(m.status));
+  if(n===7)return done(1)&&done(3)&&done(4);
 }
 function nav(){
   document.getElementById("stepNav").innerHTML='<div class="navTitle">JOB ANALYSIS</div>'+steps.map((s,i)=>{
@@ -119,46 +115,41 @@ function shell(n,title,desc,body,badge="실습"){
   return '<section class="card stepCard"><div class="sectionHead"><div><div class="kicker">STEP '+String(n).padStart(2,"0")+'</div><h2>'+title+'</h2><p>'+desc+'</p></div><span class="badge">'+badge+'</span></div>'+body+'<div class="actions">'+(n>1?'<button class="btn secondary" data-prev="'+(n-1)+'">이전</button>':"")+(n<7?'<button class="btn primary" data-next="'+(n+1)+'">저장하고 다음</button>':"")+'</div></section>';
 }
 function step1(){
-  const context=
-    '<details class="optionBox"><summary>수업에서 정리한 산업·기업·직무 맥락 메모하기 · 선택</summary><div class="optionBody"><p class="help">강의에서 이미 다룬 내용입니다. 내 Target Job과 연결되는 핵심만 남겨도 됩니다.</p><div class="grid2">'+
-      field("context.change","최근 산업 변화","기술·정책·시장 변화 중 내 직무와 연결되는 것",true,true)+
-      field("context.problem","기업이 해결해야 할 문제","산업 변화로 생긴 기업의 과제",true,true)+
-      field("profile.solve","이 직무가 해결하는 문제","이 직무가 맡는 문제를 한 문장으로",true,true)+
-      field("profile.output","직무가 만들어야 하는 결과","안정운전, 품질, 원가, 매출, 납기 등",true,true)+
-    '</div></div></details>';
-  return shell(1,"분석대상 선택","오늘 분석할 산업과 직무를 하나 정하고, 수업에서 배운 내용을 Target Job으로 좁힙니다.",
+  return shell(1,"Target Job","수업에서 정한 산업과 직무를 FLEX의 분석 대상으로 확정합니다.",
     '<div class="grid2">'+
-      field("target.industry","관심 산업","예: 발전, LNG·수소, ESS·전력기기",false)+
-      field("target.job","분석할 직무","예: 발전운영·정비, 안전·환경, 생산기술",false)+
-      field("target.company","관심 기업","특정 기업이 있으면 입력",false,true)+
+      field("target.industry","관심 산업","예: 전력망·전력공급, 발전, LNG·수소, ESS·전력기기",false)+
+      field("target.job","분석할 직무","예: 발전운영·정비, 안전·환경, 생산기술, 품질관리",false)+
+      field("target.company","관심 기업","아직 없다면 비워도 됩니다.",false,true)+
       field("target.initialView","지금 생각하는 이 직무","이 직무는 회사에서 어떤 문제를 해결하는 사람이라고 생각하나요?")+
-    '</div><div class="callout info"><b>수업 문장:</b> “나는 ______ 문제를 해결하는 ______ 직무를 준비한다.”</div>'+context);
+    '</div>'+
+    '<details class="optionBox"><summary>수업에서 정리한 산업·직무 맥락도 남기기 · 선택</summary><div class="optionBody"><div class="grid2">'+
+      field("context.change","최근 산업 변화","기술·정책·시장 변화 중 직무와 관련된 것",true,true)+
+      field("context.problem","기업이 해결해야 할 문제","산업 변화 때문에 기업이 해결해야 하는 과제",true,true)+
+      field("profile.solve","이 직무가 해결하는 문제","직무가 맡는 문제를 한 문장으로",true,true)+
+      field("profile.output","이 직무가 만들어야 하는 결과","안정운전, 품질, 생산성, 매출, 납기 등",true,true)+
+    '</div></div></details>'+
+    '<div class="callout good"><b>수업 문장:</b> “나는 ______ 문제를 해결하는 ______ 직무를 준비한다.”</div>');
 }
-
-const portals=[
-  ["민간기업","사람인","https://www.saramin.co.kr/"],
-  ["민간기업","잡코리아","https://www.jobkorea.co.kr/"],
-  ["민간기업","인크루트","https://www.incruit.com/"],
-  ["민간기업","고용24","https://www.work24.go.kr/"],
-  ["공공기관","잡알리오","https://job.alio.go.kr/"],
-  ["공공기관","클린아이 잡플러스","https://job.cleaneye.go.kr/"]
-];
-function portalCards(group){
-  return portals.filter(x=>x[0]===group).map(x=>'<a class="portalCard" href="'+x[2]+'" target="_blank" rel="noopener"><b>'+h(x[1])+'</b><span>채용공고 찾기 ↗</span></a>').join("");
+function jobSite(name,url,desc){
+  return '<a class="jobSite" href="'+url+'" target="_blank" rel="noopener"><b>'+name+'</b><span>'+desc+'</span></a>';
 }
 function step2(){
   const p=state.postings[0];
-  return shell(2,"채용공고 찾기","Target Job과 연결되는 실제 공고 1개를 찾습니다. 공고 2~3개 비교는 심화활동입니다.",
-    '<div class="block"><h3>① 채용사이트 바로가기</h3><p class="help">공고를 찾은 뒤 원문이나 주요 내용을 STEP 3에 붙여넣습니다.</p>'+
-      '<div class="portalGroup"><b>민간기업</b><div class="portalGrid">'+portalCards("민간기업")+'</div></div>'+
-      '<div class="portalGroup"><b>공공기관·지방공공기관</b><div class="portalGrid">'+portalCards("공공기관")+'</div></div>'+
-    '</div>'+
-    '<div class="divider"></div><div class="block"><h3>② 오늘 분석할 공고 기록</h3><div class="grid2">'+
+  return shell(2,"Find JD","오늘 분석할 실제 채용공고 1개를 찾습니다. 공고 2·3개 비교는 심화활동입니다.",
+    '<div class="block"><h3>① 채용공고 찾기</h3><div class="siteSection"><b>민간기업</b><div class="jobSiteGrid">'+
+      jobSite("사람인","https://www.saramin.co.kr/","민간기업·신입/경력")+
+      jobSite("잡코리아","https://www.jobkorea.co.kr/","민간기업·공채")+
+      jobSite("인크루트","https://www.incruit.com/","민간·공공 채용")+
+      jobSite("고용24","https://www.work24.go.kr/","정부 통합 채용정보")+
+    '</div></div><div class="siteSection"><b>공공기관</b><div class="jobSiteGrid">'+
+      jobSite("잡알리오","https://job.alio.go.kr/","국가 공공기관 채용")+
+      jobSite("클린아이 잡플러스","https://job.cleaneye.go.kr/","지방공공기관 채용")+
+    '</div></div></div>'+
+    '<div class="block"><h3>② 오늘 분석할 공고 기록</h3><div class="grid2">'+
       '<div class="field"><label>기업명</label><input class="input" data-pf="company" value="'+h(p.company)+'" placeholder="예: 한국남부발전" /></div>'+
       '<div class="field"><label>공고 직무명</label><input class="input" data-pf="title" value="'+h(p.title)+'" placeholder="공고에 적힌 직무명" /></div>'+
-      '<div class="field fullSpan"><label>채용공고 주소 <span class="hint">(선택)</span></label><input class="input" data-pf="sourceUrl" value="'+h(p.sourceUrl)+'" placeholder="https://..." /></div>'+
-    '</div></div>'+
-    '<div class="callout warn"><b>링크가 안 열려도 괜찮습니다.</b> 사람인·잡코리아처럼 공고 링크가 제한되는 경우 캡처를 보며 STEP 3에 담당업무·자격요건·우대사항을 붙여넣으면 됩니다.</div>');
+      '<div class="field span2"><label>채용공고 주소 <span class="hint">(선택)</span></label><input class="input" data-pf="url" value="'+h(p.url)+'" placeholder="https://..." /></div>'+
+    '</div><div class="callout info"><b>기본 실습:</b> 공고 1개면 충분합니다. 담당업무·지원자격·우대사항이 보이도록 다음 STEP에 붙여넣으세요.</div></div>');
 }
 function postingLines(text=""){
   return String(text).split(/\r?\n/).map(x=>x.replace(/^[\s·•▶▷■□▪\-–—*]+/,"").trim()).filter(Boolean);
