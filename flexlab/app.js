@@ -106,6 +106,7 @@ const sectionRules=[
 function lineSection(line,current="other"){
   const hit=sectionRules.find(([,rx])=>rx.test(line));
   if(hit)return hit[0];
+  if(current==="tasks"||current==="required"||current==="preferred")return current;
   if(/우대|가점|preferred/i.test(line))return "preferred";
   if(/필수|자격|졸업|학위|전공|경력\s*\d|어학|자격증|지원\s*가능/i.test(line))return "required";
   if(/담당|수행|관리|분석|기획|개선|운영|개발|설계|검토|대응|지원|최적화|모니터링/i.test(line))return "tasks";
@@ -255,7 +256,7 @@ function step7(){
 function portfolio(){
   const t=state.target,c=state.context,p=state.profile,k=state.competency,cmp=state.comparison,f=state.fit;
   const ps=state.postings.filter(x=>filled(x.text));
-  const common=commonRows().filter(x=>x.n>=2).slice(0,12).map(x=>x.w).join(", ")||"-";
+  const common=commonSignalRows().filter(x=>x.n>=2).map(x=>x.label).join(", ")||"-";
   const a=[
     "MY JOB ANALYSIS PORTFOLIO","",
     "1. TARGET JOB","관심 산업: "+(t.industry||"-"),"분석 직무: "+(t.job||"-"),"관심 기업: "+(t.company||"-"),"분석 전 직무 이미지: "+(t.initialView||"-"),"",
