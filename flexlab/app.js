@@ -119,35 +119,46 @@ function shell(n,title,desc,body,badge="실습"){
   return '<section class="card stepCard"><div class="sectionHead"><div><div class="kicker">STEP '+String(n).padStart(2,"0")+'</div><h2>'+title+'</h2><p>'+desc+'</p></div><span class="badge">'+badge+'</span></div>'+body+'<div class="actions">'+(n>1?'<button class="btn secondary" data-prev="'+(n-1)+'">이전</button>':"")+(n<7?'<button class="btn primary" data-next="'+(n+1)+'">저장하고 다음</button>':"")+'</div></section>';
 }
 function step1(){
-  return shell(1,"분석대상 선택","오늘 깊게 볼 산업과 직무를 하나 정합니다.",
-    '<div class="grid2">'+field("target.industry","관심 산업","예: 에너지, 반도체, 조선, 금융",false)+field("target.job","분석할 직무","예: 생산기술, 품질관리, 영업, 재무",false)+field("target.company","관심 기업","특정 기업이 있으면 입력",false,true)+field("target.initialView","지금 생각하는 이 직무","이 직무는 회사에서 어떤 문제를 해결하는 사람이라고 생각하나요?")+'</div><div class="callout info"><b>먼저 내 생각을 적습니다.</b> 실제 채용공고를 본 뒤 직무 이해가 어떻게 달라졌는지 비교합니다.</div>');
+  const context=
+    '<details class="optionBox"><summary>수업에서 정리한 산업·기업·직무 맥락 메모하기 · 선택</summary><div class="optionBody"><p class="help">강의에서 이미 다룬 내용입니다. 내 Target Job과 연결되는 핵심만 남겨도 됩니다.</p><div class="grid2">'+
+      field("context.change","최근 산업 변화","기술·정책·시장 변화 중 내 직무와 연결되는 것",true,true)+
+      field("context.problem","기업이 해결해야 할 문제","산업 변화로 생긴 기업의 과제",true,true)+
+      field("profile.solve","이 직무가 해결하는 문제","이 직무가 맡는 문제를 한 문장으로",true,true)+
+      field("profile.output","직무가 만들어야 하는 결과","안정운전, 품질, 원가, 매출, 납기 등",true,true)+
+    '</div></div></details>';
+  return shell(1,"분석대상 선택","오늘 분석할 산업과 직무를 하나 정하고, 수업에서 배운 내용을 Target Job으로 좁힙니다.",
+    '<div class="grid2">'+
+      field("target.industry","관심 산업","예: 발전, LNG·수소, ESS·전력기기",false)+
+      field("target.job","분석할 직무","예: 발전운영·정비, 안전·환경, 생산기술",false)+
+      field("target.company","관심 기업","특정 기업이 있으면 입력",false,true)+
+      field("target.initialView","지금 생각하는 이 직무","이 직무는 회사에서 어떤 문제를 해결하는 사람이라고 생각하나요?")+
+    '</div><div class="callout info"><b>수업 문장:</b> “나는 ______ 문제를 해결하는 ______ 직무를 준비한다.”</div>'+context);
+}
+
+const portals=[
+  ["민간기업","사람인","https://www.saramin.co.kr/"],
+  ["민간기업","잡코리아","https://www.jobkorea.co.kr/"],
+  ["민간기업","인크루트","https://www.incruit.com/"],
+  ["민간기업","고용24","https://www.work24.go.kr/"],
+  ["공공기관","잡알리오","https://job.alio.go.kr/"],
+  ["공공기관","클린아이 잡플러스","https://job.cleaneye.go.kr/"]
+];
+function portalCards(group){
+  return portals.filter(x=>x[0]===group).map(x=>'<a class="portalCard" href="'+x[2]+'" target="_blank" rel="noopener"><b>'+h(x[1])+'</b><span>채용공고 찾기 ↗</span></a>').join("");
 }
 function step2(){
-  const guide=
-    '<div class="sourceGuide"><div class="sourceGuideHead"><div><b>자료찾기 가이드</b><span>모든 자료를 다 볼 필요는 없습니다. 오늘 직무를 이해하는 데 필요한 공식자료 1~2개만 확인하세요.</span></div></div>'+
-    '<div class="sourceGrid">'+
-      '<div class="sourceCard"><span class="sourceN">1</span><div><b>기업 공식 홈페이지·IR</b><p>무엇을 만들고 파는지, 최근 어떤 사업에 투자하는지 확인</p></div></div>'+
-      '<div class="sourceCard"><span class="sourceN">2</span><div><b>DART 사업보고서</b><p>주요 사업·시장·위험요인을 확인할 때 사용</p><a href="https://dart.fss.or.kr/" target="_blank" rel="noopener">DART 열기</a></div></div>'+
-      '<div class="sourceCard"><span class="sourceN">3</span><div><b>공공 통계·산업자료</b><p>산업 규모·고용·생산 변화가 필요할 때 사용</p><a href="https://kosis.kr/" target="_blank" rel="noopener">KOSIS 열기</a></div></div>'+
-      '<div class="sourceCard"><span class="sourceN">4</span><div><b>실제 채용공고</b><p>산업 변화가 실제 업무·자격·우대조건에 어떻게 나타나는지 확인</p><a href="https://www.work24.go.kr/" target="_blank" rel="noopener">고용24 열기</a></div></div>'+
-    '</div><div class="callout info"><b>검색어 예시:</b> “기업명 + 사업보고서”, “산업명 + 통계”, “직무명 + 신입 채용”. 블로그 요약보다 원문을 먼저 봅니다.</div></div>';
-  return shell(2,"산업·기업·직무 맥락","네 질문만 먼저 답해 산업의 변화가 실제 직무의 일로 어떻게 이어지는지 정리합니다.",
-    guide+
-    '<div class="block"><h3>필수 · 네 질문만 작성</h3><div class="grid2">'+
-      field("context.change","① 최근 이 산업에서 무엇이 바뀌고 있는가?","기술, 정책, 고객, 경쟁, 원가, 공급망 중 핵심 변화 1~2개")+
-      field("context.problem","② 그 변화 때문에 기업은 어떤 문제를 해결해야 하는가?","비용, 품질, 안전, 납기, 고객, 기술 과제 등")+
-      field("profile.solve","③ 내가 선택한 직무는 그중 어떤 문제를 해결하는가?","이 직무가 맡는 문제를 한 문장으로")+
-      field("profile.output","④ 그 직무가 만들어야 하는 결과는 무엇인가?","수율 향상, 매출, 안정적 운영, 납기 준수 등")+
+  const p=state.postings[0];
+  return shell(2,"채용공고 찾기","Target Job과 연결되는 실제 공고 1개를 찾습니다. 공고 2~3개 비교는 심화활동입니다.",
+    '<div class="block"><h3>① 채용사이트 바로가기</h3><p class="help">공고를 찾은 뒤 원문이나 주요 내용을 STEP 3에 붙여넣습니다.</p>'+
+      '<div class="portalGroup"><b>민간기업</b><div class="portalGrid">'+portalCards("민간기업")+'</div></div>'+
+      '<div class="portalGroup"><b>공공기관·지방공공기관</b><div class="portalGrid">'+portalCards("공공기관")+'</div></div>'+
+    '</div>'+
+    '<div class="divider"></div><div class="block"><h3>② 오늘 분석할 공고 기록</h3><div class="grid2">'+
+      '<div class="field"><label>기업명</label><input class="input" data-pf="company" value="'+h(p.company)+'" placeholder="예: 한국남부발전" /></div>'+
+      '<div class="field"><label>공고 직무명</label><input class="input" data-pf="title" value="'+h(p.title)+'" placeholder="공고에 적힌 직무명" /></div>'+
+      '<div class="field fullSpan"><label>채용공고 주소 <span class="hint">(선택)</span></label><input class="input" data-pf="sourceUrl" value="'+h(p.sourceUrl)+'" placeholder="https://..." /></div>'+
     '</div></div>'+
-    '<details class="optionBox"><summary>더 알아보기 · 필요할 때만 작성</summary><div class="optionBody"><div class="grid2">'+
-      field("context.money","이 산업·기업은 무엇으로 돈을 버는가?","핵심 제품·서비스와 고객",true,true)+
-      field("context.impact","산업 변화가 이 직무에 어떤 영향을 주는가?","업무가 늘거나 바뀌는 지점",true,true)+
-      field("profile.manage","무엇을 관리하거나 다루는가?","공정, 고객, 비용, 설비, 일정, 데이터 등",true,true)+
-      field("profile.collab","누구와 함께 일하는가?","내부 부서, 현장, 고객, 협력사 등",true,true)+
-      field("profile.data","어떤 정보·데이터를 보는가?","생산실적, 매출, 품질지표, 시장자료 등",true,true)+
-      field("profile.risk","잘못하면 어떤 문제가 생기는가?","비용 증가, 사고, 불량, 일정 지연 등",true,true)+
-    '</div></div></details>'+
-    '<div class="callout good"><b>정리 기준:</b> 산업 변화 → 기업의 문제 → 직무가 해결할 문제 → 만들어야 할 결과가 한 줄로 이어지면 충분합니다.</div>');
+    '<div class="callout warn"><b>링크가 안 열려도 괜찮습니다.</b> 사람인·잡코리아처럼 공고 링크가 제한되는 경우 캡처를 보며 STEP 3에 담당업무·자격요건·우대사항을 붙여넣으면 됩니다.</div>');
 }
 function postingLines(text=""){
   return String(text).split(/\r?\n/).map(x=>x.replace(/^[\s·•▶▷■□▪\-–—*]+/,"").trim()).filter(Boolean);
