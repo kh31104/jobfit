@@ -9,14 +9,15 @@ const steps = [
   ["나와 연결","Evidence·Gap"],
   ["결과물 만들기","Portfolio"]
 ];
-const emptyPosting=()=>({company:"",title:"",text:"",notes:""});
+const emptyPosting=()=>({company:"",title:"",text:"",notes:"",tasks:"",required:"",preferred:"",other:""});
 const defaults=()=>({
-  version:1,currentStep:1,updatedAt:"",
+  version:2,currentStep:1,updatedAt:"",
   target:{industry:"",job:"",company:"",initialView:""},
   context:{money:"",change:"",problem:"",impact:""},
   profile:{manage:"",solve:"",collab:"",data:"",output:"",risk:""},
   postings:[emptyPosting(),emptyPosting(),emptyPosting()],
   competency:{knowledge:"",skill:"",behavior:"",experience:"",top5:""},
+  comparison:{common:"",differences:""},
   fit:{assets:"",evidence:"",gaps:"",actions:""}
 });
 let state=load(), activePosting=0;
@@ -26,7 +27,7 @@ function load(){
     const x=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");
     if(!x)return defaults();
     const b=defaults();
-    return {...b,...x,target:{...b.target,...(x.target||{})},context:{...b.context,...(x.context||{})},profile:{...b.profile,...(x.profile||{})},competency:{...b.competency,...(x.competency||{})},fit:{...b.fit,...(x.fit||{})},postings:[0,1,2].map(i=>({...emptyPosting(),...(x.postings?.[i]||{})}))};
+    return {...b,...x,target:{...b.target,...(x.target||{})},context:{...b.context,...(x.context||{})},profile:{...b.profile,...(x.profile||{})},competency:{...b.competency,...(x.competency||{})},comparison:{...b.comparison,...(x.comparison||{})},fit:{...b.fit,...(x.fit||{})},postings:[0,1,2].map(i=>({...emptyPosting(),...(x.postings?.[i]||{})}))};
   }catch(e){return defaults();}
 }
 function save(){
@@ -93,15 +94,70 @@ function step3(){
   ];
   return shell(3,"직무 해부","직무명을 실제 업무·문제·결과 단위로 분해합니다.",'<div class="grid2">'+q.map(x=>field(x[0],x[1],x[2])).join("")+'</div><div class="callout good"><b>좋은 직무 설명:</b> 무엇을 한다 + 왜 한다 + 어떤 결과를 만든다.</div>');
 }
+function postingLines(text=""){
+  return String(text).split(/\r?\n/).map(x=>x.replace(/^[\s·•▶▷■□▪\-–—*]+/,"").trim()).filter(Boolean);
+}
+const sectionRules=[
+  ["tasks",/(담당\s*업무|주요\s*업무|업무\s*내용|직무\s*내용|수행\s*업무|주요\s*역할|하는\s*일)/i],
+  ["required",/(자격\s*요건|지원\s*자격|필수\s*요건|필수\s*사항|필수\s*조건|요구\s*사항)/i],
+  ["preferred",/(우대\s*사항|우대\s*조건|우대\s*요건|preferred)/i],
+  ["other",/(기타|근무\s*조건|복리\s*후생|채용\s*절차|전형\s*절차)/i]
+];
+function lineSection(line,current="other"){
+  const hit=sectionRules.find(([,rx])=>rx.test(line));
+  if(hit)return hit[0];
+  if(current==="tasks"||current==="required"||current==="preferred")return current;
+  if(/우대|가점|preferred/i.test(line))return "preferred";
+  if(/필수|자격|졸업|학위|전공|경력\s*\d|어학|자격증|지원\s*가능/i.test(line))return "required";
+  if(/담당|수행|관리|분석|기획|개선|운영|개발|설계|검토|대응|지원|최적화|모니터링/i.test(line))return "tasks";
+  return current;
+}
+function parsePosting(text=""){
+  const out={tasks:[],required:[],preferred:[],other:[]};
+  let current="other";
+  postingLines(text).forEach(line=>{
+    const hit=sectionRules.find(([,rx])=>rx.test(line));
+    if(hit){
+      current=hit[0];
+      const rest=line.replace(hit[1],"").replace(/^[\s:：\-–—]+/,"").trim();
+      if(rest)out[current].push(rest);
+      return;
+    }
+    current=lineSection(line,current);
+    out[current].push(line);
+  });
+  return Object.fromEntries(Object.entries(out).map(([k,v])=>[k,[...new Set(v)].join("\n")]));
+}
+function postingSection(p,key){
+  if(filled(p[key]))return p[key];
+  return parsePosting(p.text)[key]||"";
+}
+function autoParsePosting(){
+  const p=state.postings[activePosting];
+  if(!filled(p.text)){toast("먼저 채용공고 원문을 붙여넣어 주세요.");return;}
+  const parsed=parsePosting(p.text);
+  ["tasks","required","preferred","other"].forEach(k=>{if(!filled(p[k]))p[k]=parsed[k];});
+  save();render();toast("공고를 4개 영역으로 나눴습니다. 원문과 맞는지 확인해 주세요.");
+}
 function step4(){
   const p=state.postings[activePosting];
   const tabs=state.postings.map((_,i)=>'<button class="tabBtn '+(i===activePosting?"active":"")+'" data-tab="'+i+'">공고 '+(i+1)+(i?" · 선택":"")+'</button>').join("");
-  const body='<div class="postingTabs">'+tabs+'</div><div class="grid2"><div class="field"><label>기업명 <span class="hint">(선택)</span></label><input class="input" data-pf="company" value="'+h(p.company)+'" placeholder="기업명" /></div><div class="field"><label>공고 직무명 <span class="hint">(선택)</span></label><input class="input" data-pf="title" value="'+h(p.title)+'" placeholder="공고에 적힌 직무명" /></div></div><div class="block"><div class="field"><label>채용공고 원문</label><textarea class="input tall" data-pf="text" placeholder="담당업무, 자격요건, 우대사항이 보이도록 붙여넣으세요.">'+h(p.text)+'</textarea></div></div><div class="block"><div class="field"><label>내가 읽어낸 핵심</label><textarea class="input" data-pf="notes" placeholder="이 회사가 이 직무 사람에게 실제로 시키려는 일은 무엇인가요?">'+h(p.notes)+'</textarea></div></div><div class="callout warn"><b>분석 원칙:</b> 공고에 없는 역량을 있다고 가정하지 않습니다. 해석은 가능한 한 원문 표현을 근거로 남깁니다.</div>';
-  return shell(4,"채용공고 분석","실제 공고에서 회사가 요구하는 업무와 조건을 읽습니다.",body,"핵심 실습");
+  const body='<div class="postingTabs">'+tabs+'</div>'+
+    '<div class="grid2"><div class="field"><label>기업명 <span class="hint">(선택)</span></label><input class="input" data-pf="company" value="'+h(p.company)+'" placeholder="기업명" /></div><div class="field"><label>공고 직무명 <span class="hint">(선택)</span></label><input class="input" data-pf="title" value="'+h(p.title)+'" placeholder="공고에 적힌 직무명" /></div></div>'+
+    '<div class="block"><div class="field"><label>채용공고 원문</label><textarea class="input tall" data-pf="text" placeholder="담당업무, 자격요건, 우대사항이 보이도록 붙여넣으세요.">'+h(p.text)+'</textarea></div><div class="actions compactActions"><button class="btn secondary" id="parsePostingBtn">공고 구조 자동 나누기</button></div></div>'+
+    '<div class="block"><h3>① 공고 원문을 구조로 나누기</h3><p class="help">자동 분류는 초안입니다. 반드시 원문을 다시 보고 잘못 들어간 문장을 수정하세요.</p><div class="grid2">'+
+      '<div class="field"><label>담당업무</label><textarea class="input" data-pf="tasks" placeholder="실제로 하게 될 일">'+h(p.tasks)+'</textarea></div>'+
+      '<div class="field"><label>필수·지원자격</label><textarea class="input" data-pf="required" placeholder="반드시 충족하거나 지원을 위해 필요한 조건">'+h(p.required)+'</textarea></div>'+
+      '<div class="field"><label>우대사항</label><textarea class="input" data-pf="preferred" placeholder="있으면 유리한 조건">'+h(p.preferred)+'</textarea></div>'+
+      '<div class="field"><label>기타 조건</label><textarea class="input" data-pf="other" placeholder="근무조건·채용절차 등 분석에 참고할 내용">'+h(p.other)+'</textarea></div>'+
+    '</div></div>'+
+    '<div class="block"><div class="field"><label>② 내가 읽어낸 핵심</label><textarea class="input" data-pf="notes" placeholder="이 회사가 이 직무 사람에게 실제로 시키려는 일은 무엇인가요?">'+h(p.notes)+'</textarea></div></div>'+
+    '<div class="callout warn"><b>분석 원칙:</b> 담당업무·자격요건·우대사항을 먼저 구분한 뒤 역량을 해석합니다. 공고에 없는 역량은 추가하지 않습니다.</div>';
+  return shell(4,"채용공고 분석","공고 원문을 업무·필수조건·우대조건으로 먼저 나눈 뒤 직무 요구를 읽습니다.",body,"핵심 실습");
 }
 const dict={
-  "지식(Knowledge)":["공정","품질","회계","재무","마케팅","시장","전기","기계","화학","에너지","안전","법규","제품","산업","원가","생산","설비","전력"],
-  "기술(Skill)":["분석","Excel","엑셀","Python","파이썬","SQL","CAD","통계","데이터","보고서","프레젠테이션","영어","어학","문서","설계","개선"],
+  "지식(Knowledge)":["공정","품질","회계","재무","마케팅","시장","전기","전자","기계","화학","에너지","안전","법규","제품","산업","원가","생산","설비","전력","전공"],
+  "기술(Skill)":["분석","Excel","엑셀","Python","파이썬","SQL","CAD","통계","데이터","보고서","프레젠테이션","영어","어학","문서","설계","개선","최적화","모니터링"],
   "행동(Behavior)":["협업","소통","문제해결","문제 해결","주도","책임","고객","커뮤니케이션","조율","적극","논리","꼼꼼","유관부서","유관 부서"],
   "경험(Experience)":["인턴","프로젝트","실험","연구","현장","공모전","아르바이트","실습","경력","경험","캡스톤","교육","자격증"]
 };
@@ -111,9 +167,71 @@ function signals(){
   Object.entries(dict).forEach(([cat,words])=>{out[cat]=words.map(w=>({w,count:(text.match(new RegExp(rx(w),"gi"))||[]).length})).filter(x=>x.count).sort((a,b)=>b.count-a.count);});
   return out;
 }
+function lineSignals(line){
+  const found=[];
+  Object.entries(dict).forEach(([cat,words])=>{
+    const hits=words.filter(w=>new RegExp(rx(w),"i").test(line));
+    if(hits.length)found.push({cat,words:hits});
+  });
+  return found;
+}
+function evidenceRows(){
+  const rows=[];
+  state.postings.forEach((p,i)=>{
+    if(!filled(p.text))return;
+    [
+      ["담당업무","tasks"],["필수·지원자격","required"],["우대사항","preferred"]
+    ].forEach(([label,key])=>{
+      postingLines(postingSection(p,key)).forEach(line=>{
+        rows.push({posting:i+1,section:label,line,signals:lineSignals(line)});
+      });
+    });
+  });
+  return rows;
+}
+function signalLabel(items){
+  if(!items.length)return '<span class="hint">직접 판단</span>';
+  return items.map(x=>'<span class="pill">'+h(x.cat.split("(")[0].trim())+' · '+h(x.words.slice(0,3).join(", "))+'</span>').join(" ");
+}
 function step5(){
   const cards=Object.entries(signals()).map(([cat,items])=>'<div class="signalCard"><h4>'+cat+'</h4><div class="pills">'+(items.length?items.slice(0,10).map(x=>'<span class="pill">'+h(x.w)+' <strong>'+x.count+'</strong></span>').join(""):'<span class="hint">발견된 후보가 없습니다.</span>')+'</div></div>').join("");
-  return shell(5,"요구역량 찾기","공고 문장에서 확인되는 요구를 지식·기술·행동·경험으로 정리합니다.",'<div class="block"><h3>공고에서 발견된 후보</h3><p class="help">단순 단어 탐색 결과입니다. 최종 판단은 공고 문맥을 읽고 직접 하세요.</p><div class="signalGrid">'+cards+'</div></div><div class="divider"></div><div class="grid2">'+field("competency.knowledge","Knowledge · 알아야 하는 것","전공지식, 산업·제품·공정 지식 등")+field("competency.skill","Skill · 할 수 있어야 하는 것","데이터 분석, 설계, 문서작성, 툴 활용 등")+field("competency.behavior","Behavior · 일하는 방식","협업, 문제해결, 책임, 고객지향 등")+field("competency.experience","Experience · 있으면 좋은 경험","인턴, 프로젝트, 실험, 현장경험 등")+'</div><div class="block">'+field("competency.top5","이 직무의 핵심 요구 TOP 5","공고 근거가 분명한 항목 5개")+'</div>');
+  const evidence=evidenceRows();
+  const trs=evidence.length?evidence.slice(0,45).map(r=>'<tr><td>공고 '+r.posting+'</td><td>'+h(r.section)+'</td><td>'+h(r.line)+'</td><td>'+signalLabel(r.signals)+'</td></tr>').join(""):'<tr><td colspan="4">STEP 4에서 채용공고를 입력하면 원문 근거표가 만들어집니다.</td></tr>';
+  return shell(5,"요구역량 찾기","먼저 공고의 원문 문장을 확인하고, 그 문장에서 지식·기술·행동·경험 요구를 해석합니다.",
+    '<div class="block"><h3>① 원문 근거표</h3><p class="help">각 문장이 공고의 어디에서 나온 것인지 먼저 확인합니다. 오른쪽 분류는 키워드 기반 보조판정입니다.</p><div class="tableWrap"><table><thead><tr><th>공고</th><th>구분</th><th>원문 근거</th><th>분류 후보</th></tr></thead><tbody>'+trs+'</tbody></table></div></div>'+
+    '<div class="block"><h3>② 반복해서 보이는 키워드</h3><p class="help">단어 빈도는 정답이 아니라 확인용입니다. 업무 문맥과 함께 판단하세요.</p><div class="signalGrid">'+cards+'</div></div>'+
+    '<div class="divider"></div><div class="block"><h3>③ 내가 확정한 요구역량</h3><div class="grid2">'+
+      field("competency.knowledge","Knowledge · 알아야 하는 것","전공지식, 산업·제품·공정 지식 등")+
+      field("competency.skill","Skill · 할 수 있어야 하는 것","데이터 분석, 설계, 문서작성, 툴 활용 등")+
+      field("competency.behavior","Behavior · 일하는 방식","협업, 문제해결, 책임, 고객지향 등")+
+      field("competency.experience","Experience · 요구되는 경험","인턴, 프로젝트, 실험, 현장경험 등")+
+    '</div><div class="block">'+field("competency.top5","이 직무의 핵심 요구 TOP 5","반드시 공고 원문에서 근거를 찾을 수 있는 항목 5개")+'</div></div>');
+}
+const signalGroups=[
+  {label:"데이터 분석",terms:["데이터 분석","데이터","통계","Excel","엑셀","Python","파이썬","SQL"]},
+  {label:"문제해결·개선",terms:["문제해결","문제 해결","개선","원인 분석","최적화"]},
+  {label:"협업·소통",terms:["협업","소통","커뮤니케이션","유관부서","유관 부서","조율"]},
+  {label:"공정·생산·설비",terms:["공정","생산","설비","수율","가동","품질"]},
+  {label:"전공·기술지식",terms:["전공","기계","전기","전자","화학","에너지","안전"]},
+  {label:"현장·프로젝트 경험",terms:["인턴","프로젝트","현장","실습","캡스톤","경험","경력"]},
+  {label:"기획·운영·관리",terms:["기획","운영","관리"]},
+  {label:"문서·보고",terms:["보고서","문서","프레젠테이션","PPT"]},
+  {label:"어학",terms:["영어","어학","TOEIC","토익","OPIc","오픽"]},
+  {label:"자격·인증",terms:["자격증","기사","산업기사"]}
+];
+function firstEvidence(text,terms){
+  return postingLines(text).find(line=>terms.some(w=>new RegExp(rx(w),"i").test(line)))||"";
+}
+function commonSignalRows(){
+  const ps=state.postings;
+  return signalGroups.map(g=>{
+    const cells=ps.map(p=>{
+      if(!filled(p.text))return {hit:false,evidence:""};
+      const evidence=firstEvidence(p.text,g.terms);
+      return {hit:!!evidence,evidence};
+    });
+    return {label:g.label,n:cells.filter(x=>x.hit).length,cells};
+  }).filter(x=>x.n).sort((a,b)=>b.n-a.n||a.label.localeCompare(b.label,"ko"));
 }
 function commonRows(){
   const texts=state.postings.map(p=>p.text).filter(Boolean),all=[...new Set(Object.values(dict).flat())],rows=[];
@@ -121,17 +239,24 @@ function commonRows(){
   return rows.sort((a,b)=>b.n-a.n||a.w.localeCompare(b.w,"ko"));
 }
 function step6(){
-  const valid=state.postings.filter(p=>filled(p.text)).length,rows=commonRows();
-  const trs=rows.length?rows.slice(0,30).map(r=>'<tr><td><b>'+h(r.w)+'</b></td><td>'+r.n+'</td>'+[0,1,2].map(i=>'<td>'+(r.presence[i]?"✓":"")+'</td>').join("")+'</tr>').join(""):'<tr><td colspan="5">공고를 입력하면 비교표가 만들어집니다.</td></tr>';
-  return shell(6,"공고 비교","같은 직무의 공고를 두 개 이상 넣었다면 반복되는 요구를 비교합니다.",'<div class="callout '+(valid>=2?"good":"info")+'">현재 공고 <b>'+valid+'개</b>가 입력되어 있습니다. 공고가 1개뿐이어도 다음 단계로 갈 수 있습니다.</div><div class="block"><h3>반복 신호</h3><p class="help">단어 일치 기준의 보조표입니다. 같은 뜻의 다른 표현은 직접 묶어 판단합니다.</p><div class="tableWrap"><table><thead><tr><th>키워드</th><th>등장 공고 수</th><th>공고 1</th><th>공고 2</th><th>공고 3</th></tr></thead><tbody>'+trs+'</tbody></table></div></div><div class="callout info">여러 회사에서 반복되면 <b>직무 공통 요구</b>, 한 회사에서만 강조되면 <b>기업별 요구</b>일 가능성을 검토해 보세요.</div>');
+  const valid=state.postings.filter(p=>filled(p.text)).length,rows=commonSignalRows();
+  const trs=rows.length?rows.map(r=>'<tr><td><b>'+h(r.label)+'</b></td><td>'+r.n+'</td>'+r.cells.map(c=>'<td>'+(c.hit?'<b>✓</b><br><span class="hint">'+h(c.evidence.slice(0,90))+'</span>':'-')+'</td>').join("")+'</tr>').join(""):'<tr><td colspan="5">공고를 입력하면 비교표가 만들어집니다.</td></tr>';
+  return shell(6,"공고 비교","같은 직무의 여러 공고에서 반복되는 요구와 회사별 차이를 원문 근거로 비교합니다.",
+    '<div class="callout '+(valid>=2?"good":"info")+'">현재 공고 <b>'+valid+'개</b>가 입력되어 있습니다. <b>2개 이상</b>이면 공통 요구와 기업별 차이를 구분하기 쉬워집니다.</div>'+
+    '<div class="block"><h3>① 의미가 비슷한 표현 묶어서 비교</h3><p class="help">단어 하나가 정확히 같지 않아도 같은 요구로 볼 수 있는 표현을 묶었습니다. 각 칸에는 실제 공고 문장을 함께 표시합니다.</p><div class="tableWrap"><table><thead><tr><th>요구 신호</th><th>등장 공고 수</th><th>공고 1 근거</th><th>공고 2 근거</th><th>공고 3 근거</th></tr></thead><tbody>'+trs+'</tbody></table></div></div>'+
+    '<div class="divider"></div><div class="block"><h3>② 내가 정리한 비교 결과</h3><div class="grid2">'+
+      field("comparison.common","여러 공고에서 공통으로 요구한 것","예: 공정 이해, 데이터 분석, 문제해결, 협업")+
+      field("comparison.differences","기업마다 달랐던 요구","예: A사는 설비 경험, B사는 Python 분석을 더 강조")+
+    '</div></div>'+
+    '<div class="callout info"><b>해석 기준:</b> 여러 회사에서 반복되는 요구는 직무 공통 신호로, 특정 회사에서만 강조되는 요구는 기업·사업 특성에 따른 신호로 구분해 봅니다.</div>');
 }
 function step7(){
   return shell(7,"나와 연결","직무 요구를 내 경험과 비교해 자기소개서·면접에 쓸 근거를 남깁니다.",'<div class="grid2">'+field("fit.assets","내가 이미 가지고 있는 것","전공, 지식, 기술, 자격, 경험 중 직무와 연결되는 것")+field("fit.evidence","그것을 보여줄 수 있는 경험","수업·프로젝트·실험·인턴·아르바이트 등 구체적 사례")+field("fit.gaps","아직 부족한 것","공고가 요구하지만 지금 근거가 부족한 항목")+field("fit.actions","다음 행동","이번 학기 또는 3개월 안에 할 수 있는 준비")+'</div><div class="callout good"><b>자소서·면접용 메모:</b> “역량이 있다”보다 그 역량을 보여주는 상황·행동·결과를 남겨두세요.</div>');
 }
 function portfolio(){
-  const t=state.target,c=state.context,p=state.profile,k=state.competency,f=state.fit;
+  const t=state.target,c=state.context,p=state.profile,k=state.competency,cmp=state.comparison,f=state.fit;
   const ps=state.postings.filter(x=>filled(x.text));
-  const common=commonRows().filter(x=>x.n>=2).slice(0,12).map(x=>x.w).join(", ")||"-";
+  const common=commonSignalRows().filter(x=>x.n>=2).map(x=>x.label).join(", ")||"-";
   const a=[
     "MY JOB ANALYSIS PORTFOLIO","",
     "1. TARGET JOB","관심 산업: "+(t.industry||"-"),"분석 직무: "+(t.job||"-"),"관심 기업: "+(t.company||"-"),"분석 전 직무 이미지: "+(t.initialView||"-"),"",
@@ -139,8 +264,8 @@ function portfolio(){
     "3. JOB PROFILE","관리 대상: "+(p.manage||"-"),"해결 문제: "+(p.solve||"-"),"협업 대상: "+(p.collab||"-"),"확인하는 데이터: "+(p.data||"-"),"만들어야 하는 결과: "+(p.output||"-"),"실패 시 문제: "+(p.risk||"-"),"",
     "4. JOB POSTING ANALYSIS"
   ];
-  ps.forEach((x,i)=>a.push("[공고 "+(i+1)+"] "+(x.company||"기업명 미입력")+" · "+(x.title||"직무명 미입력"),"내가 읽어낸 핵심: "+(x.notes||"-"),"원문:\n"+x.text,""));
-  a.push("5. COMPETENCY MAP","Knowledge: "+(k.knowledge||"-"),"Skill: "+(k.skill||"-"),"Behavior: "+(k.behavior||"-"),"Experience: "+(k.experience||"-"),"핵심 요구 TOP 5: "+(k.top5||"-"),"2개 이상 공고 반복 키워드: "+common,"","6. MY EVIDENCE & GAP","이미 가진 것: "+(f.assets||"-"),"증거 경험: "+(f.evidence||"-"),"부족한 것: "+(f.gaps||"-"),"다음 행동: "+(f.actions||"-"),"","7. 자기소개서에 다시 쓸 메모","활용 가능한 경험: "+(f.evidence||"-"),"","8. 면접에서 다시 볼 질문","- 왜 "+(t.job||"이 직무")+"를 선택했는가?","- 이 직무에서 가장 중요한 업무는 무엇이라고 이해하고 있는가?","- 실제 채용공고에서 반복해서 확인된 요구는 무엇이었는가?","- 그 요구를 보여줄 수 있는 본인의 경험은 무엇인가?","- 현재 부족한 부분을 어떻게 준비하고 있는가?");
+  ps.forEach((x,i)=>a.push("[공고 "+(i+1)+"] "+(x.company||"기업명 미입력")+" · "+(x.title||"직무명 미입력"),"담당업무: "+(postingSection(x,"tasks")||"-"),"필수·지원자격: "+(postingSection(x,"required")||"-"),"우대사항: "+(postingSection(x,"preferred")||"-"),"내가 읽어낸 핵심: "+(x.notes||"-"),"원문:\n"+x.text,""));
+  a.push("5. COMPETENCY MAP","Knowledge: "+(k.knowledge||"-"),"Skill: "+(k.skill||"-"),"Behavior: "+(k.behavior||"-"),"Experience: "+(k.experience||"-"),"핵심 요구 TOP 5: "+(k.top5||"-"),"2개 이상 공고 반복 키워드: "+common,"공통 요구 요약: "+(cmp.common||"-"),"기업별 차이: "+(cmp.differences||"-"),"","6. MY EVIDENCE & GAP","이미 가진 것: "+(f.assets||"-"),"증거 경험: "+(f.evidence||"-"),"부족한 것: "+(f.gaps||"-"),"다음 행동: "+(f.actions||"-"),"","7. 자기소개서에 다시 쓸 메모","활용 가능한 경험: "+(f.evidence||"-"),"","8. 면접에서 다시 볼 질문","- 왜 "+(t.job||"이 직무")+"를 선택했는가?","- 이 직무에서 가장 중요한 업무는 무엇이라고 이해하고 있는가?","- 실제 채용공고에서 반복해서 확인된 요구는 무엇이었는가?","- 그 요구를 보여줄 수 있는 본인의 경험은 무엇인가?","- 현재 부족한 부분을 어떻게 준비하고 있는가?");
   return a.join("\n");
 }
 function step8(){
@@ -152,6 +277,7 @@ function bind(){
   document.querySelectorAll("[data-tab]").forEach(e=>e.onclick=()=>{save();activePosting=Number(e.dataset.tab);render();});
   document.querySelectorAll("[data-next]").forEach(e=>e.onclick=()=>go(Number(e.dataset.next)));
   document.querySelectorAll("[data-prev]").forEach(e=>e.onclick=()=>go(Number(e.dataset.prev)));
+  document.getElementById("parsePostingBtn")?.addEventListener("click",autoParsePosting);
   document.getElementById("docBtn")?.addEventListener("click",exportDoc);
   document.getElementById("printBtn")?.addEventListener("click",()=>window.print());
   document.getElementById("jsonBtn2")?.addEventListener("click",exportJson);
