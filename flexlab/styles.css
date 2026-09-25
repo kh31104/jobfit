@@ -25,3 +25,10 @@
 .optionBody{padding:0 16px 16px}
 .comparisonOption{background:#fff}
 @media(max-width:650px){.sourceGrid{grid-template-columns:1fr}}
+
+.requirementList{display:grid;gap:10px}
+.requirementRow{display:grid;grid-template-columns:1.4fr .7fr 1fr;gap:10px;padding:12px;border:1px solid var(--line);border-radius:15px;background:#fbfcff}
+.requirementRow select{min-height:45px}
+.starBlock{padding:16px;border:1px solid #d9e2ff;border-radius:18px;background:#f8faff}
+.starBlock h3{margin-top:0}
+@media(max-width:760px){.requirementRow{grid-template-columns:1fr}}
