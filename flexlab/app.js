@@ -9,14 +9,16 @@ const steps = [
 ];
 const emptyPosting=()=>({company:"",title:"",text:"",notes:"",tasks:"",required:"",preferred:"",other:""});
 const defaults=()=>({
-  version:3,currentStep:1,updatedAt:"",
+  version:4,currentStep:1,updatedAt:"",
   target:{industry:"",job:"",company:"",initialView:""},
   context:{money:"",change:"",problem:"",impact:""},
   profile:{manage:"",solve:"",collab:"",data:"",output:"",risk:""},
   postings:[emptyPosting(),emptyPosting(),emptyPosting()],
   competency:{knowledge:"",skill:"",behavior:"",experience:"",top5:""},
   comparison:{common:"",differences:""},
-  fit:{assets:"",evidence:"",gaps:"",actions:""}
+  fit:{assets:"",evidence:"",gaps:"",actions:""},
+  requirements:[0,1,2,3].map(()=>({condition:"",status:"",note:""})),
+  star:{competency:"",experience:"",situationTask:"",action:"",result:""}
 });
 let state=load(), activePosting=0;
 
@@ -29,7 +31,11 @@ function load(){
     const mappedStep=(x.version||1)<3
       ? ({1:1,2:2,3:2,4:3,5:4,6:4,7:5,8:6}[legacyStep]||1)
       : Math.max(1,Math.min(6,legacyStep));
-    return {...b,...x,version:3,currentStep:mappedStep,target:{...b.target,...(x.target||{})},context:{...b.context,...(x.context||{})},profile:{...b.profile,...(x.profile||{})},competency:{...b.competency,...(x.competency||{})},comparison:{...b.comparison,...(x.comparison||{})},fit:{...b.fit,...(x.fit||{})},postings:[0,1,2].map(i=>({...emptyPosting(),...(x.postings?.[i]||{})}))};
+    const req=Array.isArray(x.requirements)&&x.requirements.length
+      ? [0,1,2,3].map(i=>({condition:"",status:"",note:"",...(x.requirements[i]||{})}))
+      : b.requirements;
+    const legacyEvidence=(x.fit&&x.fit.evidence)||"";
+    return {...b,...x,version:4,currentStep:mappedStep,target:{...b.target,...(x.target||{})},context:{...b.context,...(x.context||{})},profile:{...b.profile,...(x.profile||{})},competency:{...b.competency,...(x.competency||{})},comparison:{...b.comparison,...(x.comparison||{})},fit:{...b.fit,...(x.fit||{})},requirements:req,star:{...b.star,...(x.star||{}),experience:(x.star&&x.star.experience)||legacyEvidence},postings:[0,1,2].map(i=>({...emptyPosting(),...(x.postings?.[i]||{})}))};
   }catch(e){return defaults();}
 }
 function save(){
@@ -55,7 +61,7 @@ function done(n){
   if(n===2)return filled(state.context.change)||filled(state.context.impact)||filled(state.profile.solve)||filled(state.profile.output);
   if(n===3)return state.postings.some(p=>filled(p.text));
   if(n===4)return Object.values(state.competency).some(filled);
-  if(n===5)return Object.values(state.fit).some(filled);
+  if(n===5)return Object.values(state.fit).some(filled)||Object.values(state.star||{}).some(filled)||(state.requirements||[]).some(r=>filled(r.status));
   if(n===6)return done(1)&&done(3);
 }
 function nav(){
@@ -81,32 +87,30 @@ function step1(){
 }
 function step2(){
   const guide=
-    '<div class="sourceGuide"><div class="sourceGuideHead"><div><b>자료찾기 가이드</b><span>검색부터 하지 말고, 공식자료를 먼저 확인하세요.</span></div></div>'+
+    '<div class="sourceGuide"><div class="sourceGuideHead"><div><b>자료찾기 가이드</b><span>모든 자료를 다 볼 필요는 없습니다. 오늘 직무를 이해하는 데 필요한 공식자료 1~2개만 확인하세요.</span></div></div>'+
     '<div class="sourceGrid">'+
       '<div class="sourceCard"><span class="sourceN">1</span><div><b>기업 공식 홈페이지·IR</b><p>무엇을 만들고 파는지, 최근 어떤 사업에 투자하는지 확인</p></div></div>'+
-      '<div class="sourceCard"><span class="sourceN">2</span><div><b>DART 사업보고서</b><p>주요 사업·매출 구조·시장과 위험요인을 확인</p><a href="https://dart.fss.or.kr/" target="_blank" rel="noopener">DART 열기</a></div></div>'+
-      '<div class="sourceCard"><span class="sourceN">3</span><div><b>공공 통계·산업자료</b><p>산업 규모·고용·생산 등 객관적 변화를 확인</p><a href="https://kosis.kr/" target="_blank" rel="noopener">KOSIS 열기</a></div></div>'+
-      '<div class="sourceCard"><span class="sourceN">4</span><div><b>실제 채용공고</b><p>산업 변화가 어떤 업무·자격·우대조건으로 나타나는지 확인</p><a href="https://www.work24.go.kr/" target="_blank" rel="noopener">고용24 열기</a></div></div>'+
+      '<div class="sourceCard"><span class="sourceN">2</span><div><b>DART 사업보고서</b><p>주요 사업·시장·위험요인을 확인할 때 사용</p><a href="https://dart.fss.or.kr/" target="_blank" rel="noopener">DART 열기</a></div></div>'+
+      '<div class="sourceCard"><span class="sourceN">3</span><div><b>공공 통계·산업자료</b><p>산업 규모·고용·생산 변화가 필요할 때 사용</p><a href="https://kosis.kr/" target="_blank" rel="noopener">KOSIS 열기</a></div></div>'+
+      '<div class="sourceCard"><span class="sourceN">4</span><div><b>실제 채용공고</b><p>산업 변화가 실제 업무·자격·우대조건에 어떻게 나타나는지 확인</p><a href="https://www.work24.go.kr/" target="_blank" rel="noopener">고용24 열기</a></div></div>'+
     '</div><div class="callout info"><b>검색어 예시:</b> “기업명 + 사업보고서”, “산업명 + 통계”, “직무명 + 신입 채용”. 블로그 요약보다 원문을 먼저 봅니다.</div></div>';
-  return shell(2,"산업·기업·직무 맥락","산업 변화가 기업의 과제가 되고, 그 과제가 직무의 일로 어떻게 이어지는지 연결합니다.",
+  return shell(2,"산업·기업·직무 맥락","네 질문만 먼저 답해 산업의 변화가 실제 직무의 일로 어떻게 이어지는지 정리합니다.",
     guide+
-    '<div class="block"><h3>① 산업·기업을 빠르게 파악</h3><div class="grid2">'+
-      field("context.money","이 산업·기업은 무엇으로 돈을 버는가?","핵심 제품·서비스와 고객")+
-      field("context.change","최근 무엇이 바뀌고 있는가?","기술, 정책, 고객, 경쟁, 원가, 공급망 등")+
-      field("context.problem","그 변화가 기업에 어떤 문제를 만드는가?","기업이 해결해야 할 과제")+
-      field("context.impact","그래서 이 직무는 무엇을 해야 하는가?","산업 변화와 직무 역할을 한 문장으로 연결")+
+    '<div class="block"><h3>필수 · 네 질문만 작성</h3><div class="grid2">'+
+      field("context.change","① 최근 이 산업에서 무엇이 바뀌고 있는가?","기술, 정책, 고객, 경쟁, 원가, 공급망 중 핵심 변화 1~2개")+
+      field("context.problem","② 그 변화 때문에 기업은 어떤 문제를 해결해야 하는가?","비용, 품질, 안전, 납기, 고객, 기술 과제 등")+
+      field("profile.solve","③ 내가 선택한 직무는 그중 어떤 문제를 해결하는가?","이 직무가 맡는 문제를 한 문장으로")+
+      field("profile.output","④ 그 직무가 만들어야 하는 결과는 무엇인가?","수율 향상, 매출, 안정적 운영, 납기 준수 등")+
     '</div></div>'+
-    '<div class="divider"></div><div class="block"><h3>② 직무를 업무 단위로 해부</h3><div class="grid2">'+
-      field("profile.solve","이 직무는 어떤 문제를 해결하는가?","불량, 납기, 매출, 비용, 안전, 고객문제 등")+
-      field("profile.manage","무엇을 관리하거나 다루는가?","공정, 고객, 비용, 설비, 일정, 데이터 등")+
-      field("profile.output","어떤 결과를 만들어야 하는가?","수율 향상, 매출, 보고서, 납기 준수 등")+
-      field("profile.collab","누구와 함께 일하는가?","내부 부서, 현장, 고객, 협력사 등")+
-    '</div></div>'+
-    '<details class="optionBox"><summary>심화로 더 보기 · 데이터와 실패 위험</summary><div class="grid2 optionBody">'+
+    '<details class="optionBox"><summary>더 알아보기 · 필요할 때만 작성</summary><div class="optionBody"><div class="grid2">'+
+      field("context.money","이 산업·기업은 무엇으로 돈을 버는가?","핵심 제품·서비스와 고객",true,true)+
+      field("context.impact","산업 변화가 이 직무에 어떤 영향을 주는가?","업무가 늘거나 바뀌는 지점",true,true)+
+      field("profile.manage","무엇을 관리하거나 다루는가?","공정, 고객, 비용, 설비, 일정, 데이터 등",true,true)+
+      field("profile.collab","누구와 함께 일하는가?","내부 부서, 현장, 고객, 협력사 등",true,true)+
       field("profile.data","어떤 정보·데이터를 보는가?","생산실적, 매출, 품질지표, 시장자료 등",true,true)+
       field("profile.risk","잘못하면 어떤 문제가 생기는가?","비용 증가, 사고, 불량, 일정 지연 등",true,true)+
-    '</div></details>'+
-    '<div class="callout good"><b>한 문장으로 정리:</b> 이 직무는 무엇을 다루고, 어떤 문제를 해결해, 어떤 결과를 만드는가?</div>');
+    '</div></div></details>'+
+    '<div class="callout good"><b>정리 기준:</b> 산업 변화 → 기업의 문제 → 직무가 해결할 문제 → 만들어야 할 결과가 한 줄로 이어지면 충분합니다.</div>');
 }
 function postingLines(text=""){
   return String(text).split(/\r?\n/).map(x=>x.replace(/^[\s·•▶▷■□▪\-–—*]+/,"").trim()).filter(Boolean);
@@ -155,7 +159,7 @@ function autoParsePosting(){
 }
 function step3(){
   const p=state.postings[activePosting];
-  const tabs=state.postings.map((_,i)=>'<button class="tabBtn '+(i===activePosting?"active":"")+'" data-tab="'+i+'">공고 '+(i+1)+(i?" · 선택":"")+'</button>').join("");
+  const tabs=state.postings.map((_,i)=>'<button class="tabBtn '+(i===activePosting?"active":"")+'" data-tab="'+i+'">'+(i===0?"공고 1 · 기본 분석":"공고 "+(i+1)+" · 심화 선택")+'</button>').join("");
   const body='<div class="postingTabs">'+tabs+'</div>'+
     '<div class="grid2"><div class="field"><label>기업명 <span class="hint">(선택)</span></label><input class="input" data-pf="company" value="'+h(p.company)+'" placeholder="기업명" /></div><div class="field"><label>공고 직무명 <span class="hint">(선택)</span></label><input class="input" data-pf="title" value="'+h(p.title)+'" placeholder="공고에 적힌 직무명" /></div></div>'+
     '<div class="block"><div class="field"><label>채용공고 원문</label><textarea class="input tall" data-pf="text" placeholder="담당업무, 자격요건, 우대사항이 보이도록 붙여넣으세요.">'+h(p.text)+'</textarea></div><div class="actions compactActions"><button class="btn secondary" id="parsePostingBtn">공고 구조 자동 나누기</button></div></div>'+
@@ -211,15 +215,19 @@ function step4(){
   const cards=Object.entries(signals()).map(([cat,items])=>'<div class="signalCard"><h4>'+cat+'</h4><div class="pills">'+(items.length?items.slice(0,10).map(x=>'<span class="pill">'+h(x.w)+' <strong>'+x.count+'</strong></span>').join(""):'<span class="hint">발견된 후보가 없습니다.</span>')+'</div></div>').join("");
   const evidence=evidenceRows();
   const trs=evidence.length?evidence.slice(0,45).map(r=>'<tr><td>공고 '+r.posting+'</td><td>'+h(r.section)+'</td><td>'+h(r.line)+'</td><td>'+signalLabel(r.signals)+'</td></tr>').join(""):'<tr><td colspan="4">STEP 3에서 채용공고를 입력하면 원문 근거표가 만들어집니다.</td></tr>';
-  return shell(4,"요구역량 찾기","먼저 공고의 원문 문장을 확인하고, 그 문장에서 지식·기술·행동·경험 요구를 해석합니다.",
-    '<div class="block"><h3>① 원문 근거표</h3><p class="help">각 문장이 공고의 어디에서 나온 것인지 먼저 확인합니다. 오른쪽 분류는 키워드 기반 보조판정입니다.</p><div class="tableWrap"><table><thead><tr><th>공고</th><th>구분</th><th>원문 근거</th><th>분류 후보</th></tr></thead><tbody>'+trs+'</tbody></table></div></div>'+
-    '<div class="block"><h3>② 반복해서 보이는 키워드</h3><p class="help">단어 빈도는 정답이 아니라 확인용입니다. 업무 문맥과 함께 판단하세요.</p><div class="signalGrid">'+cards+'</div></div>'+
-    '<div class="divider"></div><div class="block"><h3>③ 내가 확정한 요구역량</h3><div class="grid2">'+
-      field("competency.knowledge","Knowledge · 알아야 하는 것","전공지식, 산업·제품·공정 지식 등")+
-      field("competency.skill","Skill · 할 수 있어야 하는 것","데이터 분석, 설계, 문서작성, 툴 활용 등")+
-      field("competency.behavior","Behavior · 일하는 방식","협업, 문제해결, 책임, 고객지향 등")+
-      field("competency.experience","Experience · 요구되는 경험","인턴, 프로젝트, 실험, 현장경험 등")+
-    '</div><div class="block">'+field("competency.top5","이 직무의 핵심 요구 TOP 5","반드시 공고 원문에서 근거를 찾을 수 있는 항목 5개")+'</div></div>'+optionalComparison());
+  return shell(4,"요구역량 찾기","공고를 보고 내가 확정한 요구역량부터 정리합니다. 근거표와 반복 키워드는 필요할 때 펼쳐 확인하세요.",
+    '<div class="block"><h3>기본 분석 · 내가 확정한 요구역량</h3><div class="grid2">'+
+      field("competency.knowledge","Knowledge · 무엇을 알아야 하나?","전공지식, 산업·제품·공정 지식 등")+
+      field("competency.skill","Skill · 무엇을 할 수 있어야 하나?","데이터 분석, 설계, 문서작성, 툴 활용 등")+
+      field("competency.behavior","Behavior · 어떻게 일해야 하나?","공고에서 직접 확인되는 협업·문제해결·책임 등의 표현")+
+      field("competency.experience","Experience · 어떤 경험을 요구하나?","인턴, 프로젝트, 실험, 현장경험 등")+
+    '</div><div class="callout warn"><b>Behavior 주의:</b> 공고에서 직접 확인되지 않으면 <b>“확인되지 않음”</b>이라고 적어도 됩니다. 공고에 없는 역량을 만들어 넣지 않습니다.</div>'+
+    '<div class="block">'+field("competency.top5","이 직무의 핵심 요구 TOP 5","공고 원문에서 근거를 찾을 수 있는 항목 5개")+'</div></div>'+
+    '<details class="optionBox"><summary>근거 확인 · 원문 문장과 반복 키워드 보기</summary><div class="optionBody">'+
+      '<div class="block"><h3>원문 근거표</h3><p class="help">자동 분류는 보조판정입니다. 최종 판단은 공고 문맥을 기준으로 합니다.</p><div class="tableWrap"><table><thead><tr><th>공고</th><th>구분</th><th>원문 근거</th><th>분류 후보</th></tr></thead><tbody>'+trs+'</tbody></table></div></div>'+
+      '<div class="block"><h3>반복해서 보이는 키워드</h3><div class="signalGrid">'+cards+'</div></div>'+
+    '</div></details>'+
+    optionalComparison());
 }
 const signalGroups=[
   {label:"데이터 분석",terms:["데이터 분석","데이터","통계","Excel","엑셀","Python","파이썬","SQL"]},
@@ -265,13 +273,53 @@ function optionalComparison(){
     '</div><div class="callout info"><b>해석:</b> 여러 회사에서 반복되면 직무 공통 신호, 한 회사에서만 강조되면 기업·사업 특성 신호로 봅니다.</div>'+
   '</div></details>';
 }
+
+function requirementSourceLines(){
+  return [...new Set(state.postings.flatMap(p=>filled(p.text)?postingLines(postingSection(p,"required")):[]))].slice(0,4);
+}
+function ensureRequirements(){
+  const src=requirementSourceLines();
+  let changed=false;
+  state.requirements=state.requirements||[0,1,2,3].map(()=>({condition:"",status:"",note:""}));
+  src.forEach((line,i)=>{if(i<4&&!filled(state.requirements[i]?.condition)){state.requirements[i]={condition:line,status:"",note:""};changed=true;}});
+  if(changed)save();
+}
+function requirementRows(){
+  ensureRequirements();
+  return state.requirements.map((r,i)=>'<div class="requirementRow">'+
+    '<div class="field"><label>필수조건 '+(i+1)+'</label><input class="input" data-req="'+i+'" data-reqkey="condition" value="'+h(r.condition)+'" placeholder="예: 관련 전공, 자격증, 학력, 경력" /></div>'+
+    '<div class="field"><label>현재 상태</label><select class="input" data-req="'+i+'" data-reqkey="status">'+
+      '<option value="">선택</option>'+
+      '<option value="충족" '+(r.status==="충족"?"selected":"")+'>충족</option>'+
+      '<option value="준비 중" '+(r.status==="준비 중"?"selected":"")+'>준비 중</option>'+
+      '<option value="현재 미충족" '+(r.status==="현재 미충족"?"selected":"")+'>현재 미충족</option>'+
+      '<option value="해당 없음" '+(r.status==="해당 없음"?"selected":"")+'>해당 없음</option>'+
+    '</select></div>'+
+    '<div class="field"><label>메모 <span class="hint">(선택)</span></label><input class="input" data-req="'+i+'" data-reqkey="note" value="'+h(r.note)+'" placeholder="증빙·준비계획" /></div>'+
+  '</div>').join("");
+}
 function step5(){
-  return shell(5,"나와 연결","직무 요구를 내 경험과 비교해 자기소개서·면접에 쓸 근거를 남깁니다.",'<div class="grid2">'+field("fit.assets","내가 이미 가지고 있는 것","전공, 지식, 기술, 자격, 경험 중 직무와 연결되는 것")+field("fit.evidence","그것을 보여줄 수 있는 경험","수업·프로젝트·실험·인턴·아르바이트 등 구체적 사례")+field("fit.gaps","아직 부족한 것","공고가 요구하지만 지금 근거가 부족한 항목")+field("fit.actions","다음 행동","이번 학기 또는 3개월 안에 할 수 있는 준비")+'</div><div class="callout good"><b>자소서·면접용 메모:</b> “역량이 있다”보다 그 역량을 보여주는 상황·행동·결과를 남겨두세요.</div>');
+  return shell(5,"나와 연결","직무 요구와 나의 현재 상태를 비교하고, 자기소개서·면접에 다시 쓸 경험 한 개를 Mini STAR로 정리합니다.",
+    '<div class="block"><h3>① 필수조건 먼저 확인</h3><p class="help">지원 가능 여부와 준비 우선순위를 먼저 확인합니다. 공고의 필수·지원자격에서 자동으로 가져오며 수정할 수 있습니다.</p><div class="requirementList">'+requirementRows()+'</div></div>'+
+    '<div class="divider"></div><div class="block"><h3>② My Fit & Gap</h3><div class="grid2">'+
+      field("fit.assets","내가 이미 가지고 있는 것","전공, 지식, 기술, 자격, 경험 중 직무와 연결되는 것")+
+      field("fit.gaps","아직 부족한 것","공고가 요구하지만 지금 근거가 부족한 항목")+
+      field("fit.actions","다음 행동","이번 학기 또는 3개월 안에 할 수 있는 준비")+
+    '</div></div>'+
+    '<div class="divider"></div><div class="block starBlock"><h3>③ Mini STAR · 취업에 다시 쓸 경험 1개</h3><p class="help">모든 경험을 정리할 필요는 없습니다. 오늘 분석한 직무와 가장 연결되는 경험 하나만 남깁니다.</p><div class="grid2">'+
+      field("star.competency","연결할 요구역량","예: 데이터 분석, 설비 이해, 고객 대응",false)+
+      field("star.experience","경험 이름","예: 태양광 발전량 분석 캡스톤 프로젝트",false)+
+      field("star.situationTask","상황·과제 (S/T)","어떤 상황에서 무엇을 해결해야 했나요?")+
+      field("star.action","내가 실제로 한 행동 (A)","내가 직접 한 행동을 동사 중심으로 적으세요.")+
+      field("star.result","결과 (R)","수치, 변화, 산출물, 배운 점 등 확인 가능한 결과")+
+    '</div><div class="callout good"><b>자소서·면접 연결:</b> 경험 이름보다 상황·행동·결과가 남아 있어야 나중에 답변을 다시 만들 수 있습니다.</div></div>');
 }
 function portfolio(){
-  const t=state.target,c=state.context,p=state.profile,k=state.competency,cmp=state.comparison,f=state.fit;
+  const t=state.target,c=state.context,p=state.profile,k=state.competency,cmp=state.comparison,f=state.fit,star=state.star;
   const ps=state.postings.filter(x=>filled(x.text));
   const common=commonSignalRows().filter(x=>x.n>=2).map(x=>x.label).join(", ")||"-";
+  const req=(state.requirements||[]).filter(r=>filled(r.condition));
+  const starSummary=[star.situationTask,star.action,star.result].filter(filled).join(" → ")||"-";
   const a=[
     "MY JOB ANALYSIS PORTFOLIO","",
     "1. TARGET JOB",
@@ -280,16 +328,14 @@ function portfolio(){
     "관심 기업: "+(t.company||"-"),
     "분석 전 직무 이미지: "+(t.initialView||"-"),"",
     "2. INDUSTRY · COMPANY · JOB CONTEXT",
-    "수익 구조: "+(c.money||"-"),
-    "최근 변화: "+(c.change||"-"),
-    "기업의 과제: "+(c.problem||"-"),
-    "직무에 미치는 영향: "+(c.impact||"-"),
+    "최근 산업 변화: "+(c.change||"-"),
+    "기업이 해결해야 할 문제: "+(c.problem||"-"),
     "직무가 해결하는 문제: "+(p.solve||"-"),
-    "관리·대상: "+(p.manage||"-"),
-    "만들어야 하는 결과: "+(p.output||"-"),
-    "협업 대상: "+(p.collab||"-"),
-    "확인하는 데이터: "+(p.data||"-"),
-    "실패 시 문제: "+(p.risk||"-"),"",
+    "직무가 만들어야 하는 결과: "+(p.output||"-"),
+    "추가 메모 - 수익 구조: "+(c.money||"-"),
+    "추가 메모 - 직무 영향: "+(c.impact||"-"),
+    "추가 메모 - 관리·대상: "+(p.manage||"-"),
+    "추가 메모 - 협업 대상: "+(p.collab||"-"),"",
     "3. JOB POSTING ANALYSIS"
   ];
   ps.forEach((x,i)=>a.push(
@@ -309,18 +355,29 @@ function portfolio(){
     "공고 비교 공통신호: "+common,
     "공통 요구 요약: "+(cmp.common||"-"),
     "기업별 차이: "+(cmp.differences||"-"),"",
-    "5. MY EVIDENCE & GAP",
+    "5. MY FIT & REQUIREMENTS"
+  );
+  if(req.length)req.forEach((r,i)=>a.push("필수조건 "+(i+1)+": "+r.condition+" / 상태: "+(r.status||"미선택")+(r.note?" / 메모: "+r.note:"")));
+  else a.push("필수조건 확인: -");
+  a.push(
     "이미 가진 것: "+(f.assets||"-"),
-    "증거 경험: "+(f.evidence||"-"),
     "부족한 것: "+(f.gaps||"-"),
     "다음 행동: "+(f.actions||"-"),"",
-    "6. APPLICATION NOTES",
-    "[자기소개서 소재] "+(f.evidence||"-"),
+    "6. MINI STAR · MY EVIDENCE",
+    "연결 역량: "+(star.competency||"-"),
+    "경험: "+(star.experience||"-"),
+    "상황·과제(S/T): "+(star.situationTask||"-"),
+    "행동(A): "+(star.action||"-"),
+    "결과(R): "+(star.result||"-"),"",
+    "7. APPLICATION NOTES",
+    "[자기소개서 소재]",
+    (star.experience||"경험")+"에서 "+starSummary,
     "[면접 준비 질문]",
-    "- 왜 "+(t.job||"이 직무")+"를 선택했는가?",
+    "- 왜 "+(t.job||"관심")+" 직무를 선택했는가?",
     "- 이 직무에서 가장 중요한 업무는 무엇이라고 이해하고 있는가?",
     "- 실제 채용공고에서 확인한 핵심 요구는 무엇인가?",
-    "- 그 요구를 보여줄 수 있는 본인의 경험은 무엇인가?",
+    "- "+(star.competency||"이 직무 역량")+"을 보여주는 경험을 설명해 주세요.",
+    "- 그 경험에서 본인이 직접 한 행동은 무엇이었는가?",
     "- 현재 부족한 부분을 어떻게 준비하고 있는가?"
   );
   return a.join("\n");
@@ -331,6 +388,7 @@ function step6(){
 function bind(){
   document.querySelectorAll("[data-path]").forEach(e=>e.oninput=()=>{set(e.dataset.path,e.value);save();});
   document.querySelectorAll("[data-pf]").forEach(e=>e.oninput=()=>{state.postings[activePosting][e.dataset.pf]=e.value;save();});
+  document.querySelectorAll("[data-req]").forEach(e=>e.onchange=e.oninput=()=>{const i=Number(e.dataset.req),k=e.dataset.reqkey;state.requirements[i]??={condition:"",status:"",note:""};state.requirements[i][k]=e.value;save();});
   document.querySelectorAll("[data-tab]").forEach(e=>e.onclick=()=>{save();activePosting=Number(e.dataset.tab);render();});
   document.querySelectorAll("[data-next]").forEach(e=>e.onclick=()=>go(Number(e.dataset.next)));
   document.querySelectorAll("[data-prev]").forEach(e=>e.onclick=()=>go(Number(e.dataset.prev)));
