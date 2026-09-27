@@ -1145,12 +1145,15 @@ function bind(){
     e.oninput=handler;e.onchange=handler;
   });
   document.querySelectorAll("[data-analysis-method]").forEach(e=>e.onclick=()=>selectAnalysisMethod(e.dataset.analysisMethod));
+  document.querySelectorAll("[data-curated-group]").forEach(e=>e.onchange=()=>selectCuratedGroup(e.dataset.curatedGroup,e.value));
+  document.querySelectorAll("[data-curated-role]").forEach(e=>e.onchange=()=>selectCuratedRole(e.dataset.curatedRole,e.value));
+  document.getElementById("useCustomJobBtn")?.addEventListener("click",useCustomJob);
   document.querySelectorAll("[data-customjob]").forEach(e=>{
     const handler=()=>{
       const k=e.dataset.customjob;
       state.customJob={...emptyCustomJob(),...(state.customJob||{}),[k]:e.value};
-      if(k==="company")state.target.company=e.value;
-      syncSelectedPosting();
+      if(k==="company"&&state.sampleJobId==="custom")state.target.company=e.value;
+      if(state.sampleJobId==="custom")syncSelectedPosting();
       save();
     };
     e.oninput=handler;e.onchange=handler;
