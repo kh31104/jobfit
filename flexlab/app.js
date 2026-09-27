@@ -898,22 +898,27 @@ async function copyText(text,msg){
   try{await navigator.clipboard.writeText(text);toast(msg);}catch(e){toast("복사 권한을 확인해 주세요.");}
 }
 
-function selectCuratedJob(id){
-  const j=CURATED_JOBS.find(x=>x.id===id);if(!j)return;
-  if(state.sampleJobId&&state.sampleJobId!==id){
-    state.jobTable={customerKpi:"",tasks:"",challenge:"",method:"",competencies:"",careerPlan:"",aiResult:""};
-    state.requirements=[0,1,2].map(()=>({condition:"",status:"",note:""}));
-  }
-  state.sampleJobId=id;
-  state.target.company=j.company;
+function syncSelectedPosting(){
+  const j=selectedJob();if(!j)return;
+  state.target.company=j.company||state.target.company||"";
   state.postings[0]={
     ...emptyPosting(),
-    company:j.company,title:j.title,sourceUrl:j.sourceUrl,
-    text:"[공고에서 확인된 기본정보]\n"+j.facts,
-    required:j.required,preferred:j.preferred,
-    notes:j.note
+    company:j.company||"",title:j.title||"",sourceUrl:j.sourceUrl||"",
+    text:j.facts?"[공고에서 확인된 기본정보]\n"+j.facts:"",
+    required:j.required||"",preferred:j.preferred||"",
+    notes:j.note||""
   };
-  save();render();toast(j.company+" 공고를 분석 대상으로 선택했습니다.");
+}
+
+function selectAnalysisMethod(id){
+  if(!["komipo-2026-3","skenergy-2026-clx","custom"].includes(id))return;
+  snapshotActiveCase();
+  state.sampleJobId=id;
+  restoreAnalysisCase(id);
+  syncSelectedPosting();
+  save();render();
+  const j=selectedJob();
+  toast((id==="custom"?"직접 입력":j?.company||"선택한 공고")+" 분석 작업공간을 열었습니다.");
 }
 
 function applyJobTableAi(){
@@ -944,7 +949,17 @@ function bind(){
     const handler=()=>{state.postings[activePosting][e.dataset.pf]=e.value;save();};
     e.oninput=handler;e.onchange=handler;
   });
-  document.querySelectorAll("[data-curated]").forEach(e=>e.onclick=()=>selectCuratedJob(e.dataset.curated));
+  document.querySelectorAll("[data-analysis-method]").forEach(e=>e.onclick=()=>selectAnalysisMethod(e.dataset.analysisMethod));
+  document.querySelectorAll("[data-customjob]").forEach(e=>{
+    const handler=()=>{
+      const k=e.dataset.customjob;
+      state.customJob={...emptyCustomJob(),...(state.customJob||{}),[k]:e.value};
+      if(k==="company")state.target.company=e.value;
+      syncSelectedPosting();
+      save();
+    };
+    e.oninput=handler;e.onchange=handler;
+  });
   document.querySelectorAll("[data-exp]").forEach(e=>{
     const handler=()=>{const i=Number(e.dataset.exp),k=e.dataset.expkey;state.experiences[i]??=emptyExperience();state.experiences[i][k]=e.value;if(i===state.selectedExperience&&k==="title")state.star.experience=e.value;save();};
     e.oninput=handler;e.onchange=handler;
@@ -965,6 +980,7 @@ function bind(){
   document.querySelectorAll("[data-prev]").forEach(e=>e.onclick=()=>go(Number(e.dataset.prev)));
 
   document.getElementById("copySearchPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("searchPromptPreview")?.value||energySearchPrompt(),"내 채용공고 검색 프롬프트를 복사했습니다."));
+  document.getElementById("refreshJobPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("jobPromptPreview");if(e)e.value=jobAnalysisPrompt();toast("현재 분석 대상 정보를 프롬프트에 반영했습니다.");});
   document.getElementById("copyReviewedJobPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("jobPromptPreview")?.value||jobAnalysisPrompt(),"내 직무분석 프롬프트를 복사했습니다."));
   document.getElementById("applyJobTableAiBtn")?.addEventListener("click",applyJobTableAi);
   document.getElementById("refreshKeywordPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("keywordPromptPreview");if(e)e.value=competencyKeywordPrompt();toast("현재 전공·경험을 프롬프트에 반영했습니다.");});
