@@ -133,7 +133,23 @@ try{
   await page.locator('[data-path="ai.keywordResult"]').fill('설비 데이터 해석 / 이상원인 분석 / 안전기준 기반 점검');
   await page.locator('[data-next="5"]').click();
 
-  await page.waitForSelector('[data-path="student.certificates"]');
+  await page.waitForSelector('#step5TargetSelect');
+  const autoTarget=await page.locator('#step5TargetSelect').inputValue();
+  assert(autoTarget.includes('komipo-2026-3')&&autoTarget.includes('화력발전설비운영'),'STEP5 must auto-fill the STEP3 comparison target');
+
+  // Student can directly switch the STEP5 comparison target.
+  await page.locator('#step5TargetSelect').selectOption('curated|skenergy-2026-clx|O&M 발전소 기술전문직군|정비(전기)');
+  await page.waitForSelector('#step5TargetSelect');
+  assert((await page.locator('.gapTargetBlock').innerText()).includes('나래에너지서비스'),'STEP5 must allow direct comparison-target switching');
+  const skGapPrompt=await page.locator('#gapPromptPreview').inputValue();
+  assert(skGapPrompt.includes('정비(전기)'),'Directly selected STEP5 role must flow into GAP prompt');
+  assert(skGapPrompt.includes('전기 분야 발전설비 유지관리 업무'),'STEP5 direct selection must use registered role data even without a STEP3 table');
+
+  // Switch back to the STEP3-analyzed target and continue.
+  await page.locator('#step5TargetSelect').selectOption('curated|komipo-2026-3|화학|화력발전설비운영');
+  await page.waitForSelector('#step5TargetSelect');
+  assert((await page.locator('.gapTargetBlock').innerText()).includes('한국중부발전'),'STEP5 must restore the chosen public-company target');
+
   await page.locator('[data-path="student.certificates"]').fill('대기환경기사 준비 중');
   await page.locator('[data-path="student.language"]').fill('TOEIC 820');
   await page.locator('[data-path="student.tools"]').fill('Excel, Python');
