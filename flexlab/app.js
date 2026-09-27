@@ -766,6 +766,38 @@ async function copyText(text,msg){
   try{await navigator.clipboard.writeText(text);toast(msg);}catch(e){toast("복사 권한을 확인해 주세요.");}
 }
 
+function selectCuratedJob(id){
+  const j=CURATED_JOBS.find(x=>x.id===id);if(!j)return;
+  if(state.sampleJobId&&state.sampleJobId!==id){
+    state.jobTable={customerKpi:"",tasks:"",challenge:"",method:"",competencies:"",careerPlan:"",aiResult:""};
+    state.requirements=[0,1,2].map(()=>({condition:"",status:"",note:""}));
+  }
+  state.sampleJobId=id;
+  state.target.company=j.company;
+  state.postings[0]={
+    ...emptyPosting(),
+    company:j.company,title:j.title,sourceUrl:j.sourceUrl,
+    text:"[공고에서 확인된 기본정보]\n"+j.facts,
+    required:j.required,preferred:j.preferred,
+    notes:j.note
+  };
+  save();render();toast(j.company+" 공고를 분석 대상으로 선택했습니다.");
+}
+
+function applyJobTableAi(){
+  const raw=document.getElementById("jobTableAiResult")?.value||state.jobTable.aiResult||"";
+  if(!filled(raw)){toast("먼저 AI 답변을 붙여넣어 주세요.");return;}
+  const parsed=parseJobTableResult(raw);
+  const keys=["customerKpi","tasks","challenge","method","competencies","careerPlan"];
+  const count=keys.filter(k=>filled(parsed[k])).length;
+  if(!count){toast("6개 제목을 찾지 못했습니다. 직접 입력해 주세요.");return;}
+  keys.forEach(k=>{if(filled(parsed[k]))state.jobTable[k]=parsed[k];});
+  state.jobTable.aiResult=raw;
+  state.postings[0].tasks=state.jobTable.tasks;
+  state.competency.top5=state.jobTable.competencies;
+  save();render();toast("AI 답변에서 "+count+"개 항목을 직무분석표에 반영했습니다.");
+}
+
 function bind(){
   document.querySelectorAll("[data-path]").forEach(e=>{
     const handler=()=>{set(e.dataset.path,e.value);save();};
@@ -775,7 +807,7 @@ function bind(){
     const handler=()=>{state.postings[activePosting][e.dataset.pf]=e.value;save();};
     e.oninput=handler;e.onchange=handler;
   });
-  document.querySelectorAll("[data-tab]").forEach(e=>e.onclick=()=>{save();activePosting=Number(e.dataset.tab);render();});
+  document.querySelectorAll("[data-curated]").forEach(e=>e.onclick=()=>selectCuratedJob(e.dataset.curated));
   document.querySelectorAll("[data-exp]").forEach(e=>{
     const handler=()=>{const i=Number(e.dataset.exp),k=e.dataset.expkey;state.experiences[i]??=emptyExperience();state.experiences[i][k]=e.value;if(i===state.selectedExperience&&k==="title")state.star.experience=e.value;save();};
     e.oninput=handler;e.onchange=handler;
@@ -792,22 +824,20 @@ function bind(){
     const handler=()=>{const i=Number(e.dataset.req),k=e.dataset.reqkey;state.requirements[i]??={condition:"",status:"",note:""};state.requirements[i][k]=e.value;save();};
     e.oninput=handler;e.onchange=handler;
   });
-  document.querySelectorAll("[data-match]").forEach(e=>{
-    const handler=()=>{const i=Number(e.dataset.match),k=e.dataset.matchkey;state.matchRows[i]??=emptyMatch();state.matchRows[i][k]=e.value;save();};
-    e.oninput=handler;e.onchange=handler;
-  });
   document.querySelectorAll("[data-next]").forEach(e=>e.onclick=()=>go(Number(e.dataset.next)));
   document.querySelectorAll("[data-prev]").forEach(e=>e.onclick=()=>go(Number(e.dataset.prev)));
 
-  document.getElementById("parsePostingBtn")?.addEventListener("click",autoParsePosting);
-  document.getElementById("refreshJobPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("jobPromptPreview");if(e)e.value=jobAnalysisPrompt();toast("현재 입력으로 프롬프트를 다시 만들었습니다.");});
-  document.getElementById("copyReviewedJobPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("jobPromptPreview")?.value||jobAnalysisPrompt(),"확인한 직무분석 AI 프롬프트를 복사했습니다."));
-  document.getElementById("refreshExpPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("experiencePromptPreview");if(e)e.value=experiencePrompt();toast("현재 입력으로 프롬프트를 다시 만들었습니다.");});
-  document.getElementById("copyReviewedExpPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("experiencePromptPreview")?.value||experiencePrompt(),"확인한 경험 심층질문 AI 프롬프트를 복사했습니다."));
+  document.getElementById("copySearchPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("searchPromptPreview")?.value||energySearchPrompt(),"내 채용공고 검색 프롬프트를 복사했습니다."));
+  document.getElementById("copyReviewedJobPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("jobPromptPreview")?.value||jobAnalysisPrompt(),"내 직무분석 프롬프트를 복사했습니다."));
+  document.getElementById("applyJobTableAiBtn")?.addEventListener("click",applyJobTableAi);
+  document.getElementById("copyKeywordPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("keywordPromptPreview")?.value||competencyKeywordPrompt(),"내 역량분석 프롬프트를 복사했습니다."));
+  document.getElementById("copyGapPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("gapPromptPreview")?.value||gapPrompt(),"내 GAP 분석 프롬프트를 복사했습니다."));
+  document.getElementById("copySelfIntroPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("selfIntroPromptPreview")?.value||selfIntroPrompt(),"내 자기소개서 프롬프트를 복사했습니다."));
+  document.getElementById("copyInterviewPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("interviewPromptPreview")?.value||interviewPrompt(),"내 면접 프롬프트를 복사했습니다."));
   document.getElementById("docBtn")?.addEventListener("click",exportDoc);
   document.getElementById("printBtn")?.addEventListener("click",()=>window.print());
   document.getElementById("jsonBtn2")?.addEventListener("click",exportJson);
-  document.getElementById("copyBtn")?.addEventListener("click",()=>copyText(portfolio(),"결과 텍스트를 복사했습니다."));
+  document.getElementById("copyBtn")?.addEventListener("click",()=>copyText(portfolio(),"Portfolio 텍스트를 복사했습니다."));
   document.getElementById("resetBtn")?.addEventListener("click",()=>{
     if(confirm("Jobfit FLEX 직무분석 데이터만 새로 시작할까요? INJE Jobfit 데이터에는 영향을 주지 않습니다.")){
       localStorage.removeItem(STORAGE_KEY);state=defaults();activePosting=0;render();toast("FLEX 데이터만 초기화했습니다.");
