@@ -730,28 +730,32 @@ function jobTablePreview(){
 function step3(){
   const j=selectedJob();
   const isCustom=state.sampleJobId==="custom";
+  const ready=isCustom?curatedRoleReady("custom"):curatedRoleReady(state.sampleJobId);
   const analyzedCount=Object.values(state.analysisCases||{}).filter(c=>
     c?.jobTable&&["customerKpi","tasks","challenge","method","competencies","careerPlan"].some(k=>filled(c.jobTable[k]))
   ).length;
-  return shell(3,"3 Ways → Job Analysis","공기업 예시, 대기업 예시, 직접 입력 중 원하는 방법을 자유롭게 바꾸며 직무분석을 반복할 수 있습니다.",
-    '<div class="block"><h3>① 분석 방법 선택</h3><p class="help">한 방법을 분석한 뒤 다른 방법으로 바꿔도 기존 표는 그대로 저장됩니다. 현재 저장된 분석: <b>'+analyzedCount+'개</b></p>'+analysisMethodCards()+'</div>'+
-    (j?
-      (isCustom?'<div class="block"><h3>② 내가 분석할 기업·직무 정보 입력</h3>'+customJobFields()+'</div>':'')+
-      '<div class="selectedJobSummary"><b>현재 분석 대상 · '+h(j.company||"직접 입력")+" / "+h(j.role||j.title||"직무 미입력")+'</b><span>'+h(j.note||"이 분석 결과는 다른 방법과 별도로 저장됩니다.")+'</span></div>'+
-      '<div class="block"><h3>'+(isCustom?"③":"②")+' AI에게 직무분석 초안 받기</h3><p class="help">내 전공·희망직무·현재 분석 대상 정보가 자동으로 들어갑니다. 입력을 바꾼 뒤에는 ‘현재 정보 반영’을 누르세요.</p>'+
+  const methodSpecific = state.sampleJobId&&state.sampleJobId!=="custom"
+    ? '<div class="block"><h3>② 내 전공 확인 → 이 기업에서 분석할 직무 선택</h3>'+curatedRoleSelector(state.sampleJobId)+'</div>'
+    : "";
+  const analysisArea = j&&ready
+    ? '<div class="selectedJobSummary"><b>현재 분석 대상 · '+h(j.company||"직접 입력")+" / "+h(j.role||j.title||"직무 미입력")+'</b><span>'+h(j.note||"이 분석 결과는 다른 방법과 별도로 저장됩니다.")+'</span></div>'+
+      '<div class="block"><h3>③ AI에게 선택한 직무만 분석시키기</h3><p class="help">현재 선택한 기업·세부직무와 내 전공만 들어갑니다. 같은 기업의 다른 직무는 프롬프트에 섞지 않습니다.</p>'+
         '<textarea class="promptBox promptEditor shortPrompt" id="jobPromptPreview">'+h(jobAnalysisPrompt())+'</textarea>'+
-        '<div class="actions compactActions">'+
-          (!isCustom?'<button class="btn ghost" id="refreshJobPromptBtn">현재 정보 반영</button>':'')+
-          '<button class="btn secondary" id="copyReviewedJobPromptBtn">내 직무분석 프롬프트 복사</button></div>'+
+        '<div class="actions compactActions"><button class="btn ghost" id="refreshJobPromptBtn">현재 선택 반영</button><button class="btn secondary" id="copyReviewedJobPromptBtn">내 직무분석 프롬프트 복사</button></div>'+
         '<div class="field aiPaste"><label>AI 답변 붙여넣기 <span class="hint">(선택)</span></label><textarea class="input" data-path="jobTable.aiResult" id="jobTableAiResult" placeholder="AI 답변을 붙여넣으면 아래 6칸으로 나눌 수 있습니다.">'+h(state.jobTable.aiResult||"")+'</textarea></div>'+
         '<div class="actions compactActions"><button class="btn secondary" id="applyJobTableAiBtn">AI 답변을 6칸에 반영</button></div>'+
       '</div>'+
-      '<div class="divider"></div><div class="block"><h3>'+(isCustom?"④":"③")+' 직무분석 테이블 완성</h3><p class="help">직접 수정한 내용도 현재 분석 방법에만 저장됩니다.</p>'+jobTableFields()+'</div>'+
-      '<div class="block"><h3>'+(isCustom?"⑤":"④")+' 완성된 직무분석표</h3><p class="help">모바일에서는 좌우로 밀어서 전체 표를 확인합니다.</p>'+jobTablePreview()+'</div>'+
-      (isCustom?'': '<details class="optionBox"><summary>선택 공고에서 확인된 기본정보</summary><div class="optionBody"><div class="callout info"><b>'+h(j.source)+'</b><br>'+h(j.facts)+'</div><div class="callout warn"><b>지원자격:</b><br>'+h(j.required).replace(/\n/g,"<br>")+'<br><br><b>우대·확인사항:</b><br>'+h(j.preferred).replace(/\n/g,"<br>")+'</div></div></details>')
-      :
-      '<div class="callout warn"><b>세 가지 방법 중 하나를 선택하세요.</b> 분석을 시작하면 각 방법별로 결과가 따로 저장됩니다.</div>'
-    )
+      '<div class="divider"></div><div class="block"><h3>④ 직무분석 테이블 완성</h3><p class="help">이 표는 현재 선택한 세부직무의 작업공간에 따로 저장됩니다.</p>'+jobTableFields()+'</div>'+
+      '<div class="block"><h3>⑤ 완성된 직무분석표</h3><p class="help">모바일에서는 좌우로 밀어서 전체 표를 확인합니다.</p>'+jobTablePreview()+'</div>'+
+      (!isCustom?'<details class="optionBox"><summary>선택 직무의 기준자료 보기</summary><div class="optionBody"><div class="callout info"><b>'+h(j.source)+'</b><br>'+h(j.facts).replace(/\n/g,"<br>")+'</div><div class="callout warn"><b>공고 공통 지원자격:</b><br>'+h(j.required).replace(/\n/g,"<br>")+'<br><br><b>우대·확인사항:</b><br>'+h(j.preferred).replace(/\n/g,"<br>")+'</div></div></details>':"")
+    : (state.sampleJobId&&state.sampleJobId!=="custom"
+        ? '<div class="callout warn"><b>직무 선택이 먼저입니다.</b> 지원 직군과 세부직무를 하나 선택하면 그 직무에 대한 AI 분석과 직무분석표가 열립니다.</div>'
+        : (isCustom?'<div class="callout warn"><b>직접입력 핵심정보가 필요합니다.</b> 아래에서 기업명과 직무·분야를 입력한 뒤 “이 정보로 분석”을 누르세요.</div>':""));
+  return shell(3,"3 Ways → Job Analysis","공기업 예시, 대기업 예시, 직접 입력 중 원하는 방법을 선택하고, 그 안에서 분석할 직무 하나를 정합니다.",
+    '<div class="block"><h3>① 분석 방법 선택</h3><p class="help">기업을 바꾸거나 같은 기업 안에서 직무를 바꿔도 각 직무의 분석표는 별도로 저장됩니다. 현재 저장된 분석: <b>'+analyzedCount+'개</b></p>'+analysisMethodCards()+'</div>'+
+    methodSpecific+
+    '<div class="block customEntryBlock">'+customJobFields()+'</div>'+
+    analysisArea
   );
 }
 
@@ -1058,7 +1062,7 @@ function syncSelectedPosting(){
   state.postings[0]={
     ...emptyPosting(),
     company:j.company||"",title:j.title||"",sourceUrl:j.sourceUrl||"",
-    text:j.facts?"[공고에서 확인된 기본정보]\n"+j.facts:"",
+    text:j.facts?"[선택 직무 기준정보]\n"+j.facts:"",
     required:j.required||"",preferred:j.preferred||"",
     notes:j.note||""
   };
@@ -1068,11 +1072,48 @@ function selectAnalysisMethod(id){
   if(!["komipo-2026-3","skenergy-2026-clx","custom"].includes(id))return;
   snapshotActiveCase();
   state.sampleJobId=id;
-  restoreAnalysisCase(id);
+  restoreAnalysisCase(roleCaseKey(id));
   syncSelectedPosting();
   save();render();
+  if(id==="custom"){
+    requestAnimationFrame(()=>document.getElementById("customJobEntry")?.scrollIntoView({behavior:"smooth",block:"start"}));
+  }
   const j=selectedJob();
-  toast((id==="custom"?"직접 입력":j?.company||"선택한 공고")+" 분석 작업공간을 열었습니다.");
+  toast((id==="custom"?"직접 입력":j?.company||"선택한 공고")+" 작업공간을 열었습니다.");
+}
+
+function selectCuratedGroup(id,group){
+  snapshotActiveCase();
+  state.curatedSelection??=emptyCuratedSelection();
+  state.curatedSelection[id]={group,role:""};
+  state.sampleJobId=id;
+  restoreAnalysisCase(roleCaseKey(id));
+  syncSelectedPosting();
+  save();render();
+}
+
+function selectCuratedRole(id,role){
+  snapshotActiveCase();
+  state.curatedSelection??=emptyCuratedSelection();
+  const prev=state.curatedSelection[id]||{group:"",role:""};
+  state.curatedSelection[id]={...prev,role};
+  state.sampleJobId=id;
+  restoreAnalysisCase(roleCaseKey(id));
+  syncSelectedPosting();
+  save();render();
+  if(role)toast(role+" 직무만 분석하도록 선택했습니다.");
+}
+
+function useCustomJob(){
+  if(!filled(state.customJob?.company)||!filled(state.customJob?.role)){
+    toast("기업명과 직무·분야를 먼저 입력해 주세요.");
+    return;
+  }
+  selectAnalysisMethod("custom");
+  requestAnimationFrame(()=>{
+    const p=document.getElementById("jobPromptPreview");
+    if(p)p.scrollIntoView({behavior:"smooth",block:"center"});
+  });
 }
 
 function applyJobTableAi(){
