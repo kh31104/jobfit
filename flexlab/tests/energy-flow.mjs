@@ -49,6 +49,8 @@ try{
   assert(jobPrompt.includes('화학공학'),'STEP3 prompt must include student major');
   assert(jobPrompt.includes('화력발전설비운영'),'STEP3 prompt must include only selected sub-role');
   assert(jobPrompt.includes('탈황·탈질'),'Selected role source must include role-specific knowledge');
+  assert(jobPrompt.includes('개조식'),'Job-analysis prompt must request bullet-style output');
+  assert(jobPrompt.includes("• "),'Job-analysis prompt must specify bullet markers');
   assert(!jobPrompt.includes('인공지능서비스기획'),'Prompt must not mix other KOMIPO roles');
 
   await page.locator('#jobTableAiResult').fill([
@@ -127,6 +129,7 @@ try{
   const keywordPrompt=await page.locator('#keywordPromptPreview').inputValue();
   assert(keywordPrompt.includes('화공실험'),'STEP4 prompt must include major evidence');
   assert(keywordPrompt.includes('환경설비 캡스톤'),'STEP4 prompt must include experience');
+  assert(keywordPrompt.includes('개조식'),'Competency prompt must request bullet-style output');
   await page.locator('[data-path="ai.keywordResult"]').fill('설비 데이터 해석 / 이상원인 분석 / 안전기준 기반 점검');
   await page.locator('[data-next="5"]').click();
 
@@ -141,6 +144,7 @@ try{
   const gapPrompt=await page.locator('#gapPromptPreview').inputValue();
   assert(gapPrompt.includes('TOEIC 820'),'STEP5 prompt must include student spec');
   assert(gapPrompt.includes('한국중부발전'),'STEP5 prompt must include selected posting');
+  assert(gapPrompt.includes('개조식'),'GAP prompt must request bullet-style output');
   await page.locator('[data-path="fit.assets"]').fill('TOEIC 820, 화공실험, 환경설비 데이터 분석 경험');
   await page.locator('[data-path="fit.gaps"]').fill('대기환경기사 미취득, 현장 설비 경험 부족');
   await page.locator('[data-path="fit.actions"]').fill('3개월 내 대기환경기사 준비와 환경설비 데이터 미니 프로젝트 완성');
@@ -152,8 +156,12 @@ try{
   assert(portfolio.includes('한국중부발전'),'Portfolio must include selected company');
   assert(portfolio.includes('환경설비 캡스톤'),'Portfolio must include student experience');
   assert(portfolio.includes('대기환경기사 미취득'),'Portfolio must include GAP');
-  assert((await page.locator('#selfIntroPromptPreview').inputValue()).includes('환경설비 캡스톤'),'Self-intro prompt must be personalized');
-  assert((await page.locator('#interviewPromptPreview').inputValue()).includes('대기환경기사 미취득'),'Interview prompt must include GAP');
+  const selfPrompt=await page.locator('#selfIntroPromptPreview').inputValue();
+  const interviewPrompt=await page.locator('#interviewPromptPreview').inputValue();
+  assert(selfPrompt.includes('환경설비 캡스톤'),'Self-intro prompt must be personalized');
+  assert(selfPrompt.includes('개조식'),'Self-intro prompt must request bullet-style output');
+  assert(interviewPrompt.includes('대기환경기사 미취득'),'Interview prompt must include GAP');
+  assert(interviewPrompt.includes('개조식'),'Interview prompt must request bullet-style feedback');
 
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:flexlab:job-analysis:v1')));
   assert(saved.version===8,'FLEX state version must be 8');
