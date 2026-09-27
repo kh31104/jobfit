@@ -25,9 +25,9 @@ try{
   assert(searchPrompt.includes('발전운영·전기설비'),'STEP2 prompt must include target job');
   await page.locator('[data-next="3"]').click();
 
-  await page.waitForSelector('[data-curated="komipo-2026-3"]');
-  assert(await page.locator('.curatedJob').count()===2,'STEP3 must offer two curated energy postings');
-  await page.locator('[data-curated="komipo-2026-3"]').click();
+  await page.waitForSelector('[data-analysis-method="komipo-2026-3"]');
+  assert(await page.locator('.curatedJob').count()===3,'STEP3 must offer public, private and custom analysis methods');
+  await page.locator('[data-analysis-method="komipo-2026-3"]').click();
   await page.waitForSelector('#jobPromptPreview');
   const jobPrompt=await page.locator('#jobPromptPreview').inputValue();
   assert(jobPrompt.includes('한국중부발전'),'STEP3 job prompt must include selected public company');
@@ -47,6 +47,37 @@ try{
   assert((await page.locator('[data-path="jobTable.competencies"]').inputValue()).includes('전기설비'),'AI result must populate competency field');
   assert(await page.locator('.jobAnalysisPreview th').count()===6,'STEP3 must render six-column job analysis table');
   assert((await page.locator('[data-preview="jobTable.tasks"]').innerText()).includes('발전설비'),'Job analysis table preview must reflect tasks');
+  // Switch to SK energy and keep a separate table.
+  await page.locator('[data-analysis-method="skenergy-2026-clx"]').click();
+  await page.waitForSelector('#jobPromptPreview');
+  assert((await page.locator('#jobPromptPreview').inputValue()).includes('SK에너지'),'Switching to SK energy must rebuild prompt');
+  await page.locator('[data-path="jobTable.tasks"]').fill('정유 공정 운전과 설비 상태 확인');
+  await page.locator('[data-path="jobTable.competencies"]').fill('공정 이해, 설비 점검, 안전 준수');
+
+  // Switch to custom input and create a third independent analysis.
+  await page.locator('[data-analysis-method="custom"]').click();
+  await page.waitForSelector('[data-customjob="company"]');
+  await page.locator('[data-customjob="company"]').fill('한화솔루션');
+  await page.locator('[data-customjob="title"]').fill('에너지솔루션 생산기술 신입');
+  await page.locator('[data-customjob="role"]').fill('생산기술');
+  await page.locator('[data-customjob="facts"]').fill('생산공정 데이터 분석, 설비 개선, 공정 안정화');
+  await page.locator('[data-customjob="required"]').fill('공학계열 전공');
+  await page.locator('#refreshJobPromptBtn').click();
+  assert((await page.locator('#jobPromptPreview').inputValue()).includes('한화솔루션'),'Custom prompt must include student-entered company');
+  await page.locator('[data-path="jobTable.tasks"]').fill('생산공정 데이터 분석과 설비 개선');
+  await page.locator('[data-path="jobTable.competencies"]').fill('공정 데이터 해석, 개선안 도출');
+
+  // Return to each method: previous tables must remain.
+  await page.locator('[data-analysis-method="komipo-2026-3"]').click();
+  assert((await page.locator('[data-path="jobTable.tasks"]').inputValue()).includes('발전설비'),'Public-company table must survive switching');
+  await page.locator('[data-analysis-method="skenergy-2026-clx"]').click();
+  assert((await page.locator('[data-path="jobTable.tasks"]').inputValue()).includes('정유 공정'),'Private-company table must survive switching');
+  await page.locator('[data-analysis-method="custom"]').click();
+  assert((await page.locator('[data-customjob="company"]').inputValue())==='한화솔루션','Custom company input must survive switching');
+  assert((await page.locator('[data-path="jobTable.tasks"]').inputValue()).includes('생산공정'),'Custom table must survive switching');
+
+  // Continue the full student flow with the public-company example.
+  await page.locator('[data-analysis-method="komipo-2026-3"]').click();
   await page.locator('[data-next="4"]').click();
 
   await page.waitForSelector('[data-path="student.majorEvidence"]');
@@ -95,9 +126,15 @@ try{
   await page.evaluate(()=>localStorage.removeItem('jobfit:flexlab:job-analysis:v1'));
   await page.reload({waitUntil:'networkidle'});
   await page.locator('[data-step="3"]').click();
-  await page.locator('[data-curated="skenergy-2026-clx"]').click();
+  await page.locator('[data-analysis-method="skenergy-2026-clx"]').click();
   await page.waitForSelector('#jobPromptPreview');
-  assert((await page.locator('#jobPromptPreview').inputValue()).includes('SK에너지'),'Private-energy sample selection must work');
+  assert((await page.locator('#jobPromptPreview').inputValue()).includes('SK에너지'),'Private-energy sample selection must work after reload');
+  await page.locator('[data-analysis-method="custom"]').click();
+  await page.waitForSelector('[data-customjob="company"]');
+  await page.locator('[data-customjob="company"]').fill('직접입력 테스트 기업');
+  await page.locator('[data-customjob="role"]').fill('에너지 설비');
+  await page.locator('#refreshJobPromptBtn').click();
+  assert((await page.locator('#jobPromptPreview').inputValue()).includes('직접입력 테스트 기업'),'Custom analysis method must work after reload');
 
   console.log('FLEX energy mobile flow: PASS');
 }finally{
