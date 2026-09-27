@@ -760,6 +760,9 @@ function step3(){
   const methodSpecific = state.sampleJobId&&state.sampleJobId!=="custom"
     ? '<div class="block"><h3>② 내 전공 확인 → 이 기업에서 분석할 직무 선택</h3>'+curatedRoleSelector(state.sampleJobId)+'</div>'
     : "";
+  const customEntry = isCustom
+    ? '<div class="block customEntryBlock">'+customJobFields()+'</div>'
+    : "";
   const analysisArea = j&&ready
     ? '<div class="selectedJobSummary"><b>현재 분석 대상 · '+h(j.company||"직접 입력")+" / "+h(j.role||j.title||"직무 미입력")+'</b><span>'+h(j.note||"이 분석 결과는 다른 방법과 별도로 저장됩니다.")+'</span></div>'+
       '<div class="block"><h3>③ AI에게 선택한 직무만 분석시키기</h3><p class="help">현재 선택한 기업·세부직무와 내 전공만 들어갑니다. 같은 기업의 다른 직무는 프롬프트에 섞지 않습니다.</p>'+
@@ -777,7 +780,7 @@ function step3(){
   return shell(3,"3 Ways → Job Analysis","공기업 예시, 대기업 예시, 직접 입력 중 원하는 방법을 선택하고, 그 안에서 분석할 직무 하나를 정합니다.",
     '<div class="block"><h3>① 분석 방법 선택</h3><p class="help">기업을 바꾸거나 같은 기업 안에서 직무를 바꿔도 각 직무의 분석표는 별도로 저장됩니다. 현재 저장된 분석: <b>'+analyzedCount+'개</b></p>'+analysisMethodCards()+'</div>'+
     methodSpecific+
-    '<div class="block customEntryBlock">'+customJobFields()+'</div>'+
+    customEntry+
     analysisArea
   );
 }
@@ -1099,7 +1102,14 @@ function selectAnalysisMethod(id){
   syncSelectedPosting();
   save();render();
   if(id==="custom"){
-    requestAnimationFrame(()=>document.getElementById("customJobEntry")?.scrollIntoView({behavior:"smooth",block:"start"}));
+    requestAnimationFrame(()=>{
+      const entry=document.getElementById("customJobEntry");
+      if(!entry)return;
+      const mobile=window.matchMedia("(max-width:650px)").matches;
+      const offset=mobile?92:24;
+      const y=entry.getBoundingClientRect().top+window.scrollY-offset;
+      window.scrollTo({top:Math.max(0,y),behavior:"smooth"});
+    });
   }
   const j=selectedJob();
   toast((id==="custom"?"직접 입력":j?.company||"선택한 공고")+" 작업공간을 열었습니다.");
