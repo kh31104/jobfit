@@ -12,6 +12,21 @@ const steps = [
 const emptyPosting=()=>({company:"",title:"",sourceUrl:"",text:"",notes:"",tasks:"",required:"",preferred:"",other:""});
 const emptyExperience=()=>({title:"",type:"",summary:""});
 const emptyMatch=()=>({requirement:"",evidence:"",status:"",note:""});
+const emptyJobTable=()=>({customerKpi:"",tasks:"",challenge:"",method:"",competencies:"",careerPlan:"",aiResult:""});
+const emptyRequirements=()=>[0,1,2].map(()=>({condition:"",status:"",note:""}));
+const emptyFit=()=>({assets:"",gaps:"",actions:""});
+const emptyCustomJob=()=>({
+  id:"custom",type:"직접 입력",company:"",title:"",role:"",period:"",sourceUrl:"",
+  source:"학생 직접 입력",facts:"",required:"",preferred:"",
+  note:"내가 찾은 기업·직무·공고 정보를 직접 입력해 분석합니다."
+});
+const emptyAnalysisCase=()=>({
+  jobTable:emptyJobTable(),
+  requirements:emptyRequirements(),
+  fit:emptyFit(),
+  keywordResult:"",
+  gapResult:""
+});
 
 const CURATED_JOBS=[
   {
@@ -50,7 +65,13 @@ const defaults=()=>({
   student:{major:"",majorEvidence:"",certificates:"",language:"",tools:"",otherSpec:""},
   step2Search:{company:"",title:"",sourceUrl:"",memo:""},
   sampleJobId:"",
-  jobTable:{customerKpi:"",tasks:"",challenge:"",method:"",competencies:"",careerPlan:"",aiResult:""},
+  customJob:emptyCustomJob(),
+  analysisCases:{
+    "komipo-2026-3":emptyAnalysisCase(),
+    "skenergy-2026-clx":emptyAnalysisCase(),
+    "custom":emptyAnalysisCase()
+  },
+  jobTable:emptyJobTable(),
   context:{change:"",problem:""},
   profile:{solve:"",output:""},
   postings:[emptyPosting(),emptyPosting(),emptyPosting()],
@@ -59,9 +80,9 @@ const defaults=()=>({
   experiences:[emptyExperience(),emptyExperience(),emptyExperience()],
   selectedExperience:0,
   star:{competency:"",experience:"",situation:"",task:"",actionWhat:"",actionWhy:"",actionHow:"",result:"",evidence:""},
-  requirements:[0,1,2].map(()=>({condition:"",status:"",note:""})),
+  requirements:emptyRequirements(),
   matchRows:[0,1,2].map(emptyMatch),
-  fit:{assets:"",gaps:"",actions:""},
+  fit:emptyFit(),
   ai:{keywordResult:"",gapResult:""}
 });
 
@@ -111,11 +132,34 @@ function load(){
       actionWhat:oldStar.actionWhat||oldStar.action||""
     };
 
+    const analysisCases={...b.analysisCases};
+    Object.keys(analysisCases).forEach(id=>{
+      const oldCase=x.analysisCases?.[id]||{};
+      analysisCases[id]={
+        jobTable:{...emptyJobTable(),...(oldCase.jobTable||{})},
+        requirements:[0,1,2].map(i=>({condition:"",status:"",note:"",...(oldCase.requirements?.[i]||{})})),
+        fit:{...emptyFit(),...(oldCase.fit||{})},
+        keywordResult:oldCase.keywordResult||"",
+        gapResult:oldCase.gapResult||""
+      };
+    });
+    if(x.sampleJobId&&analysisCases[x.sampleJobId]&&!x.analysisCases){
+      analysisCases[x.sampleJobId]={
+        jobTable:{...emptyJobTable(),...(x.jobTable||{})},
+        requirements:[0,1,2].map(i=>({condition:"",status:"",note:"",...(x.requirements?.[i]||{})})),
+        fit:{...emptyFit(),...(x.fit||{})},
+        keywordResult:x.ai?.keywordResult||"",
+        gapResult:x.ai?.gapResult||""
+      };
+    }
+
     return {
       ...b,...x,version:7,currentStep:mappedStep,
       target:{...b.target,...(x.target||{})},
       student:{...b.student,...(x.student||{})},
       step2Search:{...b.step2Search,...(x.step2Search||{})},
+      customJob:{...emptyCustomJob(),...(x.customJob||{})},
+      analysisCases,
       jobTable:{...b.jobTable,...(x.jobTable||{})},
       context:{...b.context,...(x.context||{})},
       profile:{...b.profile,...(x.profile||{})},
