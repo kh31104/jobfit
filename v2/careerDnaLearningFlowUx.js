@@ -33,35 +33,35 @@ const STEP1_COPY=[
 
 const STEP2_COPY=[
   {
-    title:'지난주 Career DNA 간단히 확인 · 실제 경험으로 검증',
+    title:'Career DNA 확인',
     description:'지난주 강점 후보를 정답으로 쓰지 않고, 실제 경험에서 확인할 가설과 질문만 가져옵니다.'
   },
   {
-    title:'My Best 3 Experience · 경험 후보 꺼내기',
+    title:'My Best 3 Experience',
     description:'강점 이름부터 정하지 말고 실제 경험을 최대 3개 떠올립니다. 1~2개만 떠올라도 대표 경험 1개부터 분석할 수 있습니다.'
   },
   {
-    title:'STAR 기반 AI Experience Interview · 대표 경험 깊게 묻기',
-    description:'STAR를 직접 작성하는 대신, AI가 빠진 내용을 한 질문씩 묻고 내가 실제로 한 행동·판단·결과를 확인합니다.'
+    title:'STAR 기반 AI Interview',
+    description:'AI가 한 번에 질문 하나씩 묻습니다. 내가 실제로 한 행동·판단·결과만 답하고, 기억나지 않으면 모른다고 답해도 됩니다.'
   },
   {
-    title:'AI가 이해한 내 경험 사실확인',
+    title:'사실확인',
     description:'STAR 인터뷰 결과에서 문제·행동·판단·결과와 확인 가능한 근거만 간단히 정리합니다.'
   },
   {
-    title:'경험에서 확인된 역량 · C01~C12',
+    title:'역량 확인',
     description:'04에서 확인한 행동을 보면서 표준역량을 최대 3개까지 연결합니다. 근거가 없으면 선택하지 않아도 됩니다.'
   },
   {
-    title:'Experience Map · 내 경험 근거 모아보기',
+    title:'Experience Map',
     description:'저장한 경험의 행동·결과·역량근거를 확인합니다. 1개는 기본 분석, 2개 이상부터 반복 여부를 비교합니다.'
   },
   {
-    title:'Competency Map · 반복 행동 확인',
+    title:'Competency Map',
     description:'여러 경험에서 같은 역량의 행동근거가 반복되는지 확인합니다. 경험 횟수는 역량 점수가 아닙니다.'
   },
   {
-    title:'My Experience DNA · 경험으로 확인한 나',
+    title:'My Experience DNA',
     description:'Career DNA의 자기인식과 실제 경험의 행동근거를 구분해 다음 직무탐색 단계로 가져갑니다.'
   }
 ];

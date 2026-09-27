@@ -22,8 +22,8 @@ const mockBundle={
 await page.route('**/functions/v1/research-measures',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,course:'INJE2026',measures:mockBundle})}));
 
 try{
-  // Current INJE2026 defaults to measures=false. This regression test explicitly opts into
-  // the legacy/research pipeline so that capability remains testable without collecting it this semester.
+  // Explicitly opt into the protected measure bundle. STEP2 no longer uses the pre-experience SUDCO block;
+  // STEP0 K-CAAS and STEP13 post measures remain independently testable.
   await page.goto(`${base}?course=INJE2026&measures=true`,{waitUntil:'networkidle'});
   await page.locator('#makeCodeBtn').click();
   await page.waitForFunction(()=>String(JSON.parse(localStorage.getItem('jobfit:v2:learner')).profile?.anonCode||'').startsWith('JF26-'));
@@ -43,19 +43,11 @@ try{
   assert(pre.kcaas.items.length===12&&pre.kcaas.wordingVersion===K_VERSION,'K-CAAS save mismatch');
 
   await page.locator('.stepBtn[data-step="2"]').click();
-  await page.waitForSelector('#preStrengthMeasureSave');
-  const preS=page.locator('[data-measure="pre-sudco"]');
-  assert(await preS.count()===9,'Cho SUDCO count must be 9');
-  assert(JSON.stringify((await attrs(preS,'data-original-item-number')).map(Number))===JSON.stringify(S_NUMBERS),'SUDCO numbering must omit original item 6');
-  assert((await attrs(preS,'data-scale-version')).every(v=>v===S_VERSION),'SUDCO version mismatch');
-  assert((await attrs(preS,'min')).every(v=>v==='0')&&(await attrs(preS,'max')).every(v=>v==='6'),'SUDCO range mismatch');
-  for(let i=0;i<9;i++)await preS.nth(i).fill(String(i<5?2:3));
-  await page.locator('#preStrengthMeasureSave').click();
-  await page.waitForFunction(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')).research?.measurements?.pre?.sudco?.items?.length===9);
-  const storedPre=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')).research.measurements.pre.sudco);
-  assert(storedPre.items.length===9,'SUDCO save count mismatch');
-  assert(storedPre.strengthUse===2&&storedPre.deficitCorrection===3,'SUDCO 5+4 scoring mismatch');
-  assert(storedPre.wordingVersion===S_VERSION,'SUDCO saved version mismatch');
+  await page.waitForSelector('.experienceCompetencyWeek4');
+  assert(await page.locator('#preStrengthMeasureSave').count()===0,'STEP2 must not render the pre-experience 9-item strength measure');
+  assert(await page.locator('[data-measure="pre-sudco"]').count()===0,'STEP2 must not render pre-SUDCO items');
+  const step2Text=(await page.locator('#stepRoot').textContent())||'';
+  assert(!step2Text.includes('경험 분석 전 강점행동 9문항'),'STEP2 legacy strength-measure copy remains');
 
   await page.locator('.stepBtn[data-step="13"]').click();
   await page.waitForSelector('#postMeasureSave');
@@ -69,7 +61,7 @@ try{
   assert(await page.locator('[data-measure="pre-kcaas"]').count()===12,'authorization should persist through reload in one tab session');
 
   if(errors.length)throw new Error(errors.join('\n'));
-  console.log('PASS restricted 12+9 measure pipeline');
+  console.log('PASS restricted measure pipeline with STEP2 pre-SUDCO removed');
 }finally{
   await browser.close();
 }
