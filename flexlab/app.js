@@ -45,17 +45,17 @@ const CURATED_JOBS=[
   },
   {
     id:"skenergy-2026-clx",
-    type:"대기업",
-    company:"SK에너지",
-    title:"2026년 SK이노베이션 계열 울산CLX 기술직 인턴",
-    role:"제조",
-    period:"2026.09.15 ~ 2026.09.27",
-    sourceUrl:"https://www.skcareers.com/Recruit/Detail/R261969",
-    source:"SK Careers",
-    facts:"SK energy · 제조 직무 · 울산 · 채용연계형 인턴",
-    required:"공식 공고 상세 모집요강에서 지원자격을 직접 확인하세요.",
-    preferred:"공식 공고 상세 모집요강에서 우대사항을 직접 확인하세요.",
-    note:"공식 페이지에서 확인되는 채용 기본정보만 미리 제공합니다. 세부 과업·요건은 원문을 확인하거나 AI에게 원문 링크를 읽게 한 뒤 근거와 추론을 구분해 정리합니다."
+    type:"SK 계열 에너지 사기업",
+    company:"나래에너지서비스",
+    title:"[O&M] 발전소 기술전문직군 신입사원 채용",
+    role:"제조 - 설비관리",
+    period:"2026.09.23 ~ 2026.10.06",
+    sourceUrl:"https://www.skcareers.com/Recruit/Detail/R262054",
+    source:"SK Careers · 나래에너지서비스",
+    facts:"정규직 신입 · 경기 여주 · 발전소 현장운전 선행(교대근무/필수) 후 개인역량·희망에 따라 현장운전/생산관리/정비 업무로 이동",
+    required:"학력무관 · 남성은 병역필 또는 면제 · 해외여행 결격사유 없음 · 이공계열 전공",
+    preferred:"보훈·장애인 법정우대 · TOEIC 700 / TOEIC Speaking 120 / OPIc IM 이상 또는 준하는 어학성적 · 기계/전기/제어 계열 전공 및 직무 관련 국가기술자격 우대",
+    note:"별도 직무기술서는 없습니다. SK Careers 공고의 ‘담당 업무 및 역할’과 지원자격·우대사항만 기준자료로 사용합니다."
   }
 ];
 
@@ -113,9 +113,29 @@ const KOMIPO_ROLE_LIBRARY={
   }
 };
 
+const SK_OM_ROLE_LIBRARY={
+  sourceLabel:"SK Careers R262054 공식 채용공고 · 별도 직무기술서 없음",
+  groupLabel:"채용직군",
+  roleLabel:"분석할 업무경로",
+  selectionNote:"이 공고는 업무경로별 별도 채용이 아닙니다. 입사 후 발전소 현장운전을 먼저 수행하는 것이 필수이며, 이후 개인역량·희망에 따라 현장운전·생산관리·정비로 이동할 수 있습니다.",
+  groups:{
+    "O&M 발전소 기술전문직군":{
+      headcount:"정규직 신입 · 여주사업소",
+      roles:{
+        "현장운전":{tasks:"발전설비 운전 및 현장점검 업무",knowledge:"공고에 별도 명시 없음",skills:"공고에 별도 명시 없음",attitudes:"교대근무가 가능한 현장업무 수행 태도 · 세부 태도는 공고에 별도 명시 없음"},
+        "생산관리":{tasks:"발전원가 관리 및 전력거래 지원업무",knowledge:"공고에 별도 명시 없음",skills:"공고에 별도 명시 없음",attitudes:"세부 태도는 공고에 별도 명시 없음"},
+        "정비(기계)":{tasks:"기계 분야 발전설비 유지관리 업무",knowledge:"공고에 별도 명시 없음",skills:"기계 계열 전공·직무 관련 국가기술자격 우대 사실만 공고에서 확인",attitudes:"세부 태도는 공고에 별도 명시 없음"},
+        "정비(전기)":{tasks:"전기 분야 발전설비 유지관리 업무",knowledge:"공고에 별도 명시 없음",skills:"전기 계열 전공·직무 관련 국가기술자격 우대 사실만 공고에서 확인",attitudes:"세부 태도는 공고에 별도 명시 없음"},
+        "정비(제어)":{tasks:"제어 분야 발전설비 유지관리 업무",knowledge:"공고에 별도 명시 없음",skills:"제어 계열 전공·직무 관련 국가기술자격 우대 사실만 공고에서 확인",attitudes:"세부 태도는 공고에 별도 명시 없음"},
+        "정비지원":{tasks:"정비지원 영역의 발전설비 유지관리 업무",knowledge:"공고에 별도 명시 없음",skills:"직무 관련 국가기술자격 우대 사실만 공고에서 확인",attitudes:"세부 태도는 공고에 별도 명시 없음"}
+      }
+    }
+  }
+};
+
 const CURATED_ROLE_LIBRARIES={
   "komipo-2026-3":KOMIPO_ROLE_LIBRARY,
-  "skenergy-2026-clx":{sourceLabel:"교수자 제공 SK에너지 공고·직무기술서 등록 예정",groups:{}}
+  "skenergy-2026-clx":SK_OM_ROLE_LIBRARY
 };
 
 function emptyCuratedSelection(){return {
