@@ -64,6 +64,7 @@ async function run(name,viewport){
     assert(week4Actual.length===8,`Deployed Week4 must contain exactly 8 modules, found ${week4Actual.length}: ${week4Actual.join(' | ')}`);
     week4Expected.forEach((title,i)=>assert(week4Actual[i]===title,`Deployed Week4 order mismatch at ${i+1}: expected ${title}, got ${week4Actual[i]||'missing'}`));
     assert(await page.locator('.strengthMeasurePanel').count()===0,'Deployed STEP2 must not render the pre-experience 9-item strength measure');
+    assert(await page.locator('#situation').count()===1,'Deployed STEP2 04 must include S Situation field');
     assert(await page.locator('[data-measure="pre-sudco"]').count()===0,'Deployed STEP2 must not render pre-SUDCO items');
     assert(!week4.includes('경험 분석 전 강점행동 9문항'),'Legacy STEP2 9-item strength measure copy remains deployed');
     for(const removed of ['Career Story','Career Theme','Career Direction','1개월 Career Experiment'])assert(!week4.includes(removed),`Removed Week4 module remains deployed: ${removed}`);
