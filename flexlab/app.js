@@ -474,71 +474,84 @@ const expTypes=["","전공수업","프로젝트·캡스톤","인턴·현장실�
 function experienceRows(){
   return state.experiences.map((e,i)=>{
     const opts=expTypes.map(x=>'<option value="'+h(x)+'" '+(e.type===x?"selected":"")+'>'+(x||"유형 선택")+'</option>').join("");
+    const optional=i>0?' <span class="hint">(선택)</span>':'';
     return '<div class="experienceRow '+(state.selectedExperience===i?"selected":"")+'">'+
-      '<label class="experiencePick"><input type="radio" name="selectedExperience" data-exp-select="'+i+'" '+(state.selectedExperience===i?"checked":"")+' /> STAR+로 깊게 볼 경험 '+(i+1)+'</label>'+
-      '<div class="grid2"><div class="field"><label>경험 이름</label><input class="input" data-exp="'+i+'" data-expkey="title" value="'+h(e.title)+'" placeholder="예: 캡스톤에서 배터리 실험" /></div>'+
+      '<label class="experiencePick"><input type="radio" name="selectedExperience" data-exp-select="'+i+'" '+(state.selectedExperience===i?"checked":"")+' /> '+(i===0?"대표 경험":"추가 경험 "+(i+1))+optional+'</label>'+
+      '<div class="grid2"><div class="field"><label>경험 이름</label><input class="input" data-exp="'+i+'" data-expkey="title" value="'+h(e.title)+'" placeholder="예: 캡스톤 에너지효율 프로젝트" /></div>'+
       '<div class="field"><label>경험 유형</label><select class="input" data-exp="'+i+'" data-expkey="type">'+opts+'</select></div></div>'+
-      '<div class="field"><label>한 줄 메모 <span class="hint">(선택)</span></label><input class="input" data-exp="'+i+'" data-expkey="summary" value="'+h(e.summary)+'" placeholder="예: 실험 데이터를 정리하고 이상값 원인을 확인" /></div>'+
+      '<div class="field"><label>내가 한 일 한 줄</label><input class="input" data-exp="'+i+'" data-expkey="summary" value="'+h(e.summary)+'" placeholder="예: 운전 데이터를 정리하고 이상값 원인을 비교했다" /></div>'+
     '</div>';
   }).join("");
 }
 
-function jobQuestionHints(){
-  const t=(state.target.job+" "+state.postings[0].title).toLowerCase();
-  if(/안전|환경|she|품질|qa|qc/.test(t))return ["기준·규정이나 품질 기준을 적용한 경험이 있나요?","이상·위험요인을 어떻게 발견했나요?","재발 방지나 예방을 위해 무엇을 했나요?"];
-  if(/생산|공정|설비|정비|운전|기계|전기|전자|전력/.test(t))return ["어떤 회로·설비·공정·데이터를 다뤘나요?","예상과 다른 측정값·동작·고장이 있었나요?","원인을 어떤 순서로 확인했고 무엇을 바꿨나요?"];
-  if(/데이터|it|dx|ai|분석/.test(t))return ["어떤 데이터를 사용했나요?","어떤 분석도구·방법을 왜 선택했나요?","분석 결과가 실제 판단이나 개선에 어떻게 쓰였나요?"];
-  if(/영업|마케팅|기획|사업/.test(t))return ["누구의 문제를 해결하려 했나요?","어떤 자료·수치를 비교해 판단했나요?","본인의 제안이나 행동이 어떤 결과로 이어졌나요?"];
-  return ["가장 어려웠던 문제는 무엇이었나요?","본인이 직접 판단해서 한 행동은 무엇이었나요?","결과를 확인할 수 있는 산출물·수치·변화가 있나요?"];
-}
-
-function experiencePrompt(){
-  const e=state.experiences[state.selectedExperience]||emptyExperience();
-  const hints=jobQuestionHints();
+function competencyKeywordPrompt(){
+  const j=selectedCuratedJob();
+  const exps=state.experiences.filter(e=>filled(e.title)||filled(e.summary)).map((e,i)=>
+    (i+1)+". "+(e.title||"경험")+(e.type?" ["+e.type+"]":"")+" - "+(e.summary||"세부내용 미입력")
+  );
   return [
-    "나는 "+(state.target.job||state.postings[0].title||"희망 직무")+"를 준비하는 대학생이야.","",
-    "[채용공고 핵심 요구]",state.competency.top5||state.competency.skill||"(아직 정리 전)","",
-    "[내 경험]",e.title||state.star.experience||"(경험 입력 필요)",e.summary||"","",
-    "이 경험을 바로 자기소개서로 작성하지 말고, 내 실제 행동을 확인하기 위한 질문을 한 번에 하나씩 해줘.","",
-    "공통 질문 순서:",
-    "1. 당시 상황",
-    "2. 내가 맡은 역할과 해결해야 했던 과제",
-    "3. 내가 직접 한 행동 WHAT",
-    "4. 왜 그 방법을 선택했는지 WHY",
-    "5. 실제로 어떻게 했는지 HOW",
-    "6. 결과와 확인 가능한 수치·산출물",
-    "7. 이 경험에서 실제로 확인되는 역량",
-    "8. 위 채용공고 요구와 연결되는 부분","",
-    "직무 맞춤 추가질문 후보:",
-    ...hints.map((x,i)=>(i+1)+". "+x),"",
-    "질문은 한 번에 하나씩 하고, 내 답을 받은 뒤 다음 질문으로 넘어가.",
-    "내가 말하지 않은 행동·수치·성과는 만들지 마.",
-    "근거가 부족한 역량은 '확인되지 않음'이라고 표시해줘."
-  ].join("\n");
+    "나는 "+(state.student.major||"전공 미입력")+" 전공 대학생이고, "+(state.target.job||j?.role||"에너지 직무")+"를 준비하고 있다.",
+    "",
+    "[선택한 채용공고]",
+    j?j.company+" / "+j.title+" / "+j.role:"공고 미선택",
+    j?"확인된 정보: "+j.facts:"",
+    "",
+    "[직무분석 결과]",
+    "주요 과업: "+(state.jobTable.tasks||"미입력"),
+    "해결과제: "+(state.jobTable.challenge||"미입력"),
+    "해결방법: "+(state.jobTable.method||"미입력"),
+    "필요역량: "+(state.jobTable.competencies||"미입력"),
+    "",
+    "[내 전공에서 찾은 근거]",
+    state.student.majorEvidence||"미입력",
+    "",
+    "[내 경험]",
+    ...(exps.length?exps:["경험 미입력"]),
+    "",
+    "[대표 경험의 추가 근거]",
+    "내 행동: "+(state.star.actionWhat||"미입력"),
+    "결과: "+(state.star.result||"미입력"),
+    "증거: "+(state.star.evidence||"미입력"),
+    "",
+    "위 정보만 사용해서 내가 자기소개서와 면접에서 사용할 수 있는 '직무역량 키워드'를 3~5개 찾아줘.",
+    "각 키워드마다 아래 형식으로 정리해줘.",
+    "1) 역량 키워드",
+    "2) 이 직무에서 왜 필요한지",
+    "3) 내 전공 또는 경험에서 확인되는 근거",
+    "4) 채용담당자가 이해할 수 있는 직무언어로 바꾼 표현",
+    "5) 자기소개서에서 강조할 행동 1개",
+    "6) 면접에서 확인받을 수 있는 질문 1개",
+    "",
+    "내가 입력하지 않은 경험·수치·성과·자격을 만들지 마.",
+    "근거가 약한 역량은 '근거 부족'이라고 표시해줘.",
+    "성격형 표현보다 실제 행동과 업무언어를 우선해줘."
+  ].filter(Boolean).join("\n");
 }
 
 function step4(){
   const e=state.experiences[state.selectedExperience]||emptyExperience();
   if(filled(e.title)&&(!filled(state.star.experience)||state.star.experience!==e.title))state.star.experience=e.title;
-  const hints=jobQuestionHints().map(x=>'<li>'+h(x)+'</li>').join("");
-  return shell(4,"My Evidence · STAR+","경험을 짧게 꺼낸 뒤 하나를 선택해 STAR+로 깊게 분해합니다. 경험 이름만으로 역량을 확정하지 않습니다.",
-    '<div class="block"><h3>① 경험 3개까지 짧게 꺼내기</h3><div class="callout info"><b>짧게 적어도 됩니다.</b> “캡스톤에서 배터리 실험” · “전기회로 프로젝트” · “학생회 총무” · “아르바이트”처럼 시작합니다.</div><div class="experienceList">'+experienceRows()+'</div></div>'+
-    '<div class="divider"></div>'+
-    '<div class="block starBlock"><h3>② 선택 경험을 STAR+로 확인</h3><div class="selectedEvidence"><span>선택 경험</span><b>'+h(e.title||state.star.experience||"위에서 경험을 하나 선택하세요.")+'</b></div>'+
-    '<div class="grid2">'+
-      field("star.experience","경험 이름","선택한 경험",false)+
-      field("star.competency","연결할 요구역량 후보","예: 전력설비 이해, 데이터 분석, 문제해결",false,true)+
-      field("star.situation","S · 상황","언제, 어디서, 어떤 상황이었나요?")+
-      field("star.task","T · 역할과 과제","본인의 역할과 해결해야 했던 문제는 무엇이었나요?")+
-      field("star.actionWhat","A · WHAT","본인이 직접 한 행동은 무엇인가요?")+
-      field("star.actionWhy","A · WHY","왜 그 방법을 선택했나요?")+
-      field("star.actionHow","A · HOW","실제로 어떤 순서·도구·방법으로 진행했나요?")+
-      field("star.result","R · 결과","무엇이 달라졌나요?")+
-      field("star.evidence","EVIDENCE · 확인 가능한 근거","수치, 보고서, 회로도, 시뮬레이션 결과, 기록, 피드백 등이 있나요?")+
+  return shell(4,"Major & Experience → Competency","내 전공과 경험에서 직무에 연결할 수 있는 근거를 찾고, 자기소개서·면접에 쓸 역량 키워드로 바꿉니다.",
+    '<div class="block"><h3>① 전공에서 근거 하나 찾기</h3><div class="selectedEvidence"><span>내 전공</span><b>'+h(state.student.major||"STEP 1에서 전공을 입력하세요.")+'</b></div>'+
+      field("student.majorEvidence","직무와 연결되는 수업·실험·과제·프로젝트","예: 전력계통 수업에서 부하흐름을 계산 / 열역학 실험에서 효율을 비교 / 공정제어 프로젝트에서 데이터를 분석")+
     '</div>'+
-    '<div class="block"><h3>직무 맞춤 꼬리질문</h3><ul class="questionList">'+hints+'</ul></div>'+
-    '<details class="optionBox"><summary>AI로 경험을 더 깊게 질문하기 · 프롬프트 확인</summary><div class="optionBody"><p class="help">아래 문장을 먼저 읽고 필요하면 직접 수정하세요. 바로 복사되지 않습니다.</p><textarea class="promptBox promptEditor" id="experiencePromptPreview">'+h(experiencePrompt())+'</textarea><div class="actions compactActions"><button class="btn ghost" id="refreshExpPromptBtn">현재 입력으로 다시 만들기</button><button class="btn secondary" id="copyReviewedExpPromptBtn">내용 확인 후 프롬프트 복사</button></div></div></details>'+
-    '<div class="callout warn"><b>AI 사용 원칙:</b> AI는 질문과 정리를 돕습니다. 학생이 말하지 않은 경험·수치·성과를 만들어내지 않습니다.</div></div>');
+    '<div class="divider"></div><div class="block"><h3>② 내 경험 최대 3개</h3><p class="help">경험 이름과 내가 한 일을 한 줄만 적어도 됩니다. AI가 없는 경험을 만들지 않도록 실제로 한 내용만 씁니다.</p><div class="experienceList">'+experienceRows()+'</div></div>'+
+    '<div class="divider"></div><div class="block starBlock"><h3>③ 대표 경험에서 행동 근거 확인</h3><div class="selectedEvidence"><span>대표 경험</span><b>'+h(e.title||state.star.experience||"위에서 대표 경험을 선택하세요.")+'</b></div>'+
+      field("star.actionWhat","내가 직접 한 행동","팀이 한 일이 아니라 내가 실제로 한 행동은?")+
+      '<div class="grid2">'+field("star.result","결과","내 행동 뒤 무엇이 달라졌나요?")+field("star.evidence","확인 가능한 증거","수치·산출물·기록·피드백 등")+'</div>'+
+      '<details class="optionBox"><summary>STAR+를 더 자세히 정리하기 · 선택</summary><div class="optionBody"><div class="grid2">'+
+        field("star.situation","S · 상황","언제, 어디서, 어떤 상황이었나요?")+
+        field("star.task","T · 역할과 과제","내 역할과 해결해야 했던 문제는?")+
+        field("star.actionWhy","WHY · 판단 이유","왜 그 방법을 선택했나요?")+
+        field("star.actionHow","HOW · 실행 방식","어떤 순서·도구·방법으로 진행했나요?")+
+      '</div></div></details>'+
+    '</div>'+
+    '<div class="divider"></div><div class="block"><h3>④ AI로 직무역량 키워드 찾기</h3><p class="help">STEP 1~4에 입력한 내용이 자동으로 프롬프트에 들어갑니다.</p>'+
+      '<textarea class="promptBox promptEditor shortPrompt" id="keywordPromptPreview">'+h(competencyKeywordPrompt())+'</textarea>'+
+      '<div class="actions compactActions"><button class="btn secondary" id="copyKeywordPromptBtn">내 역량분석 프롬프트 복사</button></div>'+
+      field("ai.keywordResult","AI 결과 붙여넣기 <span class=\"hint\">(선택)</span>","AI가 정리한 3~5개 역량 키워드를 붙여넣으세요. STEP 6 Portfolio에 함께 들어갑니다.")+
+    '</div>'+
+    '<div class="callout warn"><b>확인 원칙:</b> AI가 제시한 역량 중 내 행동으로 설명할 수 없는 키워드는 삭제합니다.</div>');
 }
 
 function ensureRequirements(){
