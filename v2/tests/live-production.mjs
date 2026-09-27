@@ -59,10 +59,17 @@ async function run(name,viewport){
 
     await page.locator('.stepBtn[data-step="2"]').click();await page.waitForSelector('#saveRoadmap');
     const week4=(await page.locator('#stepRoot').textContent())||'';
-    for(const text of ['나의 경험에서 직무역량 찾기','지난주 Career DNA 간단히 확인','My Best 3 Experience','STAR 기반 AI Experience Interview','AI가 이해한 내 경험 사실확인','경험에서 확인된 역량','Experience Map','Competency Map','My Experience DNA'])assert(week4.includes(text),`Missing deployed Week4 module: ${text}`);
+    const week4Expected=['Career DNA 확인','My Best 3 Experience','STAR 기반 AI Interview','사실확인','역량 확인','Experience Map','Competency Map','My Experience DNA'];
+    const week4Actual=(await page.locator('.experienceCompetencyWeek4 > .block > .moduleHead h3').allTextContents()).map(x=>x.replace(/\s+/g,' ').trim());
+    assert(week4Actual.length===8,`Deployed Week4 must contain exactly 8 modules, found ${week4Actual.length}: ${week4Actual.join(' | ')}`);
+    week4Expected.forEach((title,i)=>assert(week4Actual[i]===title,`Deployed Week4 order mismatch at ${i+1}: expected ${title}, got ${week4Actual[i]||'missing'}`));
+    assert(await page.locator('.strengthMeasurePanel').count()===0,'Deployed STEP2 must not render the pre-experience 9-item strength measure');
+    assert(await page.locator('[data-measure="pre-sudco"]').count()===0,'Deployed STEP2 must not render pre-SUDCO items');
+    assert(!week4.includes('경험 분석 전 강점행동 9문항'),'Legacy STEP2 9-item strength measure copy remains deployed');
     for(const removed of ['Career Story','Career Theme','Career Direction','1개월 Career Experiment'])assert(!week4.includes(removed),`Removed Week4 module remains deployed: ${removed}`);
     assert(await page.locator('#makeInterviewPrompt').count()===1,'Week4 evidence interview control missing');
     assert(await page.locator('#saveRoadmap').count()===1,'Week4 Experience Map save control missing');
+    await page.locator('#goBest3').click();assert(await page.locator('#best3_best_title').isVisible(),'Deployed 01 → 02 route is broken or detoured');
     if(viewport.width<=480){const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);assert(overflow<=2,`Week4 mobile horizontal overflow detected: ${overflow}px`)}
 
     await page.locator('.stepBtn[data-step="3"]').click();await page.waitForSelector('#jobPrompt');
