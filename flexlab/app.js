@@ -173,7 +173,28 @@ function load(){
   }catch(e){return defaults();}
 }
 
+function snapshotActiveCase(){
+  const id=state.sampleJobId;
+  if(!id||!state.analysisCases?.[id])return;
+  state.analysisCases[id]={
+    jobTable:{...emptyJobTable(),...state.jobTable},
+    requirements:[0,1,2].map(i=>({condition:"",status:"",note:"",...(state.requirements?.[i]||{})})),
+    fit:{...emptyFit(),...state.fit},
+    keywordResult:state.ai?.keywordResult||"",
+    gapResult:state.ai?.gapResult||""
+  };
+}
+
+function restoreAnalysisCase(id){
+  const c=state.analysisCases?.[id]||emptyAnalysisCase();
+  state.jobTable={...emptyJobTable(),...(c.jobTable||{})};
+  state.requirements=[0,1,2].map(i=>({condition:"",status:"",note:"",...(c.requirements?.[i]||{})}));
+  state.fit={...emptyFit(),...(c.fit||{})};
+  state.ai={...(state.ai||{}),keywordResult:c.keywordResult||"",gapResult:c.gapResult||""};
+}
+
 function save(){
+  snapshotActiveCase();
   state.updatedAt=new Date().toISOString();
   localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
   const el=document.getElementById("saveState");
@@ -407,25 +428,33 @@ function optionalComparison(){
     '<div class="grid2">'+field("comparison.common","여러 공고의 공통 요구","여러 회사에서 반복되는 요구")+field("comparison.differences","기업별 차이","특정 회사에서만 강조되는 요구")+'</div></div></details>';
 }
 
-function selectedCuratedJob(){
+function selectedJob(){
+  if(state.sampleJobId==="custom")return {...emptyCustomJob(),...(state.customJob||{})};
   return CURATED_JOBS.find(x=>x.id===state.sampleJobId)||null;
 }
 
+function selectedCuratedJob(){
+  return selectedJob();
+}
+
 function jobAnalysisPrompt(){
-  const j=selectedCuratedJob();
-  if(!j)return "먼저 STEP 3에서 분석할 공고를 선택하세요.";
+  const j=selectedJob();
+  if(!j)return "먼저 STEP 3에서 분석 방법을 선택하세요.";
+  const custom=state.sampleJobId==="custom";
   return [
-    "나는 "+(state.student.major||"전공 미입력")+" 전공 대학생이고, "+(state.target.job||"에너지 관련 직무")+"를 준비하고 있다.",
+    "나는 "+(state.student.major||"전공 미입력")+" 전공 대학생이고, "+(state.target.job||j.role||"에너지 관련 직무")+"를 준비하고 있다.",
     "",
-    "[선택한 실제 채용공고]",
-    "기업: "+j.company,
-    "공고: "+j.title,
-    "직무/분야: "+j.role,
-    "모집기간: "+j.period,
-    "확인된 기본정보: "+j.facts,
-    "공식·공공 출처: "+j.sourceUrl,
+    custom?"[내가 직접 입력한 분석 대상]":"[선택한 실제 채용공고]",
+    "기업: "+(j.company||"미입력"),
+    "공고: "+(j.title||"미입력"),
+    "직무/분야: "+(j.role||"미입력"),
+    "모집기간: "+(j.period||"미입력"),
+    "담당업무·공고 핵심정보: "+(j.facts||"미입력"),
+    "필수·지원자격: "+(j.required||"미입력"),
+    "우대사항: "+(j.preferred||"미입력"),
+    "출처 링크: "+(j.sourceUrl||"미입력"),
     "",
-    "가능하면 위 링크의 현재 공고와 직무기술서를 직접 확인해 직무분석을 해줘.",
+    j.sourceUrl?"가능하면 위 링크의 공고와 직무기술서를 직접 확인해 직무분석을 해줘.":"내가 입력한 정보만 사용하고, 부족한 내용은 '추가 확인 필요'라고 표시해줘.",
     "링크의 세부내용을 확인할 수 없다면 모르는 내용을 만들지 말고 '원문 확인 필요'라고 써줘.",
     "",
     "아래 6개 제목을 그대로 사용해 답해줘.",
