@@ -2,10 +2,13 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="format-detection" content="telephone=no" />
   <meta name="theme-color" content="#315df4" />
   <title>Jobfit FLEX | Job Analysis</title>
-  <link rel="stylesheet" href="./styles.css?v=6" />
+  <link rel="stylesheet" href="./styles.css?v=7" />
 </head>
 <body>
   <div class="wrap">
@@ -28,7 +31,10 @@
       <aside class="side"><nav class="card navCard" id="stepNav"></nav></aside>
       <main class="main">
         <div class="card progressCard">
-          <div><b id="progressLabel">진행 0%</b><span>필수 입력만 채워도 결과파일을 만들 수 있습니다.</span></div>
+          <div class="progressTop">
+            <div class="progressNow"><b id="progressLabel">진행 0%</b><strong id="currentStepLabel" class="mobileStepLabel">STEP 01 · Target Job</strong></div>
+            <span class="progressHelp">필수 입력만 채워도 결과파일을 만들 수 있습니다.</span>
+          </div>
           <div class="progress"><span id="progressBar"></span></div>
         </div>
         <div id="stepRoot"></div>
@@ -36,6 +42,6 @@
     </div>
   </div>
   <div id="toast" class="toast" aria-live="polite"></div>
-  <script type="module" src="./app.js?v=7"></script>
+  <script type="module" src="./app.js?v=8"></script>
 </body>
 </html>
