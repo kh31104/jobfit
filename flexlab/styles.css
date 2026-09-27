@@ -225,3 +225,29 @@
 .threeMethods{grid-template-columns:repeat(3,minmax(0,1fr))}
 .customJobBox{display:grid;gap:12px;padding:14px;border:1px solid #d9e2ff;border-radius:16px;background:#fbfcff}
 @media(max-width:900px){.threeMethods{grid-template-columns:1fr}}
+
+
+/* STEP 3 company → role selection */
+.rolePicker{display:grid;gap:12px;padding:14px;border:1px solid #d8e2f2;border-radius:16px;background:#fcfdff}
+.majorStrip{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border-radius:12px;background:#f4f7fb}
+.majorStrip span{font-size:11px;color:var(--muted);font-weight:800}
+.majorStrip b{font-size:14px;text-align:right}
+.roleEvidence{display:grid;gap:7px;padding:13px;border:1px solid #cfe0d6;border-radius:14px;background:#f8fcf9}
+.roleEvidence b{font-size:14px}
+.roleEvidence span{font-size:11px;line-height:1.55;color:#415466}
+.sourcePending{padding:8px 10px;border-radius:10px;background:#fff7e6;color:#8a5a00;font-size:10px;font-weight:800;line-height:1.45}
+.customEntryBlock{margin-top:18px}
+.customAlways{border:2px dashed #91a8dc;background:#f9fbff}
+.customEntryHead{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.customEntryHead span{display:inline-flex;padding:4px 7px;border-radius:999px;background:#e9efff;color:#3152c9;font-size:10px;font-weight:900}
+.customEntryHead h3{margin:6px 0 4px;font-size:16px}
+.customEntryHead p{margin:0;color:var(--muted);font-size:11px;line-height:1.5}
+
+@media(max-width:650px){
+  .rolePicker{padding:12px;border-radius:14px}
+  .majorStrip{align-items:flex-start}
+  .majorStrip b{font-size:13px}
+  .customEntryHead{flex-direction:column}
+  .customEntryHead .btn{width:100%}
+  .roleEvidence span{font-size:10.5px}
+}

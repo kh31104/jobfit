@@ -45,26 +45,127 @@ const CURATED_JOBS=[
   },
   {
     id:"skenergy-2026-clx",
-    type:"대기업",
-    company:"SK에너지",
-    title:"2026년 SK이노베이션 계열 울산CLX 기술직 인턴",
-    role:"제조",
-    period:"2026.09.15 ~ 2026.09.27",
-    sourceUrl:"https://www.skcareers.com/Recruit/Detail/R261969",
-    source:"SK Careers",
-    facts:"SK energy · 제조 직무 · 울산 · 채용연계형 인턴",
-    required:"공식 공고 상세 모집요강에서 지원자격을 직접 확인하세요.",
-    preferred:"공식 공고 상세 모집요강에서 우대사항을 직접 확인하세요.",
-    note:"공식 페이지에서 확인되는 채용 기본정보만 미리 제공합니다. 세부 과업·요건은 원문을 확인하거나 AI에게 원문 링크를 읽게 한 뒤 근거와 추론을 구분해 정리합니다."
+    type:"SK 계열 에너지 사기업",
+    company:"나래에너지서비스",
+    title:"[O&M] 발전소 기술전문직군 신입사원 채용",
+    role:"제조 - 설비관리",
+    period:"2026.09.23 ~ 2026.10.06",
+    sourceUrl:"https://www.skcareers.com/Recruit/Detail/R262054",
+    source:"SK Careers · 나래에너지서비스",
+    facts:"정규직 신입 · 경기 여주 · 발전소 현장운전 선행(교대근무/필수) 후 개인역량·희망에 따라 현장운전/생산관리/정비 업무로 이동",
+    required:"학력무관 · 남성은 병역필 또는 면제 · 해외여행 결격사유 없음 · 이공계열 전공",
+    preferred:"보훈·장애인 법정우대 · TOEIC 700 / TOEIC Speaking 120 / OPIc IM 이상 또는 준하는 어학성적 · 기계/전기/제어 계열 전공 및 직무 관련 국가기술자격 우대",
+    note:"별도 직무기술서는 없습니다. SK Careers 공고의 ‘담당 업무 및 역할’과 지원자격·우대사항만 기준자료로 사용합니다."
   }
 ];
 
+const KOMIPO_ROLE_LIBRARY={
+  sourceLabel:"교수자 제공 2026년도 제3차 4직급 신입직원 채용 공고·NCS 직무기술서",
+  groups:{
+    "사무":{
+      headcount:"일반 12명 · 보훈 2명 · 장애 4명",
+      roles:{
+        "경영기획":{tasks:"경영목표 달성을 위한 전략 수립과 자원 배분, 경영진 의사결정 지원",knowledge:"예산계획·원가관리·국제회계기준·재무회계 관련 법",skills:"원가계산, 예산손익 산출, 기획서 작성, 예산편성 기준 작성",attitudes:"적극적 의사소통, 기준 준수, 정확성, 책임감"},
+        "인사":{tasks:"직무조사·분석을 바탕으로 채용·배치·육성·평가·보상·승진·퇴직 및 인사제도 운영·개선",knowledge:"전략적 인적자원관리, 직무분석, 노동·사회보험 관련 법, 경력개발·직무평가",skills:"문서작성, 인터뷰, 사업전략·환경 분석, 관련 프로그램 활용",attitudes:"의사소통, 정확성, 경청, 협업"},
+        "노무관리":{tasks:"노사관계 계획, 단체교섭, 노동쟁의 대응, 노사협의회·고충처리 및 관계 개선",knowledge:"근로기준법·노동법, 인사제도, 단체협약, 근로자 참여제도",skills:"문서작성, 인터뷰, 발표, 회의 운영, 협상",attitudes:"기준 준수, 경청, 성실, 이견 조율과 설득"},
+        "예산":{tasks:"예상 수익·비용을 편성·집행·통제하여 경영성과 달성을 지원",knowledge:"예산 운영 규정, 회계원리·관리회계·재무회계, 환경분석",skills:"예산·재무 보고서 작성, 수리능력, 재무제표 분석, 정보검색",attitudes:"협력, 설득, 정확성, 기준 준수"},
+        "자금":{tasks:"영업·투자·재무 활동에 필요한 자금 계획·조달·운용과 위험·성과 관리",knowledge:"재무제표·재무분석·재무관리·기업회계, 관련 세법과 자금조달",skills:"현금흐름·수익률·조달비용 분석, 자금계획서 작성, 회계처리",attitudes:"협력, 정확성, 기준 준수, 이해관계자 관계 유지"}
+      }
+    },
+    "IT":{
+      headcount:"일반 4명",
+      roles:{
+        "보안엔지니어링":{tasks:"정보보안시스템 도입을 위한 설계·구축·유지보수",knowledge:"정보보호 요구사항 평가, 정보자산 분류정책, ISO27001, ISMS-P, 소프트웨어·요구공학",skills:"정보보호 IT기술, 서버 보안SW 설치·운영, 보안패치·업그레이드",attitudes:"보안 시스템 성능 향상 노력, 사고의 근본원인 파악"},
+        "IT시스템관리":{tasks:"HW·SW 지속 점검·모니터링, 문제 분석·예방, 장애 발생 시 조치",knowledge:"가용성·연속성관리, 로그·데이터 분석, ITIL, SQL, 품질개선 기법",skills:"DB 변경·운영관리, 데이터 수집·분석, 네트워크 관리, 기술적 의사소통",attitudes:"개선 의지, 장애 후 추가 이상 확인, 근본원인 탐구"},
+        "IT기술지원":{tasks:"정보시스템·솔루션 환경을 이해하고 장애처리·시스템개선·정기점검 등 기술지원",knowledge:"장애처리 절차, 산출물 작성, 품질보증·관리도구, 기술지원 계약 관련 기본 법률",skills:"장애 시스템 운영, 품질통제 DB 운영, Unix·Windows·Linux, 데이터 추출·변환",attitudes:"적극적 품질통제, 다양한 해결방안 탐색, 분석적·논리적 사고"},
+        "인공지능서비스기획":{tasks:"AI 서비스 목표·모델·시나리오를 기획하고 실행계획 수립",knowledge:"AI 인프라 아키텍처 구성, AI 서비스 시나리오 작성 방법론",skills:"최신 서비스 트렌드 파악, 설계 항목 식별·분석",attitudes:"신기술 이해·적용과 학습에 능동적인 태도"}
+      }
+    },
+    "화학":{
+      headcount:"일반 12명 · 장애 2명",
+      roles:{
+        "화학물질분석":{tasks:"화학물질의 성분·조성·구조·함량·특성을 확인하기 위한 분석계획, 시료채취·전처리·분석, 데이터 해석, 결과보고",knowledge:"화학물질·분석장비 특성, 유해화학물질, 취급 안전수칙, 위험물 안전",skills:"분석장비·문서 전자화, 컴퓨터 활용, 유해화학물질 취급, 안전장비·사고대응",attitudes:"절차·규정 준수, 안전제일, 객관적 분석, 개선 요구 수용"},
+        "화력발전설비운영":{tasks:"전기를 안정적으로 공급하기 위한 발전·환경설비 운전, 점검, 유지정비, 진단, 보전",knowledge:"발전공학, 대기·수질환경 법령, 탈황·탈질·집진·폐수처리 설비 원리",skills:"탈황·탈질·집진·폐수·대기·수질환경설비 조작·운영, 규제치 확인",attitudes:"정비업무의 치밀성, 설비개선, 안전·환경 규정과 운영절차 준수, 책임감"},
+        "환경관리":{tasks:"오염원·오염물질 조사·분석, 환경계획 수립, 배출·방지시설 유지·개선, 환경행정·교육·성과평가",knowledge:"환경행정 절차, 오염물질 특성, 배출·방지시설 운영기준, 처리원리·방지기술, ISO",skills:"측정결과·데이터 분석, 환경행정, 기록관리, 시설 운전, 교육·민원·보고서 작성",attitudes:"치밀한 업무처리, 준법, 문제해결, 적극적 의사소통, 안전제일"},
+        "태양광에너지생산":{tasks:"태양광발전시스템 기획·설계·시공·운영",knowledge:"신재생에너지 설비·신고기준, 관련 법규, 모듈 설치·정비, 전기·기계 특성, 모니터링",skills:"운영관리 계획·분석, 기본 설계도면 작성, 모듈 분석, 전기설계, 발전량 산출",attitudes:"기술기준·안전 절차 준수, 점검 의지, 협업"},
+        "바이오에너지생산":{tasks:"바이오매스를 활용한 에너지 생산시설 설계·설치·운영과 바이오연료·에너지 생산",knowledge:"기체·액체·고체 바이오연료 생산설비 특성·기능·운전·유지보수",skills:"단위설비 조작, 운전·공정상태 점검, 설비 정비",attitudes:"기술기준·안전 절차 준수, 점검 의지, 협업"},
+        "풍력에너지생산":{tasks:"풍력자원 조사, 발전장치·단지 설계·시공, 지속적 유지관리와 전력생산",knowledge:"전기사업법, 풍력시스템 유지관리, 인력·장비·부품, 제어 특성·로직, 모니터링",skills:"운전 판단, 제어로직·운전 해석, 모니터링 프로그램 운용, 특성 판단",attitudes:"기술기준·안전 절차 준수, 점검 의지, 협업"},
+        "연료전지에너지생산":{tasks:"연료·연료전지를 활용한 전기·열 생산 시스템 설계·제작·설치·운영",knowledge:"연료전지 기계·전기·가스 운전특성, 발전설비·계통, 운전·성능복구",skills:"설비 진단, 안전·품질 절차서 개발, 촉매·전력변환 특성 파악, 기계·전기·가스 제어, 부품 검사",attitudes:"기술기준·안전 절차 준수, 점검 의지, 협업"}
+      }
+    },
+    "토목":{
+      headcount:"일반 2명",
+      roles:{
+        "건설공사공무관리":{tasks:"공사기획·계약, 현장운영, 설계변경, 기성·견적·공사비·자원관리, 준공 후 사후관리",knowledge:"계약업무 지침·조정절차, 물량·단가·내역 작성, 표준품셈, 건설 관련 법규",skills:"일위대가 산출, 공사장비 특성·효율 파악, 관련 프로그램 활용",attitudes:"공정한 이해관계 조정, 수치·기준 기반 책임관리, 설득"},
+        "유지관리":{tasks:"시설물 기능·안전 유지를 위한 점검·진단·정비와 보수·보강·성능향상",knowledge:"건설재료·시공·유지관리, 안전점검, 손상 확인, 보수·보강 계획",skills:"안전 관련 법 적용, 점검 항목 선정, 손상·결함 파악, 도면 해석",attitudes:"계획 검토, 손상상태 확인, 안전·기술기준 준수"},
+        "토목건설사업관리":{tasks:"설계도서대로 시공되는지 확인하고 품질·시공·공정·안전·환경관리 기술지도",knowledge:"설계도서·계약 프로세스, 공무·견적, 품셈·공사비, KS 품질기준, 준공서류",skills:"자료수집, 계약서 분석, 적산, 워드·스프레드시트 활용, 의사소통",attitudes:"자료 검토, 문제해결, 공정한 사업비 집행, 책임·투명성"}
+      }
+    },
+    "건축":{
+      headcount:"일반 3명 · 장애 1명",
+      roles:{
+        "건설공사공무관리":{tasks:"공사기획·계약, 현장운영, 설계변경, 기성·견적·공사비·자원관리, 준공 후 사후관리",knowledge:"계약업무 지침·조정절차, 물량·단가·내역 작성, 표준품셈, 건설 관련 법규",skills:"일위대가 산출, 예정공정표 분석, 현장 일정 판단",attitudes:"공정한 이해관계 조정, 기준 기반 책임관리, 설득"},
+        "유지관리":{tasks:"건축시설물 기능·안전 유지를 위한 점검·진단·정비와 보수·보강",knowledge:"설계도서, 안전점검·손상 확인, 유지관리·안전 관련 법",skills:"관련 법 적용, 설계도서 해석, 진단 여부 판단, 작업조건 내역서 작성",attitudes:"안전점검·손상상태 확인, 작업조건 검토, 안전 준수"},
+        "건축설계":{tasks:"건축 요구·기능에 맞춰 조사분석·기획·계획·프레젠테이션·BIM·협력설계·설계도서 작성",knowledge:"건축설계 프로세스, 건축계획, 관련 법체계, 타 분야 시스템 특성",skills:"대인관계·의사소통, 협력사 조율, 설계도서 적합성 판단·검토·승인",attitudes:"법규를 신중하게 해석, 협력사 존중, 신규 시스템 적극 검토"},
+        "건축공사감리":{tasks:"설계도서대로 시공되는지 확인하고 품질·시공·공정·안전·환경관리 기술지도·감독",knowledge:"안전관리자 역할, 공종별 위험요인, 안전 법규, 환경위해요인·민원",skills:"안전장구 사용, 위험요인·민원 원인 파악, 민원 설득",attitudes:"안전사고 예방, 인명 존중, 안전점검 수칙 준수, 정중한 태도"}
+      }
+    }
+  }
+};
+
+const SK_OM_ROLE_LIBRARY={
+  sourceLabel:"SK Careers R262054 공식 채용공고 · 별도 직무기술서 없음",
+  groupLabel:"채용직군",
+  roleLabel:"분석할 업무경로",
+  selectionNote:"이 공고는 업무경로별 별도 채용이 아닙니다. 입사 후 발전소 현장운전을 먼저 수행하는 것이 필수이며, 이후 개인역량·희망에 따라 현장운전·생산관리·정비로 이동할 수 있습니다.",
+  groups:{
+    "O&M 발전소 기술전문직군":{
+      headcount:"정규직 신입 · 여주사업소",
+      roles:{
+        "현장운전":{tasks:"발전설비 운전 및 현장점검 업무",knowledge:"공고에 별도 명시 없음",skills:"공고에 별도 명시 없음",attitudes:"교대근무가 가능한 현장업무 수행 태도 · 세부 태도는 공고에 별도 명시 없음"},
+        "생산관리":{tasks:"발전원가 관리 및 전력거래 지원업무",knowledge:"공고에 별도 명시 없음",skills:"공고에 별도 명시 없음",attitudes:"세부 태도는 공고에 별도 명시 없음"},
+        "정비(기계)":{tasks:"기계 분야 발전설비 유지관리 업무",knowledge:"공고에 별도 명시 없음",skills:"기계 계열 전공·직무 관련 국가기술자격 우대 사실만 공고에서 확인",attitudes:"세부 태도는 공고에 별도 명시 없음"},
+        "정비(전기)":{tasks:"전기 분야 발전설비 유지관리 업무",knowledge:"공고에 별도 명시 없음",skills:"전기 계열 전공·직무 관련 국가기술자격 우대 사실만 공고에서 확인",attitudes:"세부 태도는 공고에 별도 명시 없음"},
+        "정비(제어)":{tasks:"제어 분야 발전설비 유지관리 업무",knowledge:"공고에 별도 명시 없음",skills:"제어 계열 전공·직무 관련 국가기술자격 우대 사실만 공고에서 확인",attitudes:"세부 태도는 공고에 별도 명시 없음"},
+        "정비지원":{tasks:"정비지원 영역의 발전설비 유지관리 업무",knowledge:"공고에 별도 명시 없음",skills:"직무 관련 국가기술자격 우대 사실만 공고에서 확인",attitudes:"세부 태도는 공고에 별도 명시 없음"}
+      }
+    }
+  }
+};
+
+const CURATED_ROLE_LIBRARIES={
+  "komipo-2026-3":KOMIPO_ROLE_LIBRARY,
+  "skenergy-2026-clx":SK_OM_ROLE_LIBRARY
+};
+
+function emptyCuratedSelection(){return {
+  "komipo-2026-3":{group:"",role:""},
+  "skenergy-2026-clx":{group:"",role:""}
+};}
+
+function normalizeAnalysisCase(c={}){
+  return {
+    jobTable:{...emptyJobTable(),...(c.jobTable||{})},
+    requirements:[0,1,2].map(i=>({condition:"",status:"",note:"",...(c.requirements?.[i]||{})})),
+    fit:{...emptyFit(),...(c.fit||{})},
+    keywordResult:c.keywordResult||"",
+    gapResult:c.gapResult||""
+  };
+}
+
+function roleCaseKey(id=state?.sampleJobId){
+  if(!id||id==="custom")return id||"";
+  const sel=state?.curatedSelection?.[id]||{};
+  return sel.group&&sel.role?id+"::"+sel.group+"::"+sel.role:id;
+}
+
 const defaults=()=>({
-  version:7,currentStep:1,updatedAt:"",
+  version:8,currentStep:1,updatedAt:"",
   target:{industry:"에너지",job:"",company:"",initialView:""},
   student:{major:"",majorEvidence:"",certificates:"",language:"",tools:"",otherSpec:""},
   step2Search:{company:"",title:"",sourceUrl:"",memo:""},
   sampleJobId:"",
+  curatedSelection:emptyCuratedSelection(),
   customJob:emptyCustomJob(),
   analysisCases:{
     "komipo-2026-3":emptyAnalysisCase(),
@@ -133,16 +234,8 @@ function load(){
     };
 
     const analysisCases={...b.analysisCases};
-    Object.keys(analysisCases).forEach(id=>{
-      const oldCase=x.analysisCases?.[id]||{};
-      analysisCases[id]={
-        jobTable:{...emptyJobTable(),...(oldCase.jobTable||{})},
-        requirements:[0,1,2].map(i=>({condition:"",status:"",note:"",...(oldCase.requirements?.[i]||{})})),
-        fit:{...emptyFit(),...(oldCase.fit||{})},
-        keywordResult:oldCase.keywordResult||"",
-        gapResult:oldCase.gapResult||""
-      };
-    });
+    Object.entries(x.analysisCases||{}).forEach(([id,oldCase])=>{analysisCases[id]=normalizeAnalysisCase(oldCase);});
+    Object.keys(analysisCases).forEach(id=>{analysisCases[id]=normalizeAnalysisCase(analysisCases[id]);});
     if(x.sampleJobId&&analysisCases[x.sampleJobId]&&!x.analysisCases){
       analysisCases[x.sampleJobId]={
         jobTable:{...emptyJobTable(),...(x.jobTable||{})},
@@ -154,10 +247,16 @@ function load(){
     }
 
     return {
-      ...b,...x,version:7,currentStep:mappedStep,
+      ...b,...x,version:8,currentStep:mappedStep,
       target:{...b.target,...(x.target||{})},
       student:{...b.student,...(x.student||{})},
       step2Search:{...b.step2Search,...(x.step2Search||{})},
+      curatedSelection:{
+        ...emptyCuratedSelection(),
+        ...(x.curatedSelection||{}),
+        "komipo-2026-3":{...emptyCuratedSelection()["komipo-2026-3"],...(x.curatedSelection?.["komipo-2026-3"]||{})},
+        "skenergy-2026-clx":{...emptyCuratedSelection()["skenergy-2026-clx"],...(x.curatedSelection?.["skenergy-2026-clx"]||{})}
+      },
       customJob:{...emptyCustomJob(),...(x.customJob||{})},
       analysisCases,
       jobTable:{...b.jobTable,...(x.jobTable||{})},
@@ -174,8 +273,9 @@ function load(){
 }
 
 function snapshotActiveCase(){
-  const id=state.sampleJobId;
-  if(!id||!state.analysisCases?.[id])return;
+  const id=roleCaseKey();
+  if(!id)return;
+  state.analysisCases??={};
   state.analysisCases[id]={
     jobTable:{...emptyJobTable(),...state.jobTable},
     requirements:[0,1,2].map(i=>({condition:"",status:"",note:"",...(state.requirements?.[i]||{})})),
@@ -185,7 +285,7 @@ function snapshotActiveCase(){
   };
 }
 
-function restoreAnalysisCase(id){
+function restoreAnalysisCase(id=roleCaseKey()){
   const c=state.analysisCases?.[id]||emptyAnalysisCase();
   state.jobTable={...emptyJobTable(),...(c.jobTable||{})};
   state.requirements=[0,1,2].map(i=>({condition:"",status:"",note:"",...(c.requirements?.[i]||{})}));
@@ -428,34 +528,83 @@ function optionalComparison(){
     '<div class="grid2">'+field("comparison.common","여러 공고의 공통 요구","여러 회사에서 반복되는 요구")+field("comparison.differences","기업별 차이","특정 회사에서만 강조되는 요구")+'</div></div></details>';
 }
 
-function selectedJob(){
-  if(state.sampleJobId==="custom")return {...emptyCustomJob(),...(state.customJob||{})};
-  return CURATED_JOBS.find(x=>x.id===state.sampleJobId)||null;
+function selectedRoleData(id=state.sampleJobId){
+  const lib=CURATED_ROLE_LIBRARIES[id], sel=state.curatedSelection?.[id]||{};
+  return lib?.groups?.[sel.group]?.roles?.[sel.role]||null;
 }
 
-function selectedCuratedJob(){
-  return selectedJob();
+function selectedJob(){
+  if(state.sampleJobId==="custom")return {...emptyCustomJob(),...(state.customJob||{})};
+  const base=CURATED_JOBS.find(x=>x.id===state.sampleJobId);
+  if(!base)return null;
+  const sel=state.curatedSelection?.[base.id]||{};
+  const roleData=selectedRoleData(base.id);
+  if(!roleData)return {...base,selectedGroup:sel.group||"",selectedRole:sel.role||"",roleData:null};
+  const roleFacts=[
+    "직무수행내용: "+roleData.tasks,
+    "필요지식: "+roleData.knowledge,
+    "필요기술: "+roleData.skills,
+    "직무수행태도: "+roleData.attitudes
+  ].join("\n");
+  return {
+    ...base,
+    role:sel.group+" · "+sel.role,
+    selectedGroup:sel.group,
+    selectedRole:sel.role,
+    roleData,
+    facts:roleFacts,
+    note:"교수자가 제공한 2026 공고문·직무기술서 중 '"+sel.role+"' 관련 내용만 사용합니다."
+  };
+}
+
+function selectedCuratedJob(){return selectedJob();}
+
+function curatedRoleReady(id=state.sampleJobId){
+  if(id==="custom")return filled(state.customJob?.company)&&filled(state.customJob?.role);
+  const lib=CURATED_ROLE_LIBRARIES[id];
+  if(!lib)return true;
+  if(!Object.keys(lib.groups||{}).length)return false;
+  const sel=state.curatedSelection?.[id]||{};
+  return !!(sel.group&&sel.role&&lib.groups?.[sel.group]?.roles?.[sel.role]);
+}
+
+function majorExplorationHint(major=""){
+  const m=String(major||"").toLowerCase();
+  let group="";
+  if(/컴퓨터|소프트웨어|정보통신|인공지능|ai|데이터|보안/.test(m))group="IT";
+  else if(/화학|화공|환경/.test(m))group="화학";
+  else if(/토목|건설환경|건설시스템/.test(m))group="토목";
+  else if(/건축/.test(m))group="건축";
+  else if(/경영|경제|회계|행정|법학|법 /.test(m))group="사무";
+  if(group)return "전공명 기준 탐색 힌트: "+major+" → "+group+" 직군을 먼저 살펴볼 수 있습니다. 다만 이번 공고는 전공 제한이 없으므로 최종 선택은 관심 직무와 준비 가능성을 기준으로 직접 하세요.";
+  return "이번 공고는 전공 제한이 없습니다. '"+(major||"전공 미입력")+"'만으로 지원 직군을 자동 결정하지 않고, 아래 모집 직군과 세부직무를 직접 비교해 선택하세요.";
 }
 
 function jobAnalysisPrompt(){
   const j=selectedJob();
   if(!j)return "먼저 STEP 3에서 분석 방법을 선택하세요.";
   const custom=state.sampleJobId==="custom";
+  if(!custom&&!curatedRoleReady())return "먼저 내 전공을 확인하고, 이 기업의 지원 직군과 분석할 세부직무를 하나 선택하세요.";
   return [
-    "나는 "+(state.student.major||"전공 미입력")+" 전공 대학생이고, "+(state.target.job||j.role||"에너지 관련 직무")+"를 준비하고 있다.",
+    "나는 "+(state.student.major||"전공 미입력")+" 전공 대학생이다.",
     "",
-    custom?"[내가 직접 입력한 분석 대상]":"[선택한 실제 채용공고]",
+    custom?"[내가 직접 입력한 분석 대상]":"[교수자가 제공한 실제 채용자료에서 내가 선택한 분석 대상]",
     "기업: "+(j.company||"미입력"),
     "공고: "+(j.title||"미입력"),
-    "직무/분야: "+(j.role||"미입력"),
+    "선택한 채용분야·직무: "+(j.role||"미입력"),
     "모집기간: "+(j.period||"미입력"),
-    "담당업무·공고 핵심정보: "+(j.facts||"미입력"),
+    "",
+    custom?"[내가 입력한 공고·직무 정보]":"[선택한 직무·업무경로에 해당하는 기준자료만 사용]",
+    j.facts||"미입력",
+    "",
     "필수·지원자격: "+(j.required||"미입력"),
     "우대사항: "+(j.preferred||"미입력"),
     "출처 링크: "+(j.sourceUrl||"미입력"),
     "",
-    j.sourceUrl?"가능하면 위 링크의 공고와 직무기술서를 직접 확인해 직무분석을 해줘.":"내가 입력한 정보만 사용하고, 부족한 내용은 '추가 확인 필요'라고 표시해줘.",
-    "링크의 세부내용을 확인할 수 없다면 모르는 내용을 만들지 말고 '원문 확인 필요'라고 써줘.",
+    custom
+      ?"내가 입력한 정보와 링크에서 확인되는 내용만 사용해 직무분석을 해줘."
+      :"위에 제공된 '"+(j.selectedRole||j.role)+"' 직무 정보만 분석해줘. 같은 기업의 다른 직무 내용은 섞지 마.",
+    "확인되지 않은 내용은 사실처럼 만들지 말고 [추론] 또는 [추가 확인 필요]라고 표시해줘.",
     "",
     "아래 6개 제목을 그대로 사용해 답해줘.",
     "고객·KPI:",
@@ -466,11 +615,11 @@ function jobAnalysisPrompt(){
     "경력개발:",
     "",
     "작성 원칙:",
-    "- [공고에서 확인]과 [직무 특성상 추론]을 구분한다.",
-    "- KPI가 공고에 없으면 임의의 수치 목표를 만들지 않는다.",
-    "- 필요역량은 지식(Knowledge), 기술(Skill), 행동(Behavior) 중 실제 근거가 있는 것 중심으로 쓴다.",
-    "- "+(state.student.major||"내 전공")+" 학생이 이해하기 쉬운 표현으로 설명한다.",
-    "- 각 항목은 2~4개 핵심 내용만 적는다."
+    "- [공고·직무기술서에서 확인]과 [직무 특성상 추론]을 구분한다.",
+    "- KPI가 자료에 없으면 임의의 수치 목표를 만들지 않는다.",
+    "- 필요역량은 지식(Knowledge), 기술(Skill), 행동(Behavior)을 구분하되 실제 근거가 있는 것만 사용한다.",
+    "- "+(state.student.major||"내 전공")+" 전공 학생이 이해하기 쉬운 표현으로 설명한다.",
+    "- 각 항목은 핵심 2~4개만 적는다."
   ].join("\n");
 }
 
@@ -504,49 +653,77 @@ function analysisMethodCards(){
     ...CURATED_JOBS.map((j,i)=>({
       ...j,
       method:"방법 "+(i+1),
-      desc:i===0?"에너지 공기업 실제 공고로 분석":"에너지 대기업 실제 공고로 분석"
+      desc:i===0?"제공된 공고문·직무기술서에서 내 직무를 골라 분석":"SK Careers 공고의 담당업무에서 분석할 업무경로를 골라 분석"
     })),
     {
-      ...custom,
-      id:"custom",method:"방법 3",type:"직접 입력",
+      ...custom,id:"custom",method:"방법 3",type:"직접 입력",
       company:custom.company||"내가 찾은 기업",
       title:custom.title||"기업·직무·공고정보 직접 입력",
-      period:custom.period||"원하는 공고 사용",
-      facts:custom.facts||"내가 필요한 기업과 직무 정보를 입력해 같은 방식으로 직무분석합니다.",
-      desc:"내가 원하는 기업·직무로 반복 실습"
+      period:custom.period||"아래 입력칸 사용",
+      desc:"아래에 항상 보이는 입력칸에 내 공고 정보를 직접 입력"
     }
   ];
   return '<div class="curatedJobGrid threeMethods">'+cards.map(j=>{
     const on=state.sampleJobId===j.id;
+    const pending=j.id==="skenergy-2026-clx"&&!Object.keys(CURATED_ROLE_LIBRARIES[j.id]?.groups||{}).length;
     return '<article class="curatedJob '+(on?"selected":"")+'">'+
       '<div class="curatedMeta"><span>'+h(j.method+" · "+j.type)+'</span><small>'+h(j.period||"")+'</small></div>'+
       '<h3>'+h(j.company)+'</h3><b>'+h(j.title)+'</b>'+
       '<p>'+h(j.desc||j.facts)+'</p>'+
+      (pending?'<div class="sourcePending">직무자료 등록 대기 · 자료를 주시면 직무 선택목록이 열립니다.</div>':'')+
       '<div class="curatedLinks">'+
-        (j.id!=="custom"&&j.sourceUrl?'<a href="'+h(j.sourceUrl)+'" target="_blank" rel="noopener">원문 확인</a>':'<span class="hint">직접 정보 입력</span>')+
-        '<button class="btn '+(on?"primary":"secondary")+'" data-analysis-method="'+h(j.id)+'">'+(on?"현재 분석 중":"이 방법으로 분석")+'</button>'+
+        (j.id!=="custom"&&j.sourceUrl?'<a href="'+h(j.sourceUrl)+'" target="_blank" rel="noopener">공고 원문</a>':'<span class="hint">아래 직접입력란</span>')+
+        '<button class="btn '+(on?"primary":"secondary")+'" data-analysis-method="'+h(j.id)+'">'+(j.id==="custom"?"직접 입력하기":on?"현재 선택":"이 기업 선택")+'</button>'+
       '</div>'+
     '</article>';
   }).join("")+'</div>';
 }
 
+function curatedRoleSelector(id){
+  const lib=CURATED_ROLE_LIBRARIES[id];
+  if(!lib)return "";
+  const groups=Object.keys(lib.groups||{});
+  const sel=state.curatedSelection?.[id]||{group:"",role:""};
+  const isSk=id==="skenergy-2026-clx";
+  const groupLabel=lib.groupLabel||(isSk?"채용직군":"지원 직군");
+  const roleLabel=lib.roleLabel||(isSk?"분석할 업무경로":"분석할 세부직무");
+  const groupOpts='<option value="">'+h(groupLabel)+' 선택</option>'+groups.map(g=>'<option value="'+h(g)+'" '+(sel.group===g?"selected":"")+'>'+h(g)+' · '+h(lib.groups[g].headcount||"")+'</option>').join("");
+  const roles=sel.group?Object.keys(lib.groups[sel.group]?.roles||{}):[];
+  const roleOpts='<option value="">'+h(roleLabel)+' 선택</option>'+roles.map(r=>'<option value="'+h(r)+'" '+(sel.role===r?"selected":"")+'>'+h(r)+'</option>').join("");
+  const role=selectedRoleData(id);
+  const majorInfo=isSk
+    ? "공고상 지원자격은 이공계열 전공이며, 기계·전기·제어 계열 전공은 우대사항입니다. 전공만으로 직무를 자동 결정하지 말고 관심 업무경로를 직접 선택하세요."
+    : majorExplorationHint(state.student.major);
+  return '<div class="rolePicker">'+
+    '<div class="majorStrip"><span>내 전공</span><b>'+h(state.student.major||"STEP 1에서 전공을 입력하세요.")+'</b></div>'+
+    '<div class="callout info">'+h(majorInfo)+'</div>'+
+    (lib.selectionNote?'<div class="callout warn"><b>공고 구조 확인</b> '+h(lib.selectionNote)+'</div>':'')+
+    '<div class="grid2">'+
+      '<div class="field"><label>1. '+h(groupLabel)+' 선택</label><select class="input" data-curated-group="'+h(id)+'">'+groupOpts+'</select></div>'+
+      '<div class="field"><label>2. '+h(roleLabel)+' 선택</label><select class="input" data-curated-role="'+h(id)+'" '+(sel.group?"":"disabled")+'>'+roleOpts+'</select></div>'+
+    '</div>'+
+    '<p class="help">기준자료 · '+h(lib.sourceLabel)+(isSk?" · 별도 직무기술서 없이 공고문만 사용":" · 전공은 지원자격 필터가 아니라 탐색 참고정보")+'</p>'+
+    (role?'<div class="roleEvidence"><b>'+h(sel.group+" → "+sel.role)+'</b><span>공고에서 확인한 업무 · '+h(role.tasks)+'</span><span>필요지식 · '+h(role.knowledge)+'</span><span>필요기술/우대근거 · '+h(role.skills)+'</span></div>':'<div class="callout good"><b>'+h(roleLabel)+'를 하나 고르세요.</b> 선택한 항목의 자료만 다음 AI 직무분석에 사용됩니다.</div>')+
+  '</div>';
+}
+
 function customJobFields(){
   const j=state.customJob||emptyCustomJob();
-  return '<div class="customJobBox">'+
-    '<div class="callout info"><b>방법 3 · 직접 입력</b> 지금 찾은 공고가 아니어도 됩니다. 수업에서 분석하고 싶은 기업·직무 정보를 입력하세요.</div>'+
+  const active=state.sampleJobId==="custom";
+  return '<div class="customJobBox customAlways" id="customJobEntry">'+
+    '<div class="customEntryHead"><div><span>방법 3</span><h3>내가 찾은 기업 · 직무 · 공고정보 직접 입력</h3><p>입력칸은 항상 여기 보입니다. 핵심 정보만 넣어도 직무분석을 시작할 수 있습니다.</p></div><button class="btn '+(active?"primary":"secondary")+'" id="useCustomJobBtn">'+(active?"현재 직접입력 분석 중":"이 정보로 분석")+'</button></div>'+
     '<div class="grid2">'+
       '<div class="field"><label>기업명</label><input class="input" data-customjob="company" value="'+h(j.company)+'" placeholder="예: 한화솔루션" /></div>'+
-      '<div class="field"><label>공고명</label><input class="input" data-customjob="title" value="'+h(j.title)+'" placeholder="예: 에너지솔루션 생산기술 신입" /></div>'+
       '<div class="field"><label>직무·분야</label><input class="input" data-customjob="role" value="'+h(j.role)+'" placeholder="예: 생산기술 / 전기설비 / 안전환경" /></div>'+
-      '<div class="field"><label>모집기간 <span class="hint">(선택)</span></label><input class="input" data-customjob="period" value="'+h(j.period)+'" placeholder="예: 2026.09.20 ~ 2026.10.05" /></div>'+
-      '<div class="field span2"><label>공고 URL <span class="hint">(선택)</span></label><input class="input" data-customjob="sourceUrl" value="'+h(j.sourceUrl)+'" placeholder="https://..." /></div>'+
+      '<div class="field"><label>공고명 <span class="hint">(선택)</span></label><input class="input" data-customjob="title" value="'+h(j.title)+'" placeholder="예: 2026 하반기 생산기술 신입" /></div>'+
+      '<div class="field"><label>공고 URL <span class="hint">(선택)</span></label><input class="input" data-customjob="sourceUrl" value="'+h(j.sourceUrl)+'" placeholder="https://..." /></div>'+
     '</div>'+
-    '<div class="field"><label>담당업무·공고 핵심내용</label><textarea class="input" data-customjob="facts" placeholder="공고에서 확인한 담당업무와 직무내용을 붙여넣거나 요약하세요.">'+h(j.facts)+'</textarea></div>'+
-    '<div class="grid2">'+
-      '<div class="field"><label>필수·지원자격 <span class="hint">(선택)</span></label><textarea class="input" data-customjob="required" placeholder="전공, 학력, 어학, 자격증 등">'+h(j.required)+'</textarea></div>'+
-      '<div class="field"><label>우대사항 <span class="hint">(선택)</span></label><textarea class="input" data-customjob="preferred" placeholder="자격증, 경험, 기술 등">'+h(j.preferred)+'</textarea></div>'+
-    '</div>'+
-    '<div class="actions compactActions"><button class="btn secondary" id="refreshJobPromptBtn">입력정보를 AI 프롬프트에 반영</button></div>'+
+    '<div class="field"><label>담당업무·직무기술서 핵심내용</label><textarea class="input" data-customjob="facts" placeholder="담당업무 또는 직무기술서 내용을 붙여넣으세요.">'+h(j.facts)+'</textarea></div>'+
+    '<details class="optionBox"><summary>지원자격·우대사항·모집기간도 입력하기 · 선택</summary><div class="optionBody"><div class="grid2">'+
+      '<div class="field"><label>필수·지원자격</label><textarea class="input" data-customjob="required" placeholder="전공, 학력, 어학, 자격증 등">'+h(j.required)+'</textarea></div>'+
+      '<div class="field"><label>우대사항</label><textarea class="input" data-customjob="preferred" placeholder="자격증, 경험, 기술 등">'+h(j.preferred)+'</textarea></div>'+
+      '<div class="field"><label>모집기간</label><input class="input" data-customjob="period" value="'+h(j.period)+'" placeholder="예: 2026.09.20 ~ 2026.10.05" /></div>'+
+    '</div></div></details>'+
   '</div>';
 }
 
@@ -576,28 +753,32 @@ function jobTablePreview(){
 function step3(){
   const j=selectedJob();
   const isCustom=state.sampleJobId==="custom";
+  const ready=isCustom?curatedRoleReady("custom"):curatedRoleReady(state.sampleJobId);
   const analyzedCount=Object.values(state.analysisCases||{}).filter(c=>
     c?.jobTable&&["customerKpi","tasks","challenge","method","competencies","careerPlan"].some(k=>filled(c.jobTable[k]))
   ).length;
-  return shell(3,"3 Ways → Job Analysis","공기업 예시, 대기업 예시, 직접 입력 중 원하는 방법을 자유롭게 바꾸며 직무분석을 반복할 수 있습니다.",
-    '<div class="block"><h3>① 분석 방법 선택</h3><p class="help">한 방법을 분석한 뒤 다른 방법으로 바꿔도 기존 표는 그대로 저장됩니다. 현재 저장된 분석: <b>'+analyzedCount+'개</b></p>'+analysisMethodCards()+'</div>'+
-    (j?
-      (isCustom?'<div class="block"><h3>② 내가 분석할 기업·직무 정보 입력</h3>'+customJobFields()+'</div>':'')+
-      '<div class="selectedJobSummary"><b>현재 분석 대상 · '+h(j.company||"직접 입력")+" / "+h(j.role||j.title||"직무 미입력")+'</b><span>'+h(j.note||"이 분석 결과는 다른 방법과 별도로 저장됩니다.")+'</span></div>'+
-      '<div class="block"><h3>'+(isCustom?"③":"②")+' AI에게 직무분석 초안 받기</h3><p class="help">내 전공·희망직무·현재 분석 대상 정보가 자동으로 들어갑니다. 입력을 바꾼 뒤에는 ‘현재 정보 반영’을 누르세요.</p>'+
+  const methodSpecific = state.sampleJobId&&state.sampleJobId!=="custom"
+    ? '<div class="block"><h3>② 내 전공 확인 → 이 기업에서 분석할 직무 선택</h3>'+curatedRoleSelector(state.sampleJobId)+'</div>'
+    : "";
+  const analysisArea = j&&ready
+    ? '<div class="selectedJobSummary"><b>현재 분석 대상 · '+h(j.company||"직접 입력")+" / "+h(j.role||j.title||"직무 미입력")+'</b><span>'+h(j.note||"이 분석 결과는 다른 방법과 별도로 저장됩니다.")+'</span></div>'+
+      '<div class="block"><h3>③ AI에게 선택한 직무만 분석시키기</h3><p class="help">현재 선택한 기업·세부직무와 내 전공만 들어갑니다. 같은 기업의 다른 직무는 프롬프트에 섞지 않습니다.</p>'+
         '<textarea class="promptBox promptEditor shortPrompt" id="jobPromptPreview">'+h(jobAnalysisPrompt())+'</textarea>'+
-        '<div class="actions compactActions">'+
-          (!isCustom?'<button class="btn ghost" id="refreshJobPromptBtn">현재 정보 반영</button>':'')+
-          '<button class="btn secondary" id="copyReviewedJobPromptBtn">내 직무분석 프롬프트 복사</button></div>'+
+        '<div class="actions compactActions"><button class="btn ghost" id="refreshJobPromptBtn">현재 선택 반영</button><button class="btn secondary" id="copyReviewedJobPromptBtn">내 직무분석 프롬프트 복사</button></div>'+
         '<div class="field aiPaste"><label>AI 답변 붙여넣기 <span class="hint">(선택)</span></label><textarea class="input" data-path="jobTable.aiResult" id="jobTableAiResult" placeholder="AI 답변을 붙여넣으면 아래 6칸으로 나눌 수 있습니다.">'+h(state.jobTable.aiResult||"")+'</textarea></div>'+
         '<div class="actions compactActions"><button class="btn secondary" id="applyJobTableAiBtn">AI 답변을 6칸에 반영</button></div>'+
       '</div>'+
-      '<div class="divider"></div><div class="block"><h3>'+(isCustom?"④":"③")+' 직무분석 테이블 완성</h3><p class="help">직접 수정한 내용도 현재 분석 방법에만 저장됩니다.</p>'+jobTableFields()+'</div>'+
-      '<div class="block"><h3>'+(isCustom?"⑤":"④")+' 완성된 직무분석표</h3><p class="help">모바일에서는 좌우로 밀어서 전체 표를 확인합니다.</p>'+jobTablePreview()+'</div>'+
-      (isCustom?'': '<details class="optionBox"><summary>선택 공고에서 확인된 기본정보</summary><div class="optionBody"><div class="callout info"><b>'+h(j.source)+'</b><br>'+h(j.facts)+'</div><div class="callout warn"><b>지원자격:</b><br>'+h(j.required).replace(/\n/g,"<br>")+'<br><br><b>우대·확인사항:</b><br>'+h(j.preferred).replace(/\n/g,"<br>")+'</div></div></details>')
-      :
-      '<div class="callout warn"><b>세 가지 방법 중 하나를 선택하세요.</b> 분석을 시작하면 각 방법별로 결과가 따로 저장됩니다.</div>'
-    )
+      '<div class="divider"></div><div class="block"><h3>④ 직무분석 테이블 완성</h3><p class="help">이 표는 현재 선택한 세부직무의 작업공간에 따로 저장됩니다.</p>'+jobTableFields()+'</div>'+
+      '<div class="block"><h3>⑤ 완성된 직무분석표</h3><p class="help">모바일에서는 좌우로 밀어서 전체 표를 확인합니다.</p>'+jobTablePreview()+'</div>'+
+      (!isCustom?'<details class="optionBox"><summary>선택 직무의 기준자료 보기</summary><div class="optionBody"><div class="callout info"><b>'+h(j.source)+'</b><br>'+h(j.facts).replace(/\n/g,"<br>")+'</div><div class="callout warn"><b>공고 공통 지원자격:</b><br>'+h(j.required).replace(/\n/g,"<br>")+'<br><br><b>우대·확인사항:</b><br>'+h(j.preferred).replace(/\n/g,"<br>")+'</div></div></details>':"")
+    : (state.sampleJobId&&state.sampleJobId!=="custom"
+        ? '<div class="callout warn"><b>직무 선택이 먼저입니다.</b> 지원 직군과 세부직무를 하나 선택하면 그 직무에 대한 AI 분석과 직무분석표가 열립니다.</div>'
+        : (isCustom?'<div class="callout warn"><b>직접입력 핵심정보가 필요합니다.</b> 아래에서 기업명과 직무·분야를 입력한 뒤 “이 정보로 분석”을 누르세요.</div>':""));
+  return shell(3,"3 Ways → Job Analysis","공기업 예시, 대기업 예시, 직접 입력 중 원하는 방법을 선택하고, 그 안에서 분석할 직무 하나를 정합니다.",
+    '<div class="block"><h3>① 분석 방법 선택</h3><p class="help">기업을 바꾸거나 같은 기업 안에서 직무를 바꿔도 각 직무의 분석표는 별도로 저장됩니다. 현재 저장된 분석: <b>'+analyzedCount+'개</b></p>'+analysisMethodCards()+'</div>'+
+    methodSpecific+
+    '<div class="block customEntryBlock">'+customJobFields()+'</div>'+
+    analysisArea
   );
 }
 
@@ -904,7 +1085,7 @@ function syncSelectedPosting(){
   state.postings[0]={
     ...emptyPosting(),
     company:j.company||"",title:j.title||"",sourceUrl:j.sourceUrl||"",
-    text:j.facts?"[공고에서 확인된 기본정보]\n"+j.facts:"",
+    text:j.facts?"[선택 직무 기준정보]\n"+j.facts:"",
     required:j.required||"",preferred:j.preferred||"",
     notes:j.note||""
   };
@@ -914,11 +1095,48 @@ function selectAnalysisMethod(id){
   if(!["komipo-2026-3","skenergy-2026-clx","custom"].includes(id))return;
   snapshotActiveCase();
   state.sampleJobId=id;
-  restoreAnalysisCase(id);
+  restoreAnalysisCase(roleCaseKey(id));
   syncSelectedPosting();
   save();render();
+  if(id==="custom"){
+    requestAnimationFrame(()=>document.getElementById("customJobEntry")?.scrollIntoView({behavior:"smooth",block:"start"}));
+  }
   const j=selectedJob();
-  toast((id==="custom"?"직접 입력":j?.company||"선택한 공고")+" 분석 작업공간을 열었습니다.");
+  toast((id==="custom"?"직접 입력":j?.company||"선택한 공고")+" 작업공간을 열었습니다.");
+}
+
+function selectCuratedGroup(id,group){
+  snapshotActiveCase();
+  state.curatedSelection??=emptyCuratedSelection();
+  state.curatedSelection[id]={group,role:""};
+  state.sampleJobId=id;
+  restoreAnalysisCase(roleCaseKey(id));
+  syncSelectedPosting();
+  save();render();
+}
+
+function selectCuratedRole(id,role){
+  snapshotActiveCase();
+  state.curatedSelection??=emptyCuratedSelection();
+  const prev=state.curatedSelection[id]||{group:"",role:""};
+  state.curatedSelection[id]={...prev,role};
+  state.sampleJobId=id;
+  restoreAnalysisCase(roleCaseKey(id));
+  syncSelectedPosting();
+  save();render();
+  if(role)toast(role+" 직무만 분석하도록 선택했습니다.");
+}
+
+function useCustomJob(){
+  if(!filled(state.customJob?.company)||!filled(state.customJob?.role)){
+    toast("기업명과 직무·분야를 먼저 입력해 주세요.");
+    return;
+  }
+  selectAnalysisMethod("custom");
+  requestAnimationFrame(()=>{
+    const p=document.getElementById("jobPromptPreview");
+    if(p)p.scrollIntoView({behavior:"smooth",block:"center"});
+  });
 }
 
 function applyJobTableAi(){
@@ -950,12 +1168,15 @@ function bind(){
     e.oninput=handler;e.onchange=handler;
   });
   document.querySelectorAll("[data-analysis-method]").forEach(e=>e.onclick=()=>selectAnalysisMethod(e.dataset.analysisMethod));
+  document.querySelectorAll("[data-curated-group]").forEach(e=>e.onchange=()=>selectCuratedGroup(e.dataset.curatedGroup,e.value));
+  document.querySelectorAll("[data-curated-role]").forEach(e=>e.onchange=()=>selectCuratedRole(e.dataset.curatedRole,e.value));
+  document.getElementById("useCustomJobBtn")?.addEventListener("click",useCustomJob);
   document.querySelectorAll("[data-customjob]").forEach(e=>{
     const handler=()=>{
       const k=e.dataset.customjob;
       state.customJob={...emptyCustomJob(),...(state.customJob||{}),[k]:e.value};
-      if(k==="company")state.target.company=e.value;
-      syncSelectedPosting();
+      if(k==="company"&&state.sampleJobId==="custom")state.target.company=e.value;
+      if(state.sampleJobId==="custom")syncSelectedPosting();
       save();
     };
     e.oninput=handler;e.onchange=handler;
