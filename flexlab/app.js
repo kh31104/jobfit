@@ -122,7 +122,7 @@ function done(n){
 function nav(){
   document.getElementById("stepNav").innerHTML='<div class="navTitle">JOB ANALYSIS</div>'+steps.map((s,i)=>{
     const n=i+1,d=done(n),a=state.currentStep===n;
-    return '<button class="stepBtn '+(a?"active ":"")+(d?"done":"")+'" data-step="'+n+'"><span class="stepN">'+(d?"✓":String(n).padStart(2,"0"))+'</span><span class="stepText">'+s[0]+'<small>'+s[1]+'</small></span></button>';
+    return '<button class="stepBtn '+(a?"active ":"")+(d?"done":"")+'" data-step="'+n+'" aria-label="STEP '+n+' '+h(s[0])+' · '+h(s[1])+'" '+(a?'aria-current="step"':'')+'><span class="stepN">'+(d?"✓":String(n).padStart(2,"0"))+'</span><span class="stepText">'+s[0]+'<small>'+s[1]+'</small></span></button>';
   }).join("");
   document.querySelectorAll("[data-step]").forEach(b=>b.onclick=()=>go(Number(b.dataset.step)));
 }
@@ -131,12 +131,14 @@ function progress(){
   const n=steps.filter((_,i)=>done(i+1)).length,p=Math.round(n/6*100);
   const l=document.getElementById("progressLabel"),b=document.getElementById("progressBar");
   if(l)l.textContent="진행 "+p+"% · "+n+"/6";
+  const current=document.getElementById("currentStepLabel");
+  if(current){const s=steps[state.currentStep-1];current.textContent="STEP "+String(state.currentStep).padStart(2,"0")+" · "+s[0]+" · "+s[1];}
   if(b)b.style.width=p+"%";
   nav();
 }
 
 function shell(n,title,desc,body,badge="실습"){
-  return '<section class="card stepCard"><div class="sectionHead"><div><div class="kicker">STEP '+String(n).padStart(2,"0")+'</div><h2>'+title+'</h2><p>'+desc+'</p></div><span class="badge">'+badge+'</span></div>'+body+'<div class="actions">'+(n>1?'<button class="btn secondary" data-prev="'+(n-1)+'">이전</button>':"")+(n<6?'<button class="btn primary" data-next="'+(n+1)+'">저장하고 다음</button>':"")+'</div></section>';
+  return '<section class="card stepCard"><div class="sectionHead"><div><div class="kicker">STEP '+String(n).padStart(2,"0")+'</div><h2>'+title+'</h2><p>'+desc+'</p></div><span class="badge">'+badge+'</span></div>'+body+'<div class="actions stepFooter">'+(n>1?'<button class="btn secondary" data-prev="'+(n-1)+'">이전</button>':"")+(n<6?'<button class="btn primary" data-next="'+(n+1)+'">저장하고 다음</button>':"")+'</div></section>';
 }
 
 function step1(){
@@ -564,7 +566,7 @@ function step6(){
     '</div></div>'+
     '<div class="divider noPrint"></div><div class="preview">'+h(portfolio())+'</div>'+
     '<div class="divider noPrint"></div><div class="exportGrid noPrint"><div class="exportCard"><b>Word용 문서</b><p>Word에서 열고 수정할 수 있는 .doc 파일입니다.</p><button class="btn primary" id="docBtn">Word 파일 저장</button></div><div class="exportCard"><b>PDF</b><p>인쇄 화면에서 ‘PDF로 저장’을 선택하세요.</p><button class="btn secondary" id="printBtn">PDF 저장 화면</button></div><div class="exportCard"><b>학습 백업</b><p>다시 불러올 수 있는 FLEX 전용 JSON입니다.</p><button class="btn secondary" id="jsonBtn2">JSON 백업 저장</button></div></div>'+
-    '<div class="actions noPrint"><button class="btn secondary" data-prev="5">이전</button><button class="btn secondary" id="copyBtn">결과 텍스트 복사</button><button class="btn danger" id="resetBtn">FLEX 데이터 새로 시작</button></div></section>';
+    '<div class="actions stepFooter noPrint"><button class="btn secondary" data-prev="5">이전</button><button class="btn secondary" id="copyBtn">결과 텍스트 복사</button><button class="btn danger" id="resetBtn">FLEX 데이터 새로 시작</button></div></section>';
 }
 
 async function copyText(text,msg){
@@ -631,7 +633,14 @@ function go(n){
   save();
   state.currentStep=Math.max(1,Math.min(6,n));
   save();render();
-  window.scrollTo({top:280,behavior:"smooth"});
+  requestAnimationFrame(()=>{
+    const root=document.getElementById("stepRoot");
+    if(!root)return;
+    const mobile=window.matchMedia("(max-width:650px)").matches;
+    const offset=mobile?86:24;
+    const y=root.getBoundingClientRect().top+window.scrollY-offset;
+    window.scrollTo({top:Math.max(0,y),behavior:"smooth"});
+  });
 }
 
 function download(name,content,type){

@@ -66,3 +66,120 @@
 
 .promptEditor{display:block;width:100%;min-height:300px;max-height:none;resize:vertical;box-sizing:border-box;white-space:pre-wrap}
 .promptEditor:focus{outline:2px solid #cbd6ff;border-color:#8ea3ff}
+
+
+/* Mobile-first FLEX optimization v7 */
+.progressTop{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.progressNow{display:flex;align-items:center;gap:10px;min-width:0}
+.mobileStepLabel{display:none}
+.progressHelp{font-size:11px;color:var(--muted)}
+
+@media(max-width:650px){
+  html{scroll-padding-top:86px}
+  body{overflow-x:hidden;background:#f5f7fb;padding-bottom:calc(82px + env(safe-area-inset-bottom))}
+  .wrap{max-width:none;padding:8px 10px calc(20px + env(safe-area-inset-bottom))}
+  .topbar{gap:8px;margin-bottom:8px;align-items:center}
+  .brand{gap:8px;min-width:0}
+  .logo{width:36px;height:36px;border-radius:11px;box-shadow:none}
+  .brand>div:last-child{display:block;line-height:1.05}
+  .brand b{display:block;font-size:14px;white-space:nowrap}
+  .brand span{display:none}
+  .topActions{gap:5px;flex-wrap:nowrap;margin-left:auto}
+  .topActions>span{display:none}
+  .topActions .btn{min-height:36px;padding:7px 8px;border-radius:10px;font-size:10px;white-space:nowrap}
+
+  .hero{border-radius:18px;padding:18px 16px;box-shadow:0 10px 24px rgba(41,65,159,.16)}
+  .hero:after{font-size:58px;right:-8px;bottom:-17px}
+  .eyebrow{padding:5px 8px;font-size:9px;letter-spacing:.2px}
+  .hero h1{margin:9px 0 7px;font-size:24px;line-height:1.18;letter-spacing:-.5px}
+  .hero p{font-size:12px;line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .heroChips{display:none}
+
+  .shell{display:block;margin-top:10px}
+  .side{position:sticky;top:0;z-index:40;height:auto;margin:0 -10px 8px;padding:6px 10px 7px;background:rgba(245,247,251,.94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  .navCard{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;overflow:visible;padding:6px;border-radius:16px;box-shadow:0 8px 18px rgba(30,55,105,.08)}
+  .navTitle{display:none}
+  .stepBtn{min-width:0;height:42px;padding:4px 2px;justify-content:center;border-radius:11px}
+  .stepBtn:hover{background:transparent}
+  .stepBtn.active{background:var(--soft)}
+  .stepN{width:30px;height:30px;border-radius:9px;font-size:11px}
+  .stepText{display:none}
+
+  .main{min-width:0}
+  .progressCard{margin-bottom:8px;padding:11px 13px;border-radius:16px;box-shadow:none}
+  .progressTop{display:block}
+  .progressNow{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .progressCard b{font-size:11px;white-space:nowrap}
+  .mobileStepLabel{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#26324b}
+  .progressHelp{display:none}
+  .progress{height:6px;margin-top:8px}
+
+  .card{padding:16px;border-radius:18px;box-shadow:0 5px 16px rgba(30,55,105,.055)}
+  .stepCard{margin-bottom:10px}
+  .sectionHead{gap:6px;margin-bottom:13px}
+  .sectionHead h2{margin:2px 0 5px;font-size:22px;line-height:1.25;letter-spacing:-.35px}
+  .sectionHead p{font-size:12px;line-height:1.55}
+  .kicker{font-size:10px}
+  .badge{padding:5px 8px;font-size:10px}
+  .block{margin-top:15px}
+  .block h3{font-size:16px;line-height:1.35}
+  .help{font-size:12px;line-height:1.55}
+
+  .grid2,.signalGrid,.requirementRow,.matchRow{grid-template-columns:1fr}
+  .grid2{gap:11px}
+  .field{gap:6px}
+  .field label{font-size:12px}
+  .input,textarea,select.input{font-size:16px;min-height:48px;border-radius:12px;padding:12px}
+  textarea{min-height:118px}
+  textarea.tall{min-height:180px}
+  .hint{font-size:10px}
+  .callout{padding:12px 13px;border-radius:14px;font-size:12px}
+  .divider{margin:17px 0}
+
+  .actions{gap:7px}
+  .btn{min-height:46px;border-radius:12px;padding:10px 13px}
+  .compactActions .btn{flex:1 1 auto;min-height:44px}
+  .stepFooter{position:sticky;bottom:calc(8px + env(safe-area-inset-bottom));z-index:30;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin:20px -6px -4px;padding:7px;border:1px solid rgba(214,221,233,.9);border-radius:16px;background:rgba(255,255,255,.94);box-shadow:0 10px 28px rgba(30,55,105,.16);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  .stepFooter .btn{width:100%;min-width:0}
+  .stepFooter .primary:only-child{grid-column:1/-1}
+  .stepFooter #resetBtn{grid-column:1/-1}
+
+  .postingTabs{display:flex;flex-wrap:nowrap;overflow-x:auto;margin:0 -4px 12px;padding:0 4px 3px;scrollbar-width:none}
+  .postingTabs::-webkit-scrollbar{display:none}
+  .tabBtn{flex:0 0 auto;min-height:40px}
+  .tableWrap{margin-left:-2px;margin-right:-2px;-webkit-overflow-scrolling:touch}
+  table{min-width:680px}
+  th,td{padding:9px;font-size:11px}
+
+  .sourceGuide{padding:13px;border-radius:15px}
+  .sourceGuideHead{margin-bottom:9px}
+  .sourceGrid{grid-template-columns:1fr}
+  .optionBox{border-radius:14px}
+  .optionBox summary{min-height:48px;padding:13px 14px;font-size:12px;line-height:1.45}
+  .optionBody{padding:0 13px 13px}
+  .requirementRow,.matchRow,.experienceRow{padding:12px;border-radius:14px}
+  .starBlock{padding:13px;border-radius:16px}
+  .selectedEvidence{align-items:flex-start;padding:11px 12px}
+  .selectedEvidence span{flex:0 0 auto}
+  .questionList{font-size:12px;padding-left:18px}
+
+  .jobSiteGrid,.portalGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .jobSite,.portalCard{min-height:58px;padding:11px}
+  .jobSite b,.portalCard b{font-size:12px}
+  .jobSite span,.portalCard span{font-size:10px}
+  .promptEditor{min-height:230px;font-size:14px}
+  .preview{padding:14px;border-radius:14px;font-size:12px;line-height:1.65;max-height:62vh}
+  .exportGrid{grid-template-columns:1fr;gap:8px}
+  .exportCard{padding:13px;border-radius:14px}
+  .exportCard .btn{width:100%}
+  .toast{bottom:calc(84px + env(safe-area-inset-bottom));max-width:calc(100vw - 28px);text-align:center}
+
+  input[type="radio"],input[type="checkbox"]{width:18px;height:18px}
+}
+
+@media(max-width:370px){
+  .topActions .btn{padding:7px 6px;font-size:9px}
+  .hero h1{font-size:22px}
+  .jobSiteGrid,.portalGrid{grid-template-columns:1fr}
+  .mobileStepLabel{font-size:11px}
+}
