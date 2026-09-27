@@ -54,6 +54,7 @@ try{
   await page.locator('[data-path="star.actionWhat"]').fill('측정값을 기준값과 비교하고 원인 후보를 정리했다.');
   await page.locator('[data-path="star.result"]').fill('오류 범위를 좁혀 재시험 대상을 정했다.');
   await page.locator('[data-path="star.evidence"]').fill('측정 기록과 프로젝트 보고서');
+  await page.locator('#refreshKeywordPromptBtn').click();
   const keywordPrompt=await page.locator('#keywordPromptPreview').inputValue();
   assert(keywordPrompt.includes('전력계통 수업'),'STEP4 prompt must include major evidence');
   assert(keywordPrompt.includes('전기설비 캡스톤'),'STEP4 prompt must include experience');
@@ -67,6 +68,7 @@ try{
   const reqStatus=page.locator('[data-req="0"][data-reqkey="status"]');
   await reqStatus.selectOption('충족');
   await page.locator('[data-req="0"][data-reqkey="note"]').fill('TOEIC 820');
+  await page.locator('#refreshGapPromptBtn').click();
   const gapPrompt=await page.locator('#gapPromptPreview').inputValue();
   assert(gapPrompt.includes('TOEIC 820'),'STEP5 prompt must include student spec');
   assert(gapPrompt.includes('한국중부발전'),'STEP5 prompt must include selected posting');
