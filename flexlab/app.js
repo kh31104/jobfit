@@ -181,44 +181,60 @@ function shell(n,title,desc,body,badge="실습"){
   return '<section class="card stepCard"><div class="sectionHead"><div><div class="kicker">STEP '+String(n).padStart(2,"0")+'</div><h2>'+title+'</h2><p>'+desc+'</p></div><span class="badge">'+badge+'</span></div>'+body+'<div class="actions stepFooter">'+(n>1?'<button class="btn secondary" data-prev="'+(n-1)+'">이전</button>':"")+(n<6?'<button class="btn primary" data-next="'+(n+1)+'">저장하고 다음</button>':"")+'</div></section>';
 }
 
+function energySearchPrompt(){
+  return [
+    "나는 "+(state.student.major||"전공 미입력")+" 전공 대학생이고, 에너지 산업의 "+(state.target.job||"관심 직무")+"를 탐색하고 있어.",
+    "",
+    "지금 채용 중인 공고가 적을 수 있으니 다음 순서로 찾아줘.",
+    "1. 현재 모집 중인 에너지 공기업·발전사 공고",
+    "2. 현재 모집 중인 정유·전력·에너지 대기업 공고",
+    "3. 현재 공고가 없다면 최근 6개월 이내 신입·인턴 공고",
+    "",
+    "각 공고마다 기업명 / 공고명 / 직무 / 모집기간 / 공식 또는 공공기관 출처 링크를 알려줘.",
+    "내 전공과 "+(state.target.job||"관심 직무")+"에 가까운 이유는 한 문장으로만 설명해줘.",
+    "확인되지 않은 공고나 오래된 공고를 현재 채용 중이라고 표현하지 마."
+  ].join("\n");
+}
+
 function step1(){
-  return shell(1,"Target Job","수업에서 정한 산업과 직무를 FLEX의 분석 대상으로 확정합니다.",
+  return shell(1,"Target Job","먼저 분석할 직무와 내 전공을 정합니다. 이후 모든 AI 프롬프트가 이 입력을 사용합니다.",
     '<div class="grid2">'+
-      field("target.industry","관심 산업","예: 전력망·전력공급, 발전, LNG·수소, ESS·전력기기",false)+
-      field("target.job","분석할 직무","예: 발전운영·정비, 안전·환경, 생산기술, 품질관리",false)+
-      field("target.company","관심 기업","아직 없다면 비워도 됩니다.",false,true)+
-      field("target.initialView","지금 생각하는 이 직무","이 직무는 회사에서 어떤 문제를 해결하는 사람이라고 생각하나요?")+
+      field("target.industry","관심 산업","에너지",false)+
+      field("target.job","분석할 직무","예: 발전운영·정비, 생산기술, 안전·환경, 전기설비, 품질관리",false)+
+      field("student.major","내 전공","예: 전기공학, 기계공학, 화학공학, 환경공학",false)+
+      field("target.initialView","지금 생각하는 이 직무 <span class=\"hint\">(선택)</span>","이 직무는 어떤 일을 하는 사람이라고 생각하나요?")+
     '</div>'+
-    '<details class="optionBox"><summary>수업에서 정리한 산업·직무 맥락도 남기기 · 선택</summary><div class="optionBody"><div class="grid2">'+
-      field("context.change","최근 산업 변화","기술·정책·시장 변화 중 직무와 관련된 것",true,true)+
-      field("context.problem","기업이 해결해야 할 문제","산업 변화 때문에 기업이 해결해야 하는 과제",true,true)+
-      field("profile.solve","이 직무가 해결하는 문제","직무가 맡는 문제를 한 문장으로",true,true)+
-      field("profile.output","이 직무가 만들어야 하는 결과","안정운전, 품질, 생산성, 매출, 납기 등",true,true)+
-    '</div></div></details>'+
-    '<div class="callout good"><b>수업 문장:</b> “나는 ______ 문제를 해결하는 ______ 직무를 준비한다.”</div>');
+    '<div class="callout good"><b>여기까지 입력하면 충분합니다.</b> 다음 단계부터 직무·전공에 맞춰 AI 프롬프트가 자동으로 달라집니다.</div>');
 }
 
 function jobSite(name,url,desc){
   return '<a class="jobSite" href="'+url+'" target="_blank" rel="noopener"><b>'+name+'</b><span>'+desc+'</span></a>';
 }
 
+function step2SearchPromptBox(){
+  return '<details class="optionBox"><summary>AI에게 현재 공고 찾아달라고 하기 · 선택</summary><div class="optionBody">'+
+    '<p class="help">STEP 1의 직무와 전공을 넣어 만든 검색 프롬프트입니다.</p>'+
+    '<textarea class="promptBox promptEditor" id="searchPromptPreview">'+h(energySearchPrompt())+'</textarea>'+
+    '<div class="actions compactActions"><button class="btn secondary" id="copySearchPromptBtn">내 검색 프롬프트 복사</button></div></div></details>';
+}
+
 function step2(){
-  const p=state.postings[0];
-  return shell(2,"Find JD","오늘 분석할 실제 채용공고 1개를 찾습니다. 공고 2·3개 비교는 심화활동입니다.",
-    '<div class="block"><h3>① 채용공고 찾기</h3><div class="siteSection"><b>민간기업</b><div class="jobSiteGrid">'+
-      jobSite("사람인","https://www.saramin.co.kr/","민간기업·신입/경력")+
-      jobSite("잡코리아","https://www.jobkorea.co.kr/","민간기업·공채")+
-      jobSite("인크루트","https://www.incruit.com/","민간·공공 채용")+
+  return shell(2,"Find JD","먼저 직접 최근 채용공고를 찾아봅니다. 에너지 공고가 없거나 마감되어 있어도 괜찮습니다.",
+    '<div class="block"><h3>① 실제 공고 한번 찾아보기</h3><p class="help">공고가 있으면 기록하고, 없으면 “현재 찾지 못함”이라고 적고 STEP 3으로 이동합니다.</p><div class="siteSection"><b>민간기업</b><div class="jobSiteGrid">'+
+      jobSite("사람인","https://www.saramin.co.kr/","에너지·제조 공고")+
+      jobSite("잡코리아","https://www.jobkorea.co.kr/","대기업·공채")+
       jobSite("고용24","https://www.work24.go.kr/","정부 통합 채용정보")+
     '</div></div><div class="siteSection"><b>공공기관</b><div class="jobSiteGrid">'+
-      jobSite("잡알리오","https://job.alio.go.kr/","국가 공공기관 채용")+
-      jobSite("클린아이 잡플러스","https://job.cleaneye.go.kr/","지방공공기관 채용")+
+      jobSite("잡알리오","https://job.alio.go.kr/","국가 공공기관")+
+      jobSite("클린아이 잡플러스","https://job.cleaneye.go.kr/","지방공공기관")+
     '</div></div></div>'+
-    '<div class="block"><h3>② 오늘 분석할 공고 기록</h3><div class="grid2">'+
-      '<div class="field"><label>기업명</label><input class="input" data-pf="company" value="'+h(p.company)+'" placeholder="예: 한국남부발전" /></div>'+
-      '<div class="field"><label>공고 직무명</label><input class="input" data-pf="title" value="'+h(p.title)+'" placeholder="공고에 적힌 직무명" /></div>'+
-      '<div class="field span2"><label>채용공고 주소 <span class="hint">(선택)</span></label><input class="input" data-pf="sourceUrl" value="'+h(p.sourceUrl)+'" placeholder="https://..." /></div>'+
-    '</div><div class="callout info"><b>기본 실습:</b> 공고 1개면 충분합니다. 담당업무·지원자격·우대사항이 보이도록 다음 STEP에 붙여넣으세요.</div></div>');
+    '<div class="block"><h3>② 검색 결과 한 줄만 기록</h3><div class="grid2">'+
+      field("step2Search.company","찾은 기업","예: 한국남부발전 / 찾지 못함",false)+
+      field("step2Search.title","찾은 직무·공고","예: 기술직 신입 / 현재 관련 공고 없음",false)+
+      '<div class="field span2"><label>공고 주소 <span class="hint">(선택)</span></label><input class="input" data-path="step2Search.sourceUrl" value="'+h(state.step2Search.sourceUrl||"")+'" placeholder="https://..." /></div>'+
+      field("step2Search.memo","검색 메모 <span class=\"hint\">(선택)</span>","어떤 검색어를 썼는지, 왜 적절한 공고를 찾기 어려웠는지 간단히 적어도 됩니다.")+
+    '</div></div>'+step2SearchPromptBox()+
+    '<div class="callout info"><b>공고가 없어도 수업은 계속됩니다.</b> STEP 3에서 실제 2026년 에너지 공기업·대기업 공고 예시를 제공합니다.</div>');
 }
 
 function postingLines(text=""){
