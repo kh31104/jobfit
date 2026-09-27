@@ -647,106 +647,119 @@ function step5(){
 }
 
 function portfolio(){
-  const t=state.target,c=state.context,p=state.profile,k=state.competency,f=state.fit,star=state.star;
-  const ps=state.postings.filter(x=>filled(x.text)||filled(x.title)||filled(x.company));
+  const t=state.target, st=state.student, jt=state.jobTable, f=state.fit, star=state.star;
+  const j=selectedCuratedJob();
   const req=state.requirements.filter(r=>filled(r.condition));
-  const exps=state.experiences.filter(e=>filled(e.title));
-  const matches=state.matchRows.filter(r=>filled(r.requirement));
+  const exps=state.experiences.filter(e=>filled(e.title)||filled(e.summary));
   const a=["MY JOB ANALYSIS PORTFOLIO","",
-    "1. TARGET JOB",
-    "관심 산업: "+(t.industry||"-"),
-    "분석 직무: "+(t.job||"-"),
-    "관심 기업: "+(t.company||state.postings[0].company||"-"),
-    "분석 전 직무 이미지: "+(t.initialView||"-"),"",
-    "2. JOB POSTING"
+    "1. TARGET",
+    "산업: "+(t.industry||"-"),
+    "희망 직무: "+(t.job||"-"),
+    "전공: "+(st.major||"-"),
+    "처음 생각한 직무 이미지: "+(t.initialView||"-"),"",
+    "2. SEARCH EXPERIENCE",
+    "직접 찾아본 기업: "+(state.step2Search.company||"-"),
+    "직접 찾아본 공고·직무: "+(state.step2Search.title||"-"),
+    "검색 메모: "+(state.step2Search.memo||"-"),"",
+    "3. SELECTED JOB POSTING",
+    "기업: "+(j?.company||"-"),
+    "공고: "+(j?.title||"-"),
+    "분야: "+(j?.role||"-"),
+    "기간: "+(j?.period||"-"),
+    "출처: "+(j?.sourceUrl||"-"),"",
+    "4. JOB ANALYSIS TABLE",
+    "고객·KPI: "+(jt.customerKpi||"-"),
+    "주요 과업: "+(jt.tasks||"-"),
+    "주요 해결과제: "+(jt.challenge||"-"),
+    "해결방법: "+(jt.method||"-"),
+    "필요역량: "+(jt.competencies||"-"),
+    "경력개발: "+(jt.careerPlan||"-"),"",
+    "5. MAJOR & EXPERIENCE EVIDENCE",
+    "전공에서 찾은 근거: "+(st.majorEvidence||"-")
   ];
-
-  ps.forEach((x,i)=>a.push(
-    "[공고 "+(i+1)+"] "+(x.company||"기업명 미입력")+" · "+(x.title||"직무명 미입력"),
-    "공고 주소: "+(x.sourceUrl||"-"),
-    "TASK: "+(postingSection(x,"tasks")||"-"),
-    "GATE: "+(postingSection(x,"required")||"-"),
-    "PREFERENCE: "+(postingSection(x,"preferred")||"-"),
-    "SELECTION/기타: "+(postingSection(x,"other")||"-"),
-    "내가 읽어낸 핵심: "+(x.notes||"-"),""
-  ));
-
+  if(exps.length)exps.forEach((e,i)=>a.push("경험 "+(i+1)+": "+(e.title||"-")+" / "+(e.type||"유형 미지정")+" / "+(e.summary||"-")));
+  else a.push("경험: -");
   a.push(
-    "3. KSA & SIGNAL",
-    "Knowledge: "+(k.knowledge||"-"),
-    "Skill: "+(k.skill||"-"),
-    "Behavior: "+(k.behavior||"-"),
-    "Experience: "+(k.experience||"-"),
-    "SIGNAL: "+(k.signal||"-"),
-    "핵심 요구 TOP 5: "+(k.top5||"-"),""
+    "대표 경험 행동: "+(star.actionWhat||"-"),
+    "대표 경험 결과: "+(star.result||"-"),
+    "대표 경험 증거: "+(star.evidence||"-"),"",
+    "6. COMPETENCY LANGUAGE",
+    state.ai.keywordResult||"AI 역량분석 결과 미입력","",
+    "7. MY SPEC",
+    "자격증: "+(st.certificates||"-"),
+    "어학: "+(st.language||"-"),
+    "도구·기술: "+(st.tools||"-"),
+    "기타 스펙: "+(st.otherSpec||"-"),"",
+    "8. REQUIREMENTS & GAP"
   );
-
-  if(filled(c.change)||filled(p.solve))a.push(
-    "[산업·직무 맥락 메모]",
-    "산업 변화: "+(c.change||"-"),
-    "기업 과제: "+(c.problem||"-"),
-    "직무가 해결하는 문제: "+(p.solve||"-"),
-    "직무 결과: "+(p.output||"-"),""
-  );
-
-  a.push("4. MY EXPERIENCE LIST");
-  if(exps.length)exps.forEach((e,i)=>a.push((i+1)+". "+e.title+" / "+(e.type||"유형 미지정")+(e.summary?" / "+e.summary:"")));
-  else a.push("-");
-
-  a.push(
-    "","5. STAR+ CAREER EVIDENCE",
-    "연결 역량 후보: "+(star.competency||"-"),
-    "경험: "+(star.experience||"-"),
-    "S 상황: "+(star.situation||"-"),
-    "T 역할·과제: "+(star.task||"-"),
-    "A WHAT: "+(star.actionWhat||"-"),
-    "A WHY: "+(star.actionWhy||"-"),
-    "A HOW: "+(star.actionHow||"-"),
-    "R 결과: "+(star.result||"-"),
-    "EVIDENCE: "+(star.evidence||"-"),"",
-    "6. CAREER ASSET MATCH"
-  );
-
-  if(matches.length)matches.forEach((r,i)=>a.push((i+1)+". "+r.requirement+" / "+(r.status||"미판정")+" / Evidence: "+(r.evidence||"-")));
-  else a.push("-");
-
-  a.push("","7. GATE · GAP · ACTION");
-  if(req.length)req.forEach((r,i)=>a.push("GATE "+(i+1)+": "+r.condition+" / "+(r.status||"미선택")+(r.note?" / "+r.note:"")));
-  else a.push("GATE 확인: -");
-
+  if(req.length)req.forEach((r,i)=>a.push((i+1)+". "+r.condition+" / "+(r.status||"미판정")+" / 내 근거: "+(r.note||"-")));
+  else a.push("조건 비교: -");
   a.push(
     "현재 강점·자산: "+(f.assets||"-"),
-    "핵심 GAP: "+(f.gaps||"-"),
-    "3~6개월 행동: "+(f.actions||"-"),"",
-    "8. APPLICATION NOTES",
-    "[자기소개서 소재] "+(star.experience||"-"),
-    "[면접 예상질문]",
-    "- 왜 "+(t.job||"관심")+" 직무를 선택했는가?",
-    "- 이 직무의 핵심 TASK 3가지는 무엇인가?",
-    "- 채용공고에서 확인한 핵심 Requirement는 무엇인가?",
-    "- "+(star.competency||"이 직무 역량")+"을 보여주는 경험을 설명해 주세요.",
-    "- 그 경험에서 본인이 직접 한 행동은 무엇인가?",
-    "- 현재 가장 큰 GAP은 무엇이며 어떻게 보완하고 있는가?"
+    "우선 보완 GAP: "+(f.gaps||"-"),
+    "3개월 행동계획: "+(f.actions||"-"),"",
+    "[AI GAP 분석 메모]",
+    state.ai.gapResult||"-"
   );
-
   return a.join("\n");
 }
 
-function step6(){
-  const direct=state.matchRows.filter(r=>r.status==="직접 근거 있음").map(r=>r.requirement).join(", ");
-  const gaps=state.matchRows.filter(r=>r.status==="현재 근거 없음").map(r=>r.requirement).join(", ");
-  if(!filled(state.fit.assets)&&direct)state.fit.assets=direct;
-  if(!filled(state.fit.gaps)&&gaps)state.fit.gaps=gaps;
+function selfIntroPrompt(){
+  const j=selectedCuratedJob(), e=state.experiences[state.selectedExperience]||emptyExperience();
+  return [
+    "아래는 내가 직접 정리한 직무분석과 경험 자료다. 이 정보 밖의 사실을 만들지 말아줘.",
+    "",
+    "[지원 직무] "+(state.target.job||j?.role||"-"),
+    "[기업/공고] "+(j?j.company+" / "+j.title:"-"),
+    "[직무 주요 과업] "+(state.jobTable.tasks||"-"),
+    "[직무 필요역량] "+(state.jobTable.competencies||"-"),
+    "[내 전공] "+(state.student.major||"-"),
+    "[전공 근거] "+(state.student.majorEvidence||"-"),
+    "[대표 경험] "+(e.title||state.star.experience||"-"),
+    "[내 행동] "+(state.star.actionWhat||"-"),
+    "[결과] "+(state.star.result||"-"),
+    "[증거] "+(state.star.evidence||"-"),
+    "[역량 키워드 분석] "+(state.ai.keywordResult||"-"),
+    "[현재 GAP과 준비] "+(state.fit.gaps||"-")+" / "+(state.fit.actions||"-"),
+    "",
+    "이 자료를 바탕으로 자기소개서에 쓸 수 있는 소재 초안을 만들어줘.",
+    "기업 칭찬이나 추상적인 성격 표현보다 '직무 요구 → 내 행동 근거 → 결과'가 보이게 써줘.",
+    "내가 말하지 않은 수치·성과·역할은 추가하지 마.",
+    "근거가 부족하면 문장을 만들지 말고 먼저 확인 질문을 해줘.",
+    "최종 문장은 과장된 AI 문체 없이 실제 대학생이 말할 법한 한국어로 써줘."
+  ].join("\n");
+}
 
-  return '<section class="card stepCard printTarget"><div class="sectionHead noPrint"><div><div class="kicker">STEP 06</div><h2>GAP → ACTION → Portfolio</h2><p>부족한 항목의 우선순위를 정하고, 오늘 분석한 내용을 취업 준비 파일로 남깁니다.</p></div><span class="badge">Portfolio</span></div>'+
-    '<div class="block noPrint"><h3>① GAP을 준비 행동으로 바꾸기</h3><p class="help">우선순위는 JD 핵심도 × 현재 GAP × 3~6개월 안에 만들 수 있는 Evidence로 정합니다.</p><div class="grid2">'+
-      field("fit.assets","현재 강점·자산","직접 근거가 있는 지식·기술·경험")+
-      field("fit.gaps","가장 먼저 보완할 GAP","공고가 중요하게 요구하지만 현재 근거가 없는 것")+
-      field("fit.actions","3~6개월 안에 만들 Evidence","프로젝트, 실습, 자격, 현장경험, 데이터 결과물 등")+
-    '</div></div>'+
-    '<div class="divider noPrint"></div><div class="preview">'+h(portfolio())+'</div>'+
-    '<div class="divider noPrint"></div><div class="exportGrid noPrint"><div class="exportCard"><b>Word용 문서</b><p>Word에서 열고 수정할 수 있는 .doc 파일입니다.</p><button class="btn primary" id="docBtn">Word 파일 저장</button></div><div class="exportCard"><b>PDF</b><p>인쇄 화면에서 ‘PDF로 저장’을 선택하세요.</p><button class="btn secondary" id="printBtn">PDF 저장 화면</button></div><div class="exportCard"><b>학습 백업</b><p>다시 불러올 수 있는 FLEX 전용 JSON입니다.</p><button class="btn secondary" id="jsonBtn2">JSON 백업 저장</button></div></div>'+
-    '<div class="actions stepFooter noPrint"><button class="btn secondary" data-prev="5">이전</button><button class="btn secondary" id="copyBtn">결과 텍스트 복사</button><button class="btn danger" id="resetBtn">FLEX 데이터 새로 시작</button></div></section>';
+function interviewPrompt(){
+  const j=selectedCuratedJob(), e=state.experiences[state.selectedExperience]||emptyExperience();
+  return [
+    "너는 "+(j?.company||"에너지 기업")+"의 "+(state.target.job||j?.role||"지원 직무")+" 면접관 역할을 해줘.",
+    "아래 자료만 근거로 면접을 진행해줘.",
+    "",
+    "[직무 과업] "+(state.jobTable.tasks||"-"),
+    "[해결과제] "+(state.jobTable.challenge||"-"),
+    "[필요역량] "+(state.jobTable.competencies||"-"),
+    "[전공] "+(state.student.major||"-"),
+    "[대표 경험] "+(e.title||state.star.experience||"-"),
+    "[내 행동] "+(state.star.actionWhat||"-"),
+    "[결과/증거] "+(state.star.result||"-")+" / "+(state.star.evidence||"-"),
+    "[현재 GAP/준비] "+(state.fit.gaps||"-")+" / "+(state.fit.actions||"-"),
+    "",
+    "질문은 한 번에 하나씩 해줘.",
+    "직무이해 2문항, 경험검증 3문항, GAP·준비 1문항 순서로 진행해줘.",
+    "내 답변에서 모호한 부분이 있으면 수치·역할·판단근거를 확인하는 꼬리질문을 해줘.",
+    "내 답을 대신 만들지 말고, 답변이 끝난 뒤에만 '근거가 충분한 부분 / 보완할 부분'을 짧게 피드백해줘."
+  ].join("\n");
+}
+
+function step6(){
+  return '<section class="card stepCard printTarget"><div class="sectionHead noPrint"><div><div class="kicker">STEP 06</div><h2>My Job Portfolio</h2><p>직무분석, 전공·경험, 역량 키워드, 스펙, GAP을 한 파일로 모으고 실제 지원 준비로 연결합니다.</p></div><span class="badge">Portfolio</span></div>'+
+    '<div class="block noPrint"><h3>① 내 직무분석 결과 확인</h3><p class="help">아래 내용은 STEP 1~5 입력값으로 자동 생성됩니다. 빠진 내용이 있으면 이전 STEP에서 수정합니다.</p></div>'+
+    '<div class="preview">'+h(portfolio())+'</div>'+
+    '<div class="divider noPrint"></div><div class="block noPrint"><h3>② 내 AI로 자기소개서 준비</h3><p class="help">내 전공·경험·직무분석·GAP이 들어간 개인 프롬프트입니다.</p><textarea class="promptBox promptEditor shortPrompt" id="selfIntroPromptPreview">'+h(selfIntroPrompt())+'</textarea><div class="actions compactActions"><button class="btn secondary" id="copySelfIntroPromptBtn">자기소개서 프롬프트 복사</button></div></div>'+
+    '<div class="block noPrint"><h3>③ 내 AI로 면접 연습</h3><textarea class="promptBox promptEditor shortPrompt" id="interviewPromptPreview">'+h(interviewPrompt())+'</textarea><div class="actions compactActions"><button class="btn secondary" id="copyInterviewPromptBtn">면접 프롬프트 복사</button></div></div>'+
+    '<div class="divider noPrint"></div><div class="exportGrid noPrint"><div class="exportCard"><b>Word용 문서</b><p>직무분석 Portfolio를 Word에서 수정합니다.</p><button class="btn primary" id="docBtn">Word 파일 저장</button></div><div class="exportCard"><b>PDF</b><p>인쇄 화면에서 PDF로 저장합니다.</p><button class="btn secondary" id="printBtn">PDF 저장 화면</button></div><div class="exportCard"><b>학습 백업</b><p>다음 수업에서 이어서 사용할 JSON입니다.</p><button class="btn secondary" id="jsonBtn2">JSON 백업 저장</button></div></div>'+
+    '<div class="actions stepFooter noPrint"><button class="btn secondary" data-prev="5">이전</button><button class="btn secondary" id="copyBtn">Portfolio 텍스트 복사</button><button class="btn danger" id="resetBtn">FLEX 데이터 새로 시작</button></div></section>';
 }
 
 async function copyText(text,msg){
