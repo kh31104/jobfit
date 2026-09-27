@@ -59,12 +59,93 @@ const CURATED_JOBS=[
   }
 ];
 
+const KOMIPO_ROLE_LIBRARY={
+  sourceLabel:"교수자 제공 2026년도 제3차 4직급 신입직원 채용 공고·NCS 직무기술서",
+  groups:{
+    "사무":{
+      headcount:"일반 12명 · 보훈 2명 · 장애 4명",
+      roles:{
+        "경영기획":{tasks:"경영목표 달성을 위한 전략 수립과 자원 배분, 경영진 의사결정 지원",knowledge:"예산계획·원가관리·국제회계기준·재무회계 관련 법",skills:"원가계산, 예산손익 산출, 기획서 작성, 예산편성 기준 작성",attitudes:"적극적 의사소통, 기준 준수, 정확성, 책임감"},
+        "인사":{tasks:"직무조사·분석을 바탕으로 채용·배치·육성·평가·보상·승진·퇴직 및 인사제도 운영·개선",knowledge:"전략적 인적자원관리, 직무분석, 노동·사회보험 관련 법, 경력개발·직무평가",skills:"문서작성, 인터뷰, 사업전략·환경 분석, 관련 프로그램 활용",attitudes:"의사소통, 정확성, 경청, 협업"},
+        "노무관리":{tasks:"노사관계 계획, 단체교섭, 노동쟁의 대응, 노사협의회·고충처리 및 관계 개선",knowledge:"근로기준법·노동법, 인사제도, 단체협약, 근로자 참여제도",skills:"문서작성, 인터뷰, 발표, 회의 운영, 협상",attitudes:"기준 준수, 경청, 성실, 이견 조율과 설득"},
+        "예산":{tasks:"예상 수익·비용을 편성·집행·통제하여 경영성과 달성을 지원",knowledge:"예산 운영 규정, 회계원리·관리회계·재무회계, 환경분석",skills:"예산·재무 보고서 작성, 수리능력, 재무제표 분석, 정보검색",attitudes:"협력, 설득, 정확성, 기준 준수"},
+        "자금":{tasks:"영업·투자·재무 활동에 필요한 자금 계획·조달·운용과 위험·성과 관리",knowledge:"재무제표·재무분석·재무관리·기업회계, 관련 세법과 자금조달",skills:"현금흐름·수익률·조달비용 분석, 자금계획서 작성, 회계처리",attitudes:"협력, 정확성, 기준 준수, 이해관계자 관계 유지"}
+      }
+    },
+    "IT":{
+      headcount:"일반 4명",
+      roles:{
+        "보안엔지니어링":{tasks:"정보보안시스템 도입을 위한 설계·구축·유지보수",knowledge:"정보보호 요구사항 평가, 정보자산 분류정책, ISO27001, ISMS-P, 소프트웨어·요구공학",skills:"정보보호 IT기술, 서버 보안SW 설치·운영, 보안패치·업그레이드",attitudes:"보안 시스템 성능 향상 노력, 사고의 근본원인 파악"},
+        "IT시스템관리":{tasks:"HW·SW 지속 점검·모니터링, 문제 분석·예방, 장애 발생 시 조치",knowledge:"가용성·연속성관리, 로그·데이터 분석, ITIL, SQL, 품질개선 기법",skills:"DB 변경·운영관리, 데이터 수집·분석, 네트워크 관리, 기술적 의사소통",attitudes:"개선 의지, 장애 후 추가 이상 확인, 근본원인 탐구"},
+        "IT기술지원":{tasks:"정보시스템·솔루션 환경을 이해하고 장애처리·시스템개선·정기점검 등 기술지원",knowledge:"장애처리 절차, 산출물 작성, 품질보증·관리도구, 기술지원 계약 관련 기본 법률",skills:"장애 시스템 운영, 품질통제 DB 운영, Unix·Windows·Linux, 데이터 추출·변환",attitudes:"적극적 품질통제, 다양한 해결방안 탐색, 분석적·논리적 사고"},
+        "인공지능서비스기획":{tasks:"AI 서비스 목표·모델·시나리오를 기획하고 실행계획 수립",knowledge:"AI 인프라 아키텍처 구성, AI 서비스 시나리오 작성 방법론",skills:"최신 서비스 트렌드 파악, 설계 항목 식별·분석",attitudes:"신기술 이해·적용과 학습에 능동적인 태도"}
+      }
+    },
+    "화학":{
+      headcount:"일반 12명 · 장애 2명",
+      roles:{
+        "화학물질분석":{tasks:"화학물질의 성분·조성·구조·함량·특성을 확인하기 위한 분석계획, 시료채취·전처리·분석, 데이터 해석, 결과보고",knowledge:"화학물질·분석장비 특성, 유해화학물질, 취급 안전수칙, 위험물 안전",skills:"분석장비·문서 전자화, 컴퓨터 활용, 유해화학물질 취급, 안전장비·사고대응",attitudes:"절차·규정 준수, 안전제일, 객관적 분석, 개선 요구 수용"},
+        "화력발전설비운영":{tasks:"전기를 안정적으로 공급하기 위한 발전·환경설비 운전, 점검, 유지정비, 진단, 보전",knowledge:"발전공학, 대기·수질환경 법령, 탈황·탈질·집진·폐수처리 설비 원리",skills:"탈황·탈질·집진·폐수·대기·수질환경설비 조작·운영, 규제치 확인",attitudes:"정비업무의 치밀성, 설비개선, 안전·환경 규정과 운영절차 준수, 책임감"},
+        "환경관리":{tasks:"오염원·오염물질 조사·분석, 환경계획 수립, 배출·방지시설 유지·개선, 환경행정·교육·성과평가",knowledge:"환경행정 절차, 오염물질 특성, 배출·방지시설 운영기준, 처리원리·방지기술, ISO",skills:"측정결과·데이터 분석, 환경행정, 기록관리, 시설 운전, 교육·민원·보고서 작성",attitudes:"치밀한 업무처리, 준법, 문제해결, 적극적 의사소통, 안전제일"},
+        "태양광에너지생산":{tasks:"태양광발전시스템 기획·설계·시공·운영",knowledge:"신재생에너지 설비·신고기준, 관련 법규, 모듈 설치·정비, 전기·기계 특성, 모니터링",skills:"운영관리 계획·분석, 기본 설계도면 작성, 모듈 분석, 전기설계, 발전량 산출",attitudes:"기술기준·안전 절차 준수, 점검 의지, 협업"},
+        "바이오에너지생산":{tasks:"바이오매스를 활용한 에너지 생산시설 설계·설치·운영과 바이오연료·에너지 생산",knowledge:"기체·액체·고체 바이오연료 생산설비 특성·기능·운전·유지보수",skills:"단위설비 조작, 운전·공정상태 점검, 설비 정비",attitudes:"기술기준·안전 절차 준수, 점검 의지, 협업"},
+        "풍력에너지생산":{tasks:"풍력자원 조사, 발전장치·단지 설계·시공, 지속적 유지관리와 전력생산",knowledge:"전기사업법, 풍력시스템 유지관리, 인력·장비·부품, 제어 특성·로직, 모니터링",skills:"운전 판단, 제어로직·운전 해석, 모니터링 프로그램 운용, 특성 판단",attitudes:"기술기준·안전 절차 준수, 점검 의지, 협업"},
+        "연료전지에너지생산":{tasks:"연료·연료전지를 활용한 전기·열 생산 시스템 설계·제작·설치·운영",knowledge:"연료전지 기계·전기·가스 운전특성, 발전설비·계통, 운전·성능복구",skills:"설비 진단, 안전·품질 절차서 개발, 촉매·전력변환 특성 파악, 기계·전기·가스 제어, 부품 검사",attitudes:"기술기준·안전 절차 준수, 점검 의지, 협업"}
+      }
+    },
+    "토목":{
+      headcount:"일반 2명",
+      roles:{
+        "건설공사공무관리":{tasks:"공사기획·계약, 현장운영, 설계변경, 기성·견적·공사비·자원관리, 준공 후 사후관리",knowledge:"계약업무 지침·조정절차, 물량·단가·내역 작성, 표준품셈, 건설 관련 법규",skills:"일위대가 산출, 공사장비 특성·효율 파악, 관련 프로그램 활용",attitudes:"공정한 이해관계 조정, 수치·기준 기반 책임관리, 설득"},
+        "유지관리":{tasks:"시설물 기능·안전 유지를 위한 점검·진단·정비와 보수·보강·성능향상",knowledge:"건설재료·시공·유지관리, 안전점검, 손상 확인, 보수·보강 계획",skills:"안전 관련 법 적용, 점검 항목 선정, 손상·결함 파악, 도면 해석",attitudes:"계획 검토, 손상상태 확인, 안전·기술기준 준수"},
+        "토목건설사업관리":{tasks:"설계도서대로 시공되는지 확인하고 품질·시공·공정·안전·환경관리 기술지도",knowledge:"설계도서·계약 프로세스, 공무·견적, 품셈·공사비, KS 품질기준, 준공서류",skills:"자료수집, 계약서 분석, 적산, 워드·스프레드시트 활용, 의사소통",attitudes:"자료 검토, 문제해결, 공정한 사업비 집행, 책임·투명성"}
+      }
+    },
+    "건축":{
+      headcount:"일반 3명 · 장애 1명",
+      roles:{
+        "건설공사공무관리":{tasks:"공사기획·계약, 현장운영, 설계변경, 기성·견적·공사비·자원관리, 준공 후 사후관리",knowledge:"계약업무 지침·조정절차, 물량·단가·내역 작성, 표준품셈, 건설 관련 법규",skills:"일위대가 산출, 예정공정표 분석, 현장 일정 판단",attitudes:"공정한 이해관계 조정, 기준 기반 책임관리, 설득"},
+        "유지관리":{tasks:"건축시설물 기능·안전 유지를 위한 점검·진단·정비와 보수·보강",knowledge:"설계도서, 안전점검·손상 확인, 유지관리·안전 관련 법",skills:"관련 법 적용, 설계도서 해석, 진단 여부 판단, 작업조건 내역서 작성",attitudes:"안전점검·손상상태 확인, 작업조건 검토, 안전 준수"},
+        "건축설계":{tasks:"건축 요구·기능에 맞춰 조사분석·기획·계획·프레젠테이션·BIM·협력설계·설계도서 작성",knowledge:"건축설계 프로세스, 건축계획, 관련 법체계, 타 분야 시스템 특성",skills:"대인관계·의사소통, 협력사 조율, 설계도서 적합성 판단·검토·승인",attitudes:"법규를 신중하게 해석, 협력사 존중, 신규 시스템 적극 검토"},
+        "건축공사감리":{tasks:"설계도서대로 시공되는지 확인하고 품질·시공·공정·안전·환경관리 기술지도·감독",knowledge:"안전관리자 역할, 공종별 위험요인, 안전 법규, 환경위해요인·민원",skills:"안전장구 사용, 위험요인·민원 원인 파악, 민원 설득",attitudes:"안전사고 예방, 인명 존중, 안전점검 수칙 준수, 정중한 태도"}
+      }
+    }
+  }
+};
+
+const CURATED_ROLE_LIBRARIES={
+  "komipo-2026-3":KOMIPO_ROLE_LIBRARY,
+  "skenergy-2026-clx":{sourceLabel:"교수자 제공 SK에너지 공고·직무기술서 등록 예정",groups:{}}
+};
+
+function emptyCuratedSelection(){return {
+  "komipo-2026-3":{group:"",role:""},
+  "skenergy-2026-clx":{group:"",role:""}
+};}
+
+function normalizeAnalysisCase(c={}){
+  return {
+    jobTable:{...emptyJobTable(),...(c.jobTable||{})},
+    requirements:[0,1,2].map(i=>({condition:"",status:"",note:"",...(c.requirements?.[i]||{})})),
+    fit:{...emptyFit(),...(c.fit||{})},
+    keywordResult:c.keywordResult||"",
+    gapResult:c.gapResult||""
+  };
+}
+
+function roleCaseKey(id=state?.sampleJobId){
+  if(!id||id==="custom")return id||"";
+  const sel=state?.curatedSelection?.[id]||{};
+  return sel.group&&sel.role?id+"::"+sel.group+"::"+sel.role:id;
+}
+
 const defaults=()=>({
-  version:7,currentStep:1,updatedAt:"",
+  version:8,currentStep:1,updatedAt:"",
   target:{industry:"에너지",job:"",company:"",initialView:""},
   student:{major:"",majorEvidence:"",certificates:"",language:"",tools:"",otherSpec:""},
   step2Search:{company:"",title:"",sourceUrl:"",memo:""},
   sampleJobId:"",
+  curatedSelection:emptyCuratedSelection(),
   customJob:emptyCustomJob(),
   analysisCases:{
     "komipo-2026-3":emptyAnalysisCase(),
@@ -133,16 +214,8 @@ function load(){
     };
 
     const analysisCases={...b.analysisCases};
-    Object.keys(analysisCases).forEach(id=>{
-      const oldCase=x.analysisCases?.[id]||{};
-      analysisCases[id]={
-        jobTable:{...emptyJobTable(),...(oldCase.jobTable||{})},
-        requirements:[0,1,2].map(i=>({condition:"",status:"",note:"",...(oldCase.requirements?.[i]||{})})),
-        fit:{...emptyFit(),...(oldCase.fit||{})},
-        keywordResult:oldCase.keywordResult||"",
-        gapResult:oldCase.gapResult||""
-      };
-    });
+    Object.entries(x.analysisCases||{}).forEach(([id,oldCase])=>{analysisCases[id]=normalizeAnalysisCase(oldCase);});
+    Object.keys(analysisCases).forEach(id=>{analysisCases[id]=normalizeAnalysisCase(analysisCases[id]);});
     if(x.sampleJobId&&analysisCases[x.sampleJobId]&&!x.analysisCases){
       analysisCases[x.sampleJobId]={
         jobTable:{...emptyJobTable(),...(x.jobTable||{})},
@@ -154,10 +227,16 @@ function load(){
     }
 
     return {
-      ...b,...x,version:7,currentStep:mappedStep,
+      ...b,...x,version:8,currentStep:mappedStep,
       target:{...b.target,...(x.target||{})},
       student:{...b.student,...(x.student||{})},
       step2Search:{...b.step2Search,...(x.step2Search||{})},
+      curatedSelection:{
+        ...emptyCuratedSelection(),
+        ...(x.curatedSelection||{}),
+        "komipo-2026-3":{...emptyCuratedSelection()["komipo-2026-3"],...(x.curatedSelection?.["komipo-2026-3"]||{})},
+        "skenergy-2026-clx":{...emptyCuratedSelection()["skenergy-2026-clx"],...(x.curatedSelection?.["skenergy-2026-clx"]||{})}
+      },
       customJob:{...emptyCustomJob(),...(x.customJob||{})},
       analysisCases,
       jobTable:{...b.jobTable,...(x.jobTable||{})},
@@ -174,8 +253,9 @@ function load(){
 }
 
 function snapshotActiveCase(){
-  const id=state.sampleJobId;
-  if(!id||!state.analysisCases?.[id])return;
+  const id=roleCaseKey();
+  if(!id)return;
+  state.analysisCases??={};
   state.analysisCases[id]={
     jobTable:{...emptyJobTable(),...state.jobTable},
     requirements:[0,1,2].map(i=>({condition:"",status:"",note:"",...(state.requirements?.[i]||{})})),
@@ -185,7 +265,7 @@ function snapshotActiveCase(){
   };
 }
 
-function restoreAnalysisCase(id){
+function restoreAnalysisCase(id=roleCaseKey()){
   const c=state.analysisCases?.[id]||emptyAnalysisCase();
   state.jobTable={...emptyJobTable(),...(c.jobTable||{})};
   state.requirements=[0,1,2].map(i=>({condition:"",status:"",note:"",...(c.requirements?.[i]||{})}));
