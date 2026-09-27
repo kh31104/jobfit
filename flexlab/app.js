@@ -1117,35 +1117,65 @@ function selfIntroPrompt(){
 function interviewPrompt(){
   const j=selectedCuratedJob(), e=state.experiences[state.selectedExperience]||emptyExperience();
   return [
-    "너는 "+(j?.company||"에너지 기업")+"의 "+(state.target.job||j?.role||"지원 직무")+" 면접관 역할을 해줘.",
-    "아래 자료만 근거로 면접을 진행해줘.",
+    "너는 "+(j?.company||"에너지 기업")+"의 "+(j?.role||state.target.job||"지원 직무")+" 실무면접관이다.",
+    "아래 공고·직무분석·지원자 정보를 바탕으로 이 지원자가 실제 실무면접에서 받을 가능성이 높은 예상질문을 만들어줘.",
     "",
-    "[직무 과업] "+(state.jobTable.tasks||"-"),
-    "[해결과제] "+(state.jobTable.challenge||"-"),
-    "[필요역량] "+(state.jobTable.competencies||"-"),
-    "[전공] "+(state.student.major||"-"),
-    "[대표 경험] "+(e.title||state.star.experience||"-"),
-    "[내 행동] "+(state.star.actionWhat||"-"),
-    "[결과/증거] "+(state.star.result||"-")+" / "+(state.star.evidence||"-"),
-    "[현재 GAP/준비] "+(state.fit.gaps||"-")+" / "+(state.fit.actions||"-"),
+    "[기업/공고]",
+    j?(j.company+" / "+j.title):"-",
+    "[선택 직무]",
+    j?.role||state.target.job||"-",
+    "[직무 주요 과업]",
+    state.jobTable.tasks||"-",
+    "[주요 해결과제]",
+    state.jobTable.challenge||"-",
+    "[업무 해결방법]",
+    state.jobTable.method||"-",
+    "[필요역량]",
+    state.jobTable.competencies||"-",
+    "[내 전공]",
+    state.student.major||"-",
+    "[전공에서 찾은 근거]",
+    state.student.majorEvidence||"-",
+    "[대표 경험]",
+    e.title||state.star.experience||"-",
+    "[내가 한 행동]",
+    state.star.actionWhat||"-",
+    "[결과/증거]",
+    (state.star.result||"-")+" / "+(state.star.evidence||"-"),
+    "[현재 GAP과 준비]",
+    (state.fit.gaps||"-")+" / "+(state.fit.actions||"-"),
     "",
-    "면접 질문은 한 번에 하나씩 해줘.",
-    "직무이해 2문항 → 경험검증 3문항 → GAP·준비 1문항 순서로 진행해줘.",
-    "내 답변에서 모호한 부분이 있으면 수치·역할·판단근거를 확인하는 꼬리질문을 해줘.",
+    "총 12개의 실무면접 예상질문을 만들어줘.",
+    "질문은 지원한 직무의 실제 업무를 이해했는지 확인할 수 있을 정도로 구체적이어야 한다.",
+    "공고·직무기술서에 나온 업무용어를 우선 사용하고, 일반적인 직무지식을 활용한 질문은 [일반 직무지식]이라고 표시해줘.",
+    "학생이 입력하지 않은 경험이나 성과를 있다고 가정하지 마.",
     "",
-    "각 질문은 아래처럼 짧게 보여줘.",
-    "[질문 1 · 직무이해]",
-    "• 질문:",
-    "• 확인하려는 역량:",
+    "아래 5개 영역으로 나눠줘.",
+    "[1. 직무이해·실무지식 · 4문항]",
+    "• 실제 업무의 목적, 절차, 설비/도구, 기준을 이해했는지 묻는 질문",
+    "[2. 문제상황·판단 · 3문항]",
+    "• 이상상황, 오류, 안전·품질 문제 등이 발생했을 때 무엇을 확인하고 어떻게 판단할지 묻는 상황형 질문",
+    "[3. 전공·기술 적용 · 2문항]",
+    "• 내 전공 수업·실험·도구를 이 직무에 어떻게 적용할지 묻는 질문",
+    "[4. 경험 검증 · 2문항]",
+    "• 대표 경험에서 실제 역할, 행동, 판단근거, 결과를 확인하는 질문",
+    "[5. 직무준비·GAP · 1문항]",
+    "• 현재 부족한 부분을 어떻게 준비하고 있는지 확인하는 질문",
     "",
-    "내가 답한 뒤 피드백은 반드시 아래처럼 개조식으로 정리해줘.",
-    "[답변 피드백]",
-    "• 잘 드러난 근거:",
-    "• 부족한 근거:",
-    "• 더 구체화할 부분:",
-    "• 다음 답변에서 보완할 한 가지:",
+    "각 질문은 반드시 아래 형식으로 작성해줘.",
+    "[Q1. 질문 유형]",
+    "• 예상 질문:",
+    "• 질문 의도:",
+    "• 답변에 연결할 내 근거:",
+    "• 예상 꼬리질문:",
+    "• 근거 구분: [공고/직무기술서] 또는 [일반 직무지식] 또는 [내 경험]",
     "",
-    "내 답을 대신 만들지 마.",
+    "질문 작성 원칙:",
+    "- '본인의 장단점은?' 같은 일반 인성질문보다 이 직무의 실제 업무를 확인하는 질문을 우선한다.",
+    "- 기술용어만 암기했는지보다 업무에서 어떻게 판단하고 행동할지를 확인하는 질문을 포함한다.",
+    "- 공고에 없는 기술 세부내용을 공고에 있다고 표현하지 않는다.",
+    "- 답변 예시나 모범답안은 쓰지 않는다. 학생이 스스로 답을 준비할 수 있도록 질문·의도·근거만 제시한다.",
+    "- 한 항목은 1~2줄 이내로 간결하게 작성한다.",
     ...bulletOutputRules()
   ].join("\n");
 }
@@ -1155,7 +1185,7 @@ function step6(){
     '<div class="block noPrint"><h3>① 내 직무분석 결과 확인</h3><p class="help">아래 내용은 STEP 1~5 입력값으로 자동 생성됩니다. 빠진 내용이 있으면 이전 STEP에서 수정합니다.</p></div>'+
     '<div class="preview">'+h(portfolio())+'</div>'+
     '<div class="divider noPrint"></div><div class="block noPrint"><h3>② 내 AI로 자기소개서 준비</h3><p class="help">내 전공·경험·직무분석·GAP이 들어간 개인 프롬프트입니다.</p><textarea class="promptBox promptEditor shortPrompt" id="selfIntroPromptPreview">'+h(selfIntroPrompt())+'</textarea><div class="actions compactActions"><button class="btn secondary" id="copySelfIntroPromptBtn">자기소개서 프롬프트 복사</button></div></div>'+
-    '<div class="block noPrint"><h3>③ 내 AI로 면접 연습</h3><textarea class="promptBox promptEditor shortPrompt" id="interviewPromptPreview">'+h(interviewPrompt())+'</textarea><div class="actions compactActions"><button class="btn secondary" id="copyInterviewPromptBtn">면접 프롬프트 복사</button></div></div>'+
+    '<div class="block noPrint"><h3>③ 내 AI로 실무면접 예상질문 만들기</h3><p class="help">선택한 직무의 실제 업무와 내 전공·경험을 기준으로 예상질문 12개를 만듭니다.</p><textarea class="promptBox promptEditor shortPrompt" id="interviewPromptPreview">'+h(interviewPrompt())+'</textarea><div class="actions compactActions"><button class="btn secondary" id="copyInterviewPromptBtn">실무면접 예상질문 프롬프트 복사</button></div></div>'+
     '<div class="divider noPrint"></div><div class="exportGrid noPrint"><div class="exportCard"><b>Word용 문서</b><p>직무분석 Portfolio를 Word에서 수정합니다.</p><button class="btn primary" id="docBtn">Word 파일 저장</button></div><div class="exportCard"><b>PDF</b><p>인쇄 화면에서 PDF로 저장합니다.</p><button class="btn secondary" id="printBtn">PDF 저장 화면</button></div><div class="exportCard"><b>학습 백업</b><p>다음 수업에서 이어서 사용할 JSON입니다.</p><button class="btn secondary" id="jsonBtn2">JSON 백업 저장</button></div></div>'+
     '<div class="actions stepFooter noPrint"><button class="btn secondary" data-prev="5">이전</button><button class="btn secondary" id="copyBtn">Portfolio 텍스트 복사</button><button class="btn danger" id="resetBtn">FLEX 데이터 새로 시작</button></div></section>';
 }
@@ -1301,7 +1331,7 @@ function bind(){
   document.getElementById("refreshGapPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("gapPromptPreview");if(e)e.value=gapPrompt();toast("현재 스펙·GAP 정보를 프롬프트에 반영했습니다.");});
   document.getElementById("copyGapPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("gapPromptPreview")?.value||gapPrompt(),"내 GAP 분석 프롬프트를 복사했습니다."));
   document.getElementById("copySelfIntroPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("selfIntroPromptPreview")?.value||selfIntroPrompt(),"내 자기소개서 프롬프트를 복사했습니다."));
-  document.getElementById("copyInterviewPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("interviewPromptPreview")?.value||interviewPrompt(),"내 면접 프롬프트를 복사했습니다."));
+  document.getElementById("copyInterviewPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("interviewPromptPreview")?.value||interviewPrompt(),"내 실무면접 예상질문 프롬프트를 복사했습니다."));
   document.getElementById("docBtn")?.addEventListener("click",exportDoc);
   document.getElementById("printBtn")?.addEventListener("click",()=>window.print());
   document.getElementById("jsonBtn2")?.addEventListener("click",exportJson);
