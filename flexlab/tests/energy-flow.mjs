@@ -28,9 +28,8 @@ try{
   await page.waitForSelector('[data-analysis-method="komipo-2026-3"]');
   assert(await page.locator('.curatedJob').count()===3,'STEP3 must offer public, private and custom analysis methods');
 
-  // Method 3 inputs must be visible even before selecting Method 3.
-  assert(await page.locator('[data-customjob="company"]').isVisible(),'Custom company input must always be visible');
-  assert(await page.locator('[data-customjob="role"]').isVisible(),'Custom role input must always be visible');
+  // Method 3 inputs stay hidden until Method 3 is selected.
+  assert(await page.locator('[data-customjob="company"]').count()===0,'Custom inputs must stay hidden before Method 3 selection');
 
   // KOMIPO: student chooses recruitment field and one sub-role.
   await page.locator('[data-analysis-method="komipo-2026-3"]').click();
@@ -94,7 +93,10 @@ try{
   assert(skPrompt.includes('공고에 별도 명시 없음'),'SK prompt must not invent missing job-description details');
   assert((await page.locator('.rolePicker').innerText()).includes('현장운전을 먼저 수행'),'SK UI must explain mandatory field-operation sequence');
 
-  // Method 3: visible inputs + explicit "use this information" action.
+  // Method 3: selecting the method must automatically reveal its input screen.
+  await page.locator('[data-analysis-method="custom"]').click();
+  await page.waitForSelector('[data-customjob="company"]',{state:'visible'});
+  assert(await page.locator('#customJobEntry').isVisible(),'Method 3 selection must reveal the direct-input screen');
   await page.locator('[data-customjob="company"]').fill('한화솔루션');
   await page.locator('[data-customjob="title"]').fill('에너지솔루션 생산기술 신입');
   await page.locator('[data-customjob="role"]').fill('생산기술');
@@ -160,7 +162,9 @@ try{
   await page.evaluate(()=>localStorage.removeItem('jobfit:flexlab:job-analysis:v1'));
   await page.reload({waitUntil:'networkidle'});
   await page.locator('[data-step="3"]').click();
-  assert(await page.locator('[data-customjob="company"]').isVisible(),'Custom inputs must be discoverable after fresh reload');
+  assert(await page.locator('[data-customjob="company"]').count()===0,'Custom inputs must be hidden after fresh reload until Method 3 is selected');
+  await page.locator('[data-analysis-method="custom"]').click();
+  await page.waitForSelector('[data-customjob="company"]',{state:'visible'});
   await page.locator('[data-customjob="company"]').fill('직접입력 테스트 기업');
   await page.locator('[data-customjob="role"]').fill('에너지 설비');
   await page.locator('[data-customjob="facts"]').fill('에너지 설비 점검과 운영');
