@@ -498,17 +498,56 @@ function parseJobTableResult(raw){
   return out;
 }
 
-function curatedJobCards(){
-  return '<div class="curatedJobGrid">'+CURATED_JOBS.map(j=>{
+function analysisMethodCards(){
+  const custom=state.customJob||emptyCustomJob();
+  const cards=[
+    ...CURATED_JOBS.map((j,i)=>({
+      ...j,
+      method:"방법 "+(i+1),
+      desc:i===0?"에너지 공기업 실제 공고로 분석":"에너지 대기업 실제 공고로 분석"
+    })),
+    {
+      ...custom,
+      id:"custom",method:"방법 3",type:"직접 입력",
+      company:custom.company||"내가 찾은 기업",
+      title:custom.title||"기업·직무·공고정보 직접 입력",
+      period:custom.period||"원하는 공고 사용",
+      facts:custom.facts||"내가 필요한 기업과 직무 정보를 입력해 같은 방식으로 직무분석합니다.",
+      desc:"내가 원하는 기업·직무로 반복 실습"
+    }
+  ];
+  return '<div class="curatedJobGrid threeMethods">'+cards.map(j=>{
     const on=state.sampleJobId===j.id;
     return '<article class="curatedJob '+(on?"selected":"")+'">'+
-      '<div class="curatedMeta"><span>'+h(j.type)+'</span><small>'+h(j.period)+'</small></div>'+
+      '<div class="curatedMeta"><span>'+h(j.method+" · "+j.type)+'</span><small>'+h(j.period||"")+'</small></div>'+
       '<h3>'+h(j.company)+'</h3><b>'+h(j.title)+'</b>'+
-      '<p>'+h(j.facts)+'</p>'+
-      '<div class="curatedLinks"><a href="'+h(j.sourceUrl)+'" target="_blank" rel="noopener">원문 확인</a>'+
-      '<button class="btn '+(on?"primary":"secondary")+'" data-curated="'+h(j.id)+'">'+(on?"선택됨":"이 공고로 분석")+'</button></div>'+
+      '<p>'+h(j.desc||j.facts)+'</p>'+
+      '<div class="curatedLinks">'+
+        (j.id!=="custom"&&j.sourceUrl?'<a href="'+h(j.sourceUrl)+'" target="_blank" rel="noopener">원문 확인</a>':'<span class="hint">직접 정보 입력</span>')+
+        '<button class="btn '+(on?"primary":"secondary")+'" data-analysis-method="'+h(j.id)+'">'+(on?"현재 분석 중":"이 방법으로 분석")+'</button>'+
+      '</div>'+
     '</article>';
   }).join("")+'</div>';
+}
+
+function customJobFields(){
+  const j=state.customJob||emptyCustomJob();
+  return '<div class="customJobBox">'+
+    '<div class="callout info"><b>방법 3 · 직접 입력</b> 지금 찾은 공고가 아니어도 됩니다. 수업에서 분석하고 싶은 기업·직무 정보를 입력하세요.</div>'+
+    '<div class="grid2">'+
+      '<div class="field"><label>기업명</label><input class="input" data-customjob="company" value="'+h(j.company)+'" placeholder="예: 한화솔루션" /></div>'+
+      '<div class="field"><label>공고명</label><input class="input" data-customjob="title" value="'+h(j.title)+'" placeholder="예: 에너지솔루션 생산기술 신입" /></div>'+
+      '<div class="field"><label>직무·분야</label><input class="input" data-customjob="role" value="'+h(j.role)+'" placeholder="예: 생산기술 / 전기설비 / 안전환경" /></div>'+
+      '<div class="field"><label>모집기간 <span class="hint">(선택)</span></label><input class="input" data-customjob="period" value="'+h(j.period)+'" placeholder="예: 2026.09.20 ~ 2026.10.05" /></div>'+
+      '<div class="field span2"><label>공고 URL <span class="hint">(선택)</span></label><input class="input" data-customjob="sourceUrl" value="'+h(j.sourceUrl)+'" placeholder="https://..." /></div>'+
+    '</div>'+
+    '<div class="field"><label>담당업무·공고 핵심내용</label><textarea class="input" data-customjob="facts" placeholder="공고에서 확인한 담당업무와 직무내용을 붙여넣거나 요약하세요.">'+h(j.facts)+'</textarea></div>'+
+    '<div class="grid2">'+
+      '<div class="field"><label>필수·지원자격 <span class="hint">(선택)</span></label><textarea class="input" data-customjob="required" placeholder="전공, 학력, 어학, 자격증 등">'+h(j.required)+'</textarea></div>'+
+      '<div class="field"><label>우대사항 <span class="hint">(선택)</span></label><textarea class="input" data-customjob="preferred" placeholder="자격증, 경험, 기술 등">'+h(j.preferred)+'</textarea></div>'+
+    '</div>'+
+    '<div class="actions compactActions"><button class="btn secondary" id="refreshJobPromptBtn">입력정보를 AI 프롬프트에 반영</button></div>'+
+  '</div>';
 }
 
 function jobTableFields(){
@@ -535,22 +574,29 @@ function jobTablePreview(){
 }
 
 function step3(){
-  const j=selectedCuratedJob();
-  return shell(3,"Choose JD → Job Analysis","최근 에너지 공기업·대기업 공고 중 하나를 선택하고, 실제 직무분석 테이블을 완성합니다.",
-    '<div class="block"><h3>① 수업용 실제 공고 하나 선택</h3><p class="help">STEP 2에서 공고를 찾지 못했어도 아래 공고로 그대로 실습할 수 있습니다.</p>'+curatedJobCards()+'</div>'+
+  const j=selectedJob();
+  const isCustom=state.sampleJobId==="custom";
+  const analyzedCount=Object.values(state.analysisCases||{}).filter(c=>
+    c?.jobTable&&["customerKpi","tasks","challenge","method","competencies","careerPlan"].some(k=>filled(c.jobTable[k]))
+  ).length;
+  return shell(3,"3 Ways → Job Analysis","공기업 예시, 대기업 예시, 직접 입력 중 원하는 방법을 자유롭게 바꾸며 직무분석을 반복할 수 있습니다.",
+    '<div class="block"><h3>① 분석 방법 선택</h3><p class="help">한 방법을 분석한 뒤 다른 방법으로 바꿔도 기존 표는 그대로 저장됩니다. 현재 저장된 분석: <b>'+analyzedCount+'개</b></p>'+analysisMethodCards()+'</div>'+
     (j?
-      '<div class="selectedJobSummary"><b>분석 대상 · '+h(j.company)+' / '+h(j.role)+'</b><span>'+h(j.note)+'</span></div>'+
-      '<div class="block"><h3>② AI에게 직무분석 초안 받기</h3><p class="help">내 전공·희망직무·선택 공고가 자동으로 들어갑니다. AI 결과의 사실 여부는 원문 링크와 비교합니다.</p>'+
+      (isCustom?'<div class="block"><h3>② 내가 분석할 기업·직무 정보 입력</h3>'+customJobFields()+'</div>':'')+
+      '<div class="selectedJobSummary"><b>현재 분석 대상 · '+h(j.company||"직접 입력")+" / "+h(j.role||j.title||"직무 미입력")+'</b><span>'+h(j.note||"이 분석 결과는 다른 방법과 별도로 저장됩니다.")+'</span></div>'+
+      '<div class="block"><h3>'+(isCustom?"③":"②")+' AI에게 직무분석 초안 받기</h3><p class="help">내 전공·희망직무·현재 분석 대상 정보가 자동으로 들어갑니다. 입력을 바꾼 뒤에는 ‘현재 정보 반영’을 누르세요.</p>'+
         '<textarea class="promptBox promptEditor shortPrompt" id="jobPromptPreview">'+h(jobAnalysisPrompt())+'</textarea>'+
-        '<div class="actions compactActions"><button class="btn secondary" id="copyReviewedJobPromptBtn">내 직무분석 프롬프트 복사</button></div>'+
+        '<div class="actions compactActions">'+
+          (!isCustom?'<button class="btn ghost" id="refreshJobPromptBtn">현재 정보 반영</button>':'')+
+          '<button class="btn secondary" id="copyReviewedJobPromptBtn">내 직무분석 프롬프트 복사</button></div>'+
         '<div class="field aiPaste"><label>AI 답변 붙여넣기 <span class="hint">(선택)</span></label><textarea class="input" data-path="jobTable.aiResult" id="jobTableAiResult" placeholder="AI 답변을 붙여넣으면 아래 6칸으로 나눌 수 있습니다.">'+h(state.jobTable.aiResult||"")+'</textarea></div>'+
         '<div class="actions compactActions"><button class="btn secondary" id="applyJobTableAiBtn">AI 답변을 6칸에 반영</button></div>'+
       '</div>'+
-      '<div class="divider"></div><div class="block"><h3>③ 직무분석 테이블 완성</h3><p class="help">AI가 적은 내용을 그대로 확정하지 말고, 공고와 맞지 않는 내용은 고치거나 삭제합니다.</p>'+jobTableFields()+'</div>'+
-      '<div class="block"><h3>④ 완성된 직무분석표</h3><p class="help">모바일에서는 좌우로 밀어서 전체 표를 확인합니다.</p>'+jobTablePreview()+'</div>'+
-      '<details class="optionBox"><summary>선택 공고에서 확인된 기본정보</summary><div class="optionBody"><div class="callout info"><b>'+h(j.source)+'</b><br>'+h(j.facts)+'</div><div class="callout warn"><b>지원자격:</b><br>'+h(j.required).replace(/\n/g,"<br>")+'<br><br><b>우대·확인사항:</b><br>'+h(j.preferred).replace(/\n/g,"<br>")+'</div></div></details>'
+      '<div class="divider"></div><div class="block"><h3>'+(isCustom?"④":"③")+' 직무분석 테이블 완성</h3><p class="help">직접 수정한 내용도 현재 분석 방법에만 저장됩니다.</p>'+jobTableFields()+'</div>'+
+      '<div class="block"><h3>'+(isCustom?"⑤":"④")+' 완성된 직무분석표</h3><p class="help">모바일에서는 좌우로 밀어서 전체 표를 확인합니다.</p>'+jobTablePreview()+'</div>'+
+      (isCustom?'': '<details class="optionBox"><summary>선택 공고에서 확인된 기본정보</summary><div class="optionBody"><div class="callout info"><b>'+h(j.source)+'</b><br>'+h(j.facts)+'</div><div class="callout warn"><b>지원자격:</b><br>'+h(j.required).replace(/\n/g,"<br>")+'<br><br><b>우대·확인사항:</b><br>'+h(j.preferred).replace(/\n/g,"<br>")+'</div></div></details>')
       :
-      '<div class="callout warn"><b>먼저 공고를 하나 선택하세요.</b> 선택하면 개인 직무분석 프롬프트와 6개 직무분석 칸이 열립니다.</div>'
+      '<div class="callout warn"><b>세 가지 방법 중 하나를 선택하세요.</b> 분석을 시작하면 각 방법별로 결과가 따로 저장됩니다.</div>'
     )
   );
 }
