@@ -251,3 +251,9 @@
   .customEntryHead .btn{width:100%}
   .roleEvidence span{font-size:10.5px}
 }
+
+
+/* STEP 5 comparison target */
+.gapTargetBlock{padding:14px;border:1px solid #d9e2ff;border-radius:16px;background:#fbfcff}
+.targetSourceNote{margin-top:8px;padding:9px 11px;border-radius:10px;background:#f4f7fb;color:#536174;font-size:11px;line-height:1.5}
+@media(max-width:650px){.gapTargetBlock{padding:12px;border-radius:14px}.targetSourceNote{font-size:10.5px}}
