@@ -1,4 +1,4 @@
-const WEEK4_VERSION='experience-competency-week4-v8';
+const WEEK4_VERSION='experience-competency-week4-v9';
 const COMPETENCY_DICTIONARY=[
   ['C01','의사소통','설명·질문·경청·문서작성·정보전달'],
   ['C02','협업','공동작업·정보공유·역할협조·동료지원'],
@@ -75,15 +75,17 @@ export async function render(ctx){
         <span class="hint">자동으로 나눠 넣은 뒤 반드시 실제 경험과 맞는지 직접 수정합니다.</span>
       </div>
       <div class="starHandoff" style="margin-top:12px">
-        <div><b>S · 상황</b><span>03의 경험 배경을 확인합니다.</span></div>
-        <div><b>T · 문제·역할</b><span>아래 ‘문제·과제’와 위에서 적은 ‘내 책임 범위’로 이어집니다.</span></div>
+        <div><b>S · 상황</b><span>03의 ‘경험 배경’을 자동으로 가져옵니다. 실제 상황과 맞는지 확인하고 필요하면 고칩니다.</span></div>
+        <div><b>T · 문제·내 역할</b><span>03의 ‘내 책임 범위’를 가져온 뒤, 내가 해결해야 했던 문제·목표를 함께 적습니다.</span></div>
         <div><b>A · 행동</b><span>아래 ‘내가 직접 한 행동’에 옮깁니다.</span></div>
         <div><b>WHY · 판단</b><span>아래 ‘판단·이유’에 옮깁니다.</span></div>
         <div><b>R · 결과</b><span>아래 ‘결과’와 ‘증거’로 확인합니다.</span></div>
       </div>
       <div class="callout warn" style="margin-top:12px"><b>중요</b> · AI가 정리한 문장을 그대로 복사하지 마세요. 내가 하지 않은 행동, 기억나지 않는 수치, 과장된 결과가 있으면 삭제하거나 수정합니다.</div>
-      <div class="grid2" style="margin-top:12px">${area('challenge','T · 문제·과제','내가 해결하거나 달성해야 했던 핵심 과제는?','',ctx)}${area('action','A · 내가 직접 한 행동','내가 실제로 한 행동만 동사 중심으로 적으세요.','',ctx)}${area('reason','WHY · 판단·이유','왜 그 행동을 선택했나요? 핵심 판단기준만 적으세요.','',ctx)}${area('result','R · 결과','행동 뒤 무엇이 달라졌나요? 확인 가능한 결과만 적으세요.','',ctx)}</div>
-      <div class="grid2" style="margin-top:12px">${area('evidence','결과를 확인할 근거','수치·산출물·피드백·기록 등 실제 확인 가능한 근거가 있으면 적으세요.','',ctx)}${sel('evidenceType','증거 유형 · 선택','',EVIDENCE_TYPES,ctx)}</div>
+      <div class="grid2" style="margin-top:12px">${area('situation','S · 상황','언제·어디서·무엇을 하던 상황이었나요? 1~2문장으로만 적으세요.','',ctx)}${area('challenge','T · 문제·내 역할','내가 해결해야 했던 문제·목표는 무엇이었나요? 03의 내 책임 범위를 참고해 내가 맡은 역할도 함께 확인하세요.','',ctx)}</div>
+      <div class="grid2" style="margin-top:12px">${area('action','A · 내가 직접 한 행동','팀이 한 일이 아니라, 내가 직접 한 행동을 동사 중심으로 적으세요.','',ctx)}${area('reason','WHY · 판단·이유','왜 그 행동을 선택했나요? 당시 판단 기준을 짧게 적으세요.','',ctx)}</div>
+      <div class="grid2" style="margin-top:12px">${area('result','R · 결과','내 행동 뒤 무엇이 달라졌나요? 확인할 수 있는 변화만 적으세요.','',ctx)}${area('evidence','Evidence · 결과를 확인할 근거','수치·산출물·피드백·기록처럼 실제 확인할 수 있는 근거가 있으면 적으세요.','',ctx)}</div>
+      <div style="margin-top:12px">${sel('evidenceType','증거 유형 · 선택','',EVIDENCE_TYPES,ctx)}</div>
       <div class="evidenceGradeLine" id="evidenceGradePreview">증거 유형을 선택하면 확인 수준을 자동으로 표시합니다.</div>
       <details class="detailsBox" style="margin-top:12px"><summary>추가 메모가 필요하면 펼치기 · 선택사항</summary>
         <div class="grid2">${area('rawVoice','내가 처음 말한 내용 · 원문 메모','AI가 다듬기 전 내가 실제로 말한 문장이나 메모','',ctx)}${area('learning','다른 상황에서도 다시 쓸 수 있는 방식','이 경험에서 반복해서 사용할 수 있는 행동방식이 있다면 적으세요.','',ctx)}</div>
@@ -154,7 +156,7 @@ export async function render(ctx){
   });
   document.getElementById('goFactCheck')?.addEventListener('click',()=>{
     if(!ck('interviewOwnership')||!ck('interviewNumbers')||!ck('interviewEvidence')){ctx.toast('세 가지 사실확인을 먼저 체크해 주세요.');return}
-    saveDraft();openModule('04');
+    syncInterviewToFactCheck();saveDraft();openModule('04');
   });
   document.getElementById('importStarSummary')?.addEventListener('click',importStarSummary);
   document.getElementById('goCompetency')?.addEventListener('click',()=>{if(!v('action')){ctx.toast('내가 직접 한 행동을 먼저 확인해 주세요.');return}saveDraft();openModule('05')});
@@ -197,7 +199,7 @@ export async function render(ctx){
     const competencies=[...new Set(competencyEvidence.filter(x=>x.status==='행동 확인'&&x.studentVerified).map(x=>x.label).filter(Boolean))];
     const quality={ownership:ck('interviewOwnership'),evidence:ck('interviewEvidence'),noFabrication:ck('interviewNumbers'),transfer:!!v('learning'),competencyEvidence:studentVerified,interviewOwnership:ck('interviewOwnership'),interviewNumbers:ck('interviewNumbers'),interviewEvidence:ck('interviewEvidence')};
     const evidenceType=v('evidenceType');
-    const item={id:oldId||`EXP-${Date.now()}`,category:v('category'),title,period:v('period'),workMode:v('workMode'),contribution:n('contribution'),roleTitle:v('roleTitle'),context:v('context'),role:v('role'),challenge:v('challenge'),action:v('action'),reason:v('reason'),result:v('result'),evidence:v('evidence'),evidenceType,evidenceGrade:evidenceGradeFor(evidenceType),actionVerbs:'',learning:v('learning'),rawVoice:v('rawVoice'),aiStructured:v('aiStructured'),competencies,competencyEvidence,quality,factChecked:quality.interviewOwnership&&quality.interviewNumbers&&quality.interviewEvidence,updatedAt:new Date().toISOString()};
+    const item={id:oldId||`EXP-${Date.now()}`,category:v('category'),title,period:v('period'),workMode:v('workMode'),contribution:n('contribution'),roleTitle:v('roleTitle'),context:v('context'),role:v('role'),situation:v('situation'),challenge:v('challenge'),action:v('action'),reason:v('reason'),result:v('result'),evidence:v('evidence'),evidenceType,evidenceGrade:evidenceGradeFor(evidenceType),actionVerbs:'',learning:v('learning'),rawVoice:v('rawVoice'),aiStructured:v('aiStructured'),competencies,competencyEvidence,quality,factChecked:quality.interviewOwnership&&quality.interviewNumbers&&quality.interviewEvidence,updatedAt:new Date().toISOString()};
     const arr=[...currentExperiences()];const idx=arr.findIndex(x=>x.id===item.id);if(idx>=0)arr[idx]=item;else arr.push(item);
     const current=ctx.getState().assessments?.experienceCompetency||{};
     ctx.saveState({assessments:{experienceCompetency:{...current,version:WEEK4_VERSION,best3:collectBest3(),representativeKey:selectedRepresentative(),experiences:arr,draft:{},updatedAt:new Date().toISOString()}},artifacts:{experienceMap:experienceMap(arr),competencyMap:competencyMap(arr),experienceDNA:experienceDNA(arr,dna)}});
@@ -208,7 +210,7 @@ export async function render(ctx){
   function loadExperience(id){
     const x=currentExperiences().find(e=>e.id===id);if(!x)return;
     set('editId',x.id);
-    ['category','title','period','workMode','roleTitle','context','role','challenge','action','reason','result','evidence','evidenceType','learning','rawVoice','aiStructured'].forEach(k=>set(k,x[k]||''));
+    ['category','title','period','workMode','roleTitle','context','role','situation','challenge','action','reason','result','evidence','evidenceType','learning','rawVoice','aiStructured'].forEach(k=>set(k,x[k]||''));
     set('contribution',x.contribution||3);
     [1,2,3].forEach((i,idx)=>{const ce=x.competencyEvidence?.[idx]||{},def=competencyByCode(ce.code)||competencyByLabel(ce.label||ce.keyword);set(`comp_${i}`,ce.code||def?.code||'');set(`compEv_${i}`,ce.evidence||'');set(`compStatus_${i}`,ce.status||'')});
     const verified=document.getElementById('competencyEvidenceChecked');if(verified)verified.checked=!!(x.quality?.competencyEvidence||(x.competencyEvidence?.length&&x.competencyEvidence.every(e=>e.studentVerified)));
@@ -226,7 +228,7 @@ export async function render(ctx){
     ctx.toast('삭제했습니다.');ctx.navigate(2);
   }
   function clearForm(){
-    ['editId','category','title','period','workMode','roleTitle','context','role','challenge','action','reason','result','evidence','evidenceType','learning','rawVoice','aiStructured','comp_1','compEv_1','compStatus_1','compStatus_2','compStatus_3','comp_2','compEv_2','comp_3','compEv_3'].forEach(k=>set(k,''));
+    ['editId','category','title','period','workMode','roleTitle','context','role','situation','challenge','action','reason','result','evidence','evidenceType','learning','rawVoice','aiStructured','comp_1','compEv_1','compStatus_1','compStatus_2','compStatus_3','comp_2','compEv_2','comp_3','compEv_3'].forEach(k=>set(k,''));
     set('contribution',3);
     ['interviewOwnership','interviewNumbers','interviewEvidence','competencyEvidenceChecked'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false});
     updateActionEvidencePreview();updateEvidenceGradePreview();[1,2,3].forEach(updateCompetencyCue);
@@ -242,6 +244,10 @@ export async function render(ctx){
     const target=document.getElementById('title');window.JobfitStepAccordion?.openBlock?.(target?.closest('.block'));
     target?.scrollIntoView({behavior:'smooth',block:'center'});target?.focus();
     ctx.toast('대표 경험을 분석칸에 가져왔습니다.');
+  }
+  function syncInterviewToFactCheck(){
+    if(!v('situation')&&v('context'))set('situation',v('context'));
+    if(!v('challenge')&&v('role'))set('challenge',`내 책임 범위: ${v('role')}`);
   }
   function makeExperiencePrompt(){
     const h=dna.hypothesis||{},c=dna.comparison||{},dnaLines=[
@@ -309,7 +315,7 @@ R · Result: 그 행동 뒤 무엇이 달라졌는가
 첫 질문부터 시작해줘.`;
   }
   function draftSnapshot(){
-    const fields=['category','title','period','workMode','roleTitle','context','role','challenge','action','reason','result','evidence','evidenceType','learning','rawVoice','aiStructured'];
+    const fields=['category','title','period','workMode','roleTitle','context','role','situation','challenge','action','reason','result','evidence','evidenceType','learning','rawVoice','aiStructured'];
     const values={};fields.forEach(id=>values[id]=v(id));
     values.contribution=n('contribution')||3;
     values.interviewChecks={ownership:ck('interviewOwnership'),numbers:ck('interviewNumbers'),evidence:ck('interviewEvidence')};
@@ -329,7 +335,7 @@ R · Result: 그 행동 뒤 무엇이 달라졌는가
   function restoreDraft(){
     const d=ctx.getState().assessments?.experienceCompetency?.draft||{};
     if(!d||!Object.keys(d).length)return;
-    ['category','title','period','workMode','roleTitle','context','role','challenge','action','reason','result','evidence','evidenceType','learning','rawVoice','aiStructured'].forEach(id=>{if(d[id]!==undefined&&d[id]!==null)set(id,d[id])});
+    ['category','title','period','workMode','roleTitle','context','role','situation','challenge','action','reason','result','evidence','evidenceType','learning','rawVoice','aiStructured'].forEach(id=>{if(d[id]!==undefined&&d[id]!==null)set(id,d[id])});
     set('contribution',d.contribution||3);
     const checks=d.interviewChecks||{};
     const own=document.getElementById('interviewOwnership'),nums=document.getElementById('interviewNumbers'),ev=document.getElementById('interviewEvidence'),verified=document.getElementById('competencyEvidenceChecked');
@@ -343,26 +349,28 @@ R · Result: 그 행동 뒤 무엇이 달라졌는가
   function importStarSummary(){
     const raw=v('aiStructured');if(!raw){ctx.toast('AI의 마지막 STAR 정리를 먼저 붙여넣어 주세요.');return}
     const parsed=parseStarSummary(raw);
+    if(parsed.situation)set('situation',parsed.situation);
     if(parsed.task)set('challenge',parsed.task);
     if(parsed.action)set('action',parsed.action);
     if(parsed.why)set('reason',parsed.why);
     if(parsed.result)set('result',parsed.result);
     if(parsed.evidence)set('evidence',parsed.evidence);
     updateActionEvidencePreview();
-    const filled=[parsed.task,parsed.action,parsed.why,parsed.result,parsed.evidence].filter(Boolean).length;
+    const filled=[parsed.situation,parsed.task,parsed.action,parsed.why,parsed.result,parsed.evidence].filter(Boolean).length;
     saveDraft();
     ctx.toast(filled?`STAR 정리에서 ${filled}개 항목을 불러왔습니다. 실제 경험과 맞는지 수정해 주세요.`:'STAR 제목을 찾지 못했습니다. 아래 칸에 직접 정리해 주세요.');
   }
   function parseStarSummary(raw){
     const aliases=[
-      ['task',/^(?:[-*•]\s*)?(?:T\s*[·.:)-]?\s*)?(?:문제·목표와 내 역할|문제·목표|문제|과제|Task)/i],
+      ['situation',/^(?:[-*•]\s*)?(?:S\s*[·.:)-]?\s*)?(?:상황|Situation)/i],
+      ['task',/^(?:[-*•]\s*)?(?:T\s*[·.:)-]?\s*)?(?:문제·목표와 내 역할|문제·내 역할|문제·목표|문제|과제|Task)/i],
       ['action',/^(?:[-*•]\s*)?(?:A\s*[·.:)-]?\s*)?(?:내가 직접 한 행동|행동|Action)/i],
       ['why',/^(?:[-*•]\s*)?(?:WHY\s*[·.:)-]?\s*)?(?:판단·선택 이유|판단|이유|Judgment)/i],
       ['result',/^(?:[-*•]\s*)?(?:R\s*[·.:)-]?\s*)?(?:결과|Result)/i],
       ['evidence',/^(?:[-*•]\s*)?(?:확인 가능한 증거|증거|Evidence)/i],
       ['stop',/^(?:[-*•]\s*)?(?:핵심 행동동사|확인 필요 사항)/i]
     ];
-    const out={task:'',action:'',why:'',result:'',evidence:''};let current='';
+    const out={situation:'',task:'',action:'',why:'',result:'',evidence:''};let current='';
     for(const original of String(raw).split(/\r?\n/)){
       const line=original.trim();if(!line)continue;
       const hit=aliases.find(([,re])=>re.test(line));
