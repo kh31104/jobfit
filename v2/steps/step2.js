@@ -1,6 +1,4 @@
-import {prepareResearchMeasures,renderStrengthMeasure,bindStrengthMeasure} from '../researchMeasures.js?v=2';
-
-const WEEK4_VERSION='experience-competency-week4-v7';
+const WEEK4_VERSION='experience-competency-week4-v8';
 const COMPETENCY_DICTIONARY=[
   ['C01','의사소통','설명·질문·경청·문서작성·정보전달'],
   ['C02','협업','공동작업·정보공유·역할협조·동료지원'],
@@ -21,7 +19,6 @@ const CATEGORIES=['수업·과제','팀프로젝트','캡스톤·연구','동아
 const EVIDENCE_TYPES=['수치·지표','산출물·문서','교수·상사·고객 피드백','수상·선발·평가결과','작업기록·로그','동료·팀 피드백','자기기억만'];
 
 export async function render(ctx){
-  if(ctx.courseConfig.researchMeasures)await prepareResearchMeasures(ctx);
   const state=ctx.getState();
   const dna=state.assessments?.careerDNA||{};
   const saved=state.assessments?.experienceCompetency||{experiences:[]};
@@ -35,15 +32,13 @@ export async function render(ctx){
     ${styleBlock()}
     <div class="sectionHead"><div><div class="kicker">STEP 2 · EXPERIENCE & COMPETENCY</div><h2>나의 경험에서 직무역량 찾기</h2><p>3주차 Career DNA를 정답으로 확정하지 않고, <b>내가 실제로 한 행동</b>에서 강점과 역량의 근거를 찾습니다.</p></div><span class="badge">4주차</span></div>
     <div class="progress"><span style="width:21%"></span></div>
-    <div class="callout info"><b>오늘의 흐름</b> · Career DNA 간단히 확인 → My Best 3 Experience → 대표 경험 선택 → AI Experience Interview → 사실확인 → 행동·결과·증거 정리 → 표준 역량 확인 → Experience Map → Competency Map → Experience DNA</div>
+    <div class="callout info"><b>오늘의 흐름</b> · 01 Career DNA 확인 → 02 My Best 3 Experience → 03 STAR 기반 AI Interview → 04 사실확인 → 05 역량 확인 → 06 Experience Map → 07 Competency Map → 08 My Experience DNA</div>
     <div class="callout good"><b>4주차의 도착점</b> · 직업을 정하는 시간이 아닙니다. <b>어떤 경험에서 내가 무엇을 했고, 그 행동이 어떤 강점·역량을 보여주는지</b> 근거와 함께 정리합니다.</div>
 
     <div class="block"><div class="moduleHead"><span>01</span><div><h3>지난주 Career DNA 간단히 확인</h3><p>검사점수를 다시 해석하지 않습니다. 3주차에서 내가 남긴 자기이해 가설만 참고합니다.</p></div></div>
       ${dnaBridgeHtml(dna,ctx)}
-      <div class="actions"><button class="btn secondary" id="goBest3">${ctx.courseConfig.researchMeasures?'확인했어요 → 강점행동 9문항':'확인했어요 → 02 경험 떠올리기'}</button></div>
+      <div class="actions"><button class="btn secondary" id="goBest3">확인했어요 → 02 경험 떠올리기</button></div>
     </div>
-
-    ${ctx.courseConfig.researchMeasures?renderStrengthMeasure(ctx,'pre'):''}
 
     <div class="hr"></div><div class="block"><div class="moduleHead"><span>02</span><div><h3>My Best 3 Experience</h3><p>강점 이름부터 고르지 말고, 먼저 내가 실제로 행동했던 경험을 떠올립니다.</p></div></div>
       <div class="callout info"><b>3개가 꼭 다 떠오르지 않아도 괜찮습니다.</b> 지금은 1~2개만 적어도 됩니다. 오늘 깊게 분석할 대표 경험 1개는 선택해 주세요.</div>
@@ -143,10 +138,7 @@ export async function render(ctx){
     if(!ready){ctx.toast('STEP 3로 가기 전에 사실확인을 마친 경험을 1개 이상 저장해 주세요.');openModule(currentExperiences().length?'05':'03');return}
     ctx.navigate(3);
   });
-  document.getElementById('goBest3')?.addEventListener('click',()=>{
-    const measure=document.querySelector('.experienceCompetencyWeek4 > .strengthMeasurePanel');
-    if(measure)window.JobfitStepAccordion?.openBlock?.(measure);else openModule('02');
-  });
+  document.getElementById('goBest3')?.addEventListener('click',()=>openModule('02'));
   document.getElementById('makeInterviewPrompt').addEventListener('click',async()=>{
     saveDraft();
     const box=document.getElementById('interviewPrompt');
@@ -174,7 +166,6 @@ export async function render(ctx){
   [1,2,3].forEach(i=>document.getElementById(`comp_${i}`)?.addEventListener('change',()=>updateCompetencyCue(i)));
   restoreDraft();
   updateActionEvidencePreview();updateEvidenceGradePreview();[1,2,3].forEach(updateCompetencyCue);
-  if(ctx.courseConfig.researchMeasures)bindStrengthMeasure(ctx,'pre');
 
   function currentExperiences(){return ctx.getState().assessments?.experienceCompetency?.experiences||[]}
   function collectBest3(){return{
