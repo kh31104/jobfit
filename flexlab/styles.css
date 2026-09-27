@@ -183,3 +183,45 @@
   .jobSiteGrid,.portalGrid{grid-template-columns:1fr}
   .mobileStepLabel{font-size:11px}
 }
+
+
+/* Energy class flow v2 */
+.curatedJobGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.curatedJob{border:1px solid var(--line);border-radius:18px;padding:16px;background:#fff;display:flex;flex-direction:column;gap:9px}
+.curatedJob.selected{border:2px solid #7892ff;background:#f7f9ff}
+.curatedJob h3{margin:0;font-size:18px}
+.curatedJob>b{font-size:13px;line-height:1.5}
+.curatedJob p{margin:0;color:var(--muted);font-size:12px;line-height:1.6}
+.curatedMeta{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.curatedMeta span{display:inline-flex;padding:5px 8px;border-radius:999px;background:var(--soft);color:#3152c9;font-size:11px;font-weight:900}
+.curatedMeta small{color:var(--muted);font-size:10px}
+.curatedLinks{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:auto}
+.curatedLinks a{font-size:12px;font-weight:900;color:var(--primary);text-decoration:none}
+.curatedLinks .btn{min-height:40px}
+.selectedJobSummary{display:flex;flex-direction:column;gap:5px;margin:16px 0 4px;padding:13px 14px;border:1px solid #d9e2ff;border-radius:15px;background:#f8faff}
+.selectedJobSummary b{font-size:13px}
+.selectedJobSummary span{font-size:11px;color:var(--muted);line-height:1.55}
+.jobTableCards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.jobTableItem{position:relative;padding:14px 14px 14px 48px;border:1px solid var(--line);border-radius:16px;background:#fbfcff}
+.jobTableItem>span{position:absolute;left:13px;top:14px;width:27px;height:27px;display:grid;place-items:center;border-radius:9px;background:#0b557f;color:#fff;font-size:11px;font-weight:950}
+.jobTableItem textarea{min-height:112px}
+.aiPaste{margin-top:12px}
+.shortPrompt{min-height:220px}
+.input:disabled{background:#f5f7fb;color:#475467}
+
+@media(max-width:650px){
+  .curatedJobGrid,.jobTableCards{grid-template-columns:1fr}
+  .curatedJob{padding:13px;border-radius:15px}
+  .curatedJob h3{font-size:16px}
+  .curatedLinks{align-items:stretch}
+  .curatedLinks .btn{flex:1}
+  .jobTableItem{padding:12px 12px 12px 45px;border-radius:14px}
+  .jobTableItem>span{left:11px;top:12px}
+  .jobTableItem textarea{min-height:102px}
+  .shortPrompt{min-height:190px}
+}
+
+
+.threeMethods{grid-template-columns:repeat(3,minmax(0,1fr))}
+.customJobBox{display:grid;gap:12px;padding:14px;border:1px solid #d9e2ff;border-radius:16px;background:#fbfcff}
+@media(max-width:900px){.threeMethods{grid-template-columns:1fr}}
