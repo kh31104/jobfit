@@ -30,117 +30,107 @@ const emptyAnalysisCase=()=>({
 
 const CURATED_JOBS=[
   {
-    id:"komipo-2026-3",
-    type:"공기업",
-    company:"한국중부발전",
-    title:"2026년도 제3차 4직급 신입직원 · 기술직",
-    role:"화학·전기전자·환경에너지안전 등",
-    period:"2026.09.17 ~ 2026.10.02",
-    sourceUrl:"https://job.alio.go.kr/mobile2021/recruit/recruitView.do?idx=304972",
-    source:"잡알리오 · 한국중부발전",
-    facts:"정규직 신입 · 기술직 포함 · 학력무관 · 대졸수준 일반전형 외국어 TOEIC 700점 이상(환산점수 인정) · 필기에서 직무지식 및 직무수행능력 평가 · PT/역량면접",
-    required:"대졸수준 일반전형: 영어 TOEIC 700점 이상 또는 인정되는 환산점수\n공통 기본자격 및 회사가 정한 결격사유 확인 필요",
-    preferred:"전문자격증·체험형/채용형 인턴 등은 공고 기준 우대 또는 가점 항목 확인",
-    note:"세부 직무의 과업은 직무기술서와 본인이 선택한 직군을 함께 확인해야 합니다."
+    id:"kea-2026-h2",
+    type:"공공기관 · 신입",
+    company:"한국에너지공단",
+    title:"2026년도 하반기 신입직원(채용형 인턴) 채용",
+    role:"사무·기술",
+    period:"2026.09.21 ~ 2026.10.01 14:00",
+    sourceUrl:"https://www.korea.kr/archive/recruitInfoView.do?dataId=394687&pWise=sub&pWiseSub=J2",
+    source:"한국에너지공단 · 정책브리핑 공식 채용정보",
+    facts:"채용형 인턴 총 93명 · 일반 77명, 보훈 2명, 사회형평 5명, 고졸 9명 · 본사(울산) 및 전국 사무소 · 정규직 전환평가 실시",
+    required:"공통: 성별·학력·전공·연령 제한 없음(정년 기준 제외) · 병역의무 불이행 사실 없음 · 2026.12.28부터 즉시 근무 가능 · 공단 결격사유 없음",
+    preferred:"직무별 시험·평가 및 우대사항은 공식 공고문·별첨 직무기술서 확인",
+    note:"현재 2026년 하반기 신입 채용의 공개경쟁 모집직무 중 하나를 선택해 분석합니다."
   },
   {
-    id:"skenergy-2026-clx",
-    type:"SK 계열 에너지 사기업",
-    company:"나래에너지서비스",
-    title:"[O&M] 발전소 기술전문직군 신입사원 채용",
-    role:"제조 - 설비관리",
-    period:"2026.09.23 ~ 2026.10.06",
-    sourceUrl:"https://www.skcareers.com/Recruit/Detail/R262054",
-    source:"SK Careers · 나래에너지서비스",
-    facts:"정규직 신입 · 경기 여주 · 발전소 현장운전 선행(교대근무/필수) 후 개인역량·희망에 따라 현장운전/생산관리/정비 업무로 이동",
-    required:"학력무관 · 남성은 병역필 또는 면제 · 해외여행 결격사유 없음 · 이공계열 전공",
-    preferred:"보훈·장애인 법정우대 · TOEIC 700 / TOEIC Speaking 120 / OPIc IM 이상 또는 준하는 어학성적 · 기계/전기/제어 계열 전공 및 직무 관련 국가기술자격 우대",
-    note:"별도 직무기술서는 없습니다. SK Careers 공고의 ‘담당 업무 및 역할’과 지원자격·우대사항만 기준자료로 사용합니다."
+    id:"hdoilbank-2026-h2",
+    type:"대기업 · 신입",
+    company:"HD현대오일뱅크",
+    title:"2026년 하반기 신입사원 채용",
+    role:"엔지니어·IT·영업·경영일반",
+    period:"2026.09.01 ~ 2026.09.27 23:59",
+    sourceUrl:"https://hd-recruit2026.com/",
+    source:"HD현대 2026 하반기 신입사원 공식 채용페이지",
+    facts:"정규직 신입 · 공정기술/생산기획, SAP ERP운영, 해외영업, 국내영업, 재무회계·HR, 노무·생산지원 등 다양한 직무 모집",
+    required:"공통: 4년제 대학 2027년 2월 졸업예정자 또는 기졸업자(2027년 1월 근무 가능) · 유효한 공인영어성적 보유 · 해외여행 결격사유 없음. 직무별 전공요건은 별도 확인",
+    preferred:"공정기술/생산기획: 화공·안전 관련 자격 우대 · SAP ERP운영: SAP 교육/프로젝트, ABAP·SQL 활용 우대 · 기타 직무는 공식 공고 확인",
+    note:"최근 2026년 하반기 대졸 신입공채를 수업용 예시로 사용합니다. 직무별 공식 직무소개만 분석에 사용합니다."
   }
 ];
 
-const KOMIPO_ROLE_LIBRARY={
-  sourceLabel:"교수자 제공 2026년도 제3차 4직급 신입직원 채용 공고·NCS 직무기술서",
+const KEA_ROLE_LIBRARY={
+  sourceLabel:"한국에너지공단 2026년도 하반기 신입직원 공고 + 공식 별첨 직무기술서",
+  groupLabel:"직군",
+  roleLabel:"분석할 모집직무",
+  majorNote:"공통 응시자격은 성별·학력·전공 제한이 없습니다. 전공은 직무 탐색의 참고정보로만 보고, 관심 직무를 직접 선택하세요.",
+  selectionNote:"모집직무는 채용을 위한 구분입니다. 세부 과업·지식·기술은 공식 별첨 직무기술서를 우선 확인하고, 확인되지 않은 내용은 추론으로 구분합니다.",
   groups:{
     "사무":{
-      headcount:"일반 12명 · 보훈 2명 · 장애 4명",
+      headcount:"공개경쟁 · 채용형 인턴(일반)",
       roles:{
-        "경영기획":{tasks:"경영목표 달성을 위한 전략 수립과 자원 배분, 경영진 의사결정 지원",knowledge:"예산계획·원가관리·국제회계기준·재무회계 관련 법",skills:"원가계산, 예산손익 산출, 기획서 작성, 예산편성 기준 작성",attitudes:"적극적 의사소통, 기준 준수, 정확성, 책임감"},
-        "인사":{tasks:"직무조사·분석을 바탕으로 채용·배치·육성·평가·보상·승진·퇴직 및 인사제도 운영·개선",knowledge:"전략적 인적자원관리, 직무분석, 노동·사회보험 관련 법, 경력개발·직무평가",skills:"문서작성, 인터뷰, 사업전략·환경 분석, 관련 프로그램 활용",attitudes:"의사소통, 정확성, 경청, 협업"},
-        "노무관리":{tasks:"노사관계 계획, 단체교섭, 노동쟁의 대응, 노사협의회·고충처리 및 관계 개선",knowledge:"근로기준법·노동법, 인사제도, 단체협약, 근로자 참여제도",skills:"문서작성, 인터뷰, 발표, 회의 운영, 협상",attitudes:"기준 준수, 경청, 성실, 이견 조율과 설득"},
-        "예산":{tasks:"예상 수익·비용을 편성·집행·통제하여 경영성과 달성을 지원",knowledge:"예산 운영 규정, 회계원리·관리회계·재무회계, 환경분석",skills:"예산·재무 보고서 작성, 수리능력, 재무제표 분석, 정보검색",attitudes:"협력, 설득, 정확성, 기준 준수"},
-        "자금":{tasks:"영업·투자·재무 활동에 필요한 자금 계획·조달·운용과 위험·성과 관리",knowledge:"재무제표·재무분석·재무관리·기업회계, 관련 세법과 자금조달",skills:"현금흐름·수익률·조달비용 분석, 자금계획서 작성, 회계처리",attitudes:"협력, 정확성, 기준 준수, 이해관계자 관계 유지"}
+        "경영·경제":{tasks:"모집직무: 경영·경제. 한국에너지공단 주요사업 및 기관운영의 경영·경제 분야 업무를 수행하며 세부 과업은 공식 직무기술서 확인",knowledge:"공식 별첨 직무기술서 확인",skills:"NCS 직무능력평가·전공시험 대상 직무로 세부 필요기술은 공식 직무기술서 확인",attitudes:"직무수행태도는 공식 직무기술서 확인"},
+        "법·행정":{tasks:"모집직무: 법·행정. 한국에너지공단 주요사업 및 기관운영의 법·행정 분야 업무를 수행하며 세부 과업은 공식 직무기술서 확인",knowledge:"공식 별첨 직무기술서 확인",skills:"NCS 직무능력평가·전공시험 대상 직무로 세부 필요기술은 공식 직무기술서 확인",attitudes:"직무수행태도는 공식 직무기술서 확인"}
       }
     },
-    "IT":{
-      headcount:"일반 4명",
+    "기술":{
+      headcount:"공개경쟁 · 채용형 인턴(일반)",
       roles:{
-        "보안엔지니어링":{tasks:"정보보안시스템 도입을 위한 설계·구축·유지보수",knowledge:"정보보호 요구사항 평가, 정보자산 분류정책, ISO27001, ISMS-P, 소프트웨어·요구공학",skills:"정보보호 IT기술, 서버 보안SW 설치·운영, 보안패치·업그레이드",attitudes:"보안 시스템 성능 향상 노력, 사고의 근본원인 파악"},
-        "IT시스템관리":{tasks:"HW·SW 지속 점검·모니터링, 문제 분석·예방, 장애 발생 시 조치",knowledge:"가용성·연속성관리, 로그·데이터 분석, ITIL, SQL, 품질개선 기법",skills:"DB 변경·운영관리, 데이터 수집·분석, 네트워크 관리, 기술적 의사소통",attitudes:"개선 의지, 장애 후 추가 이상 확인, 근본원인 탐구"},
-        "IT기술지원":{tasks:"정보시스템·솔루션 환경을 이해하고 장애처리·시스템개선·정기점검 등 기술지원",knowledge:"장애처리 절차, 산출물 작성, 품질보증·관리도구, 기술지원 계약 관련 기본 법률",skills:"장애 시스템 운영, 품질통제 DB 운영, Unix·Windows·Linux, 데이터 추출·변환",attitudes:"적극적 품질통제, 다양한 해결방안 탐색, 분석적·논리적 사고"},
-        "인공지능서비스기획":{tasks:"AI 서비스 목표·모델·시나리오를 기획하고 실행계획 수립",knowledge:"AI 인프라 아키텍처 구성, AI 서비스 시나리오 작성 방법론",skills:"최신 서비스 트렌드 파악, 설계 항목 식별·분석",attitudes:"신기술 이해·적용과 학습에 능동적인 태도"}
-      }
-    },
-    "화학":{
-      headcount:"일반 12명 · 장애 2명",
-      roles:{
-        "화학물질분석":{tasks:"화학물질의 성분·조성·구조·함량·특성을 확인하기 위한 분석계획, 시료채취·전처리·분석, 데이터 해석, 결과보고",knowledge:"화학물질·분석장비 특성, 유해화학물질, 취급 안전수칙, 위험물 안전",skills:"분석장비·문서 전자화, 컴퓨터 활용, 유해화학물질 취급, 안전장비·사고대응",attitudes:"절차·규정 준수, 안전제일, 객관적 분석, 개선 요구 수용"},
-        "화력발전설비운영":{tasks:"전기를 안정적으로 공급하기 위한 발전·환경설비 운전, 점검, 유지정비, 진단, 보전",knowledge:"발전공학, 대기·수질환경 법령, 탈황·탈질·집진·폐수처리 설비 원리",skills:"탈황·탈질·집진·폐수·대기·수질환경설비 조작·운영, 규제치 확인",attitudes:"정비업무의 치밀성, 설비개선, 안전·환경 규정과 운영절차 준수, 책임감"},
-        "환경관리":{tasks:"오염원·오염물질 조사·분석, 환경계획 수립, 배출·방지시설 유지·개선, 환경행정·교육·성과평가",knowledge:"환경행정 절차, 오염물질 특성, 배출·방지시설 운영기준, 처리원리·방지기술, ISO",skills:"측정결과·데이터 분석, 환경행정, 기록관리, 시설 운전, 교육·민원·보고서 작성",attitudes:"치밀한 업무처리, 준법, 문제해결, 적극적 의사소통, 안전제일"},
-        "태양광에너지생산":{tasks:"태양광발전시스템 기획·설계·시공·운영",knowledge:"신재생에너지 설비·신고기준, 관련 법규, 모듈 설치·정비, 전기·기계 특성, 모니터링",skills:"운영관리 계획·분석, 기본 설계도면 작성, 모듈 분석, 전기설계, 발전량 산출",attitudes:"기술기준·안전 절차 준수, 점검 의지, 협업"},
-        "바이오에너지생산":{tasks:"바이오매스를 활용한 에너지 생산시설 설계·설치·운영과 바이오연료·에너지 생산",knowledge:"기체·액체·고체 바이오연료 생산설비 특성·기능·운전·유지보수",skills:"단위설비 조작, 운전·공정상태 점검, 설비 정비",attitudes:"기술기준·안전 절차 준수, 점검 의지, 협업"},
-        "풍력에너지생산":{tasks:"풍력자원 조사, 발전장치·단지 설계·시공, 지속적 유지관리와 전력생산",knowledge:"전기사업법, 풍력시스템 유지관리, 인력·장비·부품, 제어 특성·로직, 모니터링",skills:"운전 판단, 제어로직·운전 해석, 모니터링 프로그램 운용, 특성 판단",attitudes:"기술기준·안전 절차 준수, 점검 의지, 협업"},
-        "연료전지에너지생산":{tasks:"연료·연료전지를 활용한 전기·열 생산 시스템 설계·제작·설치·운영",knowledge:"연료전지 기계·전기·가스 운전특성, 발전설비·계통, 운전·성능복구",skills:"설비 진단, 안전·품질 절차서 개발, 촉매·전력변환 특성 파악, 기계·전기·가스 제어, 부품 검사",attitudes:"기술기준·안전 절차 준수, 점검 의지, 협업"}
-      }
-    },
-    "토목":{
-      headcount:"일반 2명",
-      roles:{
-        "건설공사공무관리":{tasks:"공사기획·계약, 현장운영, 설계변경, 기성·견적·공사비·자원관리, 준공 후 사후관리",knowledge:"계약업무 지침·조정절차, 물량·단가·내역 작성, 표준품셈, 건설 관련 법규",skills:"일위대가 산출, 공사장비 특성·효율 파악, 관련 프로그램 활용",attitudes:"공정한 이해관계 조정, 수치·기준 기반 책임관리, 설득"},
-        "유지관리":{tasks:"시설물 기능·안전 유지를 위한 점검·진단·정비와 보수·보강·성능향상",knowledge:"건설재료·시공·유지관리, 안전점검, 손상 확인, 보수·보강 계획",skills:"안전 관련 법 적용, 점검 항목 선정, 손상·결함 파악, 도면 해석",attitudes:"계획 검토, 손상상태 확인, 안전·기술기준 준수"},
-        "토목건설사업관리":{tasks:"설계도서대로 시공되는지 확인하고 품질·시공·공정·안전·환경관리 기술지도",knowledge:"설계도서·계약 프로세스, 공무·견적, 품셈·공사비, KS 품질기준, 준공서류",skills:"자료수집, 계약서 분석, 적산, 워드·스프레드시트 활용, 의사소통",attitudes:"자료 검토, 문제해결, 공정한 사업비 집행, 책임·투명성"}
-      }
-    },
-    "건축":{
-      headcount:"일반 3명 · 장애 1명",
-      roles:{
-        "건설공사공무관리":{tasks:"공사기획·계약, 현장운영, 설계변경, 기성·견적·공사비·자원관리, 준공 후 사후관리",knowledge:"계약업무 지침·조정절차, 물량·단가·내역 작성, 표준품셈, 건설 관련 법규",skills:"일위대가 산출, 예정공정표 분석, 현장 일정 판단",attitudes:"공정한 이해관계 조정, 기준 기반 책임관리, 설득"},
-        "유지관리":{tasks:"건축시설물 기능·안전 유지를 위한 점검·진단·정비와 보수·보강",knowledge:"설계도서, 안전점검·손상 확인, 유지관리·안전 관련 법",skills:"관련 법 적용, 설계도서 해석, 진단 여부 판단, 작업조건 내역서 작성",attitudes:"안전점검·손상상태 확인, 작업조건 검토, 안전 준수"},
-        "건축설계":{tasks:"건축 요구·기능에 맞춰 조사분석·기획·계획·프레젠테이션·BIM·협력설계·설계도서 작성",knowledge:"건축설계 프로세스, 건축계획, 관련 법체계, 타 분야 시스템 특성",skills:"대인관계·의사소통, 협력사 조율, 설계도서 적합성 판단·검토·승인",attitudes:"법규를 신중하게 해석, 협력사 존중, 신규 시스템 적극 검토"},
-        "건축공사감리":{tasks:"설계도서대로 시공되는지 확인하고 품질·시공·공정·안전·환경관리 기술지도·감독",knowledge:"안전관리자 역할, 공종별 위험요인, 안전 법규, 환경위해요인·민원",skills:"안전장구 사용, 위험요인·민원 원인 파악, 민원 설득",attitudes:"안전사고 예방, 인명 존중, 안전점검 수칙 준수, 정중한 태도"}
+        "건축":{tasks:"모집직무: 건축. 공단의 에너지효율향상·건물에너지 관련 사업 등과 연결되는 기술직으로 세부 과업은 공식 직무기술서 확인",knowledge:"공식 별첨 직무기술서 확인",skills:"직무별 NCS·전공시험 및 세부 필요기술은 공식 직무기술서 확인",attitudes:"직무수행태도는 공식 직무기술서 확인"},
+        "기계":{tasks:"모집직무: 기계. 공단의 에너지효율향상·기기·수송·신재생에너지 관련 사업 등과 연결되는 기술직으로 세부 과업은 공식 직무기술서 확인",knowledge:"공식 별첨 직무기술서 확인",skills:"직무별 NCS·전공시험 및 세부 필요기술은 공식 직무기술서 확인",attitudes:"직무수행태도는 공식 직무기술서 확인"},
+        "데이터분석":{tasks:"모집직무: 데이터분석. 에너지 사용현황·사업성과 등 데이터 기반 분석과 관련되며 세부 과업은 공식 직무기술서 확인",knowledge:"공식 별첨 직무기술서 확인",skills:"데이터분석 관련 세부 필요기술은 공식 직무기술서 확인",attitudes:"직무수행태도는 공식 직무기술서 확인"},
+        "전기":{tasks:"모집직무: 전기. 전력효율향상·고효율기자재·신재생에너지 등 전기 분야와 연결되며 세부 과업은 공식 직무기술서 확인",knowledge:"공식 별첨 직무기술서 확인",skills:"전기 직무 NCS·전공시험 및 세부 필요기술은 공식 직무기술서 확인",attitudes:"직무수행태도는 공식 직무기술서 확인"},
+        "전산":{tasks:"모집직무: 전산. 공단 정보시스템·데이터·디지털 업무와 연결되며 세부 과업은 공식 직무기술서 확인",knowledge:"공식 별첨 직무기술서 확인",skills:"전산 직무 NCS·전공시험 및 세부 필요기술은 공식 직무기술서 확인",attitudes:"직무수행태도는 공식 직무기술서 확인"},
+        "화공·환경":{tasks:"모집직무: 화공·환경. 에너지효율향상·기후변화 대응·온실가스·신재생에너지 사업 등과 연결되며 세부 과업은 공식 직무기술서 확인",knowledge:"공식 별첨 직무기술서 확인",skills:"화공·환경 직무 NCS·전공시험 및 세부 필요기술은 공식 직무기술서 확인",attitudes:"직무수행태도는 공식 직무기술서 확인"}
       }
     }
   }
 };
 
-const SK_OM_ROLE_LIBRARY={
-  sourceLabel:"SK Careers R262054 공식 채용공고 · 별도 직무기술서 없음",
-  groupLabel:"채용직군",
-  roleLabel:"분석할 업무경로",
-  selectionNote:"이 공고는 업무경로별 별도 채용이 아닙니다. 입사 후 발전소 현장운전을 먼저 수행하는 것이 필수이며, 이후 개인역량·희망에 따라 현장운전·생산관리·정비로 이동할 수 있습니다.",
+const HDOILBANK_ROLE_LIBRARY={
+  sourceLabel:"HD현대 2026년 하반기 신입사원 공식 채용페이지 · HD현대오일뱅크 직무소개",
+  groupLabel:"직무군",
+  roleLabel:"분석할 신입직무",
+  majorNote:"공정기술/생산기획은 화학공학 전공이 필수이고, SAP ERP운영은 IT 관련 전공이 필수입니다. 영업·경영일반은 전공 무관으로 안내되어 있습니다. 내 전공과 공고의 필수조건을 함께 확인하세요.",
+  selectionNote:"2026년 하반기 대졸 신입공채의 실제 직무소개를 기준으로 합니다. 경영일반은 공고상 2지망까지 희망 직무를 선택할 수 있습니다.",
   groups:{
-    "O&M 발전소 기술전문직군":{
-      headcount:"정규직 신입 · 여주사업소",
+    "엔지니어":{
+      headcount:"대산",
       roles:{
-        "현장운전":{tasks:"발전설비 운전 및 현장점검 업무",knowledge:"공고에 별도 명시 없음",skills:"공고에 별도 명시 없음",attitudes:"교대근무가 가능한 현장업무 수행 태도 · 세부 태도는 공고에 별도 명시 없음"},
-        "생산관리":{tasks:"발전원가 관리 및 전력거래 지원업무",knowledge:"공고에 별도 명시 없음",skills:"공고에 별도 명시 없음",attitudes:"세부 태도는 공고에 별도 명시 없음"},
-        "정비(기계)":{tasks:"기계 분야 발전설비 유지관리 업무",knowledge:"공고에 별도 명시 없음",skills:"기계 계열 전공·직무 관련 국가기술자격 우대 사실만 공고에서 확인",attitudes:"세부 태도는 공고에 별도 명시 없음"},
-        "정비(전기)":{tasks:"전기 분야 발전설비 유지관리 업무",knowledge:"공고에 별도 명시 없음",skills:"전기 계열 전공·직무 관련 국가기술자격 우대 사실만 공고에서 확인",attitudes:"세부 태도는 공고에 별도 명시 없음"},
-        "정비(제어)":{tasks:"제어 분야 발전설비 유지관리 업무",knowledge:"공고에 별도 명시 없음",skills:"제어 계열 전공·직무 관련 국가기술자격 우대 사실만 공고에서 확인",attitudes:"세부 태도는 공고에 별도 명시 없음"},
-        "정비지원":{tasks:"정비지원 영역의 발전설비 유지관리 업무",knowledge:"공고에 별도 명시 없음",skills:"직무 관련 국가기술자격 우대 사실만 공고에서 확인",attitudes:"세부 태도는 공고에 별도 명시 없음"}
+        "공정기술/생산기획":{tasks:"공정 관리·최적화 및 수익개선, 원료 및 제품 생산 계획 수립·운영",knowledge:"공고상 화학공학 전공 필수",skills:"화공 및 안전 관련 자격증 보유자 우대",attitudes:"세부 직무수행태도는 공고에 별도 명시 없음"}
+      }
+    },
+    "IT":{
+      headcount:"분당(GRC)",
+      roles:{
+        "SAP ERP운영":{tasks:"업무 프로세스 개선(PI), SAP ERP 운영 및 관리",knowledge:"컴퓨터공학·경영정보학·산업공학 등 IT 관련 전공 필수",skills:"SAP ERP 교육 수료/프로젝트 경험, ABAP·SQL 활용 우대",attitudes:"세부 직무수행태도는 공고에 별도 명시 없음"}
+      }
+    },
+    "영업":{
+      headcount:"분당(GRC)",
+      roles:{
+        "해외영업":{tasks:"원유 및 제품 트레이딩",knowledge:"전공 무관",skills:"세부 필요기술은 공고에 별도 명시 없음",attitudes:"세부 직무수행태도는 공고에 별도 명시 없음"},
+        "국내영업":{tasks:"판매 전략 수립 및 판매 채널 관리",knowledge:"전공 무관",skills:"세부 필요기술은 공고에 별도 명시 없음",attitudes:"세부 직무수행태도는 공고에 별도 명시 없음"}
+      }
+    },
+    "경영일반":{
+      headcount:"분당(GRC) · 대산",
+      roles:{
+        "재무회계·HR":{tasks:"재무회계 및 HR 업무",knowledge:"전공 무관",skills:"세부 필요기술은 공고에 별도 명시 없음",attitudes:"세부 직무수행태도는 공고에 별도 명시 없음"},
+        "노무·생산지원":{tasks:"노무 및 생산지원 업무",knowledge:"전공 무관",skills:"세부 필요기술은 공고에 별도 명시 없음",attitudes:"세부 직무수행태도는 공고에 별도 명시 없음"}
       }
     }
   }
 };
 
 const CURATED_ROLE_LIBRARIES={
-  "komipo-2026-3":KOMIPO_ROLE_LIBRARY,
-  "skenergy-2026-clx":SK_OM_ROLE_LIBRARY
+  "kea-2026-h2":KEA_ROLE_LIBRARY,
+  "hdoilbank-2026-h2":HDOILBANK_ROLE_LIBRARY
 };
 
 function emptyCuratedSelection(){return {
-  "komipo-2026-3":{group:"",role:""},
-  "skenergy-2026-clx":{group:"",role:""}
+  "kea-2026-h2":{group:"",role:""},
+  "hdoilbank-2026-h2":{group:"",role:""}
 };}
 
 function normalizeAnalysisCase(c={}){
@@ -160,16 +150,16 @@ function roleCaseKey(id=state?.sampleJobId){
 }
 
 const defaults=()=>({
-  version:8,currentStep:1,updatedAt:"",
-  target:{industry:"에너지",job:"",company:"",initialView:""},
+  version:9,currentStep:1,updatedAt:"",
+  target:{industry:"",job:"",company:"",initialView:""},
   student:{major:"",majorEvidence:"",certificates:"",language:"",tools:"",otherSpec:""},
   step2Search:{company:"",title:"",sourceUrl:"",memo:""},
   sampleJobId:"",
   curatedSelection:emptyCuratedSelection(),
   customJob:emptyCustomJob(),
   analysisCases:{
-    "komipo-2026-3":emptyAnalysisCase(),
-    "skenergy-2026-clx":emptyAnalysisCase(),
+    "kea-2026-h2":emptyAnalysisCase(),
+    "hdoilbank-2026-h2":emptyAnalysisCase(),
     "custom":emptyAnalysisCase()
   },
   jobTable:emptyJobTable(),
@@ -247,15 +237,16 @@ function load(){
     }
 
     return {
-      ...b,...x,version:8,currentStep:mappedStep,
+      ...b,...x,version:9,currentStep:mappedStep,
       target:{...b.target,...(x.target||{})},
       student:{...b.student,...(x.student||{})},
       step2Search:{...b.step2Search,...(x.step2Search||{})},
+      sampleJobId:["komipo-2026-3","skenergy-2026-clx"].includes(x.sampleJobId)?"":(x.sampleJobId||""),
       curatedSelection:{
         ...emptyCuratedSelection(),
         ...(x.curatedSelection||{}),
-        "komipo-2026-3":{...emptyCuratedSelection()["komipo-2026-3"],...(x.curatedSelection?.["komipo-2026-3"]||{})},
-        "skenergy-2026-clx":{...emptyCuratedSelection()["skenergy-2026-clx"],...(x.curatedSelection?.["skenergy-2026-clx"]||{})}
+        "kea-2026-h2":{...emptyCuratedSelection()["kea-2026-h2"],...(x.curatedSelection?.["kea-2026-h2"]||{})},
+        "hdoilbank-2026-h2":{...emptyCuratedSelection()["hdoilbank-2026-h2"],...(x.curatedSelection?.["hdoilbank-2026-h2"]||{})}
       },
       customJob:{...emptyCustomJob(),...(x.customJob||{})},
       analysisCases,
@@ -361,13 +352,14 @@ function bulletOutputRules(){
 }
 
 function energySearchPrompt(){
+  const industry=state.target.industry||"관심 산업";
   return [
-    "나는 "+(state.student.major||"전공 미입력")+" 전공 대학생이고, 에너지 산업의 "+(state.target.job||"관심 직무")+"를 탐색하고 있어.",
+    "나는 "+(state.student.major||"전공 미입력")+" 전공 대학생이고, "+industry+" 산업의 "+(state.target.job||"관심 직무")+"를 탐색하고 있어.",
     "",
     "지금 채용 중인 공고가 적을 수 있으니 다음 순서로 찾아줘.",
-    "1. 현재 모집 중인 에너지 공기업·발전사 공고",
-    "2. 현재 모집 중인 정유·전력·에너지 대기업 공고",
-    "3. 현재 공고가 없다면 최근 6개월 이내 신입·인턴 공고",
+    "1. 현재 모집 중인 "+industry+" 산업의 신입·채용연계형 인턴 공고",
+    "2. 공공기관과 민간기업을 모두 확인",
+    "3. 현재 공고가 없다면 최근 6개월 이내 신입 공고",
     "",
     "각 공고마다 아래 항목만 정리해줘.",
     "[기업명]",
@@ -385,9 +377,9 @@ function energySearchPrompt(){
 function step1(){
   return shell(1,"Target Job","먼저 분석할 직무와 내 전공을 정합니다. 이후 모든 AI 프롬프트가 이 입력을 사용합니다.",
     '<div class="grid2">'+
-      field("target.industry","관심 산업","에너지",false)+
-      field("target.job","분석할 직무","예: 발전운영·정비, 생산기술, 안전·환경, 전기설비, 품질관리",false)+
-      field("student.major","내 전공","예: 전기공학, 기계공학, 화학공학, 환경공학",false)+
+      field("target.industry","관심 산업","예: 에너지, 반도체, 자동차, 금융, 콘텐츠",false)+
+      field("target.job","분석할 직무","예: 생산기술, 데이터분석, 영업, 품질관리, 인사",false)+
+      field("student.major","내 전공","예: 전기공학, 경영학, 화학공학, 컴퓨터공학",false)+
       field("target.initialView","지금 생각하는 이 직무 <span class=\"hint\">(선택)</span>","이 직무는 어떤 일을 하는 사람이라고 생각하나요?")+
     '</div>'+
     '<div class="callout good"><b>여기까지 입력하면 충분합니다.</b> 다음 단계부터 직무·전공에 맞춰 AI 프롬프트가 자동으로 달라집니다.</div>');
@@ -405,9 +397,9 @@ function step2SearchPromptBox(){
 }
 
 function step2(){
-  return shell(2,"Find JD","먼저 직접 최근 채용공고를 찾아봅니다. 에너지 공고가 없거나 마감되어 있어도 괜찮습니다.",
+  return shell(2,"Find JD","먼저 내가 관심 있는 산업의 최근 채용공고를 직접 찾아봅니다. 공고가 없거나 마감되어 있어도 괜찮습니다.",
     '<div class="block"><h3>① 실제 공고 한번 찾아보기</h3><p class="help">공고가 있으면 기록하고, 없으면 “현재 찾지 못함”이라고 적고 STEP 3으로 이동합니다.</p><div class="siteSection"><b>민간기업</b><div class="jobSiteGrid">'+
-      jobSite("사람인","https://www.saramin.co.kr/","에너지·제조 공고")+
+      jobSite("사람인","https://www.saramin.co.kr/","민간기업 신입 공고")+
       jobSite("잡코리아","https://www.jobkorea.co.kr/","대기업·공채")+
       jobSite("고용24","https://www.work24.go.kr/","정부 통합 채용정보")+
     '</div></div><div class="siteSection"><b>공공기관</b><div class="jobSiteGrid">'+
@@ -415,12 +407,12 @@ function step2(){
       jobSite("클린아이 잡플러스","https://job.cleaneye.go.kr/","지방공공기관")+
     '</div></div></div>'+
     '<div class="block"><h3>② 검색 결과 한 줄만 기록</h3><div class="grid2">'+
-      field("step2Search.company","찾은 기업","예: 한국남부발전 / 찾지 못함",false)+
+      field("step2Search.company","찾은 기업","예: 관심 기업명 / 찾지 못함",false)+
       field("step2Search.title","찾은 직무·공고","예: 기술직 신입 / 현재 관련 공고 없음",false)+
       '<div class="field span2"><label>공고 주소 <span class="hint">(선택)</span></label><input class="input" data-path="step2Search.sourceUrl" value="'+h(state.step2Search.sourceUrl||"")+'" placeholder="https://..." /></div>'+
       field("step2Search.memo","검색 메모 <span class=\"hint\">(선택)</span>","어떤 검색어를 썼는지, 왜 적절한 공고를 찾기 어려웠는지 간단히 적어도 됩니다.")+
     '</div></div>'+step2SearchPromptBox()+
-    '<div class="callout info"><b>공고가 없어도 수업은 계속됩니다.</b> STEP 3에서 실제 2026년 에너지 공기업·대기업 공고 예시를 제공합니다.</div>');
+    '<div class="callout info"><b>공고가 없어도 수업은 계속됩니다.</b> STEP 3에서는 수업용 예시로 한국에너지공단과 HD현대오일뱅크의 2026년 신입 채용을 제공합니다.</div>');
 }
 
 function postingLines(text=""){
@@ -574,7 +566,7 @@ function selectedJob(){
     selectedRole:sel.role,
     roleData,
     facts:roleFacts,
-    note:"교수자가 제공한 2026 공고문·직무기술서 중 '"+sel.role+"' 관련 내용만 사용합니다."
+    note:(CURATED_ROLE_LIBRARIES[base.id]?.sourceLabel||base.source)+" 중 '"+sel.role+"' 관련 기준자료만 사용합니다."
   };
 }
 
@@ -590,15 +582,7 @@ function curatedRoleReady(id=state.sampleJobId){
 }
 
 function majorExplorationHint(major=""){
-  const m=String(major||"").toLowerCase();
-  let group="";
-  if(/컴퓨터|소프트웨어|정보통신|인공지능|ai|데이터|보안/.test(m))group="IT";
-  else if(/화학|화공|환경/.test(m))group="화학";
-  else if(/토목|건설환경|건설시스템/.test(m))group="토목";
-  else if(/건축/.test(m))group="건축";
-  else if(/경영|경제|회계|행정|법학|법 /.test(m))group="사무";
-  if(group)return "전공명 기준 탐색 힌트: "+major+" → "+group+" 직군을 먼저 살펴볼 수 있습니다. 다만 이번 공고는 전공 제한이 없으므로 최종 선택은 관심 직무와 준비 가능성을 기준으로 직접 하세요.";
-  return "이번 공고는 전공 제한이 없습니다. '"+(major||"전공 미입력")+"'만으로 지원 직군을 자동 결정하지 않고, 아래 모집 직군과 세부직무를 직접 비교해 선택하세요.";
+  return "내 전공 '"+(major||"미입력")+"'을 참고하되, 전공만으로 직무를 자동 결정하지 않습니다. 공고의 직무별 필수조건과 실제 업무를 비교해 직접 선택하세요.";
 }
 
 function jobAnalysisPrompt(){
@@ -681,7 +665,7 @@ function analysisMethodCards(){
     ...CURATED_JOBS.map((j,i)=>({
       ...j,
       method:"방법 "+(i+1),
-      desc:i===0?"제공된 공고문·직무기술서에서 내 직무를 골라 분석":"SK Careers 공고의 담당업무에서 분석할 업무경로를 골라 분석"
+      desc:i===0?"현재 한국에너지공단 신입 채용에서 직무를 골라 분석":"HD현대오일뱅크 대졸 신입공채의 다양한 직무 중 하나를 골라 분석"
     })),
     {
       ...custom,id:"custom",method:"방법 3",type:"직접 입력",
@@ -712,16 +696,13 @@ function curatedRoleSelector(id){
   if(!lib)return "";
   const groups=Object.keys(lib.groups||{});
   const sel=state.curatedSelection?.[id]||{group:"",role:""};
-  const isSk=id==="skenergy-2026-clx";
-  const groupLabel=lib.groupLabel||(isSk?"채용직군":"지원 직군");
-  const roleLabel=lib.roleLabel||(isSk?"분석할 업무경로":"분석할 세부직무");
+  const groupLabel=lib.groupLabel||"직군";
+  const roleLabel=lib.roleLabel||"분석할 직무";
   const groupOpts='<option value="">'+h(groupLabel)+' 선택</option>'+groups.map(g=>'<option value="'+h(g)+'" '+(sel.group===g?"selected":"")+'>'+h(g)+' · '+h(lib.groups[g].headcount||"")+'</option>').join("");
   const roles=sel.group?Object.keys(lib.groups[sel.group]?.roles||{}):[];
   const roleOpts='<option value="">'+h(roleLabel)+' 선택</option>'+roles.map(r=>'<option value="'+h(r)+'" '+(sel.role===r?"selected":"")+'>'+h(r)+'</option>').join("");
   const role=selectedRoleData(id);
-  const majorInfo=isSk
-    ? "공고상 지원자격은 이공계열 전공이며, 기계·전기·제어 계열 전공은 우대사항입니다. 전공만으로 직무를 자동 결정하지 말고 관심 업무경로를 직접 선택하세요."
-    : majorExplorationHint(state.student.major);
+  const majorInfo=lib.majorNote||majorExplorationHint(state.student.major);
   return '<div class="rolePicker">'+
     '<div class="majorStrip"><span>내 전공</span><b>'+h(state.student.major||"STEP 1에서 전공을 입력하세요.")+'</b></div>'+
     '<div class="callout info">'+h(majorInfo)+'</div>'+
@@ -730,7 +711,7 @@ function curatedRoleSelector(id){
       '<div class="field"><label>1. '+h(groupLabel)+' 선택</label><select class="input" data-curated-group="'+h(id)+'">'+groupOpts+'</select></div>'+
       '<div class="field"><label>2. '+h(roleLabel)+' 선택</label><select class="input" data-curated-role="'+h(id)+'" '+(sel.group?"":"disabled")+'>'+roleOpts+'</select></div>'+
     '</div>'+
-    '<p class="help">기준자료 · '+h(lib.sourceLabel)+(isSk?" · 별도 직무기술서 없이 공고문만 사용":" · 전공은 지원자격 필터가 아니라 탐색 참고정보")+'</p>'+
+    '<p class="help">기준자료 · '+h(lib.sourceLabel)+'</p>'+
     (role?'<div class="roleEvidence"><b>'+h(sel.group+" → "+sel.role)+'</b><span>공고에서 확인한 업무 · '+h(role.tasks)+'</span><span>필요지식 · '+h(role.knowledge)+'</span><span>필요기술/우대근거 · '+h(role.skills)+'</span></div>':'<div class="callout good"><b>'+h(roleLabel)+'를 하나 고르세요.</b> 선택한 항목의 자료만 다음 AI 직무분석에 사용됩니다.</div>')+
   '</div>';
 }
@@ -1278,7 +1259,7 @@ function syncSelectedPosting(){
 }
 
 function selectAnalysisMethod(id){
-  if(!["komipo-2026-3","skenergy-2026-clx","custom"].includes(id))return;
+  if(!["kea-2026-h2","hdoilbank-2026-h2","custom"].includes(id))return;
   snapshotActiveCase();
   state.sampleJobId=id;
   restoreAnalysisCase(roleCaseKey(id));
