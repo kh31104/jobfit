@@ -220,3 +220,8 @@
   .jobTableItem textarea{min-height:102px}
   .shortPrompt{min-height:190px}
 }
+
+
+.threeMethods{grid-template-columns:repeat(3,minmax(0,1fr))}
+.customJobBox{display:grid;gap:12px;padding:14px;border:1px solid #d9e2ff;border-radius:16px;background:#fbfcff}
+@media(max-width:900px){.threeMethods{grid-template-columns:1fr}}
