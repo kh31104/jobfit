@@ -900,13 +900,82 @@ function step4(){
     '<div class="callout warn"><b>확인 원칙:</b> AI가 제시한 역량 중 내 행동으로 설명할 수 없는 키워드는 삭제합니다.</div>');
 }
 
+function step5TargetValue(){
+  if(state.sampleJobId==="custom")return "custom";
+  const sel=state.curatedSelection?.[state.sampleJobId]||{};
+  return sel.group&&sel.role?["curated",state.sampleJobId,sel.group,sel.role].join("|"):"";
+}
+
+function step5TargetOptions(){
+  const groups=[];
+  for(const job of CURATED_JOBS){
+    const lib=CURATED_ROLE_LIBRARIES[job.id];
+    if(!lib?.groups)continue;
+    const options=[];
+    for(const [groupName,group] of Object.entries(lib.groups)){
+      for(const roleName of Object.keys(group.roles||{})){
+        const value=["curated",job.id,groupName,roleName].join("|");
+        const selected=step5TargetValue()===value?" selected":"";
+        options.push('<option value="'+h(value)+'"'+selected+'>'+h(groupName+" → "+roleName)+'</option>');
+      }
+    }
+    if(options.length)groups.push('<optgroup label="'+h(job.company)+'">'+options.join("")+'</optgroup>');
+  }
+  const custom=state.customJob||emptyCustomJob();
+  if(filled(custom.company)&&filled(custom.role)){
+    groups.push('<optgroup label="내가 찾은 기업"><option value="custom" '+(step5TargetValue()==="custom"?"selected":"")+'>'+h(custom.company+" → "+custom.role)+'</option></optgroup>');
+  }
+  return '<option value="">비교 대상을 선택하세요</option>'+groups.join("");
+}
+
+function step5TargetPicker(){
+  const j=selectedJob();
+  const roleData=selectedRoleData();
+  const hasAnalysis=["tasks","competencies","challenge","method"].some(k=>filled(state.jobTable?.[k]));
+  const sourceNote=hasAnalysis
+    ?"STEP 3에서 작성한 직무분석 결과를 함께 사용합니다."
+    :(roleData?"STEP 3 분석표는 비어 있지만, 등록된 공고·직무자료를 기준으로 비교할 수 있습니다.":"STEP 3 직무분석 결과가 없으면 공고 조건 중심으로 비교합니다.");
+  return '<div class="block gapTargetBlock"><h3>① 비교 대상 확인·선택</h3>'+
+    '<p class="help">STEP 3에서 마지막으로 고른 기업·직무가 자동 선택됩니다. 다른 직무와 비교하고 싶으면 아래에서 바로 바꾸세요.</p>'+
+    '<div class="selectedJobSummary"><b>현재 비교 대상 · '+h(j?j.company:"미선택")+'</b><span>'+h(j?(j.role+" · "+j.title):"비교할 기업·직무를 선택하세요.")+'</span></div>'+
+    '<div class="field"><label>비교 대상 직접 선택</label><select class="input" id="step5TargetSelect">'+step5TargetOptions()+'</select></div>'+
+    '<div class="targetSourceNote">'+h(sourceNote)+'</div>'+
+  '</div>';
+}
+
+function selectStep5Target(value){
+  if(!value)return;
+  snapshotActiveCase();
+  if(value==="custom"){
+    if(!filled(state.customJob?.company)||!filled(state.customJob?.role)){
+      toast("STEP 3 방법 3에서 기업명과 직무를 먼저 입력해 주세요.");
+      return;
+    }
+    state.sampleJobId="custom";
+    restoreAnalysisCase("custom");
+  }else{
+    const [kind,id,group,role]=String(value).split("|");
+    if(kind!=="curated"||!id||!group||!role)return;
+    state.sampleJobId=id;
+    state.curatedSelection??=emptyCuratedSelection();
+    state.curatedSelection[id]={group,role};
+    restoreAnalysisCase(roleCaseKey(id));
+  }
+  syncSelectedPosting();
+  save();render();
+  toast("STEP 5 비교 대상을 변경했습니다.");
+}
+
 function ensureRequirements(){
   const j=selectedCuratedJob();
+  const roleData=selectedRoleData();
   const src=[];
   if(j){
     String(j.required||"").split(/\n+/).map(x=>x.trim()).filter(Boolean).forEach(x=>src.push(x));
-    if(src.length<3&&filled(state.jobTable.competencies))src.push("직무 필요역량: "+state.jobTable.competencies);
-    if(src.length<3&&filled(state.jobTable.tasks))src.push("주요 과업 수행 준비: "+state.jobTable.tasks);
+    const competencyText=state.jobTable.competencies||[roleData?.knowledge,roleData?.skills,roleData?.attitudes].filter(filled).join(" / ");
+    const taskText=state.jobTable.tasks||roleData?.tasks||"";
+    if(src.length<3&&filled(competencyText))src.push("직무 필요역량: "+competencyText);
+    if(src.length<3&&filled(taskText))src.push("주요 과업 수행 준비: "+taskText);
   }
   src.slice(0,3).forEach((line,i)=>{if(!filled(state.requirements[i]?.condition))state.requirements[i].condition=line;});
 }
@@ -922,10 +991,13 @@ function requirementRows(){
 
 function gapPrompt(){
   const j=selectedCuratedJob();
+  const roleData=selectedRoleData();
+  const taskText=state.jobTable.tasks||roleData?.tasks||"미입력";
+  const competencyText=state.jobTable.competencies||[roleData?.knowledge,roleData?.skills,roleData?.attitudes].filter(filled).join(" / ")||"미입력";
   const reqs=state.requirements.filter(r=>filled(r.condition)).map((r,i)=>(i+1)+". "+r.condition+" / 내 판정: "+(r.status||"미판정")+" / 근거: "+(r.note||"없음"));
   const exps=state.experiences.filter(e=>filled(e.title)||filled(e.summary)).map((e,i)=>(i+1)+". "+(e.title||"경험")+" - "+(e.summary||""));
   return [
-    "나는 "+(state.student.major||"전공 미입력")+" 전공 취업준비생이고, "+(state.target.job||j?.role||"에너지 직무")+"를 준비하고 있다.",
+    "나는 "+(state.student.major||"전공 미입력")+" 전공 취업준비생이고, "+(j?.role||state.target.job||"에너지 직무")+"를 준비하고 있다.",
     "",
     "[선택 공고]",
     j?j.company+" / "+j.title+" / "+j.role:"공고 미선택",
@@ -933,9 +1005,9 @@ function gapPrompt(){
     j?"공고 링크: "+j.sourceUrl:"",
     "",
     "[직무에서 하는 일]",
-    state.jobTable.tasks||"미입력",
+    taskText,
     "[직무 필요역량]",
-    state.jobTable.competencies||"미입력",
+    competencyText,
     "",
     "[공고·직무 조건과 내가 판단한 상태]",
     ...(reqs.length?reqs:["아직 입력하지 않음"]),
@@ -984,23 +1056,22 @@ function gapPrompt(){
 }
 
 function step5(){
-  const j=selectedCuratedJob();
   return shell(5,"JD Requirements × My Spec → GAP","공고에서 요구하는 조건과 내 현재 스펙을 비교해 지금 준비할 GAP을 정합니다.",
-    '<div class="selectedJobSummary"><b>비교 대상 · '+h(j?j.company:"공고 미선택")+'</b><span>'+h(j?j.title:"STEP 3에서 공고를 선택하세요.")+'</span></div>'+
-    '<div class="block"><h3>① 내 스펙 빠르게 입력</h3><div class="grid2">'+
+    step5TargetPicker()+
+    '<div class="block"><h3>② 내 스펙 빠르게 입력</h3><div class="grid2">'+
       '<div class="field"><label>내 전공</label><input class="input" value="'+h(state.student.major||"")+'" disabled /></div>'+
       field("student.certificates","자격증","예: 전기기사 / 산업안전기사 준비 중 / 없음",false)+
       field("student.language","어학","예: TOEIC 820 / OPIc IM2 / 없음",false)+
       field("student.tools","도구·기술","예: Excel, Python, CAD, Minitab, 실험장비",false)+
       field("student.otherSpec","기타 스펙 <span class=\"hint\">(선택)</span>","인턴, 교육, 수상, 현장실습 등",false,true)+
     '</div></div>'+
-    '<div class="divider"></div><div class="block"><h3>② 공고·직무 조건 3개만 비교</h3><p class="help">조건이 공고에서 명확하지 않으면 ‘원문 확인 필요’를 선택합니다.</p><div class="requirementList">'+requirementRows()+'</div></div>'+
-    '<div class="divider"></div><div class="block"><h3>③ AI로 내 GAP 분석</h3><p class="help">공고, 직무분석, 전공, 경험, 스펙이 모두 들어간 개인 프롬프트입니다.</p>'+
+    '<div class="divider"></div><div class="block"><h3>③ 공고·직무 조건 3개만 비교</h3><p class="help">조건이 공고에서 명확하지 않으면 ‘원문 확인 필요’를 선택합니다.</p><div class="requirementList">'+requirementRows()+'</div></div>'+
+    '<div class="divider"></div><div class="block"><h3>④ AI로 내 GAP 분석</h3><p class="help">공고, 직무분석, 전공, 경험, 스펙이 모두 들어간 개인 프롬프트입니다.</p>'+
       '<textarea class="promptBox promptEditor shortPrompt" id="gapPromptPreview">'+h(gapPrompt())+'</textarea>'+
       '<div class="actions compactActions"><button class="btn ghost" id="refreshGapPromptBtn">현재 입력 반영</button><button class="btn secondary" id="copyGapPromptBtn">내 GAP 분석 프롬프트 복사</button></div>'+
       field("ai.gapResult","AI GAP 분석 결과 <span class=\"hint\">(선택)</span>","AI의 GAP 분석 결과를 붙여넣으세요.")+
     '</div>'+
-    '<div class="divider"></div><div class="block"><h3>④ 내가 정한 최종 GAP과 행동</h3><div class="grid2">'+
+    '<div class="divider"></div><div class="block"><h3>⑤ 내가 정한 최종 GAP과 행동</h3><div class="grid2">'+
       field("fit.assets","현재 갖춘 강점·스펙","공고와 연결되는 내 근거")+
       field("fit.gaps","우선 보완할 GAP","최대 3개만 남기세요.")+
       field("fit.actions","3개월 행동계획","무엇을 언제까지 어떤 결과물로 만들 것인가?")+
@@ -1321,6 +1392,7 @@ function bind(){
   });
   document.querySelectorAll("[data-next]").forEach(e=>e.onclick=()=>go(Number(e.dataset.next)));
   document.querySelectorAll("[data-prev]").forEach(e=>e.onclick=()=>go(Number(e.dataset.prev)));
+  document.getElementById("step5TargetSelect")?.addEventListener("change",e=>selectStep5Target(e.target.value));
 
   document.getElementById("copySearchPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("searchPromptPreview")?.value||energySearchPrompt(),"내 채용공고 검색 프롬프트를 복사했습니다."));
   document.getElementById("refreshJobPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("jobPromptPreview");if(e)e.value=jobAnalysisPrompt();toast("현재 분석 대상 정보를 프롬프트에 반영했습니다.");});
