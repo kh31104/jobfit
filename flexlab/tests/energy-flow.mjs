@@ -161,7 +161,11 @@ try{
   assert(selfPrompt.includes('환경설비 캡스톤'),'Self-intro prompt must be personalized');
   assert(selfPrompt.includes('개조식'),'Self-intro prompt must request bullet-style output');
   assert(interviewPrompt.includes('대기환경기사 미취득'),'Interview prompt must include GAP');
-  assert(interviewPrompt.includes('개조식'),'Interview prompt must request bullet-style feedback');
+  assert(interviewPrompt.includes('개조식'),'Interview prompt must request bullet-style output');
+  assert(interviewPrompt.includes('총 12개의 실무면접 예상질문'),'Interview prompt must request a practical question set');
+  assert(interviewPrompt.includes('[1. 직무이해·실무지식 · 4문항]'),'Interview prompt must include role-knowledge questions');
+  assert(interviewPrompt.includes('예상 꼬리질문'),'Interview prompt must request follow-up questions');
+  assert(interviewPrompt.includes('모범답안은 쓰지 않는다'),'Interview prompt must not generate model answers');
 
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:flexlab:job-analysis:v1')));
   assert(saved.version===8,'FLEX state version must be 8');
