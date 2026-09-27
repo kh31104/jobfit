@@ -363,51 +363,110 @@ function optionalComparison(){
     '<div class="grid2">'+field("comparison.common","여러 공고의 공통 요구","여러 회사에서 반복되는 요구")+field("comparison.differences","기업별 차이","특정 회사에서만 강조되는 요구")+'</div></div></details>';
 }
 
+function selectedCuratedJob(){
+  return CURATED_JOBS.find(x=>x.id===state.sampleJobId)||null;
+}
+
 function jobAnalysisPrompt(){
-  const p=state.postings[activePosting];
+  const j=selectedCuratedJob();
+  if(!j)return "먼저 STEP 3에서 분석할 공고를 선택하세요.";
   return [
-    "나는 대학생이며 "+(state.target.job||p.title||"희망 직무")+"를 분석하고 있다.","",
-    "[실제 채용공고]",p.text||"(공고 원문을 입력하세요)","",
-    "다음 기준으로 분석해줘.",
-    "1. 공고에서 직접 확인되는 TASK(담당업무)",
-    "2. GATE(필수·지원자격)",
-    "3. PREFERENCE(우대조건)",
-    "4. Knowledge / Skill / Behavior / Experience",
-    "5. 반복되거나 강조되는 SIGNAL",
-    "6. 업무내용을 바탕으로 추정할 수 있는 KPI/KBI 후보",
-    "7. 대학생이 준비할 수 있는 Evidence","",
-    "반드시 [공고 직접근거]와 [추론]을 구분해줘.",
-    "공고에 없는 사실을 공고에 적혀 있는 것처럼 표현하지 말고, 확인할 수 없는 KPI·KBI는 '공고만으로 확인 불가'라고 표시해줘."
+    "나는 "+(state.student.major||"전공 미입력")+" 전공 대학생이고, "+(state.target.job||"에너지 관련 직무")+"를 준비하고 있다.",
+    "",
+    "[선택한 실제 채용공고]",
+    "기업: "+j.company,
+    "공고: "+j.title,
+    "직무/분야: "+j.role,
+    "모집기간: "+j.period,
+    "확인된 기본정보: "+j.facts,
+    "공식·공공 출처: "+j.sourceUrl,
+    "",
+    "가능하면 위 링크의 현재 공고와 직무기술서를 직접 확인해 직무분석을 해줘.",
+    "링크의 세부내용을 확인할 수 없다면 모르는 내용을 만들지 말고 '원문 확인 필요'라고 써줘.",
+    "",
+    "아래 6개 제목을 그대로 사용해 답해줘.",
+    "고객·KPI:",
+    "주요 과업:",
+    "주요 해결과제:",
+    "해결방법:",
+    "필요역량:",
+    "경력개발:",
+    "",
+    "작성 원칙:",
+    "- [공고에서 확인]과 [직무 특성상 추론]을 구분한다.",
+    "- KPI가 공고에 없으면 임의의 수치 목표를 만들지 않는다.",
+    "- 필요역량은 지식(Knowledge), 기술(Skill), 행동(Behavior) 중 실제 근거가 있는 것 중심으로 쓴다.",
+    "- "+(state.student.major||"내 전공")+" 학생이 이해하기 쉬운 표현으로 설명한다.",
+    "- 각 항목은 2~4개 핵심 내용만 적는다."
   ].join("\n");
 }
 
-function step3(){
-  const p=state.postings[activePosting];
-  const tabs=state.postings.map((_,i)=>'<button class="tabBtn '+(i===activePosting?"active":"")+'" data-tab="'+i+'">'+(i===0?"공고 1 · 기본 분석":"공고 "+(i+1)+" · 심화 선택")+'</button>').join("");
-  const cards=Object.entries(signals()).map(([cat,items])=>'<div class="signalCard"><h4>'+cat+'</h4><div class="pills">'+(items.length?items.slice(0,10).map(x=>'<span class="pill">'+h(x.w)+' <strong>'+x.count+'</strong></span>').join(""):'<span class="hint">발견된 후보가 없습니다.</span>')+'</div></div>').join("");
-  const evidence=evidenceRows();
-  const trs=evidence.length?evidence.slice(0,45).map(r=>'<tr><td>공고 '+r.posting+'</td><td>'+h(r.section)+'</td><td>'+h(r.line)+'</td><td>'+signalLabel(r.signals)+'</td></tr>').join(""):'<tr><td colspan="4">채용공고를 입력하면 원문 근거표가 만들어집니다.</td></tr>';
+function parseJobTableResult(raw){
+  const map=[
+    ["customerKpi",/^(?:#+\s*)?(?:고객\s*[·/&]\s*KPI|고객\s*및\s*KPI|고객|KPI)\s*[:：]?/i],
+    ["tasks",/^(?:#+\s*)?(?:주요\s*과업|과업|주요\s*업무)\s*[:：]?/i],
+    ["challenge",/^(?:#+\s*)?(?:주요\s*해결과제|해결과제|과제)\s*[:：]?/i],
+    ["method",/^(?:#+\s*)?(?:해결방법|해결\s*방법|방법)\s*[:：]?/i],
+    ["competencies",/^(?:#+\s*)?(?:필요역량|필요\s*역량|역량)\s*[:：]?/i],
+    ["careerPlan",/^(?:#+\s*)?(?:경력개발|경력\s*개발|경력계획)\s*[:：]?/i]
+  ];
+  const out={};let current="";
+  for(const original of String(raw||"").split(/\r?\n/)){
+    const line=original.trim();if(!line)continue;
+    const hit=map.find(([,re])=>re.test(line));
+    if(hit){
+      current=hit[0];
+      const rest=line.replace(hit[1],"").trim();
+      if(rest)out[current]=rest;
+      continue;
+    }
+    if(current)out[current]=(out[current]?out[current]+"\n":"")+line.replace(/^[-*•]\s*/,"");
+  }
+  return out;
+}
 
-  return shell(3,"JD Analyzer","TASK → GATE/PREFERENCE → KSA → SIGNAL 순서로 회사가 원하는 것을 분리합니다.",
-    '<div class="postingTabs">'+tabs+'</div>'+
-    '<div class="grid2"><div class="field"><label>기업명</label><input class="input" data-pf="company" value="'+h(p.company)+'" /></div><div class="field"><label>공고 직무명</label><input class="input" data-pf="title" value="'+h(p.title)+'" /></div></div>'+
-    '<div class="block"><div class="field"><label>채용공고 원문</label><textarea class="input tall" data-pf="text" placeholder="담당업무, 자격요건, 우대사항이 보이도록 붙여넣으세요.">'+h(p.text)+'</textarea></div><div class="actions compactActions"><button class="btn secondary" id="parsePostingBtn">TASK·조건 자동 나누기</button></div></div>'+
-    '<div class="block"><h3>① TASK · GATE · PREFERENCE</h3><div class="grid2">'+
-      '<div class="field"><label>TASK · 담당업무</label><textarea class="input" data-pf="tasks" placeholder="실제로 하게 될 일">'+h(p.tasks)+'</textarea></div>'+
-      '<div class="field"><label>GATE · 필수/지원자격</label><textarea class="input" data-pf="required" placeholder="지원 가능한 최소 조건">'+h(p.required)+'</textarea></div>'+
-      '<div class="field"><label>PREFERENCE · 우대사항</label><textarea class="input" data-pf="preferred" placeholder="있으면 경쟁력이 되는 조건">'+h(p.preferred)+'</textarea></div>'+
-      '<div class="field"><label>SELECTION/기타</label><textarea class="input" data-pf="other" placeholder="전형절차·근무조건·기타">'+h(p.other)+'</textarea></div>'+
-    '</div><div class="field"><label>내가 읽어낸 핵심</label><textarea class="input" data-pf="notes" placeholder="이 회사가 이 직무 사람에게 실제로 시키려는 일은?">'+h(p.notes)+'</textarea></div></div>'+
-    '<div class="divider"></div><div class="block"><h3>② KSA · 업무수행에 필요한 것</h3><div class="grid2">'+
-      field("competency.knowledge","Knowledge · 지식","전공지식, 산업·공정·제품·법규 등")+
-      field("competency.skill","Skill · 기술","설계, 데이터분석, CAD, Excel, Python 등")+
-      field("competency.behavior","Behavior · 행동/업무방식","공고에서 직접 확인되는 협업·정확성·문제해결 등")+
-      field("competency.experience","Experience · 경험","인턴, 프로젝트, 실험, 현장실습 등")+
-    '</div><div class="callout warn"><b>근거 원칙:</b> 공고에서 직접 확인되지 않는 Behavior는 “확인되지 않음”으로 두어도 됩니다.</div></div>'+
-    '<div class="block"><h3>③ SIGNAL · 반복·강조 신호</h3>'+field("competency.signal","이 회사·직무가 강조하는 신호","예: 안전, 데이터, 품질, 공정개선, 글로벌, 고객")+field("competency.top5","핵심 요구 TOP 5","공고 원문에서 근거를 찾을 수 있는 항목 5개")+'</div>'+
-    '<details class="optionBox"><summary>근거 확인 · 원문 문장과 키워드 보기</summary><div class="optionBody"><div class="tableWrap"><table><thead><tr><th>공고</th><th>구분</th><th>원문 근거</th><th>분류 후보</th></tr></thead><tbody>'+trs+'</tbody></table></div><div class="signalGrid">'+cards+'</div></div></details>'+
-    '<details class="optionBox"><summary>AI로 더 깊게 분석하기 · 프롬프트 확인</summary><div class="optionBody"><p class="help">아래 프롬프트 전체를 먼저 읽고 필요하면 직접 수정하세요. 확인한 뒤에만 복사합니다.</p><textarea class="promptBox promptEditor" id="jobPromptPreview">'+h(jobAnalysisPrompt())+'</textarea><div class="actions compactActions"><button class="btn ghost" id="refreshJobPromptBtn">현재 입력으로 다시 만들기</button><button class="btn secondary" id="copyReviewedJobPromptBtn">내용 확인 후 프롬프트 복사</button></div></div></details>'+
-    optionalComparison());
+function curatedJobCards(){
+  return '<div class="curatedJobGrid">'+CURATED_JOBS.map(j=>{
+    const on=state.sampleJobId===j.id;
+    return '<article class="curatedJob '+(on?"selected":"")+'">'+
+      '<div class="curatedMeta"><span>'+h(j.type)+'</span><small>'+h(j.period)+'</small></div>'+
+      '<h3>'+h(j.company)+'</h3><b>'+h(j.title)+'</b>'+
+      '<p>'+h(j.facts)+'</p>'+
+      '<div class="curatedLinks"><a href="'+h(j.sourceUrl)+'" target="_blank" rel="noopener">원문 확인</a>'+
+      '<button class="btn '+(on?"primary":"secondary")+'" data-curated="'+h(j.id)+'">'+(on?"선택됨":"이 공고로 분석")+'</button></div>'+
+    '</article>';
+  }).join("")+'</div>';
+}
+
+function jobTableFields(){
+  return '<div class="jobTableCards">'+
+    '<div class="jobTableItem"><span>01</span>'+field("jobTable.customerKpi","고객(KPI)","이 직무의 고객은 누구이며 성과는 무엇으로 확인할까?")+'</div>'+
+    '<div class="jobTableItem"><span>02</span>'+field("jobTable.tasks","주요 과업","실제로 반복해서 수행하는 일은 무엇인가?")+'</div>'+
+    '<div class="jobTableItem"><span>03</span>'+field("jobTable.challenge","주요 해결과제","업무에서 해결해야 하는 문제는 무엇인가?")+'</div>'+
+    '<div class="jobTableItem"><span>04</span>'+field("jobTable.method","해결방법","어떤 방법·절차·도구로 해결하는가?")+'</div>'+
+    '<div class="jobTableItem"><span>05</span>'+field("jobTable.competencies","필요역량","필요한 지식·기술·행동은 무엇인가?")+'</div>'+
+    '<div class="jobTableItem"><span>06</span>'+field("jobTable.careerPlan","경력개발","이 직무에서 경험을 쌓으면 어떤 방향으로 전문성이 넓어지는가?")+'</div>'+
+  '</div>';
+}
+
+function step3(){
+  const j=selectedCuratedJob();
+  return shell(3,"Choose JD → Job Analysis","최근 에너지 공기업·대기업 공고 중 하나를 선택하고, 실제 직무분석 테이블을 완성합니다.",
+    '<div class="block"><h3>① 수업용 실제 공고 하나 선택</h3><p class="help">STEP 2에서 공고를 찾지 못했어도 아래 공고로 그대로 실습할 수 있습니다.</p>'+curatedJobCards()+'</div>'+
+    (j?
+      '<div class="selectedJobSummary"><b>분석 대상 · '+h(j.company)+' / '+h(j.role)+'</b><span>'+h(j.note)+'</span></div>'+
+      '<div class="block"><h3>② AI에게 직무분석 초안 받기</h3><p class="help">내 전공·희망직무·선택 공고가 자동으로 들어갑니다. AI 결과의 사실 여부는 원문 링크와 비교합니다.</p>'+
+        '<textarea class="promptBox promptEditor shortPrompt" id="jobPromptPreview">'+h(jobAnalysisPrompt())+'</textarea>'+
+        '<div class="actions compactActions"><button class="btn secondary" id="copyReviewedJobPromptBtn">내 직무분석 프롬프트 복사</button></div>'+
+        '<div class="field aiPaste"><label>AI 답변 붙여넣기 <span class="hint">(선택)</span></label><textarea class="input" data-path="jobTable.aiResult" id="jobTableAiResult" placeholder="AI 답변을 붙여넣으면 아래 6칸으로 나눌 수 있습니다.">'+h(state.jobTable.aiResult||"")+'</textarea></div>'+
+        '<div class="actions compactActions"><button class="btn secondary" id="applyJobTableAiBtn">AI 답변을 6칸에 반영</button></div>'+
+      '</div>'+
+      '<div class="divider"></div><div class="block"><h3>③ 직무분석 테이블 완성</h3><p class="help">AI가 적은 내용을 그대로 확정하지 말고, 공고와 맞지 않는 내용은 고치거나 삭제합니다.</p>'+jobTableFields()+'</div>'+
+      '<details class="optionBox"><summary>선택 공고에서 확인된 기본정보</summary><div class="optionBody"><div class="callout info"><b>'+h(j.source)+'</b><br>'+h(j.facts)+'</div><div class="callout warn"><b>지원자격:</b><br>'+h(j.required).replace(/\n/g,"<br>")+'<br><br><b>우대·확인사항:</b><br>'+h(j.preferred).replace(/\n/g,"<br>")+'</div></div></details>'
+      :
+      '<div class="callout warn"><b>먼저 공고를 하나 선택하세요.</b> 선택하면 개인 직무분석 프롬프트와 6개 직무분석 칸이 열립니다.</div>'
+    )
+  );
 }
 
 const expTypes=["","전공수업","프로젝트·캡스톤","인턴·현장실습","아르바이트","학생회·동아리","공모전·대외활동","연구·실험","자격·교육","개인경험","기타"];
