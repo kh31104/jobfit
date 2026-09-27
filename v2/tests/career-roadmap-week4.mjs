@@ -43,7 +43,7 @@ async function run(name,fn){
 
 await run('Week 4 focuses on Experience Map and keeps STEP1 bridge',async page=>{
   const body=(await page.locator('#stepRoot').textContent())||'';
-  const expected=['지난주 Career DNA 간단히 확인 · 실제 경험으로 검증','My Best 3 Experience · 경험 후보 꺼내기','STAR 기반 AI Experience Interview · 대표 경험 깊게 묻기','AI가 이해한 내 경험 사실확인','경험에서 확인된 역량 · C01~C12','Experience Map · 내 경험 근거 모아보기','Competency Map · 반복 행동 확인','My Experience DNA · 경험으로 확인한 나'];
+  const expected=['Career DNA 확인','My Best 3 Experience','STAR 기반 AI Interview','사실확인','역량 확인','Experience Map','Competency Map','My Experience DNA'];
   const actual=await page.locator('.experienceCompetencyWeek4 > .block > .moduleHead h3').allTextContents();
   assert(actual.length===8,`Week4 must have exactly 8 student modules, found ${actual.length}: ${actual.join(' | ')}`);
   expected.forEach((title,i)=>assert((actual[i]||'').trim().startsWith(title),`Week4 module order mismatch at ${i+1}: ${actual[i]||'missing'}`));
@@ -96,6 +96,45 @@ await run('STEP2 draft survives reload before final experience save',async page=
   await page.locator('.stepBtn[data-step="2"]').click();await page.waitForSelector('.experienceCompetencyWeek4');
   assert(await page.locator('#title').inputValue()==='학생회 행사','Draft title not restored after reload');
   assert(await page.locator('#roleTitle').inputValue()==='홍보 담당','Draft role not restored after reload');
+});
+
+await run('Virtual student can move 01 to 08 without detours',async page=>{
+  await page.locator('#goBest3').click();
+  assert(await page.locator('#best3_best_title').isVisible(),'01 → 02 route is broken');
+  await page.locator('#best3_best_title').fill('팀 프로젝트');
+  await page.locator('#best3_best_summary').fill('자료 오류를 찾아 수정하고 발표를 마쳤다.');
+  await page.locator('input[name="representative"][value="best"]').check();
+  await page.locator('#useRepresentative').click();
+  assert(await page.locator('#title').isVisible(),'02 → 03 route is broken');
+  await page.locator('#category').selectOption({label:'팀프로젝트'});
+  await page.locator('#roleTitle').fill('자료 검토');
+  await page.locator('#interviewOwnership').check();
+  await page.locator('#interviewNumbers').check();
+  await page.locator('#interviewEvidence').check();
+  await page.locator('#goFactCheck').click();
+  assert(await page.locator('#action').isVisible(),'03 → 04 route is broken');
+  await page.locator('#challenge').fill('발표 전 자료 오류를 찾아야 했다.');
+  await page.locator('#action').fill('원자료와 발표자료를 대조해 오류 항목을 수정했다.');
+  await page.locator('#reason').fill('발표 직전이라 영향이 큰 항목부터 확인했다.');
+  await page.locator('#result').fill('수정된 자료로 발표를 완료했다.');
+  await page.locator('#evidence').fill('최종 발표자료');
+  await page.locator('#evidenceType').selectOption({label:'산출물·문서'});
+  await page.locator('#goCompetency').click();
+  assert(await page.locator('#comp_1').isVisible(),'04 → 05 route is broken');
+  await page.locator('#comp_1').selectOption('C04');
+  await page.locator('#compStatus_1').selectOption({label:'행동 확인'});
+  await page.locator('#compEv_1').fill('원자료와 발표자료를 대조해 오류를 수정했다.');
+  await page.locator('#competencyEvidenceChecked').check();
+  await page.locator('#saveExp').click();
+  await page.waitForSelector('#experienceMapPreview');
+  assert(await page.locator('#experienceMapPreview').isVisible(),'05 → 06 route is broken');
+  await page.locator('#goCompetencyMap').click();
+  assert(await page.locator('#competencyMapPreview').isVisible(),'06 → 07 route is broken');
+  await page.locator('#goExperienceDna').click();
+  assert(await page.locator('#experienceDnaPreview').isVisible(),'07 → 08 route is broken');
+  const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
+  assert(saved.assessments.experienceCompetency.experiences.some(x=>x.title==='팀 프로젝트'),'Virtual-student experience was not saved');
+  assert(saved.assessments.experienceCompetency.experiences.some(x=>x.id==='EXP-OLD'),'Virtual-student route overwrote existing experience data');
 });
 
 await run('Experience save preserves old data and writes competency evidence map',async page=>{
