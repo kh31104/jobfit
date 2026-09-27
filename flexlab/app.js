@@ -2,11 +2,11 @@ const STORAGE_KEY = "jobfit:flexlab:job-analysis:v1";
 
 const steps = [
   ["Target Job","직무 설정"],
-  ["Find JD","채용공고 찾기"],
-  ["JD Analyzer","TASK·GATE·KSA"],
-  ["My Evidence · STAR+","경험 찾기·심층분해"],
-  ["Career Asset Match","Requirement × Evidence"],
-  ["Gap & Portfolio","Action Plan"]
+  ["Find JD","실제 공고 찾기"],
+  ["Choose JD","직무분석 테이블"],
+  ["My Evidence","전공·경험 → 역량"],
+  ["GAP Match","공고조건 × 내 스펙"],
+  ["Portfolio","자소서·면접 연결"]
 ];
 
 const emptyPosting=()=>({company:"",title:"",sourceUrl:"",text:"",notes:"",tasks:"",required:"",preferred:"",other:""});
