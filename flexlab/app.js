@@ -13,9 +13,44 @@ const emptyPosting=()=>({company:"",title:"",sourceUrl:"",text:"",notes:"",tasks
 const emptyExperience=()=>({title:"",type:"",summary:""});
 const emptyMatch=()=>({requirement:"",evidence:"",status:"",note:""});
 
+const CURATED_JOBS=[
+  {
+    id:"komipo-2026-3",
+    type:"공기업",
+    company:"한국중부발전",
+    title:"2026년도 제3차 4직급 신입직원 · 기술직",
+    role:"화학·전기전자·환경에너지안전 등",
+    period:"2026.09.17 ~ 2026.10.02",
+    sourceUrl:"https://job.alio.go.kr/mobile2021/recruit/recruitView.do?idx=304972",
+    source:"잡알리오 · 한국중부발전",
+    facts:"정규직 신입 · 기술직 포함 · 학력무관 · 대졸수준 일반전형 외국어 TOEIC 700점 이상(환산점수 인정) · 필기에서 직무지식 및 직무수행능력 평가 · PT/역량면접",
+    required:"대졸수준 일반전형: 영어 TOEIC 700점 이상 또는 인정되는 환산점수\n공통 기본자격 및 회사가 정한 결격사유 확인 필요",
+    preferred:"전문자격증·체험형/채용형 인턴 등은 공고 기준 우대 또는 가점 항목 확인",
+    note:"세부 직무의 과업은 직무기술서와 본인이 선택한 직군을 함께 확인해야 합니다."
+  },
+  {
+    id:"skenergy-2026-clx",
+    type:"대기업",
+    company:"SK에너지",
+    title:"2026년 SK이노베이션 계열 울산CLX 기술직 인턴",
+    role:"제조",
+    period:"2026.09.15 ~ 2026.09.27",
+    sourceUrl:"https://www.skcareers.com/Recruit/Detail/R261969",
+    source:"SK Careers",
+    facts:"SK energy · 제조 직무 · 울산 · 채용연계형 인턴",
+    required:"공식 공고 상세 모집요강에서 지원자격을 직접 확인하세요.",
+    preferred:"공식 공고 상세 모집요강에서 우대사항을 직접 확인하세요.",
+    note:"공식 페이지에서 확인되는 채용 기본정보만 미리 제공합니다. 세부 과업·요건은 원문을 확인하거나 AI에게 원문 링크를 읽게 한 뒤 근거와 추론을 구분해 정리합니다."
+  }
+];
+
 const defaults=()=>({
-  version:6,currentStep:1,updatedAt:"",
-  target:{industry:"",job:"",company:"",initialView:""},
+  version:7,currentStep:1,updatedAt:"",
+  target:{industry:"에너지",job:"",company:"",initialView:""},
+  student:{major:"",majorEvidence:"",certificates:"",language:"",tools:"",otherSpec:""},
+  step2Search:{company:"",title:"",sourceUrl:"",memo:""},
+  sampleJobId:"",
+  jobTable:{customerKpi:"",tasks:"",challenge:"",method:"",competencies:"",careerPlan:"",aiResult:""},
   context:{change:"",problem:""},
   profile:{solve:"",output:""},
   postings:[emptyPosting(),emptyPosting(),emptyPosting()],
@@ -24,9 +59,10 @@ const defaults=()=>({
   experiences:[emptyExperience(),emptyExperience(),emptyExperience()],
   selectedExperience:0,
   star:{competency:"",experience:"",situation:"",task:"",actionWhat:"",actionWhy:"",actionHow:"",result:"",evidence:""},
-  requirements:[0,1,2,3].map(()=>({condition:"",status:"",note:""})),
-  matchRows:[0,1,2,3,4].map(emptyMatch),
-  fit:{assets:"",gaps:"",actions:""}
+  requirements:[0,1,2].map(()=>({condition:"",status:"",note:""})),
+  matchRows:[0,1,2].map(emptyMatch),
+  fit:{assets:"",gaps:"",actions:""},
+  ai:{keywordResult:"",gapResult:""}
 });
 
 let state=load(), activePosting=0;
@@ -62,11 +98,11 @@ function load(){
       : [0,1,2].map(i=>i===0?{title:oldStar.experience||x.fit?.evidence||"",type:"",summary:""}:emptyExperience());
 
     const requirements=Array.isArray(x.requirements)&&x.requirements.length
-      ? [0,1,2,3].map(i=>({condition:"",status:"",note:"",...(x.requirements[i]||{})}))
+      ? [0,1,2].map(i=>({condition:"",status:"",note:"",...(x.requirements[i]||{})}))
       : b.requirements;
 
     const oldMatches=Array.isArray(x.matchRows)?x.matchRows:(Array.isArray(x.matches)?x.matches:[]);
-    const matchRows=[0,1,2,3,4].map(i=>({...emptyMatch(),...(oldMatches[i]||{})}));
+    const matchRows=[0,1,2].map(i=>({...emptyMatch(),...(oldMatches[i]||{})}));
 
     const star={
       ...b.star,...oldStar,
@@ -76,15 +112,19 @@ function load(){
     };
 
     return {
-      ...b,...x,version:6,currentStep:mappedStep,
+      ...b,...x,version:7,currentStep:mappedStep,
       target:{...b.target,...(x.target||{})},
+      student:{...b.student,...(x.student||{})},
+      step2Search:{...b.step2Search,...(x.step2Search||{})},
+      jobTable:{...b.jobTable,...(x.jobTable||{})},
       context:{...b.context,...(x.context||{})},
       profile:{...b.profile,...(x.profile||{})},
       competency:{...b.competency,...(x.competency||{})},
       comparison:{...b.comparison,...(x.comparison||{})},
-      postings,experiences,requirements,matchRows,star,
+      postings,experiences,requirements:requirements.slice(0,3),matchRows:matchRows.slice(0,3),star,
       selectedExperience:Math.max(0,Math.min(2,Number(x.selectedExperience||0))),
-      fit:{...b.fit,...(x.fit||{})}
+      fit:{...b.fit,...(x.fit||{})},
+      ai:{...b.ai,...(x.ai||{})}
     };
   }catch(e){return defaults();}
 }
@@ -111,12 +151,12 @@ function field(path,label,ph,area=true,optional=false){
 }
 
 function done(n){
-  if(n===1)return filled(state.target.industry)&&filled(state.target.job);
-  if(n===2){const p=state.postings[0];return filled(p.sourceUrl)||filled(p.company)||filled(p.title)||filled(p.text);}
-  if(n===3)return state.postings.some(p=>filled(p.text))&&Object.values(state.competency).some(filled);
-  if(n===4)return state.experiences.some(e=>filled(e.title))&&filled(state.star.experience)&&(filled(state.star.actionWhat)||filled(state.star.result));
-  if(n===5)return state.matchRows.some(m=>filled(m.requirement)&&filled(m.status));
-  if(n===6)return done(1)&&done(3)&&done(4);
+  if(n===1)return filled(state.target.job)&&filled(state.student.major);
+  if(n===2)return filled(state.step2Search.company)||filled(state.step2Search.title)||filled(state.step2Search.memo);
+  if(n===3)return filled(state.sampleJobId)&&filled(state.jobTable.tasks)&&filled(state.jobTable.competencies);
+  if(n===4)return state.experiences.some(e=>filled(e.title))&&(filled(state.ai.keywordResult)||filled(state.star.actionWhat)||filled(state.student.majorEvidence));
+  if(n===5)return filled(state.fit.gaps)||state.matchRows.some(m=>filled(m.requirement)&&filled(m.status));
+  if(n===6)return done(1)&&done(3)&&done(4)&&done(5);
 }
 
 function nav(){
