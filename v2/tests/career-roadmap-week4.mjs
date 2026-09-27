@@ -43,7 +43,13 @@ async function run(name,fn){
 
 await run('Week 4 focuses on Experience Map and keeps STEP1 bridge',async page=>{
   const body=(await page.locator('#stepRoot').textContent())||'';
-  for(const text of ['나의 경험에서 직무역량 찾기','지난주 Career DNA 간단히 확인','My Best 3 Experience','AI Experience Interview','AI가 이해한 내 경험 사실확인','경험에서 확인된 역량','Experience Map'])assert(body.includes(text),`Missing Week4 module: ${text}`);
+  const expected=['지난주 Career DNA 간단히 확인 · 실제 경험으로 검증','My Best 3 Experience · 경험 후보 꺼내기','STAR 기반 AI Experience Interview · 대표 경험 깊게 묻기','AI가 이해한 내 경험 사실확인','경험에서 확인된 역량 · C01~C12','Experience Map · 내 경험 근거 모아보기','Competency Map · 반복 행동 확인','My Experience DNA · 경험으로 확인한 나'];
+  const actual=await page.locator('.experienceCompetencyWeek4 > .block > .moduleHead h3').allTextContents();
+  assert(actual.length===8,`Week4 must have exactly 8 student modules, found ${actual.length}: ${actual.join(' | ')}`);
+  expected.forEach((title,i)=>assert((actual[i]||'').trim().startsWith(title),`Week4 module order mismatch at ${i+1}: ${actual[i]||'missing'}`));
+  assert(await page.locator('.strengthMeasurePanel').count()===0,'Pre-experience 9-item strength measure must not render in STEP2');
+  assert(!body.includes('경험 분석 전 강점행동 9문항'),'Legacy 9-item strength measure copy remains in STEP2');
+  for(const text of ['나의 경험에서 직무역량 찾기','Competency Map','My Experience DNA'])assert(body.includes(text),`Missing Week4 module: ${text}`);
   for(const removed of ['Career Story','Career Theme','Career Direction','1개월 Career Experiment'])assert(!body.includes(removed),`Week4 should not include: ${removed}`);
   assert(body.includes('학습과 신중함이 반복된다.'),'STEP1 comparison bridge missing');
   assert(body.includes('전문성을 깊게 쌓고 신중하게 판단'),'STEP1 hypothesis bridge missing');
@@ -127,7 +133,7 @@ await run('Experience save preserves old data and writes competency evidence map
   await page.waitForSelector('#saveRoadmap');
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   const ec=saved.assessments.experienceCompetency;
-  assert(ec.version==='experience-competency-week4-v7','Week4 version missing');
+  assert(ec.version==='experience-competency-week4-v8','Week4 version missing');
   assert(ec.experiences.some(x=>x.title==='캡스톤 프로젝트'),'New experience not saved');
   assert(ec.experiences.some(x=>x.id==='EXP-OLD'),'Existing experience was overwritten');
   const newExp=ec.experiences.find(x=>x.title==='캡스톤 프로젝트');
