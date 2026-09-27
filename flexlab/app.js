@@ -555,43 +555,95 @@ function step4(){
 }
 
 function ensureRequirements(){
-  const src=[...new Set(state.postings.flatMap(p=>filled(p.text)?postingLines(postingSection(p,"required")):[]))].slice(0,4);
-  src.forEach((line,i)=>{if(i<4&&!filled(state.requirements[i]?.condition))state.requirements[i].condition=line;});
+  const j=selectedCuratedJob();
+  const src=[];
+  if(j){
+    String(j.required||"").split(/\n+/).map(x=>x.trim()).filter(Boolean).forEach(x=>src.push(x));
+    if(src.length<3&&filled(state.jobTable.competencies))src.push("직무 필요역량: "+state.jobTable.competencies);
+    if(src.length<3&&filled(state.jobTable.tasks))src.push("주요 과업 수행 준비: "+state.jobTable.tasks);
+  }
+  src.slice(0,3).forEach((line,i)=>{if(!filled(state.requirements[i]?.condition))state.requirements[i].condition=line;});
 }
 
 function requirementRows(){
   ensureRequirements();
   return state.requirements.map((r,i)=>'<div class="requirementRow">'+
-    '<div class="field"><label>GATE '+(i+1)+'</label><input class="input" data-req="'+i+'" data-reqkey="condition" value="'+h(r.condition)+'" placeholder="관련 전공, 자격증, 학력, 경력 등" /></div>'+
-    '<div class="field"><label>현재 상태</label><select class="input" data-req="'+i+'" data-reqkey="status"><option value="">선택</option><option value="충족" '+(r.status==="충족"?"selected":"")+'>충족</option><option value="준비 중" '+(r.status==="준비 중"?"selected":"")+'>준비 중</option><option value="현재 미충족" '+(r.status==="현재 미충족"?"selected":"")+'>현재 미충족</option><option value="해당 없음" '+(r.status==="해당 없음"?"selected":"")+'>해당 없음</option></select></div>'+
-    '<div class="field"><label>메모 <span class="hint">(선택)</span></label><input class="input" data-req="'+i+'" data-reqkey="note" value="'+h(r.note)+'" placeholder="증빙·준비계획" /></div>'+
+    '<div class="field"><label>공고·직무 조건 '+(i+1)+'</label><input class="input" data-req="'+i+'" data-reqkey="condition" value="'+h(r.condition)+'" placeholder="공고에서 확인한 필수·우대조건 또는 핵심 요구" /></div>'+
+    '<div class="field"><label>내 현재 상태</label><select class="input" data-req="'+i+'" data-reqkey="status"><option value="">선택</option><option value="충족" '+(r.status==="충족"?"selected":"")+'>충족</option><option value="일부 준비" '+(r.status==="일부 준비"?"selected":"")+'>일부 준비</option><option value="현재 GAP" '+(r.status==="현재 GAP"?"selected":"")+'>현재 GAP</option><option value="원문 확인 필요" '+(r.status==="원문 확인 필요"?"selected":"")+'>원문 확인 필요</option></select></div>'+
+    '<div class="field"><label>내 근거 <span class="hint">(선택)</span></label><input class="input" data-req="'+i+'" data-reqkey="note" value="'+h(r.note)+'" placeholder="예: TOEIC 820 / 전기기사 준비 중 / 해당 경험 없음" /></div>'+
   '</div>').join("");
 }
 
-function topRequirements(){
-  const all=[state.competency.top5,state.competency.knowledge,state.competency.skill,state.competency.behavior,state.competency.experience];
-  return [...new Set(all.flatMap(x=>String(x||"").split(/[\n,;/·]+/).map(y=>y.trim()).filter(Boolean)))].slice(0,5);
-}
-
-function ensureMatchRows(){
-  const reqs=topRequirements();
-  reqs.forEach((x,i)=>{if(i<5&&!filled(state.matchRows[i]?.requirement))state.matchRows[i].requirement=x;});
-}
-
-function matchRows(){
-  ensureMatchRows();
-  return state.matchRows.map((r,i)=>'<div class="matchRow">'+
-    '<div class="field"><label>JD Requirement '+(i+1)+'</label><input class="input" data-match="'+i+'" data-matchkey="requirement" value="'+h(r.requirement)+'" placeholder="예: 데이터 분석" /></div>'+
-    '<div class="field"><label>나의 Evidence</label><textarea class="input" data-match="'+i+'" data-matchkey="evidence" placeholder="어떤 경험·행동으로 증명할 수 있나요?">'+h(r.evidence)+'</textarea></div>'+
-    '<div class="field"><label>판정</label><select class="input" data-match="'+i+'" data-matchkey="status"><option value="">선택</option><option value="직접 근거 있음" '+(r.status==="직접 근거 있음"?"selected":"")+'>● 직접 근거 있음</option><option value="부분적으로 연결됨" '+(r.status==="부분적으로 연결됨"?"selected":"")+'>◐ 부분적으로 연결됨</option><option value="현재 근거 없음" '+(r.status==="현재 근거 없음"?"selected":"")+'>○ 현재 근거 없음</option></select></div>'+
-  '</div>').join("");
+function gapPrompt(){
+  const j=selectedCuratedJob();
+  const reqs=state.requirements.filter(r=>filled(r.condition)).map((r,i)=>(i+1)+". "+r.condition+" / 내 판정: "+(r.status||"미판정")+" / 근거: "+(r.note||"없음"));
+  const exps=state.experiences.filter(e=>filled(e.title)||filled(e.summary)).map((e,i)=>(i+1)+". "+(e.title||"경험")+" - "+(e.summary||""));
+  return [
+    "나는 "+(state.student.major||"전공 미입력")+" 전공 취업준비생이고, "+(state.target.job||j?.role||"에너지 직무")+"를 준비하고 있다.",
+    "",
+    "[선택 공고]",
+    j?j.company+" / "+j.title+" / "+j.role:"공고 미선택",
+    j?"공고에서 확인된 정보: "+j.facts:"",
+    j?"공고 링크: "+j.sourceUrl:"",
+    "",
+    "[직무에서 하는 일]",
+    state.jobTable.tasks||"미입력",
+    "[직무 필요역량]",
+    state.jobTable.competencies||"미입력",
+    "",
+    "[공고·직무 조건과 내가 판단한 상태]",
+    ...(reqs.length?reqs:["아직 입력하지 않음"]),
+    "",
+    "[나의 스펙]",
+    "전공: "+(state.student.major||"미입력"),
+    "자격증: "+(state.student.certificates||"없음/미입력"),
+    "어학: "+(state.student.language||"없음/미입력"),
+    "도구·기술: "+(state.student.tools||"없음/미입력"),
+    "기타 스펙: "+(state.student.otherSpec||"없음/미입력"),
+    "전공 근거: "+(state.student.majorEvidence||"미입력"),
+    "",
+    "[경험]",
+    ...(exps.length?exps:["경험 미입력"]),
+    "",
+    "위 정보와 공식 공고를 기준으로 내 GAP을 분석해줘.",
+    "가능하면 공고 링크를 확인하되, 확인할 수 없는 조건은 추정하지 말고 '원문 확인 필요'라고 표시해줘.",
+    "",
+    "아래 순서로 답해줘.",
+    "1. 공고에서 실제로 하는 일 3개",
+    "2. 필수조건과 우대조건 구분",
+    "3. 내가 이미 갖춘 근거",
+    "4. 일부 준비된 항목",
+    "5. 현재 GAP 최대 3개",
+    "6. 우선순위 1~3",
+    "7. 각 GAP을 3개월 안에 보완할 수 있는 구체적 행동",
+    "",
+    "내가 입력하지 않은 자격증·점수·경험을 있다고 가정하지 마.",
+    "채용 가능성을 점수나 확률로 계산하지 마."
+  ].filter(Boolean).join("\n");
 }
 
 function step5(){
-  return shell(5,"Career Asset Match","회사가 요구하는 것과 내가 실제로 증명할 수 있는 것을 나란히 놓고 Fit과 Gap을 구분합니다.",
-    '<div class="block"><h3>① 지원 가능 여부 · GATE 확인</h3><div class="requirementList">'+requirementRows()+'</div></div>'+
-    '<div class="divider"></div><div class="block"><h3>② JD Requirement × 나의 Evidence</h3><p class="help">숫자 점수 대신 근거 수준으로 판정합니다.</p><div class="matchList">'+matchRows()+'</div></div>'+
-    '<div class="callout info"><b>판정 기준:</b> ● 직접 근거 있음 = 실제 행동·결과로 설명 가능 / ◐ 부분적으로 연결됨 = 수업·기초경험 등은 있으나 깊이가 부족 / ○ 현재 근거 없음 = 새 Evidence가 필요</div>');
+  const j=selectedCuratedJob();
+  return shell(5,"JD Requirements × My Spec → GAP","공고에서 요구하는 조건과 내 현재 스펙을 비교해 지금 준비할 GAP을 정합니다.",
+    '<div class="selectedJobSummary"><b>비교 대상 · '+h(j?j.company:"공고 미선택")+'</b><span>'+h(j?j.title:"STEP 3에서 공고를 선택하세요.")+'</span></div>'+
+    '<div class="block"><h3>① 내 스펙 빠르게 입력</h3><div class="grid2">'+
+      '<div class="field"><label>내 전공</label><input class="input" value="'+h(state.student.major||"")+'" disabled /></div>'+
+      field("student.certificates","자격증","예: 전기기사 / 산업안전기사 준비 중 / 없음",false)+
+      field("student.language","어학","예: TOEIC 820 / OPIc IM2 / 없음",false)+
+      field("student.tools","도구·기술","예: Excel, Python, CAD, Minitab, 실험장비",false)+
+      field("student.otherSpec","기타 스펙 <span class=\"hint\">(선택)</span>","인턴, 교육, 수상, 현장실습 등",false,true)+
+    '</div></div>'+
+    '<div class="divider"></div><div class="block"><h3>② 공고·직무 조건 3개만 비교</h3><p class="help">조건이 공고에서 명확하지 않으면 ‘원문 확인 필요’를 선택합니다.</p><div class="requirementList">'+requirementRows()+'</div></div>'+
+    '<div class="divider"></div><div class="block"><h3>③ AI로 내 GAP 분석</h3><p class="help">공고, 직무분석, 전공, 경험, 스펙이 모두 들어간 개인 프롬프트입니다.</p>'+
+      '<textarea class="promptBox promptEditor shortPrompt" id="gapPromptPreview">'+h(gapPrompt())+'</textarea>'+
+      '<div class="actions compactActions"><button class="btn secondary" id="copyGapPromptBtn">내 GAP 분석 프롬프트 복사</button></div>'+
+      field("ai.gapResult","AI GAP 분석 결과 <span class=\"hint\">(선택)</span>","AI의 GAP 분석 결과를 붙여넣으세요.")+
+    '</div>'+
+    '<div class="divider"></div><div class="block"><h3>④ 내가 정한 최종 GAP과 행동</h3><div class="grid2">'+
+      field("fit.assets","현재 갖춘 강점·스펙","공고와 연결되는 내 근거")+
+      field("fit.gaps","우선 보완할 GAP","최대 3개만 남기세요.")+
+      field("fit.actions","3개월 행동계획","무엇을 언제까지 어떤 결과물로 만들 것인가?")+
+    '</div></div>');
 }
 
 function portfolio(){
