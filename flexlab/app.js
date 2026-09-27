@@ -449,6 +449,18 @@ function jobTableFields(){
   '</div>';
 }
 
+function jobTablePreview(){
+  const cells=[
+    ["고객(KPI)","jobTable.customerKpi",state.jobTable.customerKpi],
+    ["과업","jobTable.tasks",state.jobTable.tasks],
+    ["주요 해결과제","jobTable.challenge",state.jobTable.challenge],
+    ["해결방법","jobTable.method",state.jobTable.method],
+    ["필요역량","jobTable.competencies",state.jobTable.competencies],
+    ["경력계획","jobTable.careerPlan",state.jobTable.careerPlan]
+  ];
+  return '<div class="tableWrap jobAnalysisPreview"><table><thead><tr>'+cells.map(x=>'<th>'+x[0]+'</th>').join("")+'</tr></thead><tbody><tr>'+cells.map(x=>'<td data-preview="'+x[1]+'">'+h(x[2]||"-")+'</td>').join("")+'</tr></tbody></table></div>';
+}
+
 function step3(){
   const j=selectedCuratedJob();
   return shell(3,"Choose JD → Job Analysis","최근 에너지 공기업·대기업 공고 중 하나를 선택하고, 실제 직무분석 테이블을 완성합니다.",
@@ -462,6 +474,7 @@ function step3(){
         '<div class="actions compactActions"><button class="btn secondary" id="applyJobTableAiBtn">AI 답변을 6칸에 반영</button></div>'+
       '</div>'+
       '<div class="divider"></div><div class="block"><h3>③ 직무분석 테이블 완성</h3><p class="help">AI가 적은 내용을 그대로 확정하지 말고, 공고와 맞지 않는 내용은 고치거나 삭제합니다.</p>'+jobTableFields()+'</div>'+
+      '<div class="block"><h3>④ 완성된 직무분석표</h3><p class="help">모바일에서는 좌우로 밀어서 전체 표를 확인합니다.</p>'+jobTablePreview()+'</div>'+
       '<details class="optionBox"><summary>선택 공고에서 확인된 기본정보</summary><div class="optionBody"><div class="callout info"><b>'+h(j.source)+'</b><br>'+h(j.facts)+'</div><div class="callout warn"><b>지원자격:</b><br>'+h(j.required).replace(/\n/g,"<br>")+'<br><br><b>우대·확인사항:</b><br>'+h(j.preferred).replace(/\n/g,"<br>")+'</div></div></details>'
       :
       '<div class="callout warn"><b>먼저 공고를 하나 선택하세요.</b> 선택하면 개인 직무분석 프롬프트와 6개 직무분석 칸이 열립니다.</div>'
@@ -800,7 +813,12 @@ function applyJobTableAi(){
 
 function bind(){
   document.querySelectorAll("[data-path]").forEach(e=>{
-    const handler=()=>{set(e.dataset.path,e.value);save();};
+    const handler=()=>{
+      set(e.dataset.path,e.value);
+      const preview=document.querySelector('[data-preview="'+e.dataset.path+'"]');
+      if(preview)preview.textContent=e.value||"-";
+      save();
+    };
     e.oninput=handler;e.onchange=handler;
   });
   document.querySelectorAll("[data-pf]").forEach(e=>{
