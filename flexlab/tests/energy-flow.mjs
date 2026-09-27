@@ -45,6 +45,8 @@ try{
   await page.waitForSelector('[data-path="jobTable.tasks"]');
   assert((await page.locator('[data-path="jobTable.tasks"]').inputValue()).includes('발전설비'),'AI result must populate job table');
   assert((await page.locator('[data-path="jobTable.competencies"]').inputValue()).includes('전기설비'),'AI result must populate competency field');
+  assert(await page.locator('.jobAnalysisPreview th').count()===6,'STEP3 must render six-column job analysis table');
+  assert((await page.locator('[data-preview="jobTable.tasks"]').innerText()).includes('발전설비'),'Job analysis table preview must reflect tasks');
   await page.locator('[data-next="4"]').click();
 
   await page.waitForSelector('[data-path="student.majorEvidence"]');
