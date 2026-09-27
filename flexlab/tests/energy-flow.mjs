@@ -85,7 +85,6 @@ try{
   await page.locator('[data-customjob="title"]').fill('에너지솔루션 생산기술 신입');
   await page.locator('[data-customjob="role"]').fill('생산기술');
   await page.locator('[data-customjob="facts"]').fill('생산공정 데이터 분석, 설비 개선, 공정 안정화');
-  await page.locator('[data-customjob="required"]').fill('공학계열 전공');
   await page.locator('#useCustomJobBtn').click();
   await page.waitForSelector('#jobPromptPreview');
   assert((await page.locator('#jobPromptPreview').inputValue()).includes('한화솔루션'),'Custom prompt must include student-entered company');
@@ -126,9 +125,9 @@ try{
   const gapPrompt=await page.locator('#gapPromptPreview').inputValue();
   assert(gapPrompt.includes('TOEIC 820'),'STEP5 prompt must include student spec');
   assert(gapPrompt.includes('한국중부발전'),'STEP5 prompt must include selected posting');
-  await page.locator('[data-path="fit.assets"]').fill('TOEIC 820, 전력계통 수업, 데이터 분석 경험');
+  await page.locator('[data-path="fit.assets"]').fill('TOEIC 820, 화공실험, 환경설비 데이터 분석 경험');
   await page.locator('[data-path="fit.gaps"]').fill('대기환경기사 미취득, 현장 설비 경험 부족');
-  await page.locator('[data-path="fit.actions"]').fill('3개월 내 전기기사 준비와 설비 데이터 미니 프로젝트 완성');
+  await page.locator('[data-path="fit.actions"]').fill('3개월 내 대기환경기사 준비와 환경설비 데이터 미니 프로젝트 완성');
   await page.locator('[data-path="ai.gapResult"]').fill('우선 GAP: 자격증과 현장형 설비 Evidence');
   await page.locator('[data-next="6"]').click();
 
