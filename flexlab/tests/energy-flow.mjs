@@ -28,9 +28,8 @@ try{
   await page.waitForSelector('[data-analysis-method="komipo-2026-3"]');
   assert(await page.locator('.curatedJob').count()===3,'STEP3 must offer public, private and custom analysis methods');
 
-  // Method 3 inputs must be visible even before selecting Method 3.
-  assert(await page.locator('[data-customjob="company"]').isVisible(),'Custom company input must always be visible');
-  assert(await page.locator('[data-customjob="role"]').isVisible(),'Custom role input must always be visible');
+  // Method 3 inputs stay hidden until Method 3 is selected.
+  assert(await page.locator('[data-customjob="company"]').count()===0,'Custom inputs must stay hidden before Method 3 selection');
 
   // KOMIPO: student chooses recruitment field and one sub-role.
   await page.locator('[data-analysis-method="komipo-2026-3"]').click();
@@ -50,6 +49,8 @@ try{
   assert(jobPrompt.includes('화학공학'),'STEP3 prompt must include student major');
   assert(jobPrompt.includes('화력발전설비운영'),'STEP3 prompt must include only selected sub-role');
   assert(jobPrompt.includes('탈황·탈질'),'Selected role source must include role-specific knowledge');
+  assert(jobPrompt.includes('개조식'),'Job-analysis prompt must request bullet-style output');
+  assert(jobPrompt.includes("• "),'Job-analysis prompt must specify bullet markers');
   assert(!jobPrompt.includes('인공지능서비스기획'),'Prompt must not mix other KOMIPO roles');
 
   await page.locator('#jobTableAiResult').fill([
@@ -94,7 +95,10 @@ try{
   assert(skPrompt.includes('공고에 별도 명시 없음'),'SK prompt must not invent missing job-description details');
   assert((await page.locator('.rolePicker').innerText()).includes('현장운전을 먼저 수행'),'SK UI must explain mandatory field-operation sequence');
 
-  // Method 3: visible inputs + explicit "use this information" action.
+  // Method 3: selecting the method must automatically reveal its input screen.
+  await page.locator('[data-analysis-method="custom"]').click();
+  await page.waitForSelector('[data-customjob="company"]',{state:'visible'});
+  assert(await page.locator('#customJobEntry').isVisible(),'Method 3 selection must reveal the direct-input screen');
   await page.locator('[data-customjob="company"]').fill('한화솔루션');
   await page.locator('[data-customjob="title"]').fill('에너지솔루션 생산기술 신입');
   await page.locator('[data-customjob="role"]').fill('생산기술');
@@ -125,10 +129,27 @@ try{
   const keywordPrompt=await page.locator('#keywordPromptPreview').inputValue();
   assert(keywordPrompt.includes('화공실험'),'STEP4 prompt must include major evidence');
   assert(keywordPrompt.includes('환경설비 캡스톤'),'STEP4 prompt must include experience');
+  assert(keywordPrompt.includes('개조식'),'Competency prompt must request bullet-style output');
   await page.locator('[data-path="ai.keywordResult"]').fill('설비 데이터 해석 / 이상원인 분석 / 안전기준 기반 점검');
   await page.locator('[data-next="5"]').click();
 
-  await page.waitForSelector('[data-path="student.certificates"]');
+  await page.waitForSelector('#step5TargetSelect');
+  const autoTarget=await page.locator('#step5TargetSelect').inputValue();
+  assert(autoTarget.includes('komipo-2026-3')&&autoTarget.includes('화력발전설비운영'),'STEP5 must auto-fill the STEP3 comparison target');
+
+  // Student can directly switch the STEP5 comparison target.
+  await page.locator('#step5TargetSelect').selectOption('curated|skenergy-2026-clx|O&M 발전소 기술전문직군|정비(전기)');
+  await page.waitForSelector('#step5TargetSelect');
+  assert((await page.locator('.gapTargetBlock').innerText()).includes('나래에너지서비스'),'STEP5 must allow direct comparison-target switching');
+  const skGapPrompt=await page.locator('#gapPromptPreview').inputValue();
+  assert(skGapPrompt.includes('정비(전기)'),'Directly selected STEP5 role must flow into GAP prompt');
+  assert(skGapPrompt.includes('전기 분야 발전설비 유지관리 업무'),'STEP5 direct selection must use registered role data even without a STEP3 table');
+
+  // Switch back to the STEP3-analyzed target and continue.
+  await page.locator('#step5TargetSelect').selectOption('curated|komipo-2026-3|화학|화력발전설비운영');
+  await page.waitForSelector('#step5TargetSelect');
+  assert((await page.locator('.gapTargetBlock').innerText()).includes('한국중부발전'),'STEP5 must restore the chosen public-company target');
+
   await page.locator('[data-path="student.certificates"]').fill('대기환경기사 준비 중');
   await page.locator('[data-path="student.language"]').fill('TOEIC 820');
   await page.locator('[data-path="student.tools"]').fill('Excel, Python');
@@ -139,6 +160,7 @@ try{
   const gapPrompt=await page.locator('#gapPromptPreview').inputValue();
   assert(gapPrompt.includes('TOEIC 820'),'STEP5 prompt must include student spec');
   assert(gapPrompt.includes('한국중부발전'),'STEP5 prompt must include selected posting');
+  assert(gapPrompt.includes('개조식'),'GAP prompt must request bullet-style output');
   await page.locator('[data-path="fit.assets"]').fill('TOEIC 820, 화공실험, 환경설비 데이터 분석 경험');
   await page.locator('[data-path="fit.gaps"]').fill('대기환경기사 미취득, 현장 설비 경험 부족');
   await page.locator('[data-path="fit.actions"]').fill('3개월 내 대기환경기사 준비와 환경설비 데이터 미니 프로젝트 완성');
@@ -150,8 +172,16 @@ try{
   assert(portfolio.includes('한국중부발전'),'Portfolio must include selected company');
   assert(portfolio.includes('환경설비 캡스톤'),'Portfolio must include student experience');
   assert(portfolio.includes('대기환경기사 미취득'),'Portfolio must include GAP');
-  assert((await page.locator('#selfIntroPromptPreview').inputValue()).includes('환경설비 캡스톤'),'Self-intro prompt must be personalized');
-  assert((await page.locator('#interviewPromptPreview').inputValue()).includes('대기환경기사 미취득'),'Interview prompt must include GAP');
+  const selfPrompt=await page.locator('#selfIntroPromptPreview').inputValue();
+  const interviewPrompt=await page.locator('#interviewPromptPreview').inputValue();
+  assert(selfPrompt.includes('환경설비 캡스톤'),'Self-intro prompt must be personalized');
+  assert(selfPrompt.includes('개조식'),'Self-intro prompt must request bullet-style output');
+  assert(interviewPrompt.includes('대기환경기사 미취득'),'Interview prompt must include GAP');
+  assert(interviewPrompt.includes('개조식'),'Interview prompt must request bullet-style output');
+  assert(interviewPrompt.includes('총 12개의 실무면접 예상질문'),'Interview prompt must request a practical question set');
+  assert(interviewPrompt.includes('[1. 직무이해·실무지식 · 4문항]'),'Interview prompt must include role-knowledge questions');
+  assert(interviewPrompt.includes('예상 꼬리질문'),'Interview prompt must request follow-up questions');
+  assert(interviewPrompt.includes('모범답안은 쓰지 않는다'),'Interview prompt must not generate model answers');
 
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:flexlab:job-analysis:v1')));
   assert(saved.version===8,'FLEX state version must be 8');
@@ -160,7 +190,9 @@ try{
   await page.evaluate(()=>localStorage.removeItem('jobfit:flexlab:job-analysis:v1'));
   await page.reload({waitUntil:'networkidle'});
   await page.locator('[data-step="3"]').click();
-  assert(await page.locator('[data-customjob="company"]').isVisible(),'Custom inputs must be discoverable after fresh reload');
+  assert(await page.locator('[data-customjob="company"]').count()===0,'Custom inputs must be hidden after fresh reload until Method 3 is selected');
+  await page.locator('[data-analysis-method="custom"]').click();
+  await page.waitForSelector('[data-customjob="company"]',{state:'visible'});
   await page.locator('[data-customjob="company"]').fill('직접입력 테스트 기업');
   await page.locator('[data-customjob="role"]').fill('에너지 설비');
   await page.locator('[data-customjob="facts"]').fill('에너지 설비 점검과 운영');
