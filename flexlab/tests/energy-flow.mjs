@@ -75,10 +75,24 @@ try{
   await page.locator('[data-curated-role="komipo-2026-3"]').selectOption('화력발전설비운영');
   assert((await page.locator('[data-path="jobTable.tasks"]').inputValue()).includes('발전환경설비'),'Returning to a sub-role must restore its table');
 
-  // SK uses the same role-selection frame, but exact choices wait for professor-provided source material.
+  // SK Careers R262054: posting-only analysis with work-path selection.
   await page.locator('[data-analysis-method="skenergy-2026-clx"]').click();
-  await page.waitForSelector('.sourcePending');
-  assert((await page.locator('.rolePicker').innerText()).includes('직무기술서 등록 대기'),'SK must clearly show source-data pending state');
+  await page.waitForSelector('[data-curated-group="skenergy-2026-clx"]');
+  assert((await page.locator('.selectedJobSummary').count())===0,'SK analysis must wait until a work path is chosen');
+  await page.locator('[data-curated-group="skenergy-2026-clx"]').selectOption('O&M 발전소 기술전문직군');
+  await page.waitForSelector('[data-curated-role="skenergy-2026-clx"]');
+  const skOptions=await page.locator('[data-curated-role="skenergy-2026-clx"] option').allTextContents();
+  assert(skOptions.includes('현장운전'),'SK posting must include field operation path');
+  assert(skOptions.includes('생산관리'),'SK posting must include production management path');
+  assert(skOptions.includes('정비(전기)'),'SK posting must include electrical maintenance path');
+  await page.locator('[data-curated-role="skenergy-2026-clx"]').selectOption('정비(전기)');
+  await page.waitForSelector('#jobPromptPreview');
+  const skPrompt=await page.locator('#jobPromptPreview').inputValue();
+  assert(skPrompt.includes('나래에너지서비스'),'SK Careers example must use the company shown in R262054');
+  assert(skPrompt.includes('정비(전기)'),'SK prompt must include selected work path');
+  assert(skPrompt.includes('전기 분야 발전설비 유지관리 업무'),'SK prompt must use posting role text');
+  assert(skPrompt.includes('공고에 별도 명시 없음'),'SK prompt must not invent missing job-description details');
+  assert((await page.locator('.rolePicker').innerText()).includes('현장운전을 먼저 수행'),'SK UI must explain mandatory field-operation sequence');
 
   // Method 3: visible inputs + explicit "use this information" action.
   await page.locator('[data-customjob="company"]').fill('한화솔루션');
