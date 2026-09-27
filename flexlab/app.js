@@ -508,34 +508,83 @@ function optionalComparison(){
     '<div class="grid2">'+field("comparison.common","여러 공고의 공통 요구","여러 회사에서 반복되는 요구")+field("comparison.differences","기업별 차이","특정 회사에서만 강조되는 요구")+'</div></div></details>';
 }
 
-function selectedJob(){
-  if(state.sampleJobId==="custom")return {...emptyCustomJob(),...(state.customJob||{})};
-  return CURATED_JOBS.find(x=>x.id===state.sampleJobId)||null;
+function selectedRoleData(id=state.sampleJobId){
+  const lib=CURATED_ROLE_LIBRARIES[id], sel=state.curatedSelection?.[id]||{};
+  return lib?.groups?.[sel.group]?.roles?.[sel.role]||null;
 }
 
-function selectedCuratedJob(){
-  return selectedJob();
+function selectedJob(){
+  if(state.sampleJobId==="custom")return {...emptyCustomJob(),...(state.customJob||{})};
+  const base=CURATED_JOBS.find(x=>x.id===state.sampleJobId);
+  if(!base)return null;
+  const sel=state.curatedSelection?.[base.id]||{};
+  const roleData=selectedRoleData(base.id);
+  if(!roleData)return {...base,selectedGroup:sel.group||"",selectedRole:sel.role||"",roleData:null};
+  const roleFacts=[
+    "직무수행내용: "+roleData.tasks,
+    "필요지식: "+roleData.knowledge,
+    "필요기술: "+roleData.skills,
+    "직무수행태도: "+roleData.attitudes
+  ].join("\n");
+  return {
+    ...base,
+    role:sel.group+" · "+sel.role,
+    selectedGroup:sel.group,
+    selectedRole:sel.role,
+    roleData,
+    facts:roleFacts,
+    note:"교수자가 제공한 2026 공고문·직무기술서 중 '"+sel.role+"' 관련 내용만 사용합니다."
+  };
+}
+
+function selectedCuratedJob(){return selectedJob();}
+
+function curatedRoleReady(id=state.sampleJobId){
+  if(id==="custom")return filled(state.customJob?.company)&&filled(state.customJob?.role);
+  const lib=CURATED_ROLE_LIBRARIES[id];
+  if(!lib)return true;
+  if(!Object.keys(lib.groups||{}).length)return false;
+  const sel=state.curatedSelection?.[id]||{};
+  return !!(sel.group&&sel.role&&lib.groups?.[sel.group]?.roles?.[sel.role]);
+}
+
+function majorExplorationHint(major=""){
+  const m=String(major||"").toLowerCase();
+  let group="";
+  if(/컴퓨터|소프트웨어|정보통신|인공지능|ai|데이터|보안/.test(m))group="IT";
+  else if(/화학|화공|환경/.test(m))group="화학";
+  else if(/토목|건설환경|건설시스템/.test(m))group="토목";
+  else if(/건축/.test(m))group="건축";
+  else if(/경영|경제|회계|행정|법학|법 /.test(m))group="사무";
+  if(group)return "전공명 기준 탐색 힌트: "+major+" → "+group+" 직군을 먼저 살펴볼 수 있습니다. 다만 이번 공고는 전공 제한이 없으므로 최종 선택은 관심 직무와 준비 가능성을 기준으로 직접 하세요.";
+  return "이번 공고는 전공 제한이 없습니다. '"+(major||"전공 미입력")+"'만으로 지원 직군을 자동 결정하지 않고, 아래 모집 직군과 세부직무를 직접 비교해 선택하세요.";
 }
 
 function jobAnalysisPrompt(){
   const j=selectedJob();
   if(!j)return "먼저 STEP 3에서 분석 방법을 선택하세요.";
   const custom=state.sampleJobId==="custom";
+  if(!custom&&!curatedRoleReady())return "먼저 내 전공을 확인하고, 이 기업의 지원 직군과 분석할 세부직무를 하나 선택하세요.";
   return [
-    "나는 "+(state.student.major||"전공 미입력")+" 전공 대학생이고, "+(state.target.job||j.role||"에너지 관련 직무")+"를 준비하고 있다.",
+    "나는 "+(state.student.major||"전공 미입력")+" 전공 대학생이다.",
     "",
-    custom?"[내가 직접 입력한 분석 대상]":"[선택한 실제 채용공고]",
+    custom?"[내가 직접 입력한 분석 대상]":"[교수자가 제공한 실제 채용자료에서 내가 선택한 분석 대상]",
     "기업: "+(j.company||"미입력"),
     "공고: "+(j.title||"미입력"),
-    "직무/분야: "+(j.role||"미입력"),
+    "선택한 채용분야·직무: "+(j.role||"미입력"),
     "모집기간: "+(j.period||"미입력"),
-    "담당업무·공고 핵심정보: "+(j.facts||"미입력"),
+    "",
+    custom?"[내가 입력한 공고·직무 정보]":"[선택한 직무에 해당하는 직무기술서 정보만 사용]",
+    j.facts||"미입력",
+    "",
     "필수·지원자격: "+(j.required||"미입력"),
     "우대사항: "+(j.preferred||"미입력"),
     "출처 링크: "+(j.sourceUrl||"미입력"),
     "",
-    j.sourceUrl?"가능하면 위 링크의 공고와 직무기술서를 직접 확인해 직무분석을 해줘.":"내가 입력한 정보만 사용하고, 부족한 내용은 '추가 확인 필요'라고 표시해줘.",
-    "링크의 세부내용을 확인할 수 없다면 모르는 내용을 만들지 말고 '원문 확인 필요'라고 써줘.",
+    custom
+      ?"내가 입력한 정보와 링크에서 확인되는 내용만 사용해 직무분석을 해줘."
+      :"위에 제공된 '"+(j.selectedRole||j.role)+"' 직무 정보만 분석해줘. 같은 기업의 다른 직무 내용은 섞지 마.",
+    "확인되지 않은 내용은 사실처럼 만들지 말고 [추론] 또는 [추가 확인 필요]라고 표시해줘.",
     "",
     "아래 6개 제목을 그대로 사용해 답해줘.",
     "고객·KPI:",
@@ -546,11 +595,11 @@ function jobAnalysisPrompt(){
     "경력개발:",
     "",
     "작성 원칙:",
-    "- [공고에서 확인]과 [직무 특성상 추론]을 구분한다.",
-    "- KPI가 공고에 없으면 임의의 수치 목표를 만들지 않는다.",
-    "- 필요역량은 지식(Knowledge), 기술(Skill), 행동(Behavior) 중 실제 근거가 있는 것 중심으로 쓴다.",
-    "- "+(state.student.major||"내 전공")+" 학생이 이해하기 쉬운 표현으로 설명한다.",
-    "- 각 항목은 2~4개 핵심 내용만 적는다."
+    "- [공고·직무기술서에서 확인]과 [직무 특성상 추론]을 구분한다.",
+    "- KPI가 자료에 없으면 임의의 수치 목표를 만들지 않는다.",
+    "- 필요역량은 지식(Knowledge), 기술(Skill), 행동(Behavior)을 구분하되 실제 근거가 있는 것만 사용한다.",
+    "- "+(state.student.major||"내 전공")+" 전공 학생이 이해하기 쉬운 표현으로 설명한다.",
+    "- 각 항목은 핵심 2~4개만 적는다."
   ].join("\n");
 }
 
@@ -584,49 +633,74 @@ function analysisMethodCards(){
     ...CURATED_JOBS.map((j,i)=>({
       ...j,
       method:"방법 "+(i+1),
-      desc:i===0?"에너지 공기업 실제 공고로 분석":"에너지 대기업 실제 공고로 분석"
+      desc:i===0?"제공된 공고문·직무기술서에서 내 직무를 골라 분석":"제공된 대기업 공고·직무기술서에서 내 직무를 골라 분석"
     })),
     {
-      ...custom,
-      id:"custom",method:"방법 3",type:"직접 입력",
+      ...custom,id:"custom",method:"방법 3",type:"직접 입력",
       company:custom.company||"내가 찾은 기업",
       title:custom.title||"기업·직무·공고정보 직접 입력",
-      period:custom.period||"원하는 공고 사용",
-      facts:custom.facts||"내가 필요한 기업과 직무 정보를 입력해 같은 방식으로 직무분석합니다.",
-      desc:"내가 원하는 기업·직무로 반복 실습"
+      period:custom.period||"아래 입력칸 사용",
+      desc:"아래에 항상 보이는 입력칸에 내 공고 정보를 직접 입력"
     }
   ];
   return '<div class="curatedJobGrid threeMethods">'+cards.map(j=>{
     const on=state.sampleJobId===j.id;
+    const pending=j.id==="skenergy-2026-clx"&&!Object.keys(CURATED_ROLE_LIBRARIES[j.id]?.groups||{}).length;
     return '<article class="curatedJob '+(on?"selected":"")+'">'+
       '<div class="curatedMeta"><span>'+h(j.method+" · "+j.type)+'</span><small>'+h(j.period||"")+'</small></div>'+
       '<h3>'+h(j.company)+'</h3><b>'+h(j.title)+'</b>'+
       '<p>'+h(j.desc||j.facts)+'</p>'+
+      (pending?'<div class="sourcePending">직무자료 등록 대기 · 자료를 주시면 직무 선택목록이 열립니다.</div>':'')+
       '<div class="curatedLinks">'+
-        (j.id!=="custom"&&j.sourceUrl?'<a href="'+h(j.sourceUrl)+'" target="_blank" rel="noopener">원문 확인</a>':'<span class="hint">직접 정보 입력</span>')+
-        '<button class="btn '+(on?"primary":"secondary")+'" data-analysis-method="'+h(j.id)+'">'+(on?"현재 분석 중":"이 방법으로 분석")+'</button>'+
+        (j.id!=="custom"&&j.sourceUrl?'<a href="'+h(j.sourceUrl)+'" target="_blank" rel="noopener">공고 원문</a>':'<span class="hint">아래 직접입력란</span>')+
+        '<button class="btn '+(on?"primary":"secondary")+'" data-analysis-method="'+h(j.id)+'">'+(j.id==="custom"?"직접 입력하기":on?"현재 선택":"이 기업 선택")+'</button>'+
       '</div>'+
     '</article>';
   }).join("")+'</div>';
 }
 
+function curatedRoleSelector(id){
+  const lib=CURATED_ROLE_LIBRARIES[id];
+  if(!lib)return "";
+  const groups=Object.keys(lib.groups||{});
+  const sel=state.curatedSelection?.[id]||{group:"",role:""};
+  if(!groups.length){
+    return '<div class="rolePicker"><div class="majorStrip"><span>내 전공</span><b>'+h(state.student.major||"STEP 1에서 전공을 입력하세요.")+'</b></div>'+
+      '<div class="callout warn"><b>직무기술서 등록 대기</b> 이 기업도 한국중부발전과 같은 구조로 설계했습니다. 교수자가 공고문·직무기술서를 제공하면 여기에서 지원 직군 → 세부직무를 선택할 수 있습니다.</div></div>';
+  }
+  const groupOpts='<option value="">지원 직군 선택</option>'+groups.map(g=>'<option value="'+h(g)+'" '+(sel.group===g?"selected":"")+'>'+h(g)+' · '+h(lib.groups[g].headcount||"")+'</option>').join("");
+  const roles=sel.group?Object.keys(lib.groups[sel.group]?.roles||{}):[];
+  const roleOpts='<option value="">세부직무 하나 선택</option>'+roles.map(r=>'<option value="'+h(r)+'" '+(sel.role===r?"selected":"")+'>'+h(r)+'</option>').join("");
+  const role=selectedRoleData(id);
+  return '<div class="rolePicker">'+
+    '<div class="majorStrip"><span>내 전공</span><b>'+h(state.student.major||"STEP 1에서 전공을 입력하세요.")+'</b></div>'+
+    '<div class="callout info">'+h(majorExplorationHint(state.student.major))+'</div>'+
+    '<div class="grid2">'+
+      '<div class="field"><label>1. 지원 직군 선택</label><select class="input" data-curated-group="'+h(id)+'">'+groupOpts+'</select></div>'+
+      '<div class="field"><label>2. 분석할 세부직무 선택</label><select class="input" data-curated-role="'+h(id)+'" '+(sel.group?"":"disabled")+'>'+roleOpts+'</select></div>'+
+    '</div>'+
+    '<p class="help">수업자료 기준 · '+h(lib.sourceLabel)+' · 전공은 지원자격 필터가 아니라 탐색 참고정보입니다.</p>'+
+    (role?'<div class="roleEvidence"><b>'+h(sel.group+" → "+sel.role)+'</b><span>직무수행내용 · '+h(role.tasks)+'</span><span>필요지식 · '+h(role.knowledge)+'</span><span>필요기술 · '+h(role.skills)+'</span></div>':'<div class="callout good"><b>세부직무를 하나 고르세요.</b> 선택한 직무의 자료만 다음 AI 직무분석에 사용됩니다.</div>')+
+  '</div>';
+}
+
 function customJobFields(){
   const j=state.customJob||emptyCustomJob();
-  return '<div class="customJobBox">'+
-    '<div class="callout info"><b>방법 3 · 직접 입력</b> 지금 찾은 공고가 아니어도 됩니다. 수업에서 분석하고 싶은 기업·직무 정보를 입력하세요.</div>'+
+  const active=state.sampleJobId==="custom";
+  return '<div class="customJobBox customAlways" id="customJobEntry">'+
+    '<div class="customEntryHead"><div><span>방법 3</span><h3>내가 찾은 기업 · 직무 · 공고정보 직접 입력</h3><p>입력칸은 항상 여기 보입니다. 핵심 정보만 넣어도 직무분석을 시작할 수 있습니다.</p></div><button class="btn '+(active?"primary":"secondary")+'" id="useCustomJobBtn">'+(active?"현재 직접입력 분석 중":"이 정보로 분석")+'</button></div>'+
     '<div class="grid2">'+
       '<div class="field"><label>기업명</label><input class="input" data-customjob="company" value="'+h(j.company)+'" placeholder="예: 한화솔루션" /></div>'+
-      '<div class="field"><label>공고명</label><input class="input" data-customjob="title" value="'+h(j.title)+'" placeholder="예: 에너지솔루션 생산기술 신입" /></div>'+
       '<div class="field"><label>직무·분야</label><input class="input" data-customjob="role" value="'+h(j.role)+'" placeholder="예: 생산기술 / 전기설비 / 안전환경" /></div>'+
-      '<div class="field"><label>모집기간 <span class="hint">(선택)</span></label><input class="input" data-customjob="period" value="'+h(j.period)+'" placeholder="예: 2026.09.20 ~ 2026.10.05" /></div>'+
-      '<div class="field span2"><label>공고 URL <span class="hint">(선택)</span></label><input class="input" data-customjob="sourceUrl" value="'+h(j.sourceUrl)+'" placeholder="https://..." /></div>'+
+      '<div class="field"><label>공고명 <span class="hint">(선택)</span></label><input class="input" data-customjob="title" value="'+h(j.title)+'" placeholder="예: 2026 하반기 생산기술 신입" /></div>'+
+      '<div class="field"><label>공고 URL <span class="hint">(선택)</span></label><input class="input" data-customjob="sourceUrl" value="'+h(j.sourceUrl)+'" placeholder="https://..." /></div>'+
     '</div>'+
-    '<div class="field"><label>담당업무·공고 핵심내용</label><textarea class="input" data-customjob="facts" placeholder="공고에서 확인한 담당업무와 직무내용을 붙여넣거나 요약하세요.">'+h(j.facts)+'</textarea></div>'+
-    '<div class="grid2">'+
-      '<div class="field"><label>필수·지원자격 <span class="hint">(선택)</span></label><textarea class="input" data-customjob="required" placeholder="전공, 학력, 어학, 자격증 등">'+h(j.required)+'</textarea></div>'+
-      '<div class="field"><label>우대사항 <span class="hint">(선택)</span></label><textarea class="input" data-customjob="preferred" placeholder="자격증, 경험, 기술 등">'+h(j.preferred)+'</textarea></div>'+
-    '</div>'+
-    '<div class="actions compactActions"><button class="btn secondary" id="refreshJobPromptBtn">입력정보를 AI 프롬프트에 반영</button></div>'+
+    '<div class="field"><label>담당업무·직무기술서 핵심내용</label><textarea class="input" data-customjob="facts" placeholder="담당업무 또는 직무기술서 내용을 붙여넣으세요.">'+h(j.facts)+'</textarea></div>'+
+    '<details class="optionBox"><summary>지원자격·우대사항·모집기간도 입력하기 · 선택</summary><div class="optionBody"><div class="grid2">'+
+      '<div class="field"><label>필수·지원자격</label><textarea class="input" data-customjob="required" placeholder="전공, 학력, 어학, 자격증 등">'+h(j.required)+'</textarea></div>'+
+      '<div class="field"><label>우대사항</label><textarea class="input" data-customjob="preferred" placeholder="자격증, 경험, 기술 등">'+h(j.preferred)+'</textarea></div>'+
+      '<div class="field"><label>모집기간</label><input class="input" data-customjob="period" value="'+h(j.period)+'" placeholder="예: 2026.09.20 ~ 2026.10.05" /></div>'+
+    '</div></div></details>'+
   '</div>';
 }
 
