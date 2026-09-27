@@ -594,7 +594,7 @@ function jobAnalysisPrompt(){
     "선택한 채용분야·직무: "+(j.role||"미입력"),
     "모집기간: "+(j.period||"미입력"),
     "",
-    custom?"[내가 입력한 공고·직무 정보]":"[선택한 직무에 해당하는 직무기술서 정보만 사용]",
+    custom?"[내가 입력한 공고·직무 정보]":"[선택한 직무·업무경로에 해당하는 기준자료만 사용]",
     j.facts||"미입력",
     "",
     "필수·지원자격: "+(j.required||"미입력"),
@@ -653,7 +653,7 @@ function analysisMethodCards(){
     ...CURATED_JOBS.map((j,i)=>({
       ...j,
       method:"방법 "+(i+1),
-      desc:i===0?"제공된 공고문·직무기술서에서 내 직무를 골라 분석":"제공된 대기업 공고·직무기술서에서 내 직무를 골라 분석"
+      desc:i===0?"제공된 공고문·직무기술서에서 내 직무를 골라 분석":"SK Careers 공고의 담당업무에서 분석할 업무경로를 골라 분석"
     })),
     {
       ...custom,id:"custom",method:"방법 3",type:"직접 입력",
@@ -684,23 +684,26 @@ function curatedRoleSelector(id){
   if(!lib)return "";
   const groups=Object.keys(lib.groups||{});
   const sel=state.curatedSelection?.[id]||{group:"",role:""};
-  if(!groups.length){
-    return '<div class="rolePicker"><div class="majorStrip"><span>내 전공</span><b>'+h(state.student.major||"STEP 1에서 전공을 입력하세요.")+'</b></div>'+
-      '<div class="callout warn"><b>직무기술서 등록 대기</b> 이 기업도 한국중부발전과 같은 구조로 설계했습니다. 교수자가 공고문·직무기술서를 제공하면 여기에서 지원 직군 → 세부직무를 선택할 수 있습니다.</div></div>';
-  }
-  const groupOpts='<option value="">지원 직군 선택</option>'+groups.map(g=>'<option value="'+h(g)+'" '+(sel.group===g?"selected":"")+'>'+h(g)+' · '+h(lib.groups[g].headcount||"")+'</option>').join("");
+  const isSk=id==="skenergy-2026-clx";
+  const groupLabel=lib.groupLabel||(isSk?"채용직군":"지원 직군");
+  const roleLabel=lib.roleLabel||(isSk?"분석할 업무경로":"분석할 세부직무");
+  const groupOpts='<option value="">'+h(groupLabel)+' 선택</option>'+groups.map(g=>'<option value="'+h(g)+'" '+(sel.group===g?"selected":"")+'>'+h(g)+' · '+h(lib.groups[g].headcount||"")+'</option>').join("");
   const roles=sel.group?Object.keys(lib.groups[sel.group]?.roles||{}):[];
-  const roleOpts='<option value="">세부직무 하나 선택</option>'+roles.map(r=>'<option value="'+h(r)+'" '+(sel.role===r?"selected":"")+'>'+h(r)+'</option>').join("");
+  const roleOpts='<option value="">'+h(roleLabel)+' 선택</option>'+roles.map(r=>'<option value="'+h(r)+'" '+(sel.role===r?"selected":"")+'>'+h(r)+'</option>').join("");
   const role=selectedRoleData(id);
+  const majorInfo=isSk
+    ? "공고상 지원자격은 이공계열 전공이며, 기계·전기·제어 계열 전공은 우대사항입니다. 전공만으로 직무를 자동 결정하지 말고 관심 업무경로를 직접 선택하세요."
+    : majorExplorationHint(state.student.major);
   return '<div class="rolePicker">'+
     '<div class="majorStrip"><span>내 전공</span><b>'+h(state.student.major||"STEP 1에서 전공을 입력하세요.")+'</b></div>'+
-    '<div class="callout info">'+h(majorExplorationHint(state.student.major))+'</div>'+
+    '<div class="callout info">'+h(majorInfo)+'</div>'+
+    (lib.selectionNote?'<div class="callout warn"><b>공고 구조 확인</b> '+h(lib.selectionNote)+'</div>':'')+
     '<div class="grid2">'+
-      '<div class="field"><label>1. 지원 직군 선택</label><select class="input" data-curated-group="'+h(id)+'">'+groupOpts+'</select></div>'+
-      '<div class="field"><label>2. 분석할 세부직무 선택</label><select class="input" data-curated-role="'+h(id)+'" '+(sel.group?"":"disabled")+'>'+roleOpts+'</select></div>'+
+      '<div class="field"><label>1. '+h(groupLabel)+' 선택</label><select class="input" data-curated-group="'+h(id)+'">'+groupOpts+'</select></div>'+
+      '<div class="field"><label>2. '+h(roleLabel)+' 선택</label><select class="input" data-curated-role="'+h(id)+'" '+(sel.group?"":"disabled")+'>'+roleOpts+'</select></div>'+
     '</div>'+
-    '<p class="help">수업자료 기준 · '+h(lib.sourceLabel)+' · 전공은 지원자격 필터가 아니라 탐색 참고정보입니다.</p>'+
-    (role?'<div class="roleEvidence"><b>'+h(sel.group+" → "+sel.role)+'</b><span>직무수행내용 · '+h(role.tasks)+'</span><span>필요지식 · '+h(role.knowledge)+'</span><span>필요기술 · '+h(role.skills)+'</span></div>':'<div class="callout good"><b>세부직무를 하나 고르세요.</b> 선택한 직무의 자료만 다음 AI 직무분석에 사용됩니다.</div>')+
+    '<p class="help">기준자료 · '+h(lib.sourceLabel)+(isSk?" · 별도 직무기술서 없이 공고문만 사용":" · 전공은 지원자격 필터가 아니라 탐색 참고정보")+'</p>'+
+    (role?'<div class="roleEvidence"><b>'+h(sel.group+" → "+sel.role)+'</b><span>공고에서 확인한 업무 · '+h(role.tasks)+'</span><span>필요지식 · '+h(role.knowledge)+'</span><span>필요기술/우대근거 · '+h(role.skills)+'</span></div>':'<div class="callout good"><b>'+h(roleLabel)+'를 하나 고르세요.</b> 선택한 항목의 자료만 다음 AI 직무분석에 사용됩니다.</div>')+
   '</div>';
 }
 
