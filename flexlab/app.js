@@ -24,8 +24,11 @@ const emptyAnalysisCase=()=>({
   jobTable:emptyJobTable(),
   requirements:emptyRequirements(),
   fit:emptyFit(),
+  promptDrafts:{job:"",keyword:"",gap:"",selfIntro:"",interview:""},
   keywordResult:"",
-  gapResult:""
+  gapResult:"",
+  selfIntroResult:"",
+  interviewResult:""
 });
 
 const CURATED_JOBS=[
@@ -44,102 +47,295 @@ const CURATED_JOBS=[
     note:"현재 2026년 하반기 신입 채용의 공개경쟁 모집직무 중 하나를 선택해 분석합니다."
   },
   {
-    id:"hdoilbank-2026-h2",
+    id:"hdelectric-2026-h2",
     type:"대기업 · 신입",
-    company:"HD현대오일뱅크",
-    title:"2026년 하반기 신입사원 채용",
-    role:"엔지니어·IT·영업·경영일반",
+    company:"HD현대일렉트릭",
+    title:"HD현대 2026년 하반기 신입사원 모집 · HD현대일렉트릭",
+    role:"전기설계·구조설계·품질경영·ICT/DT·HR·영업·기술경영",
     period:"2026.09.01 ~ 2026.09.27 23:59",
     sourceUrl:"https://hd-recruit2026.com/",
-    source:"HD현대 2026 하반기 신입사원 공식 채용페이지",
-    facts:"정규직 신입 · 공정기술/생산기획, SAP ERP운영, 해외영업, 국내영업, 재무회계·HR, 노무·생산지원 등 다양한 직무 모집",
-    required:"공통: 4년제 대학 2027년 2월 졸업예정자 또는 기졸업자(2027년 1월 근무 가능) · 유효한 공인영어성적 보유 · 해외여행 결격사유 없음. 직무별 전공요건은 별도 확인",
-    preferred:"공정기술/생산기획: 화공·안전 관련 자격 우대 · SAP ERP운영: SAP 교육/프로젝트, ABAP·SQL 활용 우대 · 기타 직무는 공식 공고 확인",
-    note:"최근 2026년 하반기 대졸 신입공채를 수업용 예시로 사용합니다. 직무별 공식 직무소개만 분석에 사용합니다."
+    source:"HD현대 2026년 하반기 신입사원 공식 채용페이지 · HD현대일렉트릭",
+    facts:"정규직 신입 · 전기설계, 구조설계, 품질경영, ICT/DT, HR, 영업, 기술경영 모집 · 울산 및 분당(GRC) 근무",
+    required:"공통: 학사 이상 기졸업자 또는 2027년 2월 졸업예정자 · 2027년 1월 정규직 입사 가능 · TOEIC Speaking 120점 이상 또는 OPIc IM2 이상 유효성적 · 해외여행 결격사유 없음(남성 병역필/면제)",
+    preferred:"직무별 우대 전공·자격·경험이 다르므로 선택 직무의 공식 직무소개를 기준으로 비교",
+    note:"2026년 하반기 공식 신입공채를 수업용 사기업 예시로 사용합니다. 선택한 직무의 공식 직무소개와 우대사항만 사실 근거로 사용합니다."
   }
 ];
 
+const KEA_COMMON_RECRUITMENT={
+  employment:"채용형 인턴 93일(2026.12.28~2027.03.30), 정규직 전환평가 후 전환",
+  commonEligibility:"성별·학력·전공·연령 제한 없음(정년 기준 제외) · 병역의무 불이행 사실 없음 · 2026.12.28부터 즉시 근무 가능 · 공단 인사규정상 결격사유 없음",
+  documentOffice:"사무 직군: 외국어 50점(TOEIC 기준점수÷850×50, 850 이상 만점) · 직무기술자격 40점(최대 2개) · 사무자동화 10점 · 한국사 가점 최대 5점",
+  documentTech:"기술 직군: 외국어 50점(TOEIC 기준점수÷800×50, 800 이상 만점) · 직무기술자격 40점(최대 2개) · 사무자동화 10점 · 한국사 가점 최대 5점",
+  languageTests:"TOEIC, TOEFL, New TEPS, G-TELP(Level2), FLEX(듣기/읽기), TOEIC-S 중 최상위 1개 인정. TOEIC 외 시험은 공단 통합환산표의 TOEIC 기준점수로 환산",
+  officeAutomation:"사무자동화: 정보처리기사·컴퓨터활용능력 1급 10점 / 정보처리산업기사·사무자동화산업기사·컴퓨터활용능력 2급 5점(최상위 1개)",
+  written:"채용형 인턴(일반): NCS 직업공통능력검사 50점 + 직무능력평가시험(전공시험) 50점 + 인성검사 적·부. NCS는 의사소통·수리·문제해결·자기관리·디지털능력",
+  interview:"직무수행능력면접 60점(발표면접·질의응답: 직무이해도20, 직무지식15, 직무기술15, 직무수행태도10) + 직업공통능력면접 40점(경험·상황면접: 의사소통15, 대인관계15, 직업윤리10)",
+  selfIntro:[
+    "직무능력 경험·능력을 바탕으로 한국에너지공단 발전 및 미래성장동력 확보에 기여할 수 있는 바(300~500자)",
+    "공동과업 중 어려움·갈등을 극복하기 위해 적극 협력한 경험과 갈등 극복 과정(300~500자)",
+    "예상치 못한 문제에서 이전과 다른 방식으로 해결한 경험: 문제상황과 해결방안 포함(300~500자)",
+    "지원 직무 관련 경력 또는 경험사항(300~1000자)"
+  ],
+  blind:"자기소개서에는 성별·연령·출신학교·가족관계 등 개인 식별정보 노출 금지. 기관명 오기재, 문항 간 50% 이상 동일내용 반복, 무관한 내용·의미없는 반복, 300자 미만 문항은 불성실 작성 판단 기준"
+};
+
 const KEA_ROLE_LIBRARY={
-  sourceLabel:"한국에너지공단 2026년도 하반기 신입직원 공고 + 공식 별첨 직무기술서",
+  sourceLabel:"한국에너지공단 2026년도 하반기 신입직원 채용 공고 + [별첨] NCS 기반 직무기술서 + [별첨8] 직무기술자격 기준",
   groupLabel:"직군",
   roleLabel:"분석할 모집직무",
-  majorNote:"공통 응시자격은 성별·학력·전공 제한이 없습니다. 전공은 직무 탐색의 참고정보로만 보고, 관심 직무를 직접 선택하세요.",
-  selectionNote:"모집직무는 채용을 위한 구분입니다. 세부 과업·지식·기술은 공식 별첨 직무기술서를 우선 확인하고, 확인되지 않은 내용은 추론으로 구분합니다.",
+  majorNote:"공통 응시자격은 성별·학력·전공 제한이 없습니다. 전공은 탐색 참고정보이고, 실제 선택은 직무수행내용·필기범위·자격요건을 함께 비교해 결정하세요.",
+  selectionNote:"모집직무는 채용을 위한 구분이며 입사 후 순환근무가 원칙입니다. 아래 정보는 2026년 하반기 공식 공고와 직무기술서에서 해당 직무에 해당하는 내용만 사용합니다.",
   groups:{
     "사무":{
-      headcount:"공개경쟁 · 채용형 인턴(일반)",
+      headcount:"공개경쟁 채용형 인턴(일반) · 사무",
       roles:{
-        "경영·경제":{tasks:"모집직무: 경영·경제. 한국에너지공단 주요사업 및 기관운영의 경영·경제 분야 업무를 수행하며 세부 과업은 공식 직무기술서 확인",knowledge:"공식 별첨 직무기술서 확인",skills:"NCS 직무능력평가·전공시험 대상 직무로 세부 필요기술은 공식 직무기술서 확인",attitudes:"직무수행태도는 공식 직무기술서 확인"},
-        "법·행정":{tasks:"모집직무: 법·행정. 한국에너지공단 주요사업 및 기관운영의 법·행정 분야 업무를 수행하며 세부 과업은 공식 직무기술서 확인",knowledge:"공식 별첨 직무기술서 확인",skills:"NCS 직무능력평가·전공시험 대상 직무로 세부 필요기술은 공식 직무기술서 확인",attitudes:"직무수행태도는 공식 직무기술서 확인"}
+        "경영·경제":{
+          headcount:"14명",
+          ncs:"경영기획(사업환경분석·경영계획·예산관리), PR(언론홍보·PR전략), 인사(인사기획·직무관리·인력이동·임금관리), 사무행정(문서작성·업무관리·사무자동화), 회계·감사(전표·자금·결산·회계감사)",
+          tasks:"경영전략·경영계획·예산관리와 의사결정 지원, PR·대외커뮤니케이션, 인사·보수제도 운영, 문서·데이터·사무행정 관리, 회계·감사 및 공시, 해외 에너지정책 조사와 국제협력사업 기획·운영",
+          knowledge:"거시환경·전략목표·경영계획·KPI·예산관리, 홍보전략·매체 특성, 인적자원관리·근로기준법·4대보험, 자료분류·회계규정, 회계·감사 규정, 해외 에너지 기술용어·정책동향",
+          skills:"경영환경·성과·KPI 분석, 기획서·예산 작성, PR 기획·매체선택, 인력운영·직무평가 분석, 문서·업무용 프로그램 활용과 의견조율, 결산·재무제표 작성·검증, 해외정책 조사·외국어 활용",
+          attitudes:"전략적 관점·책임감·기준준수·부서간 소통, 민첩한 상황대응과 창의성, 공정한 인사운영·경청·협업, 세밀한 자료분석, 회계규정·정확성 준수",
+          exam:"경영학, 경제학, 회계학 등",
+          certs:"40점: 경영지도사(생산관리·인적자원관리·재무관리) / 20점: 신용분석사, 자산관리사(FP), 투자자산운용사, 사회조사분석사1급 / 15점: 전산회계운용사1급, 전산세무1급, 재경관리사 / 10점: 전산회계운용사2급, 전산세무2급, 사회조사분석사2급",
+          commonAbilities:"의사소통·수리·문제해결·자기관리·대인관계·디지털·직업윤리"
+        },
+        "법·행정":{
+          headcount:"12명",
+          ncs:"경영기획, PR, 인사, 사무행정, 법무(법령·제규정 관리, 법률검토, 소송·분쟁관리)",
+          tasks:"경영기획·PR·인사·사무행정과 함께 법령·제규정 관리, 합리적 법규 해석, 소송·분쟁 대응을 통한 법적 리스크 예방 및 의사결정 지원, 해외 에너지정책 조사와 국제협력",
+          knowledge:"경영계획·KPI·예산, 홍보전략, 인적자원관리, 문서·회계 기초, 국회·정부·공공기관 운영 지침, 에너지 법령, 민사소송·집행, 형사절차, 행정절차·행정쟁송, 근로관계법, 해외 에너지정책",
+          skills:"환경·성과분석과 기획서 작성, PR·인사·사무행정 실무, 법령·규정 제개정안 작성, 개정 일정관리, 판례·행정심판례 활용, 해외정책 조사와 외국어 활용",
+          attitudes:"전략적·책임감 있는 태도, 공정·객관적 인사운영, 세밀한 자료분석, 논리적·치밀한 검토, 객관성·공정성, 균형감 있는 종합판단",
+          exam:"민법, 행정법, 행정학, 정책학 등",
+          certs:"40점: 행정사(일반·외국어번역) / 20점: 행정관리사1급, 사회조사분석사1급 / 15점: 행정관리사2급 / 10점: 행정관리사3급, 사회조사분석사2급",
+          commonAbilities:"의사소통·수리·문제해결·자기관리·대인관계·디지털·직업윤리"
+        }
       }
     },
     "기술":{
-      headcount:"공개경쟁 · 채용형 인턴(일반)",
+      headcount:"공개경쟁 채용형 인턴(일반) · 기술",
       roles:{
-        "건축":{tasks:"모집직무: 건축. 공단의 에너지효율향상·건물에너지 관련 사업 등과 연결되는 기술직으로 세부 과업은 공식 직무기술서 확인",knowledge:"공식 별첨 직무기술서 확인",skills:"직무별 NCS·전공시험 및 세부 필요기술은 공식 직무기술서 확인",attitudes:"직무수행태도는 공식 직무기술서 확인"},
-        "기계":{tasks:"모집직무: 기계. 공단의 에너지효율향상·기기·수송·신재생에너지 관련 사업 등과 연결되는 기술직으로 세부 과업은 공식 직무기술서 확인",knowledge:"공식 별첨 직무기술서 확인",skills:"직무별 NCS·전공시험 및 세부 필요기술은 공식 직무기술서 확인",attitudes:"직무수행태도는 공식 직무기술서 확인"},
-        "데이터분석":{tasks:"모집직무: 데이터분석. 에너지 사용현황·사업성과 등 데이터 기반 분석과 관련되며 세부 과업은 공식 직무기술서 확인",knowledge:"공식 별첨 직무기술서 확인",skills:"데이터분석 관련 세부 필요기술은 공식 직무기술서 확인",attitudes:"직무수행태도는 공식 직무기술서 확인"},
-        "전기":{tasks:"모집직무: 전기. 전력효율향상·고효율기자재·신재생에너지 등 전기 분야와 연결되며 세부 과업은 공식 직무기술서 확인",knowledge:"공식 별첨 직무기술서 확인",skills:"전기 직무 NCS·전공시험 및 세부 필요기술은 공식 직무기술서 확인",attitudes:"직무수행태도는 공식 직무기술서 확인"},
-        "전산":{tasks:"모집직무: 전산. 공단 정보시스템·데이터·디지털 업무와 연결되며 세부 과업은 공식 직무기술서 확인",knowledge:"공식 별첨 직무기술서 확인",skills:"전산 직무 NCS·전공시험 및 세부 필요기술은 공식 직무기술서 확인",attitudes:"직무수행태도는 공식 직무기술서 확인"},
-        "화공·환경":{tasks:"모집직무: 화공·환경. 에너지효율향상·기후변화 대응·온실가스·신재생에너지 사업 등과 연결되며 세부 과업은 공식 직무기술서 확인",knowledge:"공식 별첨 직무기술서 확인",skills:"화공·환경 직무 NCS·전공시험 및 세부 필요기술은 공식 직무기술서 확인",attitudes:"직무수행태도는 공식 직무기술서 확인"}
+        "건축":{
+          headcount:"2명",
+          ncs:"경영기획(이해관계자관리), 사무행정, 설계기획관리, 건축설비설계(에너지계획), 건축설비유지관리(에너지관리·고객지원)",
+          tasks:"사업·신청서 검토와 이해관계자 대응, 건물·에너지관리 제도 및 보조금 사업관리, Zero Energy 건물·BEMS 기반 건물 에너지사용량 관리, 신재생·에너지절감 시설 현장확인·심사",
+          knowledge:"건설법·지침과 설계업무 절차, 공조 열원설비·신재생에너지·에너지인증·녹색건축, BAS·BMS·BEMS·패시브시스템, 건물에너지해석 프로그램, 에너지진단·실내공기질",
+          skills:"설계절차 관리·위험요소 식별·도면/설계도서 검토·규정 적용, 에너지 사용량 평가·토탈에너지시스템·에너지회수 적용, 건축물 에너지분석 Tool 활용, 설비효율·에너지손실 분석",
+          attitudes:"공정·투명한 이해관계자 대응, 객관적 자료분석, 규정 숙지와 사전대응, 에너지절약 관점, 종합적 분석·정확한 판단·고객관점",
+          exam:"건축계획, 건축시공, 건축구조, 건축설비, 건축관계법규 등",
+          certs:"20점 기사: 건축, 건축설비, 건설기계설비, 온실가스관리, 건설안전, 산업안전, 건축물에너지평가사, 에너지관리, 신재생에너지발전설비(태양광) / 15점 기사: 품질경영 / 10점 산업기사: 건축, 건축설비, 건설기계설비, 건설안전, 산업안전, 에너지관리, 신재생에너지발전설비(태양광) / 7점 산업기사: 품질경영",
+          commonAbilities:"의사소통·수리·문제해결·자기관리·대인관계·디지털·직업윤리"
+        },
+        "기계":{
+          headcount:"14명",
+          ncs:"경영기획(이해관계자관리), 사무행정, 플랜트설비감리(공정·품질관리), 기계설계기획(경제성·신뢰성 검토)",
+          tasks:"에너지절약계획서·자금지원 기술검토, 에너지다소비사업장 에너지진단, 열사용기자재 검사·기술검토, 생산단계 현장검증, 사업·신청서 검토와 이해관계자 대응, 국제협력",
+          knowledge:"설계도서·품질관리계획서, 국내외 기술규격·기준, 기계설계 기초, 설계수명·허용응력설계, 구조역학·금속역학·기계공학, 해외 에너지 기술·정책",
+          skills:"설계도면 확인·이해관계자 요구관리, 최적설계, 보일러·압력용기 설계이론, 수처리 최신기술, 제안·발표·비즈니스 문서, 해외정책 조사",
+          attitudes:"공정한 업무·투명한 정보공유, 지속적 확인·검토, 세밀한 자료분석, 고객만족, 협업과 의견수용",
+          exam:"열역학, 재료역학, 유체역학 등",
+          certs:"20점 기사: 일반기계, 공조냉동기계, 금속재료, 자동차정비, 산업안전, 건축물에너지평가사, 에너지관리, 신재생에너지발전설비(태양광) / 15점 기사: 건설기계설비, 가스, 품질경영 / 10점 산업기사: 공조냉동기계, 금속재료, 자동차정비, 설비보전, 컴퓨터응용가공, 산업안전, 에너지관리, 신재생에너지발전설비(태양광) / 7점 산업기사: 건설기계설비, 가스, 품질경영",
+          commonAbilities:"의사소통·수리·문제해결·자기관리·대인관계·디지털·직업윤리"
+        },
+        "데이터분석":{
+          headcount:"6명",
+          ncs:"통계조사, 빅데이터분석, 빅데이터기획, DB엔지니어링, 생성형AI 엔지니어링",
+          tasks:"에너지·온실가스·AI 통계조사 기획·표본설계·데이터 검증·분석·시각화·보고서, 에너지 마이데이터·빅데이터 플랫폼 구축·운영, AI·빅데이터 분석·응용, DB 인프라·인터페이스·솔루션 기획·구축·운영, 생성형AI 데이터 수집·전처리·검증·모델학습·법규검토",
+          knowledge:"응용·기술통계와 통계결과 해석, 빅데이터 분석방법론·모델 예측력/안정성/효율성, 데이터 구조·비즈니스 의미, 정보·데이터공학·AI·기계학습, DB구조·보안·개인정보보호, 생성형AI 모델·프롬프트 엔지니어링·딥러닝·AI 법규와 윤리",
+          skills:"SPSS·SAS·Excel 통계분석, 연구기획·보고서·논문작성, 기술·추론통계와 교차검증, Keras·TensorFlow 등 오픈소스 활용, SQL·DB 물리구조 관리, 데이터수집·벤치마킹·전처리·실시간처리, 프롬프트 작성·템플릿 설계·프로그래밍",
+          attitudes:"요구사항을 정확히 정의하고 정확성을 높이려는 태도, 적합한 분석방법 탐색, 데이터 누락 방지와 집중력, 데이터 출처 신뢰성 검토, AI 법규·윤리 준수",
+          exam:"데이터분석, 데이터 모델링, SQL 고급 활용 및 튜닝 등",
+          certs:"20점: 사회조사분석사1급, 데이터아키텍처전문가(DAP), 데이터분석전문가(ADP), SQL전문가(SQLP), 빅데이터분석기사 / 10점: 사회조사분석사2급, 데이터아키텍처준전문가(DAsP), 데이터분석준전문가(ADsP), SQL개발자(SQLD)",
+          commonAbilities:"의사소통·수리·문제해결·자기관리·대인관계·디지털·직업윤리"
+        },
+        "전기":{
+          headcount:"20명",
+          ncs:"경영기획(이해관계자관리), 사무행정, 지능형전력망설비, 전기기기유지보수",
+          tasks:"BEMS·FEMS 기술개발·보급, 에너지수요관리·신산업 시책 기획, 신재생에너지 설치의무화·설비 모니터링·표준화·인증·자금지원, 에너지효율등급·대기전력·고효율기자재 인증, 전력효율향상사업, 에너지진단·이행실태 관리",
+          knowledge:"EMS·HAN, 계통연계·독립운전, 배전계통·분산전원 연계기준, 스마트홈·전력망 통신, 신재생 발전원리·전력계통, 전기기기·고효율기기, 전기도면·전기설비기술기준·내선규정",
+          skills:"ESS연계·감시제어·네트워크 설계, 부하·신재생 발전량 계산, 빌딩자동화·에너지매니지먼트·시스템엔지니어링, 신재생 설비 설치·운영, 검사판정·기준적용·효율측정·전기사용분석·측정데이터 분석",
+          attitudes:"사용자·보안·성능에 대한 책임, 규격·업무절차 준수, 도면·현장 분석적 사고, 측정·판정의 정확성, 현장 안전 최우선, 협업",
+          exam:"전기기기, 회로이론, 전력공학 등",
+          certs:"20점 기사: 전기, 전기공사, 전자, 산업안전, 건축물에너지평가사, 에너지관리, 신재생에너지발전설비(태양광) / 15점 기사: 무선설비, 품질경영 / 10점 산업기사: 전기, 전기공사, 전자, 산업안전, 에너지관리, 신재생에너지발전설비(태양광) / 7점 산업기사: 무선설비, 품질경영",
+          commonAbilities:"의사소통·수리·문제해결·자기관리·대인관계·디지털·직업윤리"
+        },
+        "전산":{
+          headcount:"3명",
+          ncs:"정보기술기획, DB엔지니어링, IT시스템관리, 개인정보보호관리운영",
+          tasks:"SW·HW·운영아키텍처 환경분석과 IT 목표·투자·운영전략 수립, DB 요구사항·모델링·설계·성능개선, 정보시스템 중장기계획과 인프라 안정운영, 개인정보보호 법령·정책 분석·위험평가·대책·모니터링·감사",
+          knowledge:"IT 정책·기술동향·조직·프로세스·OS/DBMS/WAS, DBMS·ERD·SQL·데이터모델링·보안·성능개선, ITSM·HW·네트워크·SW 구조·테스트, 개인정보보호 거버넌스·위험관리·ISMS-P·관련 법령",
+          skills:"기술동향·시스템 확장성·성능·안정성 분석, ERD·데이터모델링·DB 성능모니터링, 포털·애플리케이션·테스트·SQL·로그·Unix/Linux·네트워크·서버 운영, 보안 위협·취약성 평가와 접근통제·권한관리",
+          attitudes:"사용자 관점·도전적 목표·개방적 소통·분석적 태도, 데이터 품질·효율성 개선 의지, 무결점 코딩·테스트 완전성·다양한 해결방법 추구, 개인정보보호·컴플라이언스 준수",
+          exam:"데이터베이스, 운영체제, IT 및 정보통신 개론 등",
+          certs:"20점: SQL전문가(SQLP), 데이터아키텍처전문가(DAP), 정보보안기사, 컴퓨터시스템기사 / 15점: 정보통신기사, 빅데이터분석기사, 무선설비기사 / 10점: SQL개발자(SQLD), 정보보안산업기사 / 7점: 정보통신산업기사, 무선설비산업기사, 네트워크관리사1·2급, 리눅스마스터1급",
+          commonAbilities:"의사소통·수리·문제해결·자기관리·대인관계·디지털·직업윤리"
+        },
+        "화공·환경":{
+          headcount:"6명",
+          ncs:"경영기획(이해관계자관리), 사무행정, 환경설비설계(에너지자원 절감산정), 온실가스관리, 기후변화적응",
+          tasks:"업종별 공정·에너지·물질수지 분석과 온실가스 배출량 산정, 정부정책·에너지절약 지원, 에너지다소비사업장 온실가스 감축방안·기술지원, 기후변화 적응 국제동향·지원정책, 사업·신청서 검토와 국제협력",
+          knowledge:"업종별 시설특성·공정프로세스·온실가스 배출량 산정, 신재생·환경·에너지이용합리화 법규·정책, 온실가스 발생원·감축기술·BAT·배출계수·물리화학 단위조작, 기후변화 적응·정부지원제도·국제동향",
+          skills:"공정의 연료·에너지 흐름 파악과 배출량 산정, 에너지·온실가스 단위변환, 국가별 기후정책 분석, 감축수단 비교, 공정배출량 조사·평가, 에너지·온실가스 통계분석, 기후변화 자료수집·정보검색",
+          attitudes:"법령 준수, 온실가스 배출원·산정절차 이해 노력, 관련 동향과 감축기술 학습, 창의적 정책지원 방안 발굴, 피해사례 분석과 극복방안 마련",
+          exam:"열역학, 공업화학, 연소공학 등",
+          certs:"20점 기사: 대기환경, 화공, 폐기물처리, 온실가스관리, 산업안전, 건축물에너지평가사, 에너지관리, 신재생에너지발전설비(태양광) / 15점 기사: 수질환경, 소음진동, 가스, 품질경영 / 10점 산업기사: 대기환경, 폐기물처리, 산업안전, 에너지관리, 신재생에너지발전설비(태양광) / 7점 산업기사: 수질환경, 소음진동, 가스, 품질경영",
+          commonAbilities:"의사소통·수리·문제해결·자기관리·대인관계·디지털·직업윤리"
+        }
       }
     }
   }
 };
 
-const HDOILBANK_ROLE_LIBRARY={
-  sourceLabel:"HD현대 2026년 하반기 신입사원 공식 채용페이지 · HD현대오일뱅크 직무소개",
-  groupLabel:"직무군",
-  roleLabel:"분석할 신입직무",
-  majorNote:"공정기술/생산기획은 화학공학 전공이 필수이고, SAP ERP운영은 IT 관련 전공이 필수입니다. 영업·경영일반은 전공 무관으로 안내되어 있습니다. 내 전공과 공고의 필수조건을 함께 확인하세요.",
-  selectionNote:"2026년 하반기 대졸 신입공채의 실제 직무소개를 기준으로 합니다. 경영일반은 공고상 2지망까지 희망 직무를 선택할 수 있습니다.",
+const HDELECTRIC_ROLE_LIBRARY={
+  sourceLabel:"HD현대 2026년 하반기 신입사원 공식 채용페이지 · HD현대일렉트릭 모집직무",
+  groupLabel:"직무군(실습 분류)",
+  roleLabel:"분석할 세부직무",
+  majorNote:"HD현대일렉트릭은 직무별 우대 전공·자격·경험을 제시합니다. 아래 직무군은 수업에서 찾기 쉽게 묶은 분류이며 공식 모집단위는 각 세부직무입니다.",
+  selectionNote:"공식 공고에 확인되는 '직무소개·우대사항·근무지'는 사실로 사용하고, 필요지식·기술·태도는 AI가 직무특성에서 도출할 경우 반드시 [추론]으로 표시합니다.",
   groups:{
-    "엔지니어":{
-      headcount:"대산",
+    "설계·품질":{
+      headcount:"실습 분류 · 울산",
       roles:{
-        "공정기술/생산기획":{tasks:"공정 관리·최적화 및 수익개선, 원료 및 제품 생산 계획 수립·운영",knowledge:"공고상 화학공학 전공 필수",skills:"화공 및 안전 관련 자격증 보유자 우대",attitudes:"세부 직무수행태도는 공고에 별도 명시 없음"}
+        "전기설계":{
+          tasks:"변압기·고압차단기·배전반·회전기 등 주요 제품 상세 전기설계 및 개발, 도면 일정·완성도 관리, 설계 외주·설계 품질 관리, 설계도면 제도·표준 관리",
+          knowledge:"공식 공고 별도 명시 없음. 직무소개를 근거로 전력기기·전기설계·도면·규격 관련 지식은 [추론]으로만 도출",
+          skills:"공식 공고 별도 명시 없음. 설계·도면 검토·일정/품질 관리 역량은 [추론]으로만 도출",
+          attitudes:"공식 공고 별도 명시 없음. 정확성·표준준수·협업 등은 [추론]으로만 도출",
+          preferred:"전기 및 관련 전공자 · 관련 자격 보유자",
+          location:"울산",
+          focus:"전력기기 상세 전기설계 → 도면 완성도 → 표준·품질 → 외주설계 관리"
+        },
+        "구조설계":{
+          tasks:"변압기·고압차단기·배전반·회전기 등 주요 제품 상세 구조설계 및 개발, 도면 일정·완성도 관리, 설계 외주·설계 품질 관리, 설계도면 제도·표준 관리",
+          knowledge:"공식 공고 별도 명시 없음. 기계구조·재료·도면·설계규격 관련 지식은 [추론]으로만 도출",
+          skills:"공식 공고 별도 명시 없음. 구조설계·도면 검토·일정/품질 관리 역량은 [추론]으로만 도출",
+          attitudes:"공식 공고 별도 명시 없음. 정확성·표준준수·협업 등은 [추론]으로만 도출",
+          preferred:"기계 및 관련 전공자 · 관련 자격 보유자",
+          location:"울산",
+          focus:"전력기기 상세 구조설계 → 도면 완성도 → 표준·품질 → 외주설계 관리"
+        },
+        "품질경영":{
+          tasks:"품질지표 수립·관리(실패비용·불량률 등), 품질시스템 인증 관리(ISO 9001·원자력 품질보증·방폭품질보증 등), 협력사 부품 품질검사·기술지도·평가, 부적합사항(NCR) 발행·사후관리",
+          knowledge:"공식 공고 별도 명시 없음. 품질시스템·품질지표·인증·협력사 품질관리 관련 지식은 [추론]으로만 도출",
+          skills:"공식 공고 별도 명시 없음. 품질데이터 분석·부적합 원인분석·시정조치·협력사 커뮤니케이션 역량은 [추론]으로만 도출",
+          attitudes:"공식 공고 별도 명시 없음. 기준준수·객관성·재발방지 관점은 [추론]으로만 도출",
+          preferred:"전기·기계 등 이공계열 및 관련 전공자 · 관련 자격 보유자",
+          location:"울산",
+          focus:"품질지표 → 인증체계 → 협력사 품질 → NCR·사후관리"
+        }
       }
     },
-    "IT":{
-      headcount:"분당(GRC)",
+    "디지털·경영지원":{
+      headcount:"실습 분류 · 울산",
       roles:{
-        "SAP ERP운영":{tasks:"업무 프로세스 개선(PI), SAP ERP 운영 및 관리",knowledge:"컴퓨터공학·경영정보학·산업공학 등 IT 관련 전공 필수",skills:"SAP ERP 교육 수료/프로젝트 경험, ABAP·SQL 활용 우대",attitudes:"세부 직무수행태도는 공고에 별도 명시 없음"}
+        "ICT/DT":{
+          tasks:"SAP/ERP 시스템 운영·유지보수, LEGACY 시스템 개선 및 IT/DT 기술기획, 업무 프로세스 설계·표준화, CAD/PLM 시스템 개발·운영",
+          knowledge:"공식 공고 별도 명시 없음. ERP·정보시스템·업무프로세스·CAD/PLM 관련 지식은 [추론]으로만 도출",
+          skills:"공식 공고 별도 명시 없음. 시스템 운영·요구사항 분석·프로세스 개선·데이터/시스템 연계 역량은 [추론]으로만 도출",
+          attitudes:"공식 공고 별도 명시 없음. 사용자 관점·안정적 운영·표준화·협업은 [추론]으로만 도출",
+          preferred:"컴퓨터·전산 및 관련 전공자 · 관련 자격 보유자",
+          location:"울산",
+          focus:"ERP 운영 → Legacy 개선 → 프로세스 표준화 → CAD/PLM 개발·운영"
+        },
+        "HR":{
+          tasks:"채용·평가·승진·보상 등 인적자원 관리, 조직문화 개선 및 임직원 교육 운영, 복지제도 기획·운영",
+          knowledge:"공식 공고 별도 명시 없음. 인사제도·평가보상·조직문화·교육·복지 관련 지식은 [추론]으로만 도출",
+          skills:"공식 공고 별도 명시 없음. 제도기획·데이터 정리·이해관계자 커뮤니케이션 역량은 [추론]으로만 도출",
+          attitudes:"공식 공고 별도 명시 없음. 공정성·기밀성·경청·조율은 [추론]으로만 도출",
+          preferred:"상경계열 관련 전공자 · 관련 자격 보유자",
+          location:"울산",
+          focus:"채용·평가·보상 → 조직문화·교육 → 복지제도 운영"
+        }
       }
     },
-    "영업":{
-      headcount:"분당(GRC)",
+    "영업·기술전략":{
+      headcount:"실습 분류 · 분당(GRC)",
       roles:{
-        "해외영업":{tasks:"원유 및 제품 트레이딩",knowledge:"전공 무관",skills:"세부 필요기술은 공고에 별도 명시 없음",attitudes:"세부 직무수행태도는 공고에 별도 명시 없음"},
-        "국내영업":{tasks:"판매 전략 수립 및 판매 채널 관리",knowledge:"전공 무관",skills:"세부 필요기술은 공고에 별도 명시 없음",attitudes:"세부 직무수행태도는 공고에 별도 명시 없음"}
-      }
-    },
-    "경영일반":{
-      headcount:"분당(GRC) · 대산",
-      roles:{
-        "재무회계·HR":{tasks:"재무회계 및 HR 업무",knowledge:"전공 무관",skills:"세부 필요기술은 공고에 별도 명시 없음",attitudes:"세부 직무수행태도는 공고에 별도 명시 없음"},
-        "노무·생산지원":{tasks:"노무 및 생산지원 업무",knowledge:"전공 무관",skills:"세부 필요기술은 공고에 별도 명시 없음",attitudes:"세부 직무수행태도는 공고에 별도 명시 없음"}
+        "영업":{
+          tasks:"변압기·고압차단기·배전반·회전기 등 주요 제품 영업, 영업전략 수립·프로젝트 진행, 가격협상·대리점 영업관리, 시장조사·제품홍보·경쟁사 분석",
+          knowledge:"공식 공고 별도 명시 없음. 전력기기 제품·시장·프로젝트 영업 관련 지식은 [추론]으로만 도출",
+          skills:"공식 공고 별도 명시 없음. 제안·협상·시장분석·프로젝트 관리·고객커뮤니케이션은 [추론]으로만 도출",
+          attitudes:"공식 공고 별도 명시 없음. 고객관점·책임감·협업·사업감각은 [추론]으로만 도출",
+          preferred:"전기·기계 등 이공계열 및 관련 전공자 · 직무 관련 경험 보유자",
+          location:"분당(GRC)",
+          focus:"전력기기 제품이해 → 영업전략 → 프로젝트·가격협상 → 시장·경쟁사 분석"
+        },
+        "기술경영":{
+          tasks:"전사 기술·제품 개발전략 수립, 제품·기술 로드맵(PRM/TRM) 기획, R&D 과제 발굴·관리와 프로젝트 운영·성과관리, 특허·지식재산(IP) 전략·분석·권리화 지원, IP 포트폴리오 관리·활용",
+          knowledge:"공식 공고 별도 명시 없음. 기술전략·로드맵·R&D관리·특허/IP 관련 지식은 [추론]으로만 도출",
+          skills:"공식 공고 별도 명시 없음. 기술·시장 분석, 로드맵 기획, 프로젝트·성과관리, 특허정보 분석 역량은 [추론]으로만 도출",
+          attitudes:"공식 공고 별도 명시 없음. 전략적 사고·분석적 태도·협업·성과관리 관점은 [추론]으로만 도출",
+          preferred:"전기·기계·산업공학 등 이공계열 및 관련 전공자 · 직무 관련 경험 보유자",
+          location:"분당(GRC)",
+          focus:"기술·제품 전략 → PRM/TRM → R&D 포트폴리오 → IP 전략·권리화"
+        }
       }
     }
   }
 };
+
+const KEA_ROLE_PROMPT_GUIDES={
+  "경영·경제":{
+    analysis:"경영기획·예산/KPI · PR/대외커뮤니케이션 · 인사/보수 · 사무행정 · 회계/감사 · 해외정책/국제협력을 서로 섞지 말고 업무축별로 구분",
+    interview:"예산·성과지표 판단, 대외커뮤니케이션 상황대응, 공정한 인사·규정 적용, 회계 정확성, 해외정책 자료분석 중 선택 직무기술서와 연결되는 상황"
+  },
+  "법·행정":{
+    analysis:"경영기획·PR·인사·사무행정과 법무를 구분하고, 법무는 법령·제규정 관리 · 법률검토 · 소송/분쟁관리 축으로 세분화",
+    interview:"에너지 관련 법령·지침 해석, 규정 제·개정, 판례/행정심판례 활용, 이해관계 충돌과 법적 리스크 예방 상황"
+  },
+  "건축":{
+    analysis:"이해관계자/사무행정 · 설계기획관리 · 건축설비설계 · 건축설비유지관리 축으로 구분하고 Zero Energy·BEMS·에너지 사용량·보조금 현장심사를 연결",
+    interview:"제로에너지 건물·BEMS, 설계도서/법규 검토, 에너지 사용량 분석, 신재생·절감시설 현장확인, 보조금 심사 상황"
+  },
+  "기계":{
+    analysis:"이해관계자/사무행정 · 플랜트설비감리 · 기계설계기획 축으로 구분하고 에너지절약계획서·자금지원 기술검토·에너지진단·열사용기자재 검사·현장검증을 연결",
+    interview:"에너지진단, 설계도서·품질관리계획서 검토, 열사용기자재 검사, 보일러·압력용기 설계, 현장검증과 이해관계자 협업 상황"
+  },
+  "데이터분석":{
+    analysis:"통계조사 · 빅데이터 분석/기획 · DB엔지니어링 · 생성형AI 엔지니어링을 반드시 분리하고, 데이터 수집→전처리→분석/모델링→검증→시각화/보고→운영까지 흐름으로 연결",
+    interview:"표본·통계분석, 데이터 전처리·모델평가, SQL/DB 설계·성능, 에너지 빅데이터 플랫폼, 생성형AI 데이터·프롬프트·법규/윤리 상황"
+  },
+  "전기":{
+    analysis:"이해관계자/사무행정 · 지능형전력망설비 · 전기기기유지보수 축으로 구분하고 BEMS/FEMS·신재생 계통연계·효율등급/고효율기자재·에너지진단을 연결",
+    interview:"ESS·계통연계·부하/발전량, BEMS/FEMS, 전기기기 효율측정·검사판정, 관련 기준 적용, 현장 안전과 측정데이터 분석 상황"
+  },
+  "전산":{
+    analysis:"정보기술기획 · DB엔지니어링 · IT시스템관리 · 개인정보보호관리운영을 분리하고 기획→설계/구축→운영→보안/컴플라이언스 흐름으로 연결",
+    interview:"IT전략·아키텍처, ERD/SQL·DB성능, 장애·로그·서버/네트워크 운영, 테스트/변경관리, 개인정보보호·ISMS-P·접근통제 상황"
+  },
+  "화공·환경":{
+    analysis:"이해관계자/사무행정 · 환경설비설계 · 온실가스관리 · 기후변화적응 축으로 구분하고 공정·에너지/물질수지→배출량 산정→감축→정책/적응까지 흐름으로 연결",
+    interview:"공정의 연료·에너지 흐름, 온실가스 배출량·배출계수, 감축기술/BAT, 통계자료 분석, 기후변화 정책·적응방안과 법령준수 상황"
+  }
+};
+
+function keaRolePromptGuide(role){
+  return KEA_ROLE_PROMPT_GUIDES[role]||{analysis:"공식 NCS 세분류와 직무수행내용을 업무축별로 구분",interview:"공식 직무수행내용·필요지식·필요기술·직무수행태도를 직접 묻는 상황"};
+}
 
 const CURATED_ROLE_LIBRARIES={
   "kea-2026-h2":KEA_ROLE_LIBRARY,
-  "hdoilbank-2026-h2":HDOILBANK_ROLE_LIBRARY
+  "hdelectric-2026-h2":HDELECTRIC_ROLE_LIBRARY
 };
 
 function emptyCuratedSelection(){return {
   "kea-2026-h2":{group:"",role:""},
-  "hdoilbank-2026-h2":{group:"",role:""}
+  "hdelectric-2026-h2":{group:"",role:""}
 };}
 
 function normalizeAnalysisCase(c={}){
+  const b=emptyAnalysisCase();
   return {
     jobTable:{...emptyJobTable(),...(c.jobTable||{})},
     requirements:[0,1,2].map(i=>({condition:"",status:"",note:"",...(c.requirements?.[i]||{})})),
     fit:{...emptyFit(),...(c.fit||{})},
+    promptDrafts:{...b.promptDrafts,...(c.promptDrafts||{})},
     keywordResult:c.keywordResult||"",
-    gapResult:c.gapResult||""
+    gapResult:c.gapResult||"",
+    selfIntroResult:c.selfIntroResult||"",
+    interviewResult:c.interviewResult||""
   };
 }
 
@@ -150,7 +346,7 @@ function roleCaseKey(id=state?.sampleJobId){
 }
 
 const defaults=()=>({
-  version:9,currentStep:1,updatedAt:"",
+  version:11,currentStep:1,updatedAt:"",
   target:{industry:"",job:"",company:"",initialView:""},
   student:{major:"",majorEvidence:"",certificates:"",language:"",tools:"",otherSpec:""},
   step2Search:{company:"",title:"",sourceUrl:"",memo:""},
@@ -159,7 +355,7 @@ const defaults=()=>({
   customJob:emptyCustomJob(),
   analysisCases:{
     "kea-2026-h2":emptyAnalysisCase(),
-    "hdoilbank-2026-h2":emptyAnalysisCase(),
+    "hdelectric-2026-h2":emptyAnalysisCase(),
     "custom":emptyAnalysisCase()
   },
   jobTable:emptyJobTable(),
@@ -174,7 +370,8 @@ const defaults=()=>({
   requirements:emptyRequirements(),
   matchRows:[0,1,2].map(emptyMatch),
   fit:emptyFit(),
-  ai:{keywordResult:"",gapResult:""}
+  promptDrafts:{search:"",job:"",keyword:"",gap:"",selfIntro:"",interview:""},
+  ai:{keywordResult:"",gapResult:"",selfIntroResult:"",interviewResult:""}
 });
 
 let state=load(), activePosting=0;
@@ -237,16 +434,16 @@ function load(){
     }
 
     return {
-      ...b,...x,version:9,currentStep:mappedStep,
+      ...b,...x,version:11,currentStep:mappedStep,
       target:{...b.target,...(x.target||{})},
       student:{...b.student,...(x.student||{})},
       step2Search:{...b.step2Search,...(x.step2Search||{})},
-      sampleJobId:["komipo-2026-3","skenergy-2026-clx"].includes(x.sampleJobId)?"":(x.sampleJobId||""),
+      sampleJobId:["komipo-2026-3","skenergy-2026-clx","hdoilbank-2026-h2"].includes(x.sampleJobId)?"":(x.sampleJobId||""),
       curatedSelection:{
         ...emptyCuratedSelection(),
         ...(x.curatedSelection||{}),
         "kea-2026-h2":{...emptyCuratedSelection()["kea-2026-h2"],...(x.curatedSelection?.["kea-2026-h2"]||{})},
-        "hdoilbank-2026-h2":{...emptyCuratedSelection()["hdoilbank-2026-h2"],...(x.curatedSelection?.["hdoilbank-2026-h2"]||{})}
+        "hdelectric-2026-h2":{...emptyCuratedSelection()["hdelectric-2026-h2"],...(x.curatedSelection?.["hdelectric-2026-h2"]||{})}
       },
       customJob:{...emptyCustomJob(),...(x.customJob||{})},
       analysisCases,
@@ -258,6 +455,7 @@ function load(){
       postings,experiences,requirements:requirements.slice(0,3),matchRows:matchRows.slice(0,3),star,
       selectedExperience:Math.max(0,Math.min(2,Number(x.selectedExperience||0))),
       fit:{...b.fit,...(x.fit||{})},
+      promptDrafts:{...b.promptDrafts,...(x.promptDrafts||{})},
       ai:{...b.ai,...(x.ai||{})}
     };
   }catch(e){return defaults();}
@@ -271,17 +469,40 @@ function snapshotActiveCase(){
     jobTable:{...emptyJobTable(),...state.jobTable},
     requirements:[0,1,2].map(i=>({condition:"",status:"",note:"",...(state.requirements?.[i]||{})})),
     fit:{...emptyFit(),...state.fit},
+    promptDrafts:{
+      job:state.promptDrafts?.job||"",
+      keyword:state.promptDrafts?.keyword||"",
+      gap:state.promptDrafts?.gap||"",
+      selfIntro:state.promptDrafts?.selfIntro||"",
+      interview:state.promptDrafts?.interview||""
+    },
     keywordResult:state.ai?.keywordResult||"",
-    gapResult:state.ai?.gapResult||""
+    gapResult:state.ai?.gapResult||"",
+    selfIntroResult:state.ai?.selfIntroResult||"",
+    interviewResult:state.ai?.interviewResult||""
   };
 }
 
 function restoreAnalysisCase(id=roleCaseKey()){
-  const c=state.analysisCases?.[id]||emptyAnalysisCase();
+  const c=normalizeAnalysisCase(state.analysisCases?.[id]||emptyAnalysisCase());
   state.jobTable={...emptyJobTable(),...(c.jobTable||{})};
   state.requirements=[0,1,2].map(i=>({condition:"",status:"",note:"",...(c.requirements?.[i]||{})}));
   state.fit={...emptyFit(),...(c.fit||{})};
-  state.ai={...(state.ai||{}),keywordResult:c.keywordResult||"",gapResult:c.gapResult||""};
+  state.promptDrafts={
+    ...(state.promptDrafts||{}),
+    job:c.promptDrafts.job||"",
+    keyword:c.promptDrafts.keyword||"",
+    gap:c.promptDrafts.gap||"",
+    selfIntro:c.promptDrafts.selfIntro||"",
+    interview:c.promptDrafts.interview||""
+  };
+  state.ai={
+    ...(state.ai||{}),
+    keywordResult:c.keywordResult||"",
+    gapResult:c.gapResult||"",
+    selfIntroResult:c.selfIntroResult||"",
+    interviewResult:c.interviewResult||""
+  };
 }
 
 function save(){
@@ -334,7 +555,7 @@ function progress(){
 }
 
 function shell(n,title,desc,body,badge="실습"){
-  return '<section class="card stepCard"><div class="sectionHead"><div><div class="kicker">STEP '+String(n).padStart(2,"0")+'</div><h2>'+title+'</h2><p>'+desc+'</p></div><span class="badge">'+badge+'</span></div>'+body+'<div class="actions stepFooter">'+(n>1?'<button class="btn secondary" data-prev="'+(n-1)+'">이전</button>':"")+(n<6?'<button class="btn primary" data-next="'+(n+1)+'">저장하고 다음</button>':"")+'</div></section>';
+  return '<section class="card stepCard"><div class="sectionHead"><div><div class="kicker">STEP '+String(n).padStart(2,"0")+'</div><h2>'+title+'</h2><p>'+desc+'</p></div><span class="badge">'+badge+'</span></div><div class="autosaveNote">✓ 입력 즉시 같은 브라우저에 자동 저장</div>'+body+'<div class="actions stepFooter">'+(n>1?'<button class="btn secondary" data-prev="'+(n-1)+'">이전</button>':"")+(n<6?'<button class="btn primary" data-next="'+(n+1)+'">저장하고 다음</button>':"")+'</div></section>';
 }
 
 function bulletOutputRules(){
@@ -392,7 +613,7 @@ function jobSite(name,url,desc){
 function step2SearchPromptBox(){
   return '<details class="optionBox"><summary>AI에게 현재 공고 찾아달라고 하기 · 선택</summary><div class="optionBody">'+
     '<p class="help">STEP 1의 직무와 전공을 넣어 만든 검색 프롬프트입니다.</p>'+
-    '<textarea class="promptBox promptEditor" id="searchPromptPreview">'+h(energySearchPrompt())+'</textarea>'+
+    '<textarea class="promptBox promptEditor" id="searchPromptPreview" data-prompt-key="search">'+h(promptValue("search",energySearchPrompt()))+'</textarea>'+
     '<div class="actions compactActions"><button class="btn secondary" id="copySearchPromptBtn">내 검색 프롬프트 복사</button></div></div></details>';
 }
 
@@ -412,7 +633,7 @@ function step2(){
       '<div class="field span2"><label>공고 주소 <span class="hint">(선택)</span></label><input class="input" data-path="step2Search.sourceUrl" value="'+h(state.step2Search.sourceUrl||"")+'" placeholder="https://..." /></div>'+
       field("step2Search.memo","검색 메모 <span class=\"hint\">(선택)</span>","어떤 검색어를 썼는지, 왜 적절한 공고를 찾기 어려웠는지 간단히 적어도 됩니다.")+
     '</div></div>'+step2SearchPromptBox()+
-    '<div class="callout info"><b>공고가 없어도 수업은 계속됩니다.</b> STEP 3에서는 수업용 예시로 한국에너지공단과 HD현대오일뱅크의 2026년 신입 채용을 제공합니다.</div>');
+    '<div class="callout info"><b>공고가 없어도 수업은 계속됩니다.</b> STEP 3에서는 수업용 예시로 한국에너지공단과 HD현대일렉트릭의 2026년 신입 채용을 제공합니다.</div>');
 }
 
 function postingLines(text=""){
@@ -546,6 +767,33 @@ function selectedRoleData(id=state.sampleJobId){
   return lib?.groups?.[sel.group]?.roles?.[sel.role]||null;
 }
 
+function keaRecruitmentContext(group,roleData){
+  if(state.sampleJobId!=="kea-2026-h2"||!roleData)return "";
+  const documentRule=group==="사무"?KEA_COMMON_RECRUITMENT.documentOffice:KEA_COMMON_RECRUITMENT.documentTech;
+  return [
+    "채용인원: "+(roleData.headcount||"공고 확인"),
+    "공통 응시자격: "+KEA_COMMON_RECRUITMENT.commonEligibility,
+    "서류전형: "+documentRule,
+    "인정 외국어시험: "+KEA_COMMON_RECRUITMENT.languageTests,
+    "직무기술자격: "+(roleData.certs||"공고 확인"),
+    "필기전형: "+KEA_COMMON_RECRUITMENT.written,
+    "직무별 전공시험 범위: "+(roleData.exam||"공고 확인"),
+    "면접전형: "+KEA_COMMON_RECRUITMENT.interview
+  ].join("\n");
+}
+
+function hdElectricRecruitmentContext(roleData){
+  if(state.sampleJobId!=="hdelectric-2026-h2"||!roleData)return "";
+  return [
+    "공통 지원자격: 학사 이상 기졸업자 또는 2027년 2월 졸업예정자 · 2027년 1월 정규직 입사 가능",
+    "어학: TOEIC Speaking 120점 이상 또는 OPIc IM2 이상(마감일 기준 유효성적)",
+    "기타: 해외여행 결격사유 없음 · 남성은 병역필 또는 면제",
+    "선택 직무 우대사항: "+(roleData.preferred||"공고 별도 확인"),
+    "근무지: "+(roleData.location||"공고 확인"),
+    "공식 직무소개 핵심축: "+(roleData.focus||roleData.tasks)
+  ].join("\n");
+}
+
 function selectedJob(){
   if(state.sampleJobId==="custom")return {...emptyCustomJob(),...(state.customJob||{})};
   const base=CURATED_JOBS.find(x=>x.id===state.sampleJobId);
@@ -554,11 +802,20 @@ function selectedJob(){
   const roleData=selectedRoleData(base.id);
   if(!roleData)return {...base,selectedGroup:sel.group||"",selectedRole:sel.role||"",roleData:null};
   const roleFacts=[
+    roleData.ncs?"NCS/직무분류: "+roleData.ncs:"",
     "직무수행내용: "+roleData.tasks,
     "필요지식: "+roleData.knowledge,
     "필요기술: "+roleData.skills,
-    "직무수행태도: "+roleData.attitudes
-  ].join("\n");
+    "직무수행태도: "+roleData.attitudes,
+    roleData.preferred?"공식 우대사항: "+roleData.preferred:"",
+    roleData.location?"근무지: "+roleData.location:"",
+    roleData.commonAbilities?"직업공통능력: "+roleData.commonAbilities:""
+  ].filter(Boolean).join("\n");
+  const recruitmentInfo=base.id==="kea-2026-h2"
+    ?keaRecruitmentContext(sel.group,roleData)
+    :base.id==="hdelectric-2026-h2"
+      ?hdElectricRecruitmentContext(roleData)
+      :"";
   return {
     ...base,
     role:sel.group+" · "+sel.role,
@@ -566,6 +823,7 @@ function selectedJob(){
     selectedRole:sel.role,
     roleData,
     facts:roleFacts,
+    recruitmentInfo,
     note:(CURATED_ROLE_LIBRARIES[base.id]?.sourceLabel||base.source)+" 중 '"+sel.role+"' 관련 기준자료만 사용합니다."
   };
 }
@@ -585,10 +843,29 @@ function majorExplorationHint(major=""){
   return "내 전공 '"+(major||"미입력")+"'을 참고하되, 전공만으로 직무를 자동 결정하지 않습니다. 공고의 직무별 필수조건과 실제 업무를 비교해 직접 선택하세요.";
 }
 
+function clearPromptDrafts(keys=["job","keyword","gap","selfIntro","interview"]){
+  state.promptDrafts??={};
+  keys.forEach(k=>state.promptDrafts[k]="");
+}
+
+function promptValue(key,generated){
+  return state.promptDrafts?.[key]||generated;
+}
+
+function updatePromptDraft(key,value){
+  state.promptDrafts??={};
+  state.promptDrafts[key]=value;
+  save();
+}
+
 function jobAnalysisPrompt(){
   const j=selectedJob();
   if(!j)return "먼저 STEP 3에서 분석 방법을 선택하세요.";
   const custom=state.sampleJobId==="custom";
+  const isKea=state.sampleJobId==="kea-2026-h2";
+  const isHd=state.sampleJobId==="hdelectric-2026-h2";
+  const rd=j.roleData||{};
+  const keaGuide=isKea?keaRolePromptGuide(j.selectedRole):null;
   if(!custom&&!curatedRoleReady())return "먼저 내 전공을 확인하고, 이 기업의 지원 직군과 분석할 세부직무를 하나 선택하세요.";
   return [
     "나는 "+(state.student.major||"전공 미입력")+" 전공 대학생이다.",
@@ -596,43 +873,59 @@ function jobAnalysisPrompt(){
     custom?"[내가 직접 입력한 분석 대상]":"[교수자가 제공한 실제 채용자료에서 내가 선택한 분석 대상]",
     "기업: "+(j.company||"미입력"),
     "공고: "+(j.title||"미입력"),
-    "선택한 채용분야·직무: "+(j.role||"미입력"),
+    "선택한 직군·직무: "+(j.role||"미입력"),
     "모집기간: "+(j.period||"미입력"),
     "",
-    custom?"[내가 입력한 공고·직무 정보]":"[선택한 직무·업무경로에 해당하는 기준자료만 사용]",
+    custom?"[내가 입력한 공고·직무 정보]":"[선택한 직무 기준자료]",
     j.facts||"미입력",
+    ...(j.recruitmentInfo?["","[채용전형·지원조건]",j.recruitmentInfo]:[]),
     "",
     "필수·지원자격: "+(j.required||"미입력"),
-    "우대사항: "+(j.preferred||"미입력"),
+    "공통/기타 우대사항: "+(j.preferred||"미입력"),
     "출처 링크: "+(j.sourceUrl||"미입력"),
     "",
     custom
-      ?"내가 입력한 정보와 링크에서 확인되는 내용만 사용해 직무분석을 해줘."
-      :"위에 제공된 '"+(j.selectedRole||j.role)+"' 직무 정보만 분석해줘. 같은 기업의 다른 직무 내용은 섞지 마.",
+      ?"내가 입력한 내용과 링크에서 확인되는 정보만 사실 근거로 사용해 직무분석을 해줘."
+      :"위에 제공된 '"+(j.selectedRole||j.role)+"' 직무만 분석해줘. 같은 기업의 다른 직무는 섞지 마.",
+    isKea?"한국에너지공단은 모집직무가 채용을 위한 구분이고 입사 후 순환근무가 원칙이라는 점을 별도로 표시해줘. 현재 직무분석은 내가 선택한 모집직무의 공식 NCS 직무기술서만 기준으로 해줘.":"",
+    isKea?"[선택 직무 세부분석 지침] "+keaGuide.analysis:"",
+    isHd?"HD현대일렉트릭은 공식 공고에서 직무소개·우대사항·근무지만 확인된다. 필요지식·기술·태도를 추가할 때는 반드시 [직무특성상 추론]으로 표시하고 공식 공고에 적힌 것처럼 쓰지 마.":"",
     "확인되지 않은 내용은 사실처럼 만들지 말고 [추론] 또는 [추가 확인 필요]라고 표시해줘.",
     "",
-    "아래 6개 제목을 정확히 그대로 사용하고, 각 제목 아래에 '• ' bullet 2~4개로 답해줘.",
+    "아래 6개 제목을 정확히 그대로 사용하고 각 제목 아래에 '• ' bullet 2~4개로 답해줘.",
     "고객·KPI:",
-    "• ",
+    "• 실제 업무의 고객/이해관계자를 먼저 쓰고, KPI는 공식 자료에 없으면 [추론]으로 업무 품질·정확성·일정·성과 관점만 제시",
     "주요 과업:",
-    "• ",
+    isKea
+      ?"• 공식 NCS/직무수행내용의 서로 다른 업무축을 유지해 4~6개 과업으로 작성하고, 각 bullet 끝에 '(근거: NCS/직무수행내용)'을 붙인다."
+      :"• 공식 직무수행내용/직무소개에서 3~5개 핵심 과업을 동사형으로 압축",
     "주요 해결과제:",
-    "• ",
+    isKea
+      ?"• 위 주요 과업 각각에서 신입이 마주칠 수 있는 판단·정확성·규정·데이터·이해관계자 문제를 연결하되, 공식 자료에 직접 없는 상황은 [추론]으로 표시"
+      :"• 각 과업에서 실제로 해결해야 하는 문제를 2~4개 도출하되 자료에 없으면 [추론] 표시",
     "해결방법:",
-    "• ",
+    "• 필요지식·필요기술 또는 공식 직무소개를 바탕으로 '무엇을 확인 → 어떤 기준/도구로 분석·설계·관리 → 무엇으로 검증/보고' 순서로 작성",
+    isKea?"• 한국에너지공단 공식 필요지식과 필요기술의 용어를 가능한 한 그대로 연결하고, 일반론으로 바꾸지 않는다.":"",
     "필요역량:",
-    "• ",
+    "• Knowledge / Skill / Behavior를 구분하고 각 역량 옆에 [공식] 또는 [추론] 표시",
+    isKea?"• Knowledge는 공식 '필요지식', Skill은 공식 '필요기술', Behavior는 공식 '직무수행태도'에서 우선 추출하고 직업공통능력은 별도 bullet로 표시한다.":"",
     "경력개발:",
-    "• ",
+    isKea
+      ?"• 전공시험 범위("+((rd.exam)||"공고 확인")+")와 직무기술자격을 반영해 '지금 준비 → 첫 직무 → 확장 분야'를 현실적으로 제시"
+      :isHd
+        ?"• 선택 직무 우대사항("+((rd.preferred)||"공고 확인")+")과 실제 업무를 바탕으로 '지금 준비 → 신입 초기 → 전문성 확장'을 제시"
+        :"• 현재 준비 → 신입 초기 → 전문성 확장 순서로 제시",
     "",
-    "작성 원칙:",
-    "- [공고·직무기술서에서 확인]과 [직무 특성상 추론]을 구분한다.",
+    "추가 분석 규칙:",
+    "- 내 전공 '"+(state.student.major||"미입력")+"'과 이 직무의 연결점을 '직접 연결 / 보완 필요 / 전공무관' 중 하나로 설명한다.",
+    isKea?"- 한국에너지공단 서류·필기·면접 정보는 직무분석의 근거로 활용하되 합격 가능성이나 확률은 계산하지 않는다.":"",
+    isKea?"- 선택 직무의 NCS 세부 업무축을 하나의 '에너지 업무'로 뭉뚱그리지 않는다. 각 bullet이 어떤 세부 업무축과 연결되는지 드러나게 쓴다.":"",
+    isHd?"- HD현대일렉트릭의 우대전공·자격·경험은 '필수'로 바꾸어 쓰지 않는다.":"",
     "- KPI가 자료에 없으면 임의의 수치 목표를 만들지 않는다.",
-    "- 필요역량은 지식(Knowledge), 기술(Skill), 행동(Behavior)을 구분하되 실제 근거가 있는 것만 사용한다.",
-    "- "+(state.student.major||"내 전공")+" 전공 학생이 이해하기 쉬운 표현으로 설명한다.",
+    "- 내가 제공하지 않은 기업 내부 프로세스나 수치를 만들지 않는다.",
     "- 한 bullet은 가능한 한 1~2줄 이내로 작성한다.",
     ...bulletOutputRules()
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 }
 
 function parseJobTableResult(raw){
@@ -665,7 +958,7 @@ function analysisMethodCards(){
     ...CURATED_JOBS.map((j,i)=>({
       ...j,
       method:"방법 "+(i+1),
-      desc:i===0?"현재 한국에너지공단 신입 채용에서 직무를 골라 분석":"HD현대오일뱅크 대졸 신입공채의 다양한 직무 중 하나를 골라 분석"
+      desc:i===0?"현재 한국에너지공단 신입 채용에서 직무를 골라 분석":"HD현대일렉트릭 신입공채의 7개 직무 중 하나를 골라 분석"
     })),
     {
       ...custom,id:"custom",method:"방법 3",type:"직접 입력",
@@ -703,6 +996,20 @@ function curatedRoleSelector(id){
   const roleOpts='<option value="">'+h(roleLabel)+' 선택</option>'+roles.map(r=>'<option value="'+h(r)+'" '+(sel.role===r?"selected":"")+'>'+h(r)+'</option>').join("");
   const role=selectedRoleData(id);
   const majorInfo=lib.majorNote||majorExplorationHint(state.student.major);
+  const summary=role?[
+    role.headcount?'<span>채용인원 · '+h(role.headcount)+'</span>':"",
+    role.location?'<span>근무지 · '+h(role.location)+'</span>':"",
+    '<span>공식 업무 · '+h(role.tasks)+'</span>',
+    role.preferred?'<span>공식 우대사항 · '+h(role.preferred)+'</span>':"",
+    role.exam?'<span>전공시험 · '+h(role.exam)+'</span>':""
+  ].filter(Boolean).join(""):"";
+  const detail=role?[
+    role.ncs?'<p><b>NCS/직무분류</b><br>'+h(role.ncs)+'</p>':"",
+    '<p><b>필요지식</b><br>'+h(role.knowledge)+'</p>',
+    '<p><b>필요기술</b><br>'+h(role.skills)+'</p>',
+    '<p><b>직무수행태도</b><br>'+h(role.attitudes)+'</p>',
+    role.certs?'<p><b>직무기술자격</b><br>'+h(role.certs)+'</p>':""
+  ].filter(Boolean).join(""):"";
   return '<div class="rolePicker">'+
     '<div class="majorStrip"><span>내 전공</span><b>'+h(state.student.major||"STEP 1에서 전공을 입력하세요.")+'</b></div>'+
     '<div class="callout info">'+h(majorInfo)+'</div>'+
@@ -712,7 +1019,9 @@ function curatedRoleSelector(id){
       '<div class="field"><label>2. '+h(roleLabel)+' 선택</label><select class="input" data-curated-role="'+h(id)+'" '+(sel.group?"":"disabled")+'>'+roleOpts+'</select></div>'+
     '</div>'+
     '<p class="help">기준자료 · '+h(lib.sourceLabel)+'</p>'+
-    (role?'<div class="roleEvidence"><b>'+h(sel.group+" → "+sel.role)+'</b><span>공고에서 확인한 업무 · '+h(role.tasks)+'</span><span>필요지식 · '+h(role.knowledge)+'</span><span>필요기술/우대근거 · '+h(role.skills)+'</span></div>':'<div class="callout good"><b>'+h(roleLabel)+'를 하나 고르세요.</b> 선택한 항목의 자료만 다음 AI 직무분석에 사용됩니다.</div>')+
+    (role
+      ?'<div class="roleEvidence"><b>'+h(sel.group+" → "+sel.role)+'</b>'+summary+'</div><details class="optionBox compactRoleDetails"><summary>선택 직무 기준자료 더 보기</summary><div class="optionBody">'+detail+'</div></details>'
+      :'<div class="callout good"><b>'+h(roleLabel)+'를 하나 고르세요.</b> 선택한 항목의 자료만 다음 AI 직무분석에 사용됩니다.</div>')+
   '</div>';
 }
 
@@ -775,7 +1084,7 @@ function step3(){
   const analysisArea = j&&ready
     ? '<div class="selectedJobSummary"><b>현재 분석 대상 · '+h(j.company||"직접 입력")+" / "+h(j.role||j.title||"직무 미입력")+'</b><span>'+h(j.note||"이 분석 결과는 다른 방법과 별도로 저장됩니다.")+'</span></div>'+
       '<div class="block"><h3>③ AI에게 선택한 직무만 분석시키기</h3><p class="help">현재 선택한 기업·세부직무와 내 전공만 들어갑니다. 같은 기업의 다른 직무는 프롬프트에 섞지 않습니다.</p>'+
-        '<textarea class="promptBox promptEditor shortPrompt" id="jobPromptPreview">'+h(jobAnalysisPrompt())+'</textarea>'+
+        '<textarea class="promptBox promptEditor shortPrompt" id="jobPromptPreview" data-prompt-key="job">'+h(promptValue("job",jobAnalysisPrompt()))+'</textarea>'+
         '<div class="actions compactActions"><button class="btn ghost" id="refreshJobPromptBtn">현재 선택 반영</button><button class="btn secondary" id="copyReviewedJobPromptBtn">내 직무분석 프롬프트 복사</button></div>'+
         '<div class="field aiPaste"><label>AI 답변 붙여넣기 <span class="hint">(선택)</span></label><textarea class="input" data-path="jobTable.aiResult" id="jobTableAiResult" placeholder="AI 답변을 붙여넣으면 아래 6칸으로 나눌 수 있습니다.">'+h(state.jobTable.aiResult||"")+'</textarea></div>'+
         '<div class="actions compactActions"><button class="btn secondary" id="applyJobTableAiBtn">AI 답변을 6칸에 반영</button></div>'+
@@ -810,19 +1119,22 @@ function experienceRows(){
 }
 
 function competencyKeywordPrompt(){
-  const j=selectedCuratedJob();
+  const j=selectedCuratedJob(), rd=j?.roleData||selectedRoleData()||{};
   const exps=state.experiences.filter(e=>filled(e.title)||filled(e.summary)).map((e,i)=>
     (i+1)+". "+(e.title||"경험")+(e.type?" ["+e.type+"]":"")+" - "+(e.summary||"세부내용 미입력")
   );
   return [
-    "나는 "+(state.student.major||"전공 미입력")+" 전공 대학생이고, "+(state.target.job||j?.role||"에너지 직무")+"를 준비하고 있다.",
+    "나는 "+(state.student.major||"전공 미입력")+" 전공 대학생이고, "+(j?.role||state.target.job||"관심 직무")+"를 준비하고 있다.",
     "",
     "[선택한 채용공고]",
     j?j.company+" / "+j.title+" / "+j.role:"공고 미선택",
-    j?"확인된 정보: "+j.facts:"",
+    j?"공식 직무정보: "+j.facts:"",
+    rd.preferred?"공식 우대사항: "+rd.preferred:"",
+    rd.exam?"전공시험 범위: "+rd.exam:"",
+    rd.certs?"직무기술자격: "+rd.certs:"",
     "",
-    "[직무분석 결과]",
-    "주요 과업: "+(state.jobTable.tasks||"미입력"),
+    "[STEP 3 직무분석 결과]",
+    "주요 과업: "+(state.jobTable.tasks||rd.tasks||"미입력"),
     "해결과제: "+(state.jobTable.challenge||"미입력"),
     "해결방법: "+(state.jobTable.method||"미입력"),
     "필요역량: "+(state.jobTable.competencies||"미입력"),
@@ -833,24 +1145,28 @@ function competencyKeywordPrompt(){
     "[내 경험]",
     ...(exps.length?exps:["경험 미입력"]),
     "",
-    "[대표 경험의 추가 근거]",
+    "[대표 경험의 행동 근거]",
     "내 행동: "+(state.star.actionWhat||"미입력"),
     "결과: "+(state.star.result||"미입력"),
     "증거: "+(state.star.evidence||"미입력"),
     "",
-    "위 정보만 사용해서 자기소개서와 면접에 사용할 수 있는 직무역량 키워드를 3~5개 찾아줘.",
+    "이제 '직무가 요구하는 언어'와 '내가 실제로 한 행동'을 연결해 자기소개서·면접에 사용할 역량 키워드 3~5개를 찾아줘.",
+    "직무기술서/공고에서 직접 확인된 역량과 네가 직무특성상 도출한 역량을 반드시 구분해줘.",
     "",
     "각 역량은 아래 형식을 반복해서 사용해줘.",
-    "[역량 1 · 키워드]",
+    "[역량 1 · 직무언어 키워드]",
+    "• 근거 구분: [공식 직무자료] / [직무특성상 추론]",
     "• 직무에서 필요한 이유:",
+    "• 공식 업무와의 연결:",
     "• 내 전공/경험 근거:",
-    "• 직무언어로 바꾼 표현:",
+    "• 내 행동을 직무언어로 바꾼 표현:",
     "• 자기소개서에서 강조할 행동:",
-    "• 면접 확인 질문:",
+    "• 실무면접 확인 질문:",
+    "• 근거 수준: 충분 / 일부 / 부족",
     "",
-    "내가 입력하지 않은 경험·수치·성과·자격을 만들지 마.",
-    "근거가 약한 역량은 '• 근거 수준: 부족'이라고 표시해줘.",
-    "성격형 표현보다 실제 행동과 업무언어를 우선해줘.",
+    "내가 입력하지 않은 경험·수치·성과·자격은 만들지 마.",
+    "근거가 약하면 과장하지 말고 '부족'이라고 표시해줘.",
+    "성격형 단어보다 실제 행동·판단·도구·산출물·기준을 우선해줘.",
     ...bulletOutputRules()
   ].filter(Boolean).join("\n");
 }
@@ -874,7 +1190,7 @@ function step4(){
       '</div></div></details>'+
     '</div>'+
     '<div class="divider"></div><div class="block"><h3>④ AI로 직무역량 키워드 찾기</h3><p class="help">STEP 1~4에 입력한 내용이 자동으로 프롬프트에 들어갑니다.</p>'+
-      '<textarea class="promptBox promptEditor shortPrompt" id="keywordPromptPreview">'+h(competencyKeywordPrompt())+'</textarea>'+
+      '<textarea class="promptBox promptEditor shortPrompt" id="keywordPromptPreview" data-prompt-key="keyword">'+h(promptValue("keyword",competencyKeywordPrompt()))+'</textarea>'+
       '<div class="actions compactActions"><button class="btn ghost" id="refreshKeywordPromptBtn">현재 입력 반영</button><button class="btn secondary" id="copyKeywordPromptBtn">내 역량분석 프롬프트 복사</button></div>'+
       field("ai.keywordResult","AI 결과 붙여넣기 <span class=\"hint\">(선택)</span>","AI가 정리한 3~5개 역량 키워드를 붙여넣으세요. STEP 6 Portfolio에 함께 들어갑니다.")+
     '</div>'+
@@ -952,11 +1268,21 @@ function ensureRequirements(){
   const roleData=selectedRoleData();
   const src=[];
   if(j){
-    String(j.required||"").split(/\n+/).map(x=>x.trim()).filter(Boolean).forEach(x=>src.push(x));
-    const competencyText=state.jobTable.competencies||[roleData?.knowledge,roleData?.skills,roleData?.attitudes].filter(filled).join(" / ");
-    const taskText=state.jobTable.tasks||roleData?.tasks||"";
-    if(src.length<3&&filled(competencyText))src.push("직무 필요역량: "+competencyText);
-    if(src.length<3&&filled(taskText))src.push("주요 과업 수행 준비: "+taskText);
+    if(state.sampleJobId==="kea-2026-h2"){
+      src.push("공통 지원자격: "+j.required);
+      if(roleData?.certs)src.push("직무기술자격: "+roleData.certs);
+      if(roleData?.exam)src.push("전공시험·면접 준비: "+roleData.exam+" / "+KEA_COMMON_RECRUITMENT.interview);
+    }else if(state.sampleJobId==="hdelectric-2026-h2"){
+      src.push("공통 지원자격: "+j.required);
+      if(roleData?.preferred)src.push("선택 직무 우대사항: "+roleData.preferred);
+      if(roleData?.tasks)src.push("선택 직무 핵심업무 준비: "+roleData.tasks);
+    }else{
+      String(j.required||"").split(/\n+/).map(x=>x.trim()).filter(Boolean).forEach(x=>src.push(x));
+      const competencyText=state.jobTable.competencies||[roleData?.knowledge,roleData?.skills,roleData?.attitudes].filter(filled).join(" / ");
+      const taskText=state.jobTable.tasks||roleData?.tasks||"";
+      if(src.length<3&&filled(competencyText))src.push("직무 필요역량: "+competencyText);
+      if(src.length<3&&filled(taskText))src.push("주요 과업 수행 준비: "+taskText);
+    }
   }
   src.slice(0,3).forEach((line,i)=>{if(!filled(state.requirements[i]?.condition))state.requirements[i].condition=line;});
 }
@@ -971,26 +1297,29 @@ function requirementRows(){
 }
 
 function gapPrompt(){
-  const j=selectedCuratedJob();
-  const roleData=selectedRoleData();
-  const taskText=state.jobTable.tasks||roleData?.tasks||"미입력";
-  const competencyText=state.jobTable.competencies||[roleData?.knowledge,roleData?.skills,roleData?.attitudes].filter(filled).join(" / ")||"미입력";
+  const j=selectedCuratedJob(), rd=j?.roleData||selectedRoleData()||{};
+  const taskText=state.jobTable.tasks||rd.tasks||"미입력";
+  const competencyText=state.jobTable.competencies||[rd.knowledge,rd.skills,rd.attitudes].filter(filled).join(" / ")||"미입력";
   const reqs=state.requirements.filter(r=>filled(r.condition)).map((r,i)=>(i+1)+". "+r.condition+" / 내 판정: "+(r.status||"미판정")+" / 근거: "+(r.note||"없음"));
   const exps=state.experiences.filter(e=>filled(e.title)||filled(e.summary)).map((e,i)=>(i+1)+". "+(e.title||"경험")+" - "+(e.summary||""));
   return [
-    "나는 "+(state.student.major||"전공 미입력")+" 전공 취업준비생이고, "+(j?.role||state.target.job||"에너지 직무")+"를 준비하고 있다.",
+    "나는 "+(state.student.major||"전공 미입력")+" 전공 취업준비생이고, "+(j?.role||state.target.job||"관심 직무")+"를 준비하고 있다.",
     "",
     "[선택 공고]",
     j?j.company+" / "+j.title+" / "+j.role:"공고 미선택",
-    j?"공고에서 확인된 정보: "+j.facts:"",
+    j?"공식 직무정보: "+j.facts:"",
+    j?.recruitmentInfo?"채용전형·지원조건: "+j.recruitmentInfo:"",
     j?"공고 링크: "+j.sourceUrl:"",
     "",
     "[직무에서 하는 일]",
     taskText,
     "[직무 필요역량]",
     competencyText,
+    rd.preferred?"[직무별 공식 우대사항]\n"+rd.preferred:"",
+    rd.exam?"[직무별 전공시험]\n"+rd.exam:"",
+    rd.certs?"[직무기술자격]\n"+rd.certs:"",
     "",
-    "[공고·직무 조건과 내가 판단한 상태]",
+    "[내가 직접 판정한 조건]",
     ...(reqs.length?reqs:["아직 입력하지 않음"]),
     "",
     "[나의 스펙]",
@@ -1001,24 +1330,25 @@ function gapPrompt(){
     "기타 스펙: "+(state.student.otherSpec||"없음/미입력"),
     "전공 근거: "+(state.student.majorEvidence||"미입력"),
     "",
-    "[경험]",
+    "[내 경험]",
     ...(exps.length?exps:["경험 미입력"]),
     "",
-    "위 정보와 공식 공고를 기준으로 내 GAP을 분석해줘.",
-    "가능하면 공고 링크를 확인하되, 확인할 수 없는 조건은 추정하지 말고 '원문 확인 필요'라고 표시해줘.",
+    "공식 공고·직무기술서와 내 입력정보를 대조해 GAP을 분석해줘.",
+    "공고에서 '우대'인 항목을 '필수'로 바꾸지 말고, 내가 준비 중인 자격은 취득한 것으로 처리하지 마.",
     "",
     "아래 제목과 순서를 그대로 사용해줘.",
-    "[1. 공고에서 실제로 하는 일]",
+    "[1. 이 직무에서 실제로 하는 일]",
     "• 핵심업무 1",
     "• 핵심업무 2",
     "• 핵심업무 3",
-    "[2. 필수조건 / 우대조건]",
-    "• 필수:",
-    "• 우대:",
+    "[2. 공고상 지원·평가·우대조건]",
+    "• 공통 지원조건:",
+    "• 직무별 우대/자격:",
+    "• 시험·면접 준비:",
     "[3. 내가 이미 갖춘 근거]",
-    "• ",
+    "• 조건/역량 → 내 근거 → 근거 수준",
     "[4. 일부 준비된 항목]",
-    "• ",
+    "• 준비 중인 것과 아직 부족한 부분을 구분",
     "[5. 현재 GAP · 최대 3개]",
     "• GAP 1:",
     "• GAP 2:",
@@ -1028,10 +1358,11 @@ function gapPrompt(){
     "• 2순위:",
     "• 3순위:",
     "[7. 3개월 보완 행동]",
-    "• GAP → 행동 → 결과물 형식으로 작성",
+    "• GAP → 행동 → 확인 가능한 결과물 형식",
     "",
     "내가 입력하지 않은 자격증·점수·경험을 있다고 가정하지 마.",
     "채용 가능성을 점수나 확률로 계산하지 마.",
+    "확인되지 않은 내용은 '추가 확인 필요'로 남겨줘.",
     ...bulletOutputRules()
   ].filter(Boolean).join("\n");
 }
@@ -1048,7 +1379,7 @@ function step5(){
     '</div></div>'+
     '<div class="divider"></div><div class="block"><h3>③ 공고·직무 조건 3개만 비교</h3><p class="help">조건이 공고에서 명확하지 않으면 ‘원문 확인 필요’를 선택합니다.</p><div class="requirementList">'+requirementRows()+'</div></div>'+
     '<div class="divider"></div><div class="block"><h3>④ AI로 내 GAP 분석</h3><p class="help">공고, 직무분석, 전공, 경험, 스펙이 모두 들어간 개인 프롬프트입니다.</p>'+
-      '<textarea class="promptBox promptEditor shortPrompt" id="gapPromptPreview">'+h(gapPrompt())+'</textarea>'+
+      '<textarea class="promptBox promptEditor shortPrompt" id="gapPromptPreview" data-prompt-key="gap">'+h(promptValue("gap",gapPrompt()))+'</textarea>'+
       '<div class="actions compactActions"><button class="btn ghost" id="refreshGapPromptBtn">현재 입력 반영</button><button class="btn secondary" id="copyGapPromptBtn">내 GAP 분석 프롬프트 복사</button></div>'+
       field("ai.gapResult","AI GAP 분석 결과 <span class=\"hint\">(선택)</span>","AI의 GAP 분석 결과를 붙여넣으세요.")+
     '</div>'+
@@ -1112,20 +1443,27 @@ function portfolio(){
     "우선 보완 GAP: "+(f.gaps||"-"),
     "3개월 행동계획: "+(f.actions||"-"),"",
     "[AI GAP 분석 메모]",
-    state.ai.gapResult||"-"
+    state.ai.gapResult||"-","",
+    "9. APPLICATION MATERIALS",
+    "[AI 자기소개서 소재정리]",
+    state.ai.selfIntroResult||"-","",
+    "[AI 실무면접 예상질문]",
+    state.ai.interviewResult||"-"
   );
   return a.join("\n");
 }
 
 function selfIntroPrompt(){
-  const j=selectedCuratedJob(), e=state.experiences[state.selectedExperience]||emptyExperience();
+  const j=selectedCuratedJob(), rd=j?.roleData||selectedRoleData()||{}, e=state.experiences[state.selectedExperience]||emptyExperience();
+  const isKea=state.sampleJobId==="kea-2026-h2";
+  const keaGuide=isKea?keaRolePromptGuide(j?.selectedRole):null;
   return [
     "아래는 내가 직접 정리한 직무분석과 경험 자료다. 이 정보 밖의 사실을 만들지 말아줘.",
     "",
-    "[지원 직무] "+(state.target.job||j?.role||"-"),
-    "[기업/공고] "+(j?j.company+" / "+j.title:"-"),
-    "[직무 주요 과업] "+(state.jobTable.tasks||"-"),
-    "[직무 필요역량] "+(state.jobTable.competencies||"-"),
+    "[지원 기업/직무] "+(j?j.company+" / "+j.role:(state.target.job||"-")),
+    "[공식 직무 주요 과업] "+(rd.tasks||state.jobTable.tasks||"-"),
+    "[STEP 3 직무분석] "+(state.jobTable.tasks||"-")+" / "+(state.jobTable.competencies||"-"),
+    rd.preferred?"[공식 우대사항] "+rd.preferred:"",
     "[내 전공] "+(state.student.major||"-"),
     "[전공 근거] "+(state.student.majorEvidence||"-"),
     "[대표 경험] "+(e.title||state.star.experience||"-"),
@@ -1134,56 +1472,78 @@ function selfIntroPrompt(){
     "[증거] "+(state.star.evidence||"-"),
     "[역량 키워드 분석] "+(state.ai.keywordResult||"-"),
     "[현재 GAP과 준비] "+(state.fit.gaps||"-")+" / "+(state.fit.actions||"-"),
+    ...(isKea?[
+      "",
+      "[한국에너지공단 2026 자기소개서 실제 문항]",
+      ...KEA_COMMON_RECRUITMENT.selfIntro.map((q,i)=>(i+1)+". "+q),
+      "[블라인드·불성실 작성 기준]",
+      KEA_COMMON_RECRUITMENT.blind,
+      "[선택 직무 소재 연결 지침]",
+      keaGuide.analysis
+    ]:[]),
     "",
-    "바로 자기소개서 완성문을 쓰지 말고, 먼저 자기소개서 소재를 개조식으로 구조화해줘.",
+    isKea
+      ?"한국에너지공단 실제 4개 문항별로 어떤 경험과 직무역량을 배치할지 먼저 설계해줘. 아직 완성문은 쓰지 마."
+      :"이 기업·직무에 맞춰 자기소개서 소재를 먼저 구조화해줘. 아직 완성문은 쓰지 마.",
     "",
-    "아래 형식을 그대로 사용해줘.",
-    "[핵심 직무역량]",
-    "• ",
+    "아래 형식을 사용해줘.",
+    isKea?"[문항 1~4 소재배치]":"[핵심 직무역량]",
+    "• 문항/주제 → 사용할 경험 → 연결할 공식 NCS/업무축 → 직무역량 → 핵심 행동 → 결과/증거",
     "[기업·직무 요구와 연결]",
-    "• ",
-    "[사용할 대표 경험]",
+    "• 공식 업무/우대사항 → 내 근거",
+    "[대표 경험 STAR Evidence]",
     "• 상황:",
     "• 과제:",
     "• 내가 한 행동:",
+    "• 판단 이유:",
     "• 결과/증거:",
     "[자기소개서에서 강조할 포인트]",
     "• 포인트 1:",
     "• 포인트 2:",
     "• 포인트 3:",
-    "[문장으로 발전시킬 핵심 표현]",
-    "• 표현 1:",
-    "• 표현 2:",
-    "• 표현 3:",
     "[추가로 확인할 정보]",
     "• 없다면 '없음'",
     "",
     "기업 칭찬이나 추상적인 성격 표현보다 '직무 요구 → 내 행동 근거 → 결과'가 보이게 정리해줘.",
     "내가 말하지 않은 수치·성과·역할은 추가하지 마.",
-    "근거가 부족하면 문장을 만들지 말고 확인이 필요한 정보를 bullet로 적어줘.",
+    isKea?"블라인드 위반 가능 정보와 기관명 오기재 위험을 점검해줘.":"",
+    isKea?"각 문항마다 선택 직무의 공식 업무축 중 어떤 부분을 보여주는지 표시하고, 한 경험을 여러 문항에 반복 배치하지 않는다.":"",
     "과장된 AI 문체 대신 실제 대학생이 자기소개서로 발전시키기 쉬운 자연스러운 표현을 사용해줘.",
     ...bulletOutputRules()
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 }
 
 function interviewPrompt(){
-  const j=selectedCuratedJob(), e=state.experiences[state.selectedExperience]||emptyExperience();
+  const j=selectedCuratedJob(), rd=j?.roleData||selectedRoleData()||{}, e=state.experiences[state.selectedExperience]||emptyExperience();
+  const isKea=state.sampleJobId==="kea-2026-h2";
+  const isHd=state.sampleJobId==="hdelectric-2026-h2";
+  const keaGuide=isKea?keaRolePromptGuide(j?.selectedRole):null;
   return [
-    "너는 "+(j?.company||"에너지 기업")+"의 "+(j?.role||state.target.job||"지원 직무")+" 실무면접관이다.",
-    "아래 공고·직무분석·지원자 정보를 바탕으로 이 지원자가 실제 실무면접에서 받을 가능성이 높은 예상질문을 만들어줘.",
+    "너는 "+(j?.company||"지원 기업")+"의 "+(j?.selectedRole||j?.role||state.target.job||"지원 직무")+" 실무면접관이다.",
+    "아래 공식 직무정보와 지원자의 실제 근거를 바탕으로 직무별 예상질문을 만들어줘.",
     "",
     "[기업/공고]",
     j?(j.company+" / "+j.title):"-",
     "[선택 직무]",
     j?.role||state.target.job||"-",
-    "[직무 주요 과업]",
-    state.jobTable.tasks||"-",
-    "[주요 해결과제]",
-    state.jobTable.challenge||"-",
-    "[업무 해결방법]",
-    state.jobTable.method||"-",
-    "[필요역량]",
-    state.jobTable.competencies||"-",
+    "[공식 직무수행내용/직무소개]",
+    rd.tasks||state.jobTable.tasks||"-",
+    "[공식 필요지식]",
+    rd.knowledge||"-",
+    "[공식 필요기술]",
+    rd.skills||"-",
+    "[직무수행태도]",
+    rd.attitudes||"-",
+    rd.preferred?"[공식 우대사항]\n"+rd.preferred:"",
+    rd.exam?"[직무별 전공시험 범위]\n"+rd.exam:"",
+    isKea?"[한국에너지공단 면접평가]\n"+KEA_COMMON_RECRUITMENT.interview:"",
+    isKea?"[선택 직무 질문 설계축]\n"+keaGuide.interview:"",
+    "",
+    "[내 직무분석]",
+    "과업: "+(state.jobTable.tasks||"-"),
+    "해결과제: "+(state.jobTable.challenge||"-"),
+    "해결방법: "+(state.jobTable.method||"-"),
+    "필요역량: "+(state.jobTable.competencies||"-"),
     "[내 전공]",
     state.student.major||"-",
     "[전공에서 찾은 근거]",
@@ -1198,47 +1558,58 @@ function interviewPrompt(){
     (state.fit.gaps||"-")+" / "+(state.fit.actions||"-"),
     "",
     "총 12개의 실무면접 예상질문을 만들어줘.",
-    "질문은 지원한 직무의 실제 업무를 이해했는지 확인할 수 있을 정도로 구체적이어야 한다.",
-    "공고·직무기술서에 나온 업무용어를 우선 사용하고, 일반적인 직무지식을 활용한 질문은 [일반 직무지식]이라고 표시해줘.",
+    isKea
+      ?"한국에너지공단의 실제 평가구조를 반영해 직무수행능력(직무이해·지식·기술·태도) 질문과 직업공통능력(의사소통·대인관계·직업윤리) 경험/상황 질문을 모두 포함해줘."
+      :isHd
+        ?"HD현대일렉트릭의 선택 직무에서 실제 수행하는 업무를 중심으로 설계·품질·시스템·HR·영업·기술전략 중 해당 직무에 맞는 상황을 만들어 질문해줘."
+        :"선택 직무의 실제 업무 중심 질문을 만들어줘.",
+    "공식 자료에 없는 세부 기술을 활용할 경우 [일반 직무지식]이라고 표시하고 회사 내부사실처럼 표현하지 마.",
     "학생이 입력하지 않은 경험이나 성과를 있다고 가정하지 마.",
     "",
-    "아래 5개 영역으로 나눠줘.",
-    "[1. 직무이해·실무지식 · 4문항]",
-    "• 실제 업무의 목적, 절차, 설비/도구, 기준을 이해했는지 묻는 질문",
-    "[2. 문제상황·판단 · 3문항]",
-    "• 이상상황, 오류, 안전·품질 문제 등이 발생했을 때 무엇을 확인하고 어떻게 판단할지 묻는 상황형 질문",
-    "[3. 전공·기술 적용 · 2문항]",
-    "• 내 전공 수업·실험·도구를 이 직무에 어떻게 적용할지 묻는 질문",
-    "[4. 경험 검증 · 2문항]",
-    "• 대표 경험에서 실제 역할, 행동, 판단근거, 결과를 확인하는 질문",
+    isKea?"아래 5개 영역으로 정확히 나눠줘.":"아래 5개 영역으로 나눠줘.",
+    isKea?"[1. 발표면접 예상 주제 · 2문항]":"[1. 직무이해·실무지식 · 4문항]",
+    isKea?"• 선택 직무의 공식 NCS·직무수행내용을 기반으로 3~5분 발표가 가능한 실무 주제를 제시하고 발표 후 예상 질의도 포함":"• 공식 업무의 목적·절차·도구/설비·기준을 이해했는지 확인",
+    isKea?"[2. 직무지식·기술 심층 · 3문항]":"[2. 문제상황·판단 · 3문항]",
+    isKea?"• 공식 필요지식·필요기술·전공시험 범위를 연결해 단순 암기보다 적용과 판단을 묻는다.":"• 선택 직무에서 발생할 수 있는 오류·품질·일정·고객·안전·데이터 문제 중 해당되는 상황만 사용",
+    isKea?"[3. 문제상황·판단 · 3문항]":"[3. 전공·기술 적용 · 2문항]",
+    isKea?"• 선택 직무 질문 설계축에서 실제로 발생 가능한 상황을 사용하고, 무엇을 먼저 확인하고 어떤 기준으로 판단할지 묻는다.":"• 내 전공 수업·실험·도구를 선택 직무에 어떻게 적용할지 확인",
+    isKea?"[4. 경험·직업공통능력 · 3문항]":"[4. 경험 검증 · 2문항]",
+    isKea?"• 대표 경험을 의사소통·대인관계·직업윤리와 연결해 실제 역할·행동·판단근거·결과를 검증한다.":"• 대표 경험의 실제 역할·행동·판단근거·결과를 검증",
     "[5. 직무준비·GAP · 1문항]",
-    "• 현재 부족한 부분을 어떻게 준비하고 있는지 확인하는 질문",
+    "• 부족한 부분을 어떻게 학습·보완하고 있는지 확인",
     "",
     "각 질문은 반드시 아래 형식으로 작성해줘.",
     "[Q1. 질문 유형]",
     "• 예상 질문:",
     "• 질문 의도:",
+    "• 연결된 공식 업무/역량:",
+    isKea?"• 공식 근거: NCS/직무수행내용/필요지식/필요기술/직무수행태도 중 해당 항목":"",
     "• 답변에 연결할 내 근거:",
     "• 예상 꼬리질문:",
-    "• 근거 구분: [공고/직무기술서] 또는 [일반 직무지식] 또는 [내 경험]",
+    "• 근거 구분: [공고/직무기술서] / [일반 직무지식] / [내 경험]",
     "",
-    "질문 작성 원칙:",
-    "- '본인의 장단점은?' 같은 일반 인성질문보다 이 직무의 실제 업무를 확인하는 질문을 우선한다.",
-    "- 기술용어만 암기했는지보다 업무에서 어떻게 판단하고 행동할지를 확인하는 질문을 포함한다.",
-    "- 공고에 없는 기술 세부내용을 공고에 있다고 표현하지 않는다.",
-    "- 답변 예시나 모범답안은 쓰지 않는다. 학생이 스스로 답을 준비할 수 있도록 질문·의도·근거만 제시한다.",
-    "- 한 항목은 1~2줄 이내로 간결하게 작성한다.",
+    isKea?"한국에너지공단 질문 12개 중 최소 8개는 선택 직무의 공식 NCS·직무수행내용·필요지식·필요기술에 직접 연결하고, 다른 직무의 세부내용을 섞지 않는다.":"",
+    "답변 예시나 모범답안은 쓰지 않는다. 학생이 자기 답을 준비할 수 있도록 질문·의도·근거만 제시한다.",
     ...bulletOutputRules()
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 }
 
 function step6(){
   return '<section class="card stepCard printTarget"><div class="sectionHead noPrint"><div><div class="kicker">STEP 06</div><h2>My Job Portfolio</h2><p>직무분석, 전공·경험, 역량 키워드, 스펙, GAP을 한 파일로 모으고 실제 지원 준비로 연결합니다.</p></div><span class="badge">Portfolio</span></div>'+
     '<div class="block noPrint"><h3>① 내 직무분석 결과 확인</h3><p class="help">아래 내용은 STEP 1~5 입력값으로 자동 생성됩니다. 빠진 내용이 있으면 이전 STEP에서 수정합니다.</p></div>'+
     '<div class="preview">'+h(portfolio())+'</div>'+
-    '<div class="divider noPrint"></div><div class="block noPrint"><h3>② 내 AI로 자기소개서 준비</h3><p class="help">내 전공·경험·직무분석·GAP이 들어간 개인 프롬프트입니다.</p><textarea class="promptBox promptEditor shortPrompt" id="selfIntroPromptPreview">'+h(selfIntroPrompt())+'</textarea><div class="actions compactActions"><button class="btn secondary" id="copySelfIntroPromptBtn">자기소개서 프롬프트 복사</button></div></div>'+
-    '<div class="block noPrint"><h3>③ 내 AI로 실무면접 예상질문 만들기</h3><p class="help">선택한 직무의 실제 업무와 내 전공·경험을 기준으로 예상질문 12개를 만듭니다.</p><textarea class="promptBox promptEditor shortPrompt" id="interviewPromptPreview">'+h(interviewPrompt())+'</textarea><div class="actions compactActions"><button class="btn secondary" id="copyInterviewPromptBtn">실무면접 예상질문 프롬프트 복사</button></div></div>'+
-    '<div class="divider noPrint"></div><div class="exportGrid noPrint"><div class="exportCard"><b>Word용 문서</b><p>직무분석 Portfolio를 Word에서 수정합니다.</p><button class="btn primary" id="docBtn">Word 파일 저장</button></div><div class="exportCard"><b>PDF</b><p>인쇄 화면에서 PDF로 저장합니다.</p><button class="btn secondary" id="printBtn">PDF 저장 화면</button></div><div class="exportCard"><b>학습 백업</b><p>다음 수업에서 이어서 사용할 JSON입니다.</p><button class="btn secondary" id="jsonBtn2">JSON 백업 저장</button></div></div>'+
+    '<div class="divider noPrint"></div><div class="block noPrint"><h3>② 내 AI로 자기소개서 준비</h3><p class="help">선택한 기업·직무와 내 전공·경험·GAP이 반영됩니다. 한국에너지공단 선택 시 실제 자기소개서 문항과 블라인드 기준도 함께 들어갑니다.</p>'+
+      '<textarea class="promptBox promptEditor shortPrompt" id="selfIntroPromptPreview" data-prompt-key="selfIntro">'+h(promptValue("selfIntro",selfIntroPrompt()))+'</textarea>'+
+      '<div class="actions compactActions"><button class="btn ghost" id="refreshSelfIntroPromptBtn">현재 입력 반영</button><button class="btn secondary" id="copySelfIntroPromptBtn">자기소개서 프롬프트 복사</button></div>'+
+      field("ai.selfIntroResult","AI 자기소개서 소재정리 결과 <span class=\"hint\">(선택)</span>","내 AI가 정리한 문항별 소재·핵심역량을 붙여넣으세요. 같은 브라우저에 자동 저장됩니다.")+
+    '</div>'+
+    '<div class="block noPrint"><h3>③ 내 AI로 실무면접 예상질문 만들기</h3><p class="help">선택 직무의 공식 업무와 내 전공·경험을 기준으로 예상질문 12개를 만듭니다.</p>'+
+      '<textarea class="promptBox promptEditor shortPrompt" id="interviewPromptPreview" data-prompt-key="interview">'+h(promptValue("interview",interviewPrompt()))+'</textarea>'+
+      '<div class="actions compactActions"><button class="btn ghost" id="refreshInterviewPromptBtn">현재 입력 반영</button><button class="btn secondary" id="copyInterviewPromptBtn">실무면접 예상질문 프롬프트 복사</button></div>'+
+      field("ai.interviewResult","AI 실무면접 예상질문 결과 <span class=\"hint\">(선택)</span>","내 AI가 만든 예상질문을 붙여넣으세요. 같은 브라우저에 자동 저장됩니다.")+
+    '</div>'+
+    '<div class="callout good noPrint"><b>자동 저장</b> STEP 1~6의 입력값과 붙여넣은 AI 결과는 이 브라우저에 저장됩니다. 같은 기기·같은 브라우저로 다시 열면 이어서 사용할 수 있습니다.</div>'+
+    '<div class="divider noPrint"></div><div class="exportGrid noPrint"><div class="exportCard"><b>Word용 문서</b><p>직무분석 Portfolio를 Word에서 수정합니다.</p><button class="btn primary" id="docBtn">Word 파일 저장</button></div><div class="exportCard"><b>PDF</b><p>인쇄 화면에서 PDF로 저장합니다.</p><button class="btn secondary" id="printBtn">PDF 저장 화면</button></div><div class="exportCard"><b>학습 백업</b><p>브라우저 저장과 별도로 보관할 JSON입니다.</p><button class="btn secondary" id="jsonBtn2">JSON 백업 저장</button></div></div>'+
     '<div class="actions stepFooter noPrint"><button class="btn secondary" data-prev="5">이전</button><button class="btn secondary" id="copyBtn">Portfolio 텍스트 복사</button><button class="btn danger" id="resetBtn">FLEX 데이터 새로 시작</button></div></section>';
 }
 
@@ -1259,7 +1630,7 @@ function syncSelectedPosting(){
 }
 
 function selectAnalysisMethod(id){
-  if(!["kea-2026-h2","hdoilbank-2026-h2","custom"].includes(id))return;
+  if(!["kea-2026-h2","hdelectric-2026-h2","custom"].includes(id))return;
   snapshotActiveCase();
   state.sampleJobId=id;
   restoreAnalysisCase(roleCaseKey(id));
@@ -1328,6 +1699,10 @@ function applyJobTableAi(){
 }
 
 function bind(){
+  document.querySelectorAll("[data-prompt-key]").forEach(e=>{
+    const handler=()=>{state.promptDrafts??={};state.promptDrafts[e.dataset.promptKey]=e.value;save();};
+    e.oninput=handler;e.onchange=handler;
+  });
   document.querySelectorAll("[data-path]").forEach(e=>{
     const handler=()=>{
       set(e.dataset.path,e.value);
@@ -1376,14 +1751,16 @@ function bind(){
   document.getElementById("step5TargetSelect")?.addEventListener("change",e=>selectStep5Target(e.target.value));
 
   document.getElementById("copySearchPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("searchPromptPreview")?.value||energySearchPrompt(),"내 채용공고 검색 프롬프트를 복사했습니다."));
-  document.getElementById("refreshJobPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("jobPromptPreview");if(e)e.value=jobAnalysisPrompt();toast("현재 분석 대상 정보를 프롬프트에 반영했습니다.");});
+  document.getElementById("refreshJobPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("jobPromptPreview"),v=jobAnalysisPrompt();if(e)e.value=v;updatePromptDraft("job",v);toast("현재 분석 대상 정보를 프롬프트에 반영했습니다.");});
   document.getElementById("copyReviewedJobPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("jobPromptPreview")?.value||jobAnalysisPrompt(),"내 직무분석 프롬프트를 복사했습니다."));
   document.getElementById("applyJobTableAiBtn")?.addEventListener("click",applyJobTableAi);
-  document.getElementById("refreshKeywordPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("keywordPromptPreview");if(e)e.value=competencyKeywordPrompt();toast("현재 전공·경험을 프롬프트에 반영했습니다.");});
+  document.getElementById("refreshKeywordPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("keywordPromptPreview"),v=competencyKeywordPrompt();if(e)e.value=v;updatePromptDraft("keyword",v);toast("현재 전공·경험을 프롬프트에 반영했습니다.");});
   document.getElementById("copyKeywordPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("keywordPromptPreview")?.value||competencyKeywordPrompt(),"내 역량분석 프롬프트를 복사했습니다."));
-  document.getElementById("refreshGapPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("gapPromptPreview");if(e)e.value=gapPrompt();toast("현재 스펙·GAP 정보를 프롬프트에 반영했습니다.");});
+  document.getElementById("refreshGapPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("gapPromptPreview"),v=gapPrompt();if(e)e.value=v;updatePromptDraft("gap",v);toast("현재 스펙·GAP 정보를 프롬프트에 반영했습니다.");});
   document.getElementById("copyGapPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("gapPromptPreview")?.value||gapPrompt(),"내 GAP 분석 프롬프트를 복사했습니다."));
+  document.getElementById("refreshSelfIntroPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("selfIntroPromptPreview"),v=selfIntroPrompt();if(e)e.value=v;updatePromptDraft("selfIntro",v);toast("현재 입력을 자기소개서 프롬프트에 반영했습니다.");});
   document.getElementById("copySelfIntroPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("selfIntroPromptPreview")?.value||selfIntroPrompt(),"내 자기소개서 프롬프트를 복사했습니다."));
+  document.getElementById("refreshInterviewPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("interviewPromptPreview"),v=interviewPrompt();if(e)e.value=v;updatePromptDraft("interview",v);toast("현재 입력을 면접 프롬프트에 반영했습니다.");});
   document.getElementById("copyInterviewPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("interviewPromptPreview")?.value||interviewPrompt(),"내 실무면접 예상질문 프롬프트를 복사했습니다."));
   document.getElementById("docBtn")?.addEventListener("click",exportDoc);
   document.getElementById("printBtn")?.addEventListener("click",()=>window.print());
