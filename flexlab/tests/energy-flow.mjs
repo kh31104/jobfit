@@ -28,6 +28,7 @@ try{
 
   await page.locator('[data-path="step2Search.company"]').fill('현재 찾지 못함');
   await page.locator('[data-path="step2Search.title"]').fill('관심 직무 신입 공고 없음');
+  await page.locator('#searchPromptPreview').evaluate(el=>{const d=el.closest('details');if(d)d.open=true;});
   await page.locator('#searchPromptPreview').fill((await page.locator('#searchPromptPreview').inputValue())+'\n• 학생 메모 프롬프트');
   await page.reload({waitUntil:'networkidle'});
   assert((await page.locator('[data-path="step2Search.company"]').inputValue())==='현재 찾지 못함','STEP2 answer must persist after reload');
