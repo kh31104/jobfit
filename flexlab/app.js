@@ -948,15 +948,19 @@ function curatedRoleSelector(id){
   const roleOpts='<option value="">'+h(roleLabel)+' 선택</option>'+roles.map(r=>'<option value="'+h(r)+'" '+(sel.role===r?"selected":"")+'>'+h(r)+'</option>').join("");
   const role=selectedRoleData(id);
   const majorInfo=lib.majorNote||majorExplorationHint(state.student.major);
-  const extras=role?[
+  const summary=role?[
     role.headcount?'<span>채용인원 · '+h(role.headcount)+'</span>':"",
+    role.location?'<span>근무지 · '+h(role.location)+'</span>':"",
     '<span>공식 업무 · '+h(role.tasks)+'</span>',
     role.preferred?'<span>공식 우대사항 · '+h(role.preferred)+'</span>':"",
-    role.location?'<span>근무지 · '+h(role.location)+'</span>':"",
-    role.exam?'<span>전공시험 · '+h(role.exam)+'</span>':"",
-    role.certs?'<span>직무기술자격 · '+h(role.certs)+'</span>':"",
-    '<span>필요지식 · '+h(role.knowledge)+'</span>',
-    '<span>필요기술 · '+h(role.skills)+'</span>'
+    role.exam?'<span>전공시험 · '+h(role.exam)+'</span>':""
+  ].filter(Boolean).join(""):"";
+  const detail=role?[
+    role.ncs?'<p><b>NCS/직무분류</b><br>'+h(role.ncs)+'</p>':"",
+    '<p><b>필요지식</b><br>'+h(role.knowledge)+'</p>',
+    '<p><b>필요기술</b><br>'+h(role.skills)+'</p>',
+    '<p><b>직무수행태도</b><br>'+h(role.attitudes)+'</p>',
+    role.certs?'<p><b>직무기술자격</b><br>'+h(role.certs)+'</p>':""
   ].filter(Boolean).join(""):"";
   return '<div class="rolePicker">'+
     '<div class="majorStrip"><span>내 전공</span><b>'+h(state.student.major||"STEP 1에서 전공을 입력하세요.")+'</b></div>'+
@@ -967,7 +971,9 @@ function curatedRoleSelector(id){
       '<div class="field"><label>2. '+h(roleLabel)+' 선택</label><select class="input" data-curated-role="'+h(id)+'" '+(sel.group?"":"disabled")+'>'+roleOpts+'</select></div>'+
     '</div>'+
     '<p class="help">기준자료 · '+h(lib.sourceLabel)+'</p>'+
-    (role?'<div class="roleEvidence"><b>'+h(sel.group+" → "+sel.role)+'</b>'+extras+'</div>':'<div class="callout good"><b>'+h(roleLabel)+'를 하나 고르세요.</b> 선택한 항목의 자료만 다음 AI 직무분석에 사용됩니다.</div>')+
+    (role
+      ?'<div class="roleEvidence"><b>'+h(sel.group+" → "+sel.role)+'</b>'+summary+'</div><details class="optionBox compactRoleDetails"><summary>선택 직무 기준자료 더 보기</summary><div class="optionBody">'+detail+'</div></details>'
+      :'<div class="callout good"><b>'+h(roleLabel)+'를 하나 고르세요.</b> 선택한 항목의 자료만 다음 AI 직무분석에 사용됩니다.</div>')+
   '</div>';
 }
 
