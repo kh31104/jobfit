@@ -594,7 +594,7 @@ function step2(){
       '<div class="field span2"><label>공고 주소 <span class="hint">(선택)</span></label><input class="input" data-path="step2Search.sourceUrl" value="'+h(state.step2Search.sourceUrl||"")+'" placeholder="https://..." /></div>'+
       field("step2Search.memo","검색 메모 <span class=\"hint\">(선택)</span>","어떤 검색어를 썼는지, 왜 적절한 공고를 찾기 어려웠는지 간단히 적어도 됩니다.")+
     '</div></div>'+step2SearchPromptBox()+
-    '<div class="callout info"><b>공고가 없어도 수업은 계속됩니다.</b> STEP 3에서는 수업용 예시로 한국에너지공단과 HD현대오일뱅크의 2026년 신입 채용을 제공합니다.</div>');
+    '<div class="callout info"><b>공고가 없어도 수업은 계속됩니다.</b> STEP 3에서는 수업용 예시로 한국에너지공단과 HD현대일렉트릭의 2026년 신입 채용을 제공합니다.</div>');
 }
 
 function postingLines(text=""){
@@ -910,7 +910,7 @@ function analysisMethodCards(){
     ...CURATED_JOBS.map((j,i)=>({
       ...j,
       method:"방법 "+(i+1),
-      desc:i===0?"현재 한국에너지공단 신입 채용에서 직무를 골라 분석":"HD현대오일뱅크 대졸 신입공채의 다양한 직무 중 하나를 골라 분석"
+      desc:i===0?"현재 한국에너지공단 신입 채용에서 직무를 골라 분석":"HD현대일렉트릭 신입공채의 7개 직무 중 하나를 골라 분석"
     })),
     {
       ...custom,id:"custom",method:"방법 3",type:"직접 입력",
@@ -948,6 +948,16 @@ function curatedRoleSelector(id){
   const roleOpts='<option value="">'+h(roleLabel)+' 선택</option>'+roles.map(r=>'<option value="'+h(r)+'" '+(sel.role===r?"selected":"")+'>'+h(r)+'</option>').join("");
   const role=selectedRoleData(id);
   const majorInfo=lib.majorNote||majorExplorationHint(state.student.major);
+  const extras=role?[
+    role.headcount?'<span>채용인원 · '+h(role.headcount)+'</span>':"",
+    '<span>공식 업무 · '+h(role.tasks)+'</span>',
+    role.preferred?'<span>공식 우대사항 · '+h(role.preferred)+'</span>':"",
+    role.location?'<span>근무지 · '+h(role.location)+'</span>':"",
+    role.exam?'<span>전공시험 · '+h(role.exam)+'</span>':"",
+    role.certs?'<span>직무기술자격 · '+h(role.certs)+'</span>':"",
+    '<span>필요지식 · '+h(role.knowledge)+'</span>',
+    '<span>필요기술 · '+h(role.skills)+'</span>'
+  ].filter(Boolean).join(""):"";
   return '<div class="rolePicker">'+
     '<div class="majorStrip"><span>내 전공</span><b>'+h(state.student.major||"STEP 1에서 전공을 입력하세요.")+'</b></div>'+
     '<div class="callout info">'+h(majorInfo)+'</div>'+
@@ -957,7 +967,7 @@ function curatedRoleSelector(id){
       '<div class="field"><label>2. '+h(roleLabel)+' 선택</label><select class="input" data-curated-role="'+h(id)+'" '+(sel.group?"":"disabled")+'>'+roleOpts+'</select></div>'+
     '</div>'+
     '<p class="help">기준자료 · '+h(lib.sourceLabel)+'</p>'+
-    (role?'<div class="roleEvidence"><b>'+h(sel.group+" → "+sel.role)+'</b><span>공고에서 확인한 업무 · '+h(role.tasks)+'</span><span>필요지식 · '+h(role.knowledge)+'</span><span>필요기술/우대근거 · '+h(role.skills)+'</span></div>':'<div class="callout good"><b>'+h(roleLabel)+'를 하나 고르세요.</b> 선택한 항목의 자료만 다음 AI 직무분석에 사용됩니다.</div>')+
+    (role?'<div class="roleEvidence"><b>'+h(sel.group+" → "+sel.role)+'</b>'+extras+'</div>':'<div class="callout good"><b>'+h(roleLabel)+'를 하나 고르세요.</b> 선택한 항목의 자료만 다음 AI 직무분석에 사용됩니다.</div>')+
   '</div>';
 }
 
@@ -1204,11 +1214,21 @@ function ensureRequirements(){
   const roleData=selectedRoleData();
   const src=[];
   if(j){
-    String(j.required||"").split(/\n+/).map(x=>x.trim()).filter(Boolean).forEach(x=>src.push(x));
-    const competencyText=state.jobTable.competencies||[roleData?.knowledge,roleData?.skills,roleData?.attitudes].filter(filled).join(" / ");
-    const taskText=state.jobTable.tasks||roleData?.tasks||"";
-    if(src.length<3&&filled(competencyText))src.push("직무 필요역량: "+competencyText);
-    if(src.length<3&&filled(taskText))src.push("주요 과업 수행 준비: "+taskText);
+    if(state.sampleJobId==="kea-2026-h2"){
+      src.push("공통 지원자격: "+j.required);
+      if(roleData?.certs)src.push("직무기술자격: "+roleData.certs);
+      if(roleData?.exam)src.push("전공시험·면접 준비: "+roleData.exam+" / "+KEA_COMMON_RECRUITMENT.interview);
+    }else if(state.sampleJobId==="hdelectric-2026-h2"){
+      src.push("공통 지원자격: "+j.required);
+      if(roleData?.preferred)src.push("선택 직무 우대사항: "+roleData.preferred);
+      if(roleData?.tasks)src.push("선택 직무 핵심업무 준비: "+roleData.tasks);
+    }else{
+      String(j.required||"").split(/\n+/).map(x=>x.trim()).filter(Boolean).forEach(x=>src.push(x));
+      const competencyText=state.jobTable.competencies||[roleData?.knowledge,roleData?.skills,roleData?.attitudes].filter(filled).join(" / ");
+      const taskText=state.jobTable.tasks||roleData?.tasks||"";
+      if(src.length<3&&filled(competencyText))src.push("직무 필요역량: "+competencyText);
+      if(src.length<3&&filled(taskText))src.push("주요 과업 수행 준비: "+taskText);
+    }
   }
   src.slice(0,3).forEach((line,i)=>{if(!filled(state.requirements[i]?.condition))state.requirements[i].condition=line;});
 }
