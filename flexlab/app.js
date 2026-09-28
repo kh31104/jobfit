@@ -44,18 +44,18 @@ const CURATED_JOBS=[
     note:"현재 2026년 하반기 신입 채용의 공개경쟁 모집직무 중 하나를 선택해 분석합니다."
   },
   {
-    id:"hdoilbank-2026-h2",
+    id:"hdelectric-2026-h2",
     type:"대기업 · 신입",
-    company:"HD현대오일뱅크",
-    title:"2026년 하반기 신입사원 채용",
-    role:"엔지니어·IT·영업·경영일반",
+    company:"HD현대일렉트릭",
+    title:"HD현대 2026년 하반기 신입사원 모집 · HD현대일렉트릭",
+    role:"전기설계·구조설계·품질경영·ICT/DT·HR·영업·기술경영",
     period:"2026.09.01 ~ 2026.09.27 23:59",
     sourceUrl:"https://hd-recruit2026.com/",
-    source:"HD현대 2026 하반기 신입사원 공식 채용페이지",
-    facts:"정규직 신입 · 공정기술/생산기획, SAP ERP운영, 해외영업, 국내영업, 재무회계·HR, 노무·생산지원 등 다양한 직무 모집",
-    required:"공통: 4년제 대학 2027년 2월 졸업예정자 또는 기졸업자(2027년 1월 근무 가능) · 유효한 공인영어성적 보유 · 해외여행 결격사유 없음. 직무별 전공요건은 별도 확인",
-    preferred:"공정기술/생산기획: 화공·안전 관련 자격 우대 · SAP ERP운영: SAP 교육/프로젝트, ABAP·SQL 활용 우대 · 기타 직무는 공식 공고 확인",
-    note:"최근 2026년 하반기 대졸 신입공채를 수업용 예시로 사용합니다. 직무별 공식 직무소개만 분석에 사용합니다."
+    source:"HD현대 2026년 하반기 신입사원 공식 채용페이지 · HD현대일렉트릭",
+    facts:"정규직 신입 · 전기설계, 구조설계, 품질경영, ICT/DT, HR, 영업, 기술경영 모집 · 울산 및 분당(GRC) 근무",
+    required:"공통: 학사 이상 기졸업자 또는 2027년 2월 졸업예정자 · 2027년 1월 정규직 입사 가능 · TOEIC Speaking 120점 이상 또는 OPIc IM2 이상 유효성적 · 해외여행 결격사유 없음(남성 병역필/면제)",
+    preferred:"직무별 우대 전공·자격·경험이 다르므로 선택 직무의 공식 직무소개를 기준으로 비교",
+    note:"2026년 하반기 공식 신입공채를 수업용 사기업 예시로 사용합니다. 선택한 직무의 공식 직무소개와 우대사항만 사실 근거로 사용합니다."
   }
 ];
 
@@ -185,39 +185,89 @@ const KEA_ROLE_LIBRARY={
   }
 };
 
-const HDOILBANK_ROLE_LIBRARY=
-
-const HDOILBANK_ROLE_LIBRARY={
-  sourceLabel:"HD현대 2026년 하반기 신입사원 공식 채용페이지 · HD현대오일뱅크 직무소개",
-  groupLabel:"직무군",
-  roleLabel:"분석할 신입직무",
-  majorNote:"공정기술/생산기획은 화학공학 전공이 필수이고, SAP ERP운영은 IT 관련 전공이 필수입니다. 영업·경영일반은 전공 무관으로 안내되어 있습니다. 내 전공과 공고의 필수조건을 함께 확인하세요.",
-  selectionNote:"2026년 하반기 대졸 신입공채의 실제 직무소개를 기준으로 합니다. 경영일반은 공고상 2지망까지 희망 직무를 선택할 수 있습니다.",
+const HDELECTRIC_ROLE_LIBRARY={
+  sourceLabel:"HD현대 2026년 하반기 신입사원 공식 채용페이지 · HD현대일렉트릭 모집직무",
+  groupLabel:"직무군(실습 분류)",
+  roleLabel:"분석할 세부직무",
+  majorNote:"HD현대일렉트릭은 직무별 우대 전공·자격·경험을 제시합니다. 아래 직무군은 수업에서 찾기 쉽게 묶은 분류이며 공식 모집단위는 각 세부직무입니다.",
+  selectionNote:"공식 공고에 확인되는 '직무소개·우대사항·근무지'는 사실로 사용하고, 필요지식·기술·태도는 AI가 직무특성에서 도출할 경우 반드시 [추론]으로 표시합니다.",
   groups:{
-    "엔지니어":{
-      headcount:"대산",
+    "설계·품질":{
+      headcount:"실습 분류 · 울산",
       roles:{
-        "공정기술/생산기획":{tasks:"공정 관리·최적화 및 수익개선, 원료 및 제품 생산 계획 수립·운영",knowledge:"공고상 화학공학 전공 필수",skills:"화공 및 안전 관련 자격증 보유자 우대",attitudes:"세부 직무수행태도는 공고에 별도 명시 없음"}
+        "전기설계":{
+          tasks:"변압기·고압차단기·배전반·회전기 등 주요 제품 상세 전기설계 및 개발, 도면 일정·완성도 관리, 설계 외주·설계 품질 관리, 설계도면 제도·표준 관리",
+          knowledge:"공식 공고 별도 명시 없음. 직무소개를 근거로 전력기기·전기설계·도면·규격 관련 지식은 [추론]으로만 도출",
+          skills:"공식 공고 별도 명시 없음. 설계·도면 검토·일정/품질 관리 역량은 [추론]으로만 도출",
+          attitudes:"공식 공고 별도 명시 없음. 정확성·표준준수·협업 등은 [추론]으로만 도출",
+          preferred:"전기 및 관련 전공자 · 관련 자격 보유자",
+          location:"울산",
+          focus:"전력기기 상세 전기설계 → 도면 완성도 → 표준·품질 → 외주설계 관리"
+        },
+        "구조설계":{
+          tasks:"변압기·고압차단기·배전반·회전기 등 주요 제품 상세 구조설계 및 개발, 도면 일정·완성도 관리, 설계 외주·설계 품질 관리, 설계도면 제도·표준 관리",
+          knowledge:"공식 공고 별도 명시 없음. 기계구조·재료·도면·설계규격 관련 지식은 [추론]으로만 도출",
+          skills:"공식 공고 별도 명시 없음. 구조설계·도면 검토·일정/품질 관리 역량은 [추론]으로만 도출",
+          attitudes:"공식 공고 별도 명시 없음. 정확성·표준준수·협업 등은 [추론]으로만 도출",
+          preferred:"기계 및 관련 전공자 · 관련 자격 보유자",
+          location:"울산",
+          focus:"전력기기 상세 구조설계 → 도면 완성도 → 표준·품질 → 외주설계 관리"
+        },
+        "품질경영":{
+          tasks:"품질지표 수립·관리(실패비용·불량률 등), 품질시스템 인증 관리(ISO 9001·원자력 품질보증·방폭품질보증 등), 협력사 부품 품질검사·기술지도·평가, 부적합사항(NCR) 발행·사후관리",
+          knowledge:"공식 공고 별도 명시 없음. 품질시스템·품질지표·인증·협력사 품질관리 관련 지식은 [추론]으로만 도출",
+          skills:"공식 공고 별도 명시 없음. 품질데이터 분석·부적합 원인분석·시정조치·협력사 커뮤니케이션 역량은 [추론]으로만 도출",
+          attitudes:"공식 공고 별도 명시 없음. 기준준수·객관성·재발방지 관점은 [추론]으로만 도출",
+          preferred:"전기·기계 등 이공계열 및 관련 전공자 · 관련 자격 보유자",
+          location:"울산",
+          focus:"품질지표 → 인증체계 → 협력사 품질 → NCR·사후관리"
+        }
       }
     },
-    "IT":{
-      headcount:"분당(GRC)",
+    "디지털·경영지원":{
+      headcount:"실습 분류 · 울산",
       roles:{
-        "SAP ERP운영":{tasks:"업무 프로세스 개선(PI), SAP ERP 운영 및 관리",knowledge:"컴퓨터공학·경영정보학·산업공학 등 IT 관련 전공 필수",skills:"SAP ERP 교육 수료/프로젝트 경험, ABAP·SQL 활용 우대",attitudes:"세부 직무수행태도는 공고에 별도 명시 없음"}
+        "ICT/DT":{
+          tasks:"SAP/ERP 시스템 운영·유지보수, LEGACY 시스템 개선 및 IT/DT 기술기획, 업무 프로세스 설계·표준화, CAD/PLM 시스템 개발·운영",
+          knowledge:"공식 공고 별도 명시 없음. ERP·정보시스템·업무프로세스·CAD/PLM 관련 지식은 [추론]으로만 도출",
+          skills:"공식 공고 별도 명시 없음. 시스템 운영·요구사항 분석·프로세스 개선·데이터/시스템 연계 역량은 [추론]으로만 도출",
+          attitudes:"공식 공고 별도 명시 없음. 사용자 관점·안정적 운영·표준화·협업은 [추론]으로만 도출",
+          preferred:"컴퓨터·전산 및 관련 전공자 · 관련 자격 보유자",
+          location:"울산",
+          focus:"ERP 운영 → Legacy 개선 → 프로세스 표준화 → CAD/PLM 개발·운영"
+        },
+        "HR":{
+          tasks:"채용·평가·승진·보상 등 인적자원 관리, 조직문화 개선 및 임직원 교육 운영, 복지제도 기획·운영",
+          knowledge:"공식 공고 별도 명시 없음. 인사제도·평가보상·조직문화·교육·복지 관련 지식은 [추론]으로만 도출",
+          skills:"공식 공고 별도 명시 없음. 제도기획·데이터 정리·이해관계자 커뮤니케이션 역량은 [추론]으로만 도출",
+          attitudes:"공식 공고 별도 명시 없음. 공정성·기밀성·경청·조율은 [추론]으로만 도출",
+          preferred:"상경계열 관련 전공자 · 관련 자격 보유자",
+          location:"울산",
+          focus:"채용·평가·보상 → 조직문화·교육 → 복지제도 운영"
+        }
       }
     },
-    "영업":{
-      headcount:"분당(GRC)",
+    "영업·기술전략":{
+      headcount:"실습 분류 · 분당(GRC)",
       roles:{
-        "해외영업":{tasks:"원유 및 제품 트레이딩",knowledge:"전공 무관",skills:"세부 필요기술은 공고에 별도 명시 없음",attitudes:"세부 직무수행태도는 공고에 별도 명시 없음"},
-        "국내영업":{tasks:"판매 전략 수립 및 판매 채널 관리",knowledge:"전공 무관",skills:"세부 필요기술은 공고에 별도 명시 없음",attitudes:"세부 직무수행태도는 공고에 별도 명시 없음"}
-      }
-    },
-    "경영일반":{
-      headcount:"분당(GRC) · 대산",
-      roles:{
-        "재무회계·HR":{tasks:"재무회계 및 HR 업무",knowledge:"전공 무관",skills:"세부 필요기술은 공고에 별도 명시 없음",attitudes:"세부 직무수행태도는 공고에 별도 명시 없음"},
-        "노무·생산지원":{tasks:"노무 및 생산지원 업무",knowledge:"전공 무관",skills:"세부 필요기술은 공고에 별도 명시 없음",attitudes:"세부 직무수행태도는 공고에 별도 명시 없음"}
+        "영업":{
+          tasks:"변압기·고압차단기·배전반·회전기 등 주요 제품 영업, 영업전략 수립·프로젝트 진행, 가격협상·대리점 영업관리, 시장조사·제품홍보·경쟁사 분석",
+          knowledge:"공식 공고 별도 명시 없음. 전력기기 제품·시장·프로젝트 영업 관련 지식은 [추론]으로만 도출",
+          skills:"공식 공고 별도 명시 없음. 제안·협상·시장분석·프로젝트 관리·고객커뮤니케이션은 [추론]으로만 도출",
+          attitudes:"공식 공고 별도 명시 없음. 고객관점·책임감·협업·사업감각은 [추론]으로만 도출",
+          preferred:"전기·기계 등 이공계열 및 관련 전공자 · 직무 관련 경험 보유자",
+          location:"분당(GRC)",
+          focus:"전력기기 제품이해 → 영업전략 → 프로젝트·가격협상 → 시장·경쟁사 분석"
+        },
+        "기술경영":{
+          tasks:"전사 기술·제품 개발전략 수립, 제품·기술 로드맵(PRM/TRM) 기획, R&D 과제 발굴·관리와 프로젝트 운영·성과관리, 특허·지식재산(IP) 전략·분석·권리화 지원, IP 포트폴리오 관리·활용",
+          knowledge:"공식 공고 별도 명시 없음. 기술전략·로드맵·R&D관리·특허/IP 관련 지식은 [추론]으로만 도출",
+          skills:"공식 공고 별도 명시 없음. 기술·시장 분석, 로드맵 기획, 프로젝트·성과관리, 특허정보 분석 역량은 [추론]으로만 도출",
+          attitudes:"공식 공고 별도 명시 없음. 전략적 사고·분석적 태도·협업·성과관리 관점은 [추론]으로만 도출",
+          preferred:"전기·기계·산업공학 등 이공계열 및 관련 전공자 · 직무 관련 경험 보유자",
+          location:"분당(GRC)",
+          focus:"기술·제품 전략 → PRM/TRM → R&D 포트폴리오 → IP 전략·권리화"
+        }
       }
     }
   }
@@ -225,12 +275,12 @@ const HDOILBANK_ROLE_LIBRARY={
 
 const CURATED_ROLE_LIBRARIES={
   "kea-2026-h2":KEA_ROLE_LIBRARY,
-  "hdoilbank-2026-h2":HDOILBANK_ROLE_LIBRARY
+  "hdelectric-2026-h2":HDELECTRIC_ROLE_LIBRARY
 };
 
 function emptyCuratedSelection(){return {
   "kea-2026-h2":{group:"",role:""},
-  "hdoilbank-2026-h2":{group:"",role:""}
+  "hdelectric-2026-h2":{group:"",role:""}
 };}
 
 function normalizeAnalysisCase(c={}){
@@ -250,7 +300,7 @@ function roleCaseKey(id=state?.sampleJobId){
 }
 
 const defaults=()=>({
-  version:10,currentStep:1,updatedAt:"",
+  version:11,currentStep:1,updatedAt:"",
   target:{industry:"",job:"",company:"",initialView:""},
   student:{major:"",majorEvidence:"",certificates:"",language:"",tools:"",otherSpec:""},
   step2Search:{company:"",title:"",sourceUrl:"",memo:""},
@@ -259,7 +309,7 @@ const defaults=()=>({
   customJob:emptyCustomJob(),
   analysisCases:{
     "kea-2026-h2":emptyAnalysisCase(),
-    "hdoilbank-2026-h2":emptyAnalysisCase(),
+    "hdelectric-2026-h2":emptyAnalysisCase(),
     "custom":emptyAnalysisCase()
   },
   jobTable:emptyJobTable(),
@@ -337,16 +387,16 @@ function load(){
     }
 
     return {
-      ...b,...x,version:10,currentStep:mappedStep,
+      ...b,...x,version:11,currentStep:mappedStep,
       target:{...b.target,...(x.target||{})},
       student:{...b.student,...(x.student||{})},
       step2Search:{...b.step2Search,...(x.step2Search||{})},
-      sampleJobId:["komipo-2026-3","skenergy-2026-clx"].includes(x.sampleJobId)?"":(x.sampleJobId||""),
+      sampleJobId:["komipo-2026-3","skenergy-2026-clx","hdoilbank-2026-h2"].includes(x.sampleJobId)?"":(x.sampleJobId||""),
       curatedSelection:{
         ...emptyCuratedSelection(),
         ...(x.curatedSelection||{}),
         "kea-2026-h2":{...emptyCuratedSelection()["kea-2026-h2"],...(x.curatedSelection?.["kea-2026-h2"]||{})},
-        "hdoilbank-2026-h2":{...emptyCuratedSelection()["hdoilbank-2026-h2"],...(x.curatedSelection?.["hdoilbank-2026-h2"]||{})}
+        "hdelectric-2026-h2":{...emptyCuratedSelection()["hdelectric-2026-h2"],...(x.curatedSelection?.["hdelectric-2026-h2"]||{})}
       },
       customJob:{...emptyCustomJob(),...(x.customJob||{})},
       analysisCases,
@@ -1359,7 +1409,7 @@ function syncSelectedPosting(){
 }
 
 function selectAnalysisMethod(id){
-  if(!["kea-2026-h2","hdoilbank-2026-h2","custom"].includes(id))return;
+  if(!["kea-2026-h2","hdelectric-2026-h2","custom"].includes(id))return;
   snapshotActiveCase();
   state.sampleJobId=id;
   restoreAnalysisCase(roleCaseKey(id));
