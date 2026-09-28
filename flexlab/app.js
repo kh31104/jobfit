@@ -574,7 +574,7 @@ function jobSite(name,url,desc){
 function step2SearchPromptBox(){
   return '<details class="optionBox"><summary>AI에게 현재 공고 찾아달라고 하기 · 선택</summary><div class="optionBody">'+
     '<p class="help">STEP 1의 직무와 전공을 넣어 만든 검색 프롬프트입니다.</p>'+
-    '<textarea class="promptBox promptEditor" id="searchPromptPreview">'+h(energySearchPrompt())+'</textarea>'+
+    '<textarea class="promptBox promptEditor" id="searchPromptPreview" data-prompt-key="search">'+h(promptValue("search",energySearchPrompt()))+'</textarea>'+
     '<div class="actions compactActions"><button class="btn secondary" id="copySearchPromptBtn">내 검색 프롬프트 복사</button></div></div></details>';
 }
 
@@ -1030,7 +1030,7 @@ function step3(){
   const analysisArea = j&&ready
     ? '<div class="selectedJobSummary"><b>현재 분석 대상 · '+h(j.company||"직접 입력")+" / "+h(j.role||j.title||"직무 미입력")+'</b><span>'+h(j.note||"이 분석 결과는 다른 방법과 별도로 저장됩니다.")+'</span></div>'+
       '<div class="block"><h3>③ AI에게 선택한 직무만 분석시키기</h3><p class="help">현재 선택한 기업·세부직무와 내 전공만 들어갑니다. 같은 기업의 다른 직무는 프롬프트에 섞지 않습니다.</p>'+
-        '<textarea class="promptBox promptEditor shortPrompt" id="jobPromptPreview">'+h(jobAnalysisPrompt())+'</textarea>'+
+        '<textarea class="promptBox promptEditor shortPrompt" id="jobPromptPreview" data-prompt-key="job">'+h(promptValue("job",jobAnalysisPrompt()))+'</textarea>'+
         '<div class="actions compactActions"><button class="btn ghost" id="refreshJobPromptBtn">현재 선택 반영</button><button class="btn secondary" id="copyReviewedJobPromptBtn">내 직무분석 프롬프트 복사</button></div>'+
         '<div class="field aiPaste"><label>AI 답변 붙여넣기 <span class="hint">(선택)</span></label><textarea class="input" data-path="jobTable.aiResult" id="jobTableAiResult" placeholder="AI 답변을 붙여넣으면 아래 6칸으로 나눌 수 있습니다.">'+h(state.jobTable.aiResult||"")+'</textarea></div>'+
         '<div class="actions compactActions"><button class="btn secondary" id="applyJobTableAiBtn">AI 답변을 6칸에 반영</button></div>'+
@@ -1136,7 +1136,7 @@ function step4(){
       '</div></div></details>'+
     '</div>'+
     '<div class="divider"></div><div class="block"><h3>④ AI로 직무역량 키워드 찾기</h3><p class="help">STEP 1~4에 입력한 내용이 자동으로 프롬프트에 들어갑니다.</p>'+
-      '<textarea class="promptBox promptEditor shortPrompt" id="keywordPromptPreview">'+h(competencyKeywordPrompt())+'</textarea>'+
+      '<textarea class="promptBox promptEditor shortPrompt" id="keywordPromptPreview" data-prompt-key="keyword">'+h(promptValue("keyword",competencyKeywordPrompt()))+'</textarea>'+
       '<div class="actions compactActions"><button class="btn ghost" id="refreshKeywordPromptBtn">현재 입력 반영</button><button class="btn secondary" id="copyKeywordPromptBtn">내 역량분석 프롬프트 복사</button></div>'+
       field("ai.keywordResult","AI 결과 붙여넣기 <span class=\"hint\">(선택)</span>","AI가 정리한 3~5개 역량 키워드를 붙여넣으세요. STEP 6 Portfolio에 함께 들어갑니다.")+
     '</div>'+
@@ -1325,7 +1325,7 @@ function step5(){
     '</div></div>'+
     '<div class="divider"></div><div class="block"><h3>③ 공고·직무 조건 3개만 비교</h3><p class="help">조건이 공고에서 명확하지 않으면 ‘원문 확인 필요’를 선택합니다.</p><div class="requirementList">'+requirementRows()+'</div></div>'+
     '<div class="divider"></div><div class="block"><h3>④ AI로 내 GAP 분석</h3><p class="help">공고, 직무분석, 전공, 경험, 스펙이 모두 들어간 개인 프롬프트입니다.</p>'+
-      '<textarea class="promptBox promptEditor shortPrompt" id="gapPromptPreview">'+h(gapPrompt())+'</textarea>'+
+      '<textarea class="promptBox promptEditor shortPrompt" id="gapPromptPreview" data-prompt-key="gap">'+h(promptValue("gap",gapPrompt()))+'</textarea>'+
       '<div class="actions compactActions"><button class="btn ghost" id="refreshGapPromptBtn">현재 입력 반영</button><button class="btn secondary" id="copyGapPromptBtn">내 GAP 분석 프롬프트 복사</button></div>'+
       field("ai.gapResult","AI GAP 분석 결과 <span class=\"hint\">(선택)</span>","AI의 GAP 분석 결과를 붙여넣으세요.")+
     '</div>'+
@@ -1389,7 +1389,12 @@ function portfolio(){
     "우선 보완 GAP: "+(f.gaps||"-"),
     "3개월 행동계획: "+(f.actions||"-"),"",
     "[AI GAP 분석 메모]",
-    state.ai.gapResult||"-"
+    state.ai.gapResult||"-","",
+    "9. APPLICATION MATERIALS",
+    "[AI 자기소개서 소재정리]",
+    state.ai.selfIntroResult||"-","",
+    "[AI 실무면접 예상질문]",
+    state.ai.interviewResult||"-"
   );
   return a.join("\n");
 }
@@ -1531,9 +1536,18 @@ function step6(){
   return '<section class="card stepCard printTarget"><div class="sectionHead noPrint"><div><div class="kicker">STEP 06</div><h2>My Job Portfolio</h2><p>직무분석, 전공·경험, 역량 키워드, 스펙, GAP을 한 파일로 모으고 실제 지원 준비로 연결합니다.</p></div><span class="badge">Portfolio</span></div>'+
     '<div class="block noPrint"><h3>① 내 직무분석 결과 확인</h3><p class="help">아래 내용은 STEP 1~5 입력값으로 자동 생성됩니다. 빠진 내용이 있으면 이전 STEP에서 수정합니다.</p></div>'+
     '<div class="preview">'+h(portfolio())+'</div>'+
-    '<div class="divider noPrint"></div><div class="block noPrint"><h3>② 내 AI로 자기소개서 준비</h3><p class="help">내 전공·경험·직무분석·GAP이 들어간 개인 프롬프트입니다.</p><textarea class="promptBox promptEditor shortPrompt" id="selfIntroPromptPreview">'+h(selfIntroPrompt())+'</textarea><div class="actions compactActions"><button class="btn secondary" id="copySelfIntroPromptBtn">자기소개서 프롬프트 복사</button></div></div>'+
-    '<div class="block noPrint"><h3>③ 내 AI로 실무면접 예상질문 만들기</h3><p class="help">선택한 직무의 실제 업무와 내 전공·경험을 기준으로 예상질문 12개를 만듭니다.</p><textarea class="promptBox promptEditor shortPrompt" id="interviewPromptPreview">'+h(interviewPrompt())+'</textarea><div class="actions compactActions"><button class="btn secondary" id="copyInterviewPromptBtn">실무면접 예상질문 프롬프트 복사</button></div></div>'+
-    '<div class="divider noPrint"></div><div class="exportGrid noPrint"><div class="exportCard"><b>Word용 문서</b><p>직무분석 Portfolio를 Word에서 수정합니다.</p><button class="btn primary" id="docBtn">Word 파일 저장</button></div><div class="exportCard"><b>PDF</b><p>인쇄 화면에서 PDF로 저장합니다.</p><button class="btn secondary" id="printBtn">PDF 저장 화면</button></div><div class="exportCard"><b>학습 백업</b><p>다음 수업에서 이어서 사용할 JSON입니다.</p><button class="btn secondary" id="jsonBtn2">JSON 백업 저장</button></div></div>'+
+    '<div class="divider noPrint"></div><div class="block noPrint"><h3>② 내 AI로 자기소개서 준비</h3><p class="help">선택한 기업·직무와 내 전공·경험·GAP이 반영됩니다. 한국에너지공단 선택 시 실제 자기소개서 문항과 블라인드 기준도 함께 들어갑니다.</p>'+
+      '<textarea class="promptBox promptEditor shortPrompt" id="selfIntroPromptPreview" data-prompt-key="selfIntro">'+h(promptValue("selfIntro",selfIntroPrompt()))+'</textarea>'+
+      '<div class="actions compactActions"><button class="btn ghost" id="refreshSelfIntroPromptBtn">현재 입력 반영</button><button class="btn secondary" id="copySelfIntroPromptBtn">자기소개서 프롬프트 복사</button></div>'+
+      field("ai.selfIntroResult","AI 자기소개서 소재정리 결과 <span class=\"hint\">(선택)</span>","내 AI가 정리한 문항별 소재·핵심역량을 붙여넣으세요. 같은 브라우저에 자동 저장됩니다.")+
+    '</div>'+
+    '<div class="block noPrint"><h3>③ 내 AI로 실무면접 예상질문 만들기</h3><p class="help">선택 직무의 공식 업무와 내 전공·경험을 기준으로 예상질문 12개를 만듭니다.</p>'+
+      '<textarea class="promptBox promptEditor shortPrompt" id="interviewPromptPreview" data-prompt-key="interview">'+h(promptValue("interview",interviewPrompt()))+'</textarea>'+
+      '<div class="actions compactActions"><button class="btn ghost" id="refreshInterviewPromptBtn">현재 입력 반영</button><button class="btn secondary" id="copyInterviewPromptBtn">실무면접 예상질문 프롬프트 복사</button></div>'+
+      field("ai.interviewResult","AI 실무면접 예상질문 결과 <span class=\"hint\">(선택)</span>","내 AI가 만든 예상질문을 붙여넣으세요. 같은 브라우저에 자동 저장됩니다.")+
+    '</div>'+
+    '<div class="callout good noPrint"><b>자동 저장</b> STEP 1~6의 입력값과 붙여넣은 AI 결과는 이 브라우저에 저장됩니다. 같은 기기·같은 브라우저로 다시 열면 이어서 사용할 수 있습니다.</div>'+
+    '<div class="divider noPrint"></div><div class="exportGrid noPrint"><div class="exportCard"><b>Word용 문서</b><p>직무분석 Portfolio를 Word에서 수정합니다.</p><button class="btn primary" id="docBtn">Word 파일 저장</button></div><div class="exportCard"><b>PDF</b><p>인쇄 화면에서 PDF로 저장합니다.</p><button class="btn secondary" id="printBtn">PDF 저장 화면</button></div><div class="exportCard"><b>학습 백업</b><p>브라우저 저장과 별도로 보관할 JSON입니다.</p><button class="btn secondary" id="jsonBtn2">JSON 백업 저장</button></div></div>'+
     '<div class="actions stepFooter noPrint"><button class="btn secondary" data-prev="5">이전</button><button class="btn secondary" id="copyBtn">Portfolio 텍스트 복사</button><button class="btn danger" id="resetBtn">FLEX 데이터 새로 시작</button></div></section>';
 }
 
