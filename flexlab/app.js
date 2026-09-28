@@ -324,7 +324,8 @@ const defaults=()=>({
   requirements:emptyRequirements(),
   matchRows:[0,1,2].map(emptyMatch),
   fit:emptyFit(),
-  ai:{keywordResult:"",gapResult:""}
+  promptDrafts:{search:"",job:"",keyword:"",gap:"",selfIntro:"",interview:""},
+  ai:{keywordResult:"",gapResult:"",selfIntroResult:"",interviewResult:""}
 });
 
 let state=load(), activePosting=0;
@@ -408,6 +409,7 @@ function load(){
       postings,experiences,requirements:requirements.slice(0,3),matchRows:matchRows.slice(0,3),star,
       selectedExperience:Math.max(0,Math.min(2,Number(x.selectedExperience||0))),
       fit:{...b.fit,...(x.fit||{})},
+      promptDrafts:{...b.promptDrafts,...(x.promptDrafts||{})},
       ai:{...b.ai,...(x.ai||{})}
     };
   }catch(e){return defaults();}
@@ -696,6 +698,33 @@ function selectedRoleData(id=state.sampleJobId){
   return lib?.groups?.[sel.group]?.roles?.[sel.role]||null;
 }
 
+function keaRecruitmentContext(group,roleData){
+  if(state.sampleJobId!=="kea-2026-h2"||!roleData)return "";
+  const documentRule=group==="사무"?KEA_COMMON_RECRUITMENT.documentOffice:KEA_COMMON_RECRUITMENT.documentTech;
+  return [
+    "채용인원: "+(roleData.headcount||"공고 확인"),
+    "공통 응시자격: "+KEA_COMMON_RECRUITMENT.commonEligibility,
+    "서류전형: "+documentRule,
+    "인정 외국어시험: "+KEA_COMMON_RECRUITMENT.languageTests,
+    "직무기술자격: "+(roleData.certs||"공고 확인"),
+    "필기전형: "+KEA_COMMON_RECRUITMENT.written,
+    "직무별 전공시험 범위: "+(roleData.exam||"공고 확인"),
+    "면접전형: "+KEA_COMMON_RECRUITMENT.interview
+  ].join("\n");
+}
+
+function hdElectricRecruitmentContext(roleData){
+  if(state.sampleJobId!=="hdelectric-2026-h2"||!roleData)return "";
+  return [
+    "공통 지원자격: 학사 이상 기졸업자 또는 2027년 2월 졸업예정자 · 2027년 1월 정규직 입사 가능",
+    "어학: TOEIC Speaking 120점 이상 또는 OPIc IM2 이상(마감일 기준 유효성적)",
+    "기타: 해외여행 결격사유 없음 · 남성은 병역필 또는 면제",
+    "선택 직무 우대사항: "+(roleData.preferred||"공고 별도 확인"),
+    "근무지: "+(roleData.location||"공고 확인"),
+    "공식 직무소개 핵심축: "+(roleData.focus||roleData.tasks)
+  ].join("\n");
+}
+
 function selectedJob(){
   if(state.sampleJobId==="custom")return {...emptyCustomJob(),...(state.customJob||{})};
   const base=CURATED_JOBS.find(x=>x.id===state.sampleJobId);
@@ -704,11 +733,20 @@ function selectedJob(){
   const roleData=selectedRoleData(base.id);
   if(!roleData)return {...base,selectedGroup:sel.group||"",selectedRole:sel.role||"",roleData:null};
   const roleFacts=[
+    roleData.ncs?"NCS/직무분류: "+roleData.ncs:"",
     "직무수행내용: "+roleData.tasks,
     "필요지식: "+roleData.knowledge,
     "필요기술: "+roleData.skills,
-    "직무수행태도: "+roleData.attitudes
-  ].join("\n");
+    "직무수행태도: "+roleData.attitudes,
+    roleData.preferred?"공식 우대사항: "+roleData.preferred:"",
+    roleData.location?"근무지: "+roleData.location:"",
+    roleData.commonAbilities?"직업공통능력: "+roleData.commonAbilities:""
+  ].filter(Boolean).join("\n");
+  const recruitmentInfo=base.id==="kea-2026-h2"
+    ?keaRecruitmentContext(sel.group,roleData)
+    :base.id==="hdelectric-2026-h2"
+      ?hdElectricRecruitmentContext(roleData)
+      :"";
   return {
     ...base,
     role:sel.group+" · "+sel.role,
@@ -716,6 +754,7 @@ function selectedJob(){
     selectedRole:sel.role,
     roleData,
     facts:roleFacts,
+    recruitmentInfo,
     note:(CURATED_ROLE_LIBRARIES[base.id]?.sourceLabel||base.source)+" 중 '"+sel.role+"' 관련 기준자료만 사용합니다."
   };
 }
@@ -735,10 +774,28 @@ function majorExplorationHint(major=""){
   return "내 전공 '"+(major||"미입력")+"'을 참고하되, 전공만으로 직무를 자동 결정하지 않습니다. 공고의 직무별 필수조건과 실제 업무를 비교해 직접 선택하세요.";
 }
 
+function clearPromptDrafts(keys=["job","keyword","gap","selfIntro","interview"]){
+  state.promptDrafts??={};
+  keys.forEach(k=>state.promptDrafts[k]="");
+}
+
+function promptValue(key,generated){
+  return state.promptDrafts?.[key]||generated;
+}
+
+function updatePromptDraft(key,value){
+  state.promptDrafts??={};
+  state.promptDrafts[key]=value;
+  save();
+}
+
 function jobAnalysisPrompt(){
   const j=selectedJob();
   if(!j)return "먼저 STEP 3에서 분석 방법을 선택하세요.";
   const custom=state.sampleJobId==="custom";
+  const isKea=state.sampleJobId==="kea-2026-h2";
+  const isHd=state.sampleJobId==="hdelectric-2026-h2";
+  const rd=j.roleData||{};
   if(!custom&&!curatedRoleReady())return "먼저 내 전공을 확인하고, 이 기업의 지원 직군과 분석할 세부직무를 하나 선택하세요.";
   return [
     "나는 "+(state.student.major||"전공 미입력")+" 전공 대학생이다.",
@@ -746,43 +803,51 @@ function jobAnalysisPrompt(){
     custom?"[내가 직접 입력한 분석 대상]":"[교수자가 제공한 실제 채용자료에서 내가 선택한 분석 대상]",
     "기업: "+(j.company||"미입력"),
     "공고: "+(j.title||"미입력"),
-    "선택한 채용분야·직무: "+(j.role||"미입력"),
+    "선택한 직군·직무: "+(j.role||"미입력"),
     "모집기간: "+(j.period||"미입력"),
     "",
-    custom?"[내가 입력한 공고·직무 정보]":"[선택한 직무·업무경로에 해당하는 기준자료만 사용]",
+    custom?"[내가 입력한 공고·직무 정보]":"[선택한 직무 기준자료]",
     j.facts||"미입력",
+    ...(j.recruitmentInfo?["","[채용전형·지원조건]",j.recruitmentInfo]:[]),
     "",
     "필수·지원자격: "+(j.required||"미입력"),
-    "우대사항: "+(j.preferred||"미입력"),
+    "공통/기타 우대사항: "+(j.preferred||"미입력"),
     "출처 링크: "+(j.sourceUrl||"미입력"),
     "",
     custom
-      ?"내가 입력한 정보와 링크에서 확인되는 내용만 사용해 직무분석을 해줘."
-      :"위에 제공된 '"+(j.selectedRole||j.role)+"' 직무 정보만 분석해줘. 같은 기업의 다른 직무 내용은 섞지 마.",
+      ?"내가 입력한 내용과 링크에서 확인되는 정보만 사실 근거로 사용해 직무분석을 해줘."
+      :"위에 제공된 '"+(j.selectedRole||j.role)+"' 직무만 분석해줘. 같은 기업의 다른 직무는 섞지 마.",
+    isKea?"한국에너지공단은 모집직무가 채용을 위한 구분이고 입사 후 순환근무가 원칙이라는 점을 별도로 표시해줘. 현재 직무분석은 내가 선택한 모집직무의 공식 NCS 직무기술서만 기준으로 해줘.":"",
+    isHd?"HD현대일렉트릭은 공식 공고에서 직무소개·우대사항·근무지만 확인된다. 필요지식·기술·태도를 추가할 때는 반드시 [직무특성상 추론]으로 표시하고 공식 공고에 적힌 것처럼 쓰지 마.":"",
     "확인되지 않은 내용은 사실처럼 만들지 말고 [추론] 또는 [추가 확인 필요]라고 표시해줘.",
     "",
-    "아래 6개 제목을 정확히 그대로 사용하고, 각 제목 아래에 '• ' bullet 2~4개로 답해줘.",
+    "아래 6개 제목을 정확히 그대로 사용하고 각 제목 아래에 '• ' bullet 2~4개로 답해줘.",
     "고객·KPI:",
-    "• ",
+    "• 실제 업무의 고객/이해관계자를 먼저 쓰고, KPI는 공식 자료에 없으면 [추론]으로 업무 품질·정확성·일정·성과 관점만 제시",
     "주요 과업:",
-    "• ",
+    "• 공식 직무수행내용/직무소개에서 3~5개 핵심 과업을 동사형으로 압축",
     "주요 해결과제:",
-    "• ",
+    "• 각 과업에서 실제로 해결해야 하는 문제를 2~4개 도출하되 자료에 없으면 [추론] 표시",
     "해결방법:",
-    "• ",
+    "• 필요지식·필요기술 또는 공식 직무소개를 바탕으로 '무엇을 확인 → 어떻게 분석/설계/관리 → 무엇으로 검증' 순서로 작성",
     "필요역량:",
-    "• ",
+    "• Knowledge / Skill / Behavior를 구분하고 각 역량 옆에 [공식] 또는 [추론] 표시",
     "경력개발:",
-    "• ",
+    isKea
+      ?"• 전공시험 범위("+((rd.exam)||"공고 확인")+")와 직무기술자격을 반영해 '지금 준비 → 첫 직무 → 확장 분야'를 현실적으로 제시"
+      :isHd
+        ?"• 선택 직무 우대사항("+((rd.preferred)||"공고 확인")+")과 실제 업무를 바탕으로 '지금 준비 → 신입 초기 → 전문성 확장'을 제시"
+        :"• 현재 준비 → 신입 초기 → 전문성 확장 순서로 제시",
     "",
-    "작성 원칙:",
-    "- [공고·직무기술서에서 확인]과 [직무 특성상 추론]을 구분한다.",
+    "추가 분석 규칙:",
+    "- 내 전공 '"+(state.student.major||"미입력")+"'과 이 직무의 연결점을 '직접 연결 / 보완 필요 / 전공무관' 중 하나로 설명한다.",
+    isKea?"- 한국에너지공단 서류·필기·면접 정보는 직무분석의 근거로 활용하되 합격 가능성이나 확률은 계산하지 않는다.":"",
+    isHd?"- HD현대일렉트릭의 우대전공·자격·경험은 '필수'로 바꾸어 쓰지 않는다.":"",
     "- KPI가 자료에 없으면 임의의 수치 목표를 만들지 않는다.",
-    "- 필요역량은 지식(Knowledge), 기술(Skill), 행동(Behavior)을 구분하되 실제 근거가 있는 것만 사용한다.",
-    "- "+(state.student.major||"내 전공")+" 전공 학생이 이해하기 쉬운 표현으로 설명한다.",
+    "- 내가 제공하지 않은 기업 내부 프로세스나 수치를 만들지 않는다.",
     "- 한 bullet은 가능한 한 1~2줄 이내로 작성한다.",
     ...bulletOutputRules()
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 }
 
 function parseJobTableResult(raw){
