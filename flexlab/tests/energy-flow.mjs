@@ -69,6 +69,8 @@ try{
   assert(keaPrompt.includes('온실가스 배출량 산정'),'KEA prompt must include role-specific NCS tasks');
   assert(keaPrompt.includes('열역학, 공업화학, 연소공학'),'KEA prompt must include the role-specific written exam range');
   assert(keaPrompt.includes('직무수행능력면접 60점'),'KEA prompt must include the official interview structure');
+  assert(keaPrompt.includes('환경설비설계 · 온실가스관리 · 기후변화적응'),'KEA prompt must preserve role-specific analysis axes');
+  assert(keaPrompt.includes("필요지식")&&keaPrompt.includes("필요기술")&&keaPrompt.includes("직무수행태도"),'KEA prompt must explicitly separate official K/S/B evidence');
   assert(keaPrompt.includes('개조식'),'KEA prompt must request bullet-style output');
 
   await page.locator('#jobTableAiResult').fill([
@@ -195,9 +197,13 @@ try{
   assert(selfPrompt.includes('한국에너지공단 2026 자기소개서 실제 문항'),'KEA self-intro prompt must use official questions');
   assert(selfPrompt.includes('미래성장동력'),'KEA self-intro prompt must include the official contribution question');
   assert(selfPrompt.includes('블라인드'),'KEA self-intro prompt must include blind-writing rules');
+  assert(selfPrompt.includes('연결할 공식 NCS/업무축'),'KEA self-intro prompt must map each story to the selected official role');
   assert(selfPrompt.includes('개조식'),'Self-intro prompt must request bullet-style output');
   assert(interviewPrompt.includes('총 12개의 실무면접 예상질문'),'Interview prompt must request practical interview questions');
   assert(interviewPrompt.includes('직무수행능력면접 60점'),'Interview prompt must reflect KEA interview evaluation');
+  assert(interviewPrompt.includes('발표면접 예상 주제 · 2문항'),'KEA interview prompt must reflect the presentation-interview format');
+  assert(interviewPrompt.includes('공정의 연료·에너지 흐름'),'KEA interview prompt must use the selected chemical/environment role question axis');
+  assert(interviewPrompt.includes('공식 근거: NCS/직무수행내용/필요지식/필요기술/직무수행태도'),'KEA interview prompt must trace questions to official evidence');
   assert(interviewPrompt.includes('예상 꼬리질문'),'Interview prompt must include follow-up questions');
 
   await page.locator('[data-path="ai.selfIntroResult"]').fill('• 문항별 소재배치 저장 테스트');
