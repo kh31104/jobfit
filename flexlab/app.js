@@ -1345,14 +1345,15 @@ function portfolio(){
 }
 
 function selfIntroPrompt(){
-  const j=selectedCuratedJob(), e=state.experiences[state.selectedExperience]||emptyExperience();
+  const j=selectedCuratedJob(), rd=j?.roleData||selectedRoleData()||{}, e=state.experiences[state.selectedExperience]||emptyExperience();
+  const isKea=state.sampleJobId==="kea-2026-h2";
   return [
     "아래는 내가 직접 정리한 직무분석과 경험 자료다. 이 정보 밖의 사실을 만들지 말아줘.",
     "",
-    "[지원 직무] "+(state.target.job||j?.role||"-"),
-    "[기업/공고] "+(j?j.company+" / "+j.title:"-"),
-    "[직무 주요 과업] "+(state.jobTable.tasks||"-"),
-    "[직무 필요역량] "+(state.jobTable.competencies||"-"),
+    "[지원 기업/직무] "+(j?j.company+" / "+j.role:(state.target.job||"-")),
+    "[공식 직무 주요 과업] "+(rd.tasks||state.jobTable.tasks||"-"),
+    "[STEP 3 직무분석] "+(state.jobTable.tasks||"-")+" / "+(state.jobTable.competencies||"-"),
+    rd.preferred?"[공식 우대사항] "+rd.preferred:"",
     "[내 전공] "+(state.student.major||"-"),
     "[전공 근거] "+(state.student.majorEvidence||"-"),
     "[대표 경험] "+(e.title||state.star.experience||"-"),
@@ -1361,56 +1362,73 @@ function selfIntroPrompt(){
     "[증거] "+(state.star.evidence||"-"),
     "[역량 키워드 분석] "+(state.ai.keywordResult||"-"),
     "[현재 GAP과 준비] "+(state.fit.gaps||"-")+" / "+(state.fit.actions||"-"),
+    ...(isKea?[
+      "",
+      "[한국에너지공단 2026 자기소개서 실제 문항]",
+      ...KEA_COMMON_RECRUITMENT.selfIntro.map((q,i)=>(i+1)+". "+q),
+      "[블라인드·불성실 작성 기준]",
+      KEA_COMMON_RECRUITMENT.blind
+    ]:[]),
     "",
-    "바로 자기소개서 완성문을 쓰지 말고, 먼저 자기소개서 소재를 개조식으로 구조화해줘.",
+    isKea
+      ?"한국에너지공단 실제 4개 문항별로 어떤 경험과 직무역량을 배치할지 먼저 설계해줘. 아직 완성문은 쓰지 마."
+      :"이 기업·직무에 맞춰 자기소개서 소재를 먼저 구조화해줘. 아직 완성문은 쓰지 마.",
     "",
-    "아래 형식을 그대로 사용해줘.",
-    "[핵심 직무역량]",
-    "• ",
+    "아래 형식을 사용해줘.",
+    isKea?"[문항 1~4 소재배치]":"[핵심 직무역량]",
+    "• 문항/주제 → 사용할 경험 → 직무역량 → 핵심 행동 → 결과/증거",
     "[기업·직무 요구와 연결]",
-    "• ",
-    "[사용할 대표 경험]",
+    "• 공식 업무/우대사항 → 내 근거",
+    "[대표 경험 STAR Evidence]",
     "• 상황:",
     "• 과제:",
     "• 내가 한 행동:",
+    "• 판단 이유:",
     "• 결과/증거:",
     "[자기소개서에서 강조할 포인트]",
     "• 포인트 1:",
     "• 포인트 2:",
     "• 포인트 3:",
-    "[문장으로 발전시킬 핵심 표현]",
-    "• 표현 1:",
-    "• 표현 2:",
-    "• 표현 3:",
     "[추가로 확인할 정보]",
     "• 없다면 '없음'",
     "",
     "기업 칭찬이나 추상적인 성격 표현보다 '직무 요구 → 내 행동 근거 → 결과'가 보이게 정리해줘.",
     "내가 말하지 않은 수치·성과·역할은 추가하지 마.",
-    "근거가 부족하면 문장을 만들지 말고 확인이 필요한 정보를 bullet로 적어줘.",
+    isKea?"블라인드 위반 가능 정보와 기관명 오기재 위험을 점검해줘.":"",
     "과장된 AI 문체 대신 실제 대학생이 자기소개서로 발전시키기 쉬운 자연스러운 표현을 사용해줘.",
     ...bulletOutputRules()
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 }
 
 function interviewPrompt(){
-  const j=selectedCuratedJob(), e=state.experiences[state.selectedExperience]||emptyExperience();
+  const j=selectedCuratedJob(), rd=j?.roleData||selectedRoleData()||{}, e=state.experiences[state.selectedExperience]||emptyExperience();
+  const isKea=state.sampleJobId==="kea-2026-h2";
+  const isHd=state.sampleJobId==="hdelectric-2026-h2";
   return [
-    "너는 "+(j?.company||"에너지 기업")+"의 "+(j?.role||state.target.job||"지원 직무")+" 실무면접관이다.",
-    "아래 공고·직무분석·지원자 정보를 바탕으로 이 지원자가 실제 실무면접에서 받을 가능성이 높은 예상질문을 만들어줘.",
+    "너는 "+(j?.company||"지원 기업")+"의 "+(j?.selectedRole||j?.role||state.target.job||"지원 직무")+" 실무면접관이다.",
+    "아래 공식 직무정보와 지원자의 실제 근거를 바탕으로 직무별 예상질문을 만들어줘.",
     "",
     "[기업/공고]",
     j?(j.company+" / "+j.title):"-",
     "[선택 직무]",
     j?.role||state.target.job||"-",
-    "[직무 주요 과업]",
-    state.jobTable.tasks||"-",
-    "[주요 해결과제]",
-    state.jobTable.challenge||"-",
-    "[업무 해결방법]",
-    state.jobTable.method||"-",
-    "[필요역량]",
-    state.jobTable.competencies||"-",
+    "[공식 직무수행내용/직무소개]",
+    rd.tasks||state.jobTable.tasks||"-",
+    "[공식 필요지식]",
+    rd.knowledge||"-",
+    "[공식 필요기술]",
+    rd.skills||"-",
+    "[직무수행태도]",
+    rd.attitudes||"-",
+    rd.preferred?"[공식 우대사항]\n"+rd.preferred:"",
+    rd.exam?"[직무별 전공시험 범위]\n"+rd.exam:"",
+    isKea?"[한국에너지공단 면접평가]\n"+KEA_COMMON_RECRUITMENT.interview:"",
+    "",
+    "[내 직무분석]",
+    "과업: "+(state.jobTable.tasks||"-"),
+    "해결과제: "+(state.jobTable.challenge||"-"),
+    "해결방법: "+(state.jobTable.method||"-"),
+    "필요역량: "+(state.jobTable.competencies||"-"),
     "[내 전공]",
     state.student.major||"-",
     "[전공에서 찾은 근거]",
@@ -1425,38 +1443,38 @@ function interviewPrompt(){
     (state.fit.gaps||"-")+" / "+(state.fit.actions||"-"),
     "",
     "총 12개의 실무면접 예상질문을 만들어줘.",
-    "질문은 지원한 직무의 실제 업무를 이해했는지 확인할 수 있을 정도로 구체적이어야 한다.",
-    "공고·직무기술서에 나온 업무용어를 우선 사용하고, 일반적인 직무지식을 활용한 질문은 [일반 직무지식]이라고 표시해줘.",
+    isKea
+      ?"한국에너지공단의 실제 평가구조를 반영해 직무수행능력(직무이해·지식·기술·태도) 질문과 직업공통능력(의사소통·대인관계·직업윤리) 경험/상황 질문을 모두 포함해줘."
+      :isHd
+        ?"HD현대일렉트릭의 선택 직무에서 실제 수행하는 업무를 중심으로 설계·품질·시스템·HR·영업·기술전략 중 해당 직무에 맞는 상황을 만들어 질문해줘."
+        :"선택 직무의 실제 업무 중심 질문을 만들어줘.",
+    "공식 자료에 없는 세부 기술을 활용할 경우 [일반 직무지식]이라고 표시하고 회사 내부사실처럼 표현하지 마.",
     "학생이 입력하지 않은 경험이나 성과를 있다고 가정하지 마.",
     "",
     "아래 5개 영역으로 나눠줘.",
     "[1. 직무이해·실무지식 · 4문항]",
-    "• 실제 업무의 목적, 절차, 설비/도구, 기준을 이해했는지 묻는 질문",
+    "• 공식 업무의 목적·절차·도구/설비·기준을 이해했는지 확인",
     "[2. 문제상황·판단 · 3문항]",
-    "• 이상상황, 오류, 안전·품질 문제 등이 발생했을 때 무엇을 확인하고 어떻게 판단할지 묻는 상황형 질문",
+    "• 선택 직무에서 발생할 수 있는 오류·품질·일정·고객·안전·데이터 문제 중 해당되는 상황만 사용",
     "[3. 전공·기술 적용 · 2문항]",
-    "• 내 전공 수업·실험·도구를 이 직무에 어떻게 적용할지 묻는 질문",
+    "• 내 전공 수업·실험·도구를 선택 직무에 어떻게 적용할지 확인",
     "[4. 경험 검증 · 2문항]",
-    "• 대표 경험에서 실제 역할, 행동, 판단근거, 결과를 확인하는 질문",
+    "• 대표 경험의 실제 역할·행동·판단근거·결과를 검증",
     "[5. 직무준비·GAP · 1문항]",
-    "• 현재 부족한 부분을 어떻게 준비하고 있는지 확인하는 질문",
+    "• 부족한 부분을 어떻게 학습·보완하고 있는지 확인",
     "",
     "각 질문은 반드시 아래 형식으로 작성해줘.",
     "[Q1. 질문 유형]",
     "• 예상 질문:",
     "• 질문 의도:",
+    "• 연결된 공식 업무/역량:",
     "• 답변에 연결할 내 근거:",
     "• 예상 꼬리질문:",
-    "• 근거 구분: [공고/직무기술서] 또는 [일반 직무지식] 또는 [내 경험]",
+    "• 근거 구분: [공고/직무기술서] / [일반 직무지식] / [내 경험]",
     "",
-    "질문 작성 원칙:",
-    "- '본인의 장단점은?' 같은 일반 인성질문보다 이 직무의 실제 업무를 확인하는 질문을 우선한다.",
-    "- 기술용어만 암기했는지보다 업무에서 어떻게 판단하고 행동할지를 확인하는 질문을 포함한다.",
-    "- 공고에 없는 기술 세부내용을 공고에 있다고 표현하지 않는다.",
-    "- 답변 예시나 모범답안은 쓰지 않는다. 학생이 스스로 답을 준비할 수 있도록 질문·의도·근거만 제시한다.",
-    "- 한 항목은 1~2줄 이내로 간결하게 작성한다.",
+    "답변 예시나 모범답안은 쓰지 않는다. 학생이 자기 답을 준비할 수 있도록 질문·의도·근거만 제시한다.",
     ...bulletOutputRules()
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 }
 
 function step6(){
