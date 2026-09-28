@@ -1025,19 +1025,22 @@ function experienceRows(){
 }
 
 function competencyKeywordPrompt(){
-  const j=selectedCuratedJob();
+  const j=selectedCuratedJob(), rd=j?.roleData||selectedRoleData()||{};
   const exps=state.experiences.filter(e=>filled(e.title)||filled(e.summary)).map((e,i)=>
     (i+1)+". "+(e.title||"경험")+(e.type?" ["+e.type+"]":"")+" - "+(e.summary||"세부내용 미입력")
   );
   return [
-    "나는 "+(state.student.major||"전공 미입력")+" 전공 대학생이고, "+(state.target.job||j?.role||"에너지 직무")+"를 준비하고 있다.",
+    "나는 "+(state.student.major||"전공 미입력")+" 전공 대학생이고, "+(j?.role||state.target.job||"관심 직무")+"를 준비하고 있다.",
     "",
     "[선택한 채용공고]",
     j?j.company+" / "+j.title+" / "+j.role:"공고 미선택",
-    j?"확인된 정보: "+j.facts:"",
+    j?"공식 직무정보: "+j.facts:"",
+    rd.preferred?"공식 우대사항: "+rd.preferred:"",
+    rd.exam?"전공시험 범위: "+rd.exam:"",
+    rd.certs?"직무기술자격: "+rd.certs:"",
     "",
-    "[직무분석 결과]",
-    "주요 과업: "+(state.jobTable.tasks||"미입력"),
+    "[STEP 3 직무분석 결과]",
+    "주요 과업: "+(state.jobTable.tasks||rd.tasks||"미입력"),
     "해결과제: "+(state.jobTable.challenge||"미입력"),
     "해결방법: "+(state.jobTable.method||"미입력"),
     "필요역량: "+(state.jobTable.competencies||"미입력"),
@@ -1048,24 +1051,28 @@ function competencyKeywordPrompt(){
     "[내 경험]",
     ...(exps.length?exps:["경험 미입력"]),
     "",
-    "[대표 경험의 추가 근거]",
+    "[대표 경험의 행동 근거]",
     "내 행동: "+(state.star.actionWhat||"미입력"),
     "결과: "+(state.star.result||"미입력"),
     "증거: "+(state.star.evidence||"미입력"),
     "",
-    "위 정보만 사용해서 자기소개서와 면접에 사용할 수 있는 직무역량 키워드를 3~5개 찾아줘.",
+    "이제 '직무가 요구하는 언어'와 '내가 실제로 한 행동'을 연결해 자기소개서·면접에 사용할 역량 키워드 3~5개를 찾아줘.",
+    "직무기술서/공고에서 직접 확인된 역량과 네가 직무특성상 도출한 역량을 반드시 구분해줘.",
     "",
     "각 역량은 아래 형식을 반복해서 사용해줘.",
-    "[역량 1 · 키워드]",
+    "[역량 1 · 직무언어 키워드]",
+    "• 근거 구분: [공식 직무자료] / [직무특성상 추론]",
     "• 직무에서 필요한 이유:",
+    "• 공식 업무와의 연결:",
     "• 내 전공/경험 근거:",
-    "• 직무언어로 바꾼 표현:",
+    "• 내 행동을 직무언어로 바꾼 표현:",
     "• 자기소개서에서 강조할 행동:",
-    "• 면접 확인 질문:",
+    "• 실무면접 확인 질문:",
+    "• 근거 수준: 충분 / 일부 / 부족",
     "",
-    "내가 입력하지 않은 경험·수치·성과·자격을 만들지 마.",
-    "근거가 약한 역량은 '• 근거 수준: 부족'이라고 표시해줘.",
-    "성격형 표현보다 실제 행동과 업무언어를 우선해줘.",
+    "내가 입력하지 않은 경험·수치·성과·자격은 만들지 마.",
+    "근거가 약하면 과장하지 말고 '부족'이라고 표시해줘.",
+    "성격형 단어보다 실제 행동·판단·도구·산출물·기준을 우선해줘.",
     ...bulletOutputRules()
   ].filter(Boolean).join("\n");
 }
@@ -1186,26 +1193,29 @@ function requirementRows(){
 }
 
 function gapPrompt(){
-  const j=selectedCuratedJob();
-  const roleData=selectedRoleData();
-  const taskText=state.jobTable.tasks||roleData?.tasks||"미입력";
-  const competencyText=state.jobTable.competencies||[roleData?.knowledge,roleData?.skills,roleData?.attitudes].filter(filled).join(" / ")||"미입력";
+  const j=selectedCuratedJob(), rd=j?.roleData||selectedRoleData()||{};
+  const taskText=state.jobTable.tasks||rd.tasks||"미입력";
+  const competencyText=state.jobTable.competencies||[rd.knowledge,rd.skills,rd.attitudes].filter(filled).join(" / ")||"미입력";
   const reqs=state.requirements.filter(r=>filled(r.condition)).map((r,i)=>(i+1)+". "+r.condition+" / 내 판정: "+(r.status||"미판정")+" / 근거: "+(r.note||"없음"));
   const exps=state.experiences.filter(e=>filled(e.title)||filled(e.summary)).map((e,i)=>(i+1)+". "+(e.title||"경험")+" - "+(e.summary||""));
   return [
-    "나는 "+(state.student.major||"전공 미입력")+" 전공 취업준비생이고, "+(j?.role||state.target.job||"에너지 직무")+"를 준비하고 있다.",
+    "나는 "+(state.student.major||"전공 미입력")+" 전공 취업준비생이고, "+(j?.role||state.target.job||"관심 직무")+"를 준비하고 있다.",
     "",
     "[선택 공고]",
     j?j.company+" / "+j.title+" / "+j.role:"공고 미선택",
-    j?"공고에서 확인된 정보: "+j.facts:"",
+    j?"공식 직무정보: "+j.facts:"",
+    j?.recruitmentInfo?"채용전형·지원조건: "+j.recruitmentInfo:"",
     j?"공고 링크: "+j.sourceUrl:"",
     "",
     "[직무에서 하는 일]",
     taskText,
     "[직무 필요역량]",
     competencyText,
+    rd.preferred?"[직무별 공식 우대사항]\n"+rd.preferred:"",
+    rd.exam?"[직무별 전공시험]\n"+rd.exam:"",
+    rd.certs?"[직무기술자격]\n"+rd.certs:"",
     "",
-    "[공고·직무 조건과 내가 판단한 상태]",
+    "[내가 직접 판정한 조건]",
     ...(reqs.length?reqs:["아직 입력하지 않음"]),
     "",
     "[나의 스펙]",
@@ -1216,24 +1226,25 @@ function gapPrompt(){
     "기타 스펙: "+(state.student.otherSpec||"없음/미입력"),
     "전공 근거: "+(state.student.majorEvidence||"미입력"),
     "",
-    "[경험]",
+    "[내 경험]",
     ...(exps.length?exps:["경험 미입력"]),
     "",
-    "위 정보와 공식 공고를 기준으로 내 GAP을 분석해줘.",
-    "가능하면 공고 링크를 확인하되, 확인할 수 없는 조건은 추정하지 말고 '원문 확인 필요'라고 표시해줘.",
+    "공식 공고·직무기술서와 내 입력정보를 대조해 GAP을 분석해줘.",
+    "공고에서 '우대'인 항목을 '필수'로 바꾸지 말고, 내가 준비 중인 자격은 취득한 것으로 처리하지 마.",
     "",
     "아래 제목과 순서를 그대로 사용해줘.",
-    "[1. 공고에서 실제로 하는 일]",
+    "[1. 이 직무에서 실제로 하는 일]",
     "• 핵심업무 1",
     "• 핵심업무 2",
     "• 핵심업무 3",
-    "[2. 필수조건 / 우대조건]",
-    "• 필수:",
-    "• 우대:",
+    "[2. 공고상 지원·평가·우대조건]",
+    "• 공통 지원조건:",
+    "• 직무별 우대/자격:",
+    "• 시험·면접 준비:",
     "[3. 내가 이미 갖춘 근거]",
-    "• ",
+    "• 조건/역량 → 내 근거 → 근거 수준",
     "[4. 일부 준비된 항목]",
-    "• ",
+    "• 준비 중인 것과 아직 부족한 부분을 구분",
     "[5. 현재 GAP · 최대 3개]",
     "• GAP 1:",
     "• GAP 2:",
@@ -1243,10 +1254,11 @@ function gapPrompt(){
     "• 2순위:",
     "• 3순위:",
     "[7. 3개월 보완 행동]",
-    "• GAP → 행동 → 결과물 형식으로 작성",
+    "• GAP → 행동 → 확인 가능한 결과물 형식",
     "",
     "내가 입력하지 않은 자격증·점수·경험을 있다고 가정하지 마.",
     "채용 가능성을 점수나 확률로 계산하지 마.",
+    "확인되지 않은 내용은 '추가 확인 필요'로 남겨줘.",
     ...bulletOutputRules()
   ].filter(Boolean).join("\n");
 }
