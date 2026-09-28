@@ -257,3 +257,17 @@
 .gapTargetBlock{padding:14px;border:1px solid #d9e2ff;border-radius:16px;background:#fbfcff}
 .targetSourceNote{margin-top:8px;padding:9px 11px;border-radius:10px;background:#f4f7fb;color:#536174;font-size:11px;line-height:1.5}
 @media(max-width:650px){.gapTargetBlock{padding:12px;border-radius:14px}.targetSourceNote{font-size:10.5px}}
+
+
+/* Role prompt + browser autosave refinements v8 */
+.autosaveNote{margin:-4px 0 16px;padding:8px 10px;border-radius:10px;background:#f4f8ff;color:#52647a;font-size:11px;font-weight:800}
+.compactRoleDetails{margin-top:10px}
+.compactRoleDetails .optionBody p{margin:0 0 10px;font-size:12px;line-height:1.6;color:#415466}
+.compactRoleDetails .optionBody p:last-child{margin-bottom:0}
+@media(max-width:650px){
+  .autosaveNote{margin:-2px 0 12px;padding:7px 9px;font-size:10px}
+  .roleEvidence{padding:11px;gap:6px}
+  .roleEvidence span{font-size:10.5px;line-height:1.5}
+  .compactRoleDetails summary{font-size:12px}
+  .compactRoleDetails .optionBody p{font-size:11px;line-height:1.55}
+}
