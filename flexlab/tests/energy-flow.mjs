@@ -20,11 +20,18 @@ try{
   await industryInput.fill('에너지');
   await page.locator('[data-path="target.job"]').fill('화공·환경');
   await page.locator('[data-path="student.major"]').fill('화학공학');
+  await page.reload({waitUntil:'networkidle'});
+  assert((await page.locator('[data-path="target.industry"]').inputValue())==='에너지','STEP1 industry must persist in the same browser');
+  assert((await page.locator('[data-path="student.major"]').inputValue())==='화학공학','STEP1 major must persist in the same browser');
   await page.locator('[data-next="2"]').click();
   await page.waitForSelector('[data-path="step2Search.company"]');
 
   await page.locator('[data-path="step2Search.company"]').fill('현재 찾지 못함');
   await page.locator('[data-path="step2Search.title"]').fill('관심 직무 신입 공고 없음');
+  await page.locator('#searchPromptPreview').fill((await page.locator('#searchPromptPreview').inputValue())+'\n• 학생 메모 프롬프트');
+  await page.reload({waitUntil:'networkidle'});
+  assert((await page.locator('[data-path="step2Search.company"]').inputValue())==='현재 찾지 못함','STEP2 answer must persist after reload');
+  assert((await page.locator('#searchPromptPreview').inputValue()).includes('학생 메모 프롬프트'),'Edited STEP2 AI prompt must persist after reload');
   const searchPrompt=await page.locator('#searchPromptPreview').inputValue();
   assert(searchPrompt.includes('에너지 산업'),'STEP2 prompt must use the student-entered industry');
   assert(searchPrompt.includes('화학공학'),'STEP2 prompt must include major');
@@ -32,9 +39,9 @@ try{
   await page.locator('[data-next="3"]').click();
 
   await page.waitForSelector('[data-analysis-method="kea-2026-h2"]');
-  assert(await page.locator('.curatedJob').count()===3,'STEP3 must offer KEA, HD Oilbank and custom methods');
+  assert(await page.locator('.curatedJob').count()===3,'STEP3 must offer KEA, HD Electric and custom methods');
   assert((await page.locator('.curatedJob').nth(0).innerText()).includes('한국에너지공단'),'Public sample must be Korea Energy Agency');
-  assert((await page.locator('.curatedJob').nth(1).innerText()).includes('HD현대오일뱅크'),'Private sample must be HD Hyundai Oilbank');
+  assert((await page.locator('.curatedJob').nth(1).innerText()).includes('HD현대일렉트릭'),'Private sample must be HD Hyundai Electric');
 
   // Method 3 stays hidden until selected.
   assert(await page.locator('[data-customjob="company"]').count()===0,'Custom inputs must stay hidden before Method 3 selection');
@@ -58,7 +65,10 @@ try{
   const keaPrompt=await page.locator('#jobPromptPreview').inputValue();
   assert(keaPrompt.includes('한국에너지공단'),'KEA job prompt must include the selected public institution');
   assert(keaPrompt.includes('화공·환경'),'KEA job prompt must include selected role');
-  assert(keaPrompt.includes('공식 별첨 직무기술서'),'KEA prompt must preserve source limitations');
+  assert(keaPrompt.includes('공식 NCS 직무기술서'),'KEA prompt must preserve source limitations');
+  assert(keaPrompt.includes('온실가스 배출량 산정'),'KEA prompt must include role-specific NCS tasks');
+  assert(keaPrompt.includes('열역학, 공업화학, 연소공학'),'KEA prompt must include the role-specific written exam range');
+  assert(keaPrompt.includes('직무수행능력면접 60점'),'KEA prompt must include the official interview structure');
   assert(keaPrompt.includes('개조식'),'KEA prompt must request bullet-style output');
 
   await page.locator('#jobTableAiResult').fill([
@@ -72,24 +82,34 @@ try{
   await page.locator('#applyJobTableAiBtn').click();
   assert((await page.locator('[data-path="jobTable.tasks"]').inputValue()).includes('에너지·환경'),'KEA AI result must populate role-specific job table');
   assert(await page.locator('.jobAnalysisPreview th').count()===6,'STEP3 must render the six-column job-analysis table');
+  await page.reload({waitUntil:'networkidle'});
+  assert((await page.locator('[data-curated-role="kea-2026-h2"]').inputValue())==='화공·환경','STEP3 selected role must persist after reload');
+  assert((await page.locator('[data-path="jobTable.tasks"]').inputValue()).includes('에너지·환경'),'STEP3 analysis answer must persist after reload');
 
-  // HD Hyundai Oilbank: diverse new-graduate roles.
-  await page.locator('[data-analysis-method="hdoilbank-2026-h2"]').click();
-  await page.waitForSelector('[data-curated-group="hdoilbank-2026-h2"]');
-  const groups=await page.locator('[data-curated-group="hdoilbank-2026-h2"] option').allTextContents();
-  assert(groups.some(x=>x.includes('엔지니어')),'HD Oilbank must include engineering');
-  assert(groups.some(x=>x.includes('IT')),'HD Oilbank must include IT');
-  assert(groups.some(x=>x.includes('영업')),'HD Oilbank must include sales');
-  assert(groups.some(x=>x.includes('경영일반')),'HD Oilbank must include management roles');
+  // HD Hyundai Electric: choose among official 2026 new-hire roles.
+  await page.locator('[data-analysis-method="hdelectric-2026-h2"]').click();
+  await page.waitForSelector('[data-curated-group="hdelectric-2026-h2"]');
+  const groups=await page.locator('[data-curated-group="hdelectric-2026-h2"] option').allTextContents();
+  assert(groups.some(x=>x.includes('설계·품질')),'HD Electric must include design/quality practice group');
+  assert(groups.some(x=>x.includes('디지털·경영지원')),'HD Electric must include digital/management-support practice group');
+  assert(groups.some(x=>x.includes('영업·기술전략')),'HD Electric must include sales/technology-strategy practice group');
 
-  await page.locator('[data-curated-group="hdoilbank-2026-h2"]').selectOption('엔지니어');
-  await page.waitForSelector('[data-curated-role="hdoilbank-2026-h2"]');
-  await page.locator('[data-curated-role="hdoilbank-2026-h2"]').selectOption('공정기술/생산기획');
+  await page.locator('[data-curated-group="hdelectric-2026-h2"]').selectOption('설계·품질');
+  await page.waitForSelector('[data-curated-role="hdelectric-2026-h2"]');
+  const hdRoles=await page.locator('[data-curated-role="hdelectric-2026-h2"] option').allTextContents();
+  assert(hdRoles.includes('전기설계'),'HD Electric roles must include electrical design');
+  assert(hdRoles.includes('구조설계'),'HD Electric roles must include structural design');
+  assert(hdRoles.includes('품질경영'),'HD Electric roles must include quality management');
+
+  await page.locator('[data-curated-role="hdelectric-2026-h2"]').selectOption('품질경영');
   await page.waitForSelector('#jobPromptPreview');
   const hdPrompt=await page.locator('#jobPromptPreview').inputValue();
-  assert(hdPrompt.includes('HD현대오일뱅크'),'HD Oilbank prompt must use the private-company sample');
-  assert(hdPrompt.includes('공정 관리·최적화'),'HD Oilbank prompt must use official role description');
-  assert(hdPrompt.includes('화학공학 전공 필수'),'HD Oilbank prompt must include role-specific major requirement');
+  assert(hdPrompt.includes('HD현대일렉트릭'),'HD Electric prompt must use the private-company sample');
+  assert(hdPrompt.includes('실패비용·불량률'),'HD Electric prompt must use official quality role details');
+  assert(hdPrompt.includes('ISO 9001'),'HD Electric prompt must include quality-system evidence');
+  assert(hdPrompt.includes('전기·기계 등 이공계열'),'HD Electric prompt must include official role preference');
+  assert(hdPrompt.includes('[직무특성상 추론]'),'HD Electric prompt must distinguish inferred knowledge/skills');
+  assert(hdPrompt.includes('TOEIC Speaking 120점'),'HD Electric prompt must include common application criteria');
 
   // Method 3 must reveal its input screen automatically.
   await page.locator('[data-analysis-method="custom"]').click();
@@ -122,6 +142,9 @@ try{
   assert(keywordPrompt.includes('환경데이터 캡스톤'),'STEP4 prompt must include student experience');
   assert(keywordPrompt.includes('개조식'),'STEP4 prompt must request bullet-style output');
   await page.locator('[data-path="ai.keywordResult"]').fill('• 데이터 해석\n• 기준 기반 문제분석\n• 환경업무 문서화');
+  await page.reload({waitUntil:'networkidle'});
+  assert((await page.locator('[data-exp="0"][data-expkey="title"]').inputValue())==='환경데이터 캡스톤','STEP4 experience must persist after reload');
+  assert((await page.locator('[data-path="ai.keywordResult"]').inputValue()).includes('데이터 해석'),'STEP4 AI result must persist after reload');
   await page.locator('[data-next="5"]').click();
 
   // STEP 5: auto-fill STEP3 target, but allow direct switching.
@@ -129,12 +152,13 @@ try{
   const autoTarget=await page.locator('#step5TargetSelect').inputValue();
   assert(autoTarget.includes('kea-2026-h2')&&autoTarget.includes('화공·환경'),'STEP5 must auto-fill the STEP3 comparison target');
 
-  await page.locator('#step5TargetSelect').selectOption('curated|hdoilbank-2026-h2|엔지니어|공정기술/생산기획');
+  await page.locator('#step5TargetSelect').selectOption('curated|hdelectric-2026-h2|설계·품질|품질경영');
   await page.waitForSelector('#step5TargetSelect');
-  assert((await page.locator('.gapTargetBlock').innerText()).includes('HD현대오일뱅크'),'STEP5 must allow direct comparison-target switching');
+  assert((await page.locator('.gapTargetBlock').innerText()).includes('HD현대일렉트릭'),'STEP5 must allow direct comparison-target switching');
   const hdGapPrompt=await page.locator('#gapPromptPreview').inputValue();
-  assert(hdGapPrompt.includes('공정기술/생산기획'),'STEP5 direct selection must flow into GAP prompt');
-  assert(hdGapPrompt.includes('공정 관리·최적화'),'STEP5 must use registered HD Oilbank role data');
+  assert(hdGapPrompt.includes('품질경영'),'STEP5 direct selection must flow into GAP prompt');
+  assert(hdGapPrompt.includes('부적합사항(NCR)'),'STEP5 must use registered HD Electric role data');
+  assert(hdGapPrompt.includes('직무별 공식 우대사항'),'STEP5 must compare role-specific official preferences');
 
   await page.locator('#step5TargetSelect').selectOption('curated|kea-2026-h2|기술|화공·환경');
   await page.waitForSelector('#step5TargetSelect');
@@ -154,6 +178,10 @@ try{
   await page.locator('[data-path="fit.gaps"]').fill('직무기술서 기반 전문지식 보강, 현장 경험 부족');
   await page.locator('[data-path="fit.actions"]').fill('공식 직무기술서 학습과 에너지 데이터 미니 프로젝트 완성');
   await page.locator('[data-path="ai.gapResult"]').fill('• 우선 GAP: 직무 전문지식과 현장형 Evidence');
+  await page.reload({waitUntil:'networkidle'});
+  assert((await page.locator('[data-path="student.language"]').inputValue())==='TOEIC 820','STEP5 spec must persist after reload');
+  assert((await page.locator('[data-path="fit.gaps"]').inputValue()).includes('현장 경험 부족'),'STEP5 GAP must persist after reload');
+  assert((await page.locator('[data-path="ai.gapResult"]').inputValue()).includes('우선 GAP'),'STEP5 AI result must persist after reload');
   await page.locator('[data-next="6"]').click();
 
   // STEP 6
@@ -164,15 +192,27 @@ try{
 
   const selfPrompt=await page.locator('#selfIntroPromptPreview').inputValue();
   const interviewPrompt=await page.locator('#interviewPromptPreview').inputValue();
+  assert(selfPrompt.includes('한국에너지공단 2026 자기소개서 실제 문항'),'KEA self-intro prompt must use official questions');
+  assert(selfPrompt.includes('미래성장동력'),'KEA self-intro prompt must include the official contribution question');
+  assert(selfPrompt.includes('블라인드'),'KEA self-intro prompt must include blind-writing rules');
   assert(selfPrompt.includes('개조식'),'Self-intro prompt must request bullet-style output');
   assert(interviewPrompt.includes('총 12개의 실무면접 예상질문'),'Interview prompt must request practical interview questions');
+  assert(interviewPrompt.includes('직무수행능력면접 60점'),'Interview prompt must reflect KEA interview evaluation');
   assert(interviewPrompt.includes('예상 꼬리질문'),'Interview prompt must include follow-up questions');
 
+  await page.locator('[data-path="ai.selfIntroResult"]').fill('• 문항별 소재배치 저장 테스트');
+  await page.locator('[data-path="ai.interviewResult"]').fill('• Q1 화공·환경 실무질문 저장 테스트');
+  await page.locator('#interviewPromptPreview').fill(interviewPrompt+'\n• 사용자 수정 프롬프트');
+  await page.reload({waitUntil:'networkidle'});
+  assert((await page.locator('[data-path="ai.selfIntroResult"]').inputValue()).includes('소재배치 저장 테스트'),'STEP6 self-intro AI result must persist after reload');
+  assert((await page.locator('[data-path="ai.interviewResult"]').inputValue()).includes('실무질문 저장 테스트'),'STEP6 interview AI result must persist after reload');
+  assert((await page.locator('#interviewPromptPreview').inputValue()).includes('사용자 수정 프롬프트'),'Edited STEP6 prompt must persist after reload');
+
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:flexlab:job-analysis:v1')));
-  assert(saved.version===9,'FLEX state version must be 9');
+  assert(saved.version===11,'FLEX state version must be 11');
   assert(saved.sampleJobId==='kea-2026-h2','Selected KEA target must persist');
 
-  console.log('FLEX generalized industry + KEA/HD Oilbank flow: PASS');
+  console.log('FLEX role-specific KEA/HD Electric + browser persistence flow: PASS');
 }finally{
   await browser.close();
 }
