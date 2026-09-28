@@ -24,8 +24,11 @@ const emptyAnalysisCase=()=>({
   jobTable:emptyJobTable(),
   requirements:emptyRequirements(),
   fit:emptyFit(),
+  promptDrafts:{job:"",keyword:"",gap:"",selfIntro:"",interview:""},
   keywordResult:"",
-  gapResult:""
+  gapResult:"",
+  selfIntroResult:"",
+  interviewResult:""
 });
 
 const CURATED_JOBS=[
@@ -284,12 +287,16 @@ function emptyCuratedSelection(){return {
 };}
 
 function normalizeAnalysisCase(c={}){
+  const b=emptyAnalysisCase();
   return {
     jobTable:{...emptyJobTable(),...(c.jobTable||{})},
     requirements:[0,1,2].map(i=>({condition:"",status:"",note:"",...(c.requirements?.[i]||{})})),
     fit:{...emptyFit(),...(c.fit||{})},
+    promptDrafts:{...b.promptDrafts,...(c.promptDrafts||{})},
     keywordResult:c.keywordResult||"",
-    gapResult:c.gapResult||""
+    gapResult:c.gapResult||"",
+    selfIntroResult:c.selfIntroResult||"",
+    interviewResult:c.interviewResult||""
   };
 }
 
@@ -423,17 +430,40 @@ function snapshotActiveCase(){
     jobTable:{...emptyJobTable(),...state.jobTable},
     requirements:[0,1,2].map(i=>({condition:"",status:"",note:"",...(state.requirements?.[i]||{})})),
     fit:{...emptyFit(),...state.fit},
+    promptDrafts:{
+      job:state.promptDrafts?.job||"",
+      keyword:state.promptDrafts?.keyword||"",
+      gap:state.promptDrafts?.gap||"",
+      selfIntro:state.promptDrafts?.selfIntro||"",
+      interview:state.promptDrafts?.interview||""
+    },
     keywordResult:state.ai?.keywordResult||"",
-    gapResult:state.ai?.gapResult||""
+    gapResult:state.ai?.gapResult||"",
+    selfIntroResult:state.ai?.selfIntroResult||"",
+    interviewResult:state.ai?.interviewResult||""
   };
 }
 
 function restoreAnalysisCase(id=roleCaseKey()){
-  const c=state.analysisCases?.[id]||emptyAnalysisCase();
+  const c=normalizeAnalysisCase(state.analysisCases?.[id]||emptyAnalysisCase());
   state.jobTable={...emptyJobTable(),...(c.jobTable||{})};
   state.requirements=[0,1,2].map(i=>({condition:"",status:"",note:"",...(c.requirements?.[i]||{})}));
   state.fit={...emptyFit(),...(c.fit||{})};
-  state.ai={...(state.ai||{}),keywordResult:c.keywordResult||"",gapResult:c.gapResult||""};
+  state.promptDrafts={
+    ...(state.promptDrafts||{}),
+    job:c.promptDrafts.job||"",
+    keyword:c.promptDrafts.keyword||"",
+    gap:c.promptDrafts.gap||"",
+    selfIntro:c.promptDrafts.selfIntro||"",
+    interview:c.promptDrafts.interview||""
+  };
+  state.ai={
+    ...(state.ai||{}),
+    keywordResult:c.keywordResult||"",
+    gapResult:c.gapResult||"",
+    selfIntroResult:c.selfIntroResult||"",
+    interviewResult:c.interviewResult||""
+  };
 }
 
 function save(){
