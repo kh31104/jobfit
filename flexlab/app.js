@@ -618,7 +618,7 @@ function bulletOutputRules(){
     "[출력 형식]",
     "- 긴 문단으로 쓰지 말고 반드시 개조식으로 작성한다.",
     "- 각 항목은 한 줄 중심으로 짧고 명확하게 쓴다.",
-    "- 큰 제목은 [제목], 세부내용은 '• ' bullet을 사용한다.",
+    "- 큰 제목은 기본적으로 [제목], 세부내용은 '• ' bullet을 사용한다. 단, 프롬프트에서 제목 형식을 따로 지정하면 그 형식을 최우선으로 따른다.",
     "- 한 bullet에는 핵심 내용 1개만 쓴다.",
     "- 중요 키워드는 문장 앞쪽에 배치한다.",
     "- 확인된 사실과 추론은 같은 bullet에 섞지 말고 분리한다.",
@@ -1012,6 +1012,7 @@ function parseJobTableResult(raw){
       .replace(/^(?:\d+\s*[.)]\s*)/,"")
       .replace(/\*\*/g,"")
       .replace(/__/g,"")
+      .replace(/^\[([^\]]+)\](?=\s*[:：]?)/,"$1")
       .trim();
     const hit=map.find(([,re])=>re.test(normalized));
     if(hit){
