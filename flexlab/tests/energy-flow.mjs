@@ -150,6 +150,7 @@ try{
   await page.locator('[data-analysis-method="custom"]').click();
   await page.waitForSelector('[data-customjob="company"]',{state:'visible'});
   assert(await page.locator('#customJobEntry').isVisible(),'Method 3 selection must reveal the direct-input screen');
+  assert(await page.locator('[data-customjob="period"]').count()===0,'STEP3 custom input must remove recruitment period as a low-value duplicate field');
   const customLockedText=(await page.locator('#stepRoot').innerText())||'';
   for(const heading of ['② 내 전공 확인 → 이 기업에서 분석할 직무 입력','③ AI에게 선택한 직무만 분석시키기','④ 직무분석 테이블 완성','⑤ 완성된 직무분석표'])assert(customLockedText.includes(heading),'Custom method must show the full ②→⑤ path: '+heading);
   await page.locator('[data-customjob="company"]').fill('직접입력 에너지기업');
@@ -183,6 +184,9 @@ try{
   assert(step4Text.includes('③ AI로 나만의 직무역량 찾기'),'STEP4 must have only one AI analysis step after evidence');
   assert(!step4Text.includes('③ 대표 경험에서 행동 근거 확인'),'STEP4 must remove the old separate action-evidence step');
 
+  assert(await page.locator('[data-expkey="type"]').count()===0,'STEP4 must remove the experience-type dropdown and keep only evidence that changes the analysis');
+
+  // Persona A: data-oriented project evidence.
   await page.locator('[data-path="student.majorEvidence"]').fill('화공실험에서 공정 데이터와 환경변수를 비교해 해석했다.');
   await page.locator('[data-exp="0"][data-expkey="title"]').fill('환경데이터 캡스톤');
   await page.locator('[data-exp="0"][data-expkey="summary"]').fill('측정 데이터를 정리하고 이상값 원인을 비교했다.');
@@ -193,9 +197,54 @@ try{
   await page.locator('[data-path="star.actionWhat"]').fill('기준값과 측정값을 비교해 원인 후보를 정리했다.');
   await page.locator('[data-path="star.result"]').fill('재시험 대상을 좁히고 결과를 보고서로 정리했다.');
   await page.locator('[data-path="star.evidence"]').fill('측정기록과 프로젝트 보고서');
+  const promptA=await page.locator('#keywordPromptPreview').inputValue();
+
+  // Persona B: service-operation evidence, same target job.
+  await page.locator('[data-exp="0"][data-expkey="title"]').fill('카페 재고관리 아르바이트');
+  await page.locator('[data-exp="0"][data-expkey="summary"]').fill('품목별 폐기량을 기록해 발주 수량을 조정했다.');
+  await page.locator('[data-exp="1"][data-expkey="title"]').fill('매장 동선 개선');
+  await page.locator('[data-exp="1"][data-expkey="summary"]').fill('혼잡 시간 주문 흐름을 관찰하고 작업 순서를 바꿨다.');
+  await page.locator('[data-exp="2"][data-expkey="title"]').fill('고객 문의 기록');
+  await page.locator('[data-exp="2"][data-expkey="summary"]').fill('반복 문의를 유형별로 정리해 안내문을 수정했다.');
+  await page.locator('[data-path="star.actionWhat"]').fill('폐기기록을 일주일 단위로 비교해 과다발주 품목을 표시했다.');
+  await page.locator('[data-path="star.result"]').fill('다음 발주에서 해당 품목 주문량을 줄였다.');
+  await page.locator('[data-path="star.evidence"]').fill('재고기록표와 발주내역');
+  const promptB=await page.locator('#keywordPromptPreview').inputValue();
+
+  // Persona C: coordination evidence, same target job.
+  await page.locator('[data-exp="0"][data-expkey="title"]').fill('학생회 행사 운영');
+  await page.locator('[data-exp="0"][data-expkey="summary"]').fill('부스별 준비상태와 납품일정을 표로 정리했다.');
+  await page.locator('[data-exp="1"][data-expkey="title"]').fill('공모전 팀 일정관리');
+  await page.locator('[data-exp="1"][data-expkey="summary"]').fill('역할별 마감일을 정하고 지연 작업을 재배분했다.');
+  await page.locator('[data-exp="2"][data-expkey="title"]').fill('동아리 예산 정산');
+  await page.locator('[data-exp="2"][data-expkey="summary"]').fill('지출증빙을 항목별로 확인해 누락자료를 요청했다.');
+  await page.locator('[data-path="star.actionWhat"]').fill('납품 지연 가능성이 있는 부스를 찾아 담당자와 대체 일정을 조정했다.');
+  await page.locator('[data-path="star.result"]').fill('행사 전날까지 모든 부스 준비상태를 확인했다.');
+  await page.locator('[data-path="star.evidence"]').fill('행사 체크리스트와 일정표');
+  const promptC=await page.locator('#keywordPromptPreview').inputValue();
+
+  assert(promptA!==promptB&&promptB!==promptC&&promptA!==promptC,'STEP4 three student personas must generate different prompts');
+  assert(promptA.includes('환경데이터 캡스톤')&&!promptA.includes('카페 재고관리 아르바이트'),'Persona A prompt must contain only Persona A evidence');
+  assert(promptB.includes('카페 재고관리 아르바이트')&&!promptB.includes('학생회 행사 운영'),'Persona B prompt must contain only Persona B evidence');
+  assert(promptC.includes('학생회 행사 운영')&&!promptC.includes('환경데이터 캡스톤'),'Persona C prompt must contain only Persona C evidence');
+  for(const prompt of [promptA,promptB,promptC]){
+    assert(prompt.includes('직무의 주요 과업·해결과제·필요역량'),'Every personalized prompt must preserve the same job-evidence axis');
+    assert(prompt.includes('모든 학생에게 같은 역량 목록을 주지 말고'),'Every personalized prompt must prohibit generic identical competency output');
+    assert(prompt.includes('개조식'),'STEP4 prompt must request bullet-style output');
+  }
+
+  // Restore Persona A for downstream portfolio/GAP checks.
+  await page.locator('[data-exp="0"][data-expkey="title"]').fill('환경데이터 캡스톤');
+  await page.locator('[data-exp="0"][data-expkey="summary"]').fill('측정 데이터를 정리하고 이상값 원인을 비교했다.');
+  await page.locator('[data-exp="1"][data-expkey="title"]').fill('화공실험 팀프로젝트');
+  await page.locator('[data-exp="1"][data-expkey="summary"]').fill('실험조건을 바꾸어 에너지 사용량 차이를 비교했다.');
+  await page.locator('[data-exp="2"][data-expkey="title"]').fill('학과 데이터 정리');
+  await page.locator('[data-exp="2"][data-expkey="summary"]').fill('엑셀로 반복 측정값을 정리하고 오류값을 표시했다.');
+  await page.locator('[data-path="star.actionWhat"]').fill('기준값과 측정값을 비교해 원인 후보를 정리했다.');
+  await page.locator('[data-path="star.result"]').fill('재시험 대상을 좁히고 결과를 보고서로 정리했다.');
+  await page.locator('[data-path="star.evidence"]').fill('측정기록과 프로젝트 보고서');
   const keywordPrompt=await page.locator('#keywordPromptPreview').inputValue();
-  for(const needle of ['환경데이터 캡스톤','화공실험 팀프로젝트','학과 데이터 정리','기준값과 측정값을 비교','직무의 주요 과업·해결과제·필요역량','모든 학생에게 같은 역량 목록을 주지 말고'])assert(keywordPrompt.includes(needle),'STEP4 personalized prompt missing: '+needle);
-  assert(keywordPrompt.includes('개조식'),'STEP4 prompt must request bullet-style output');
+  assert(keywordPrompt.includes('환경데이터 캡스톤'),'Restored STEP4 prompt must contain Persona A evidence');
   await page.locator('[data-path="ai.keywordResult"]').fill('• 데이터 해석\n• 기준 기반 문제분석\n• 환경업무 문서화');
   await page.reload({waitUntil:'networkidle'});
   assert((await page.locator('[data-exp="0"][data-expkey="title"]').inputValue())==='환경데이터 캡스톤','STEP4 experience must persist after reload');
@@ -213,13 +262,13 @@ try{
   await page.locator('#step5TargetSelect').selectOption('searched');
   await page.waitForSelector('#step5TargetSelect');
   assert((await page.locator('.gapTargetBlock').innerText()).includes('학생이 찾은 에너지기업'),'STEP5 must select the STEP2 student-found posting');
-  assert((await page.locator('[data-req="0"][data-reqkey="condition"]').inputValue()).includes('화학공학 관련 전공 우대'),'STEP5 must auto-load student-found posting memo into requirements');
+  assert((await page.locator('.requirementSource').nth(0).innerText()).includes('화학공학 관련 전공 우대'),'STEP5 must auto-load student-found posting memo into requirements');
 
   await page.locator('#step5TargetSelect').selectOption('custom');
   await page.waitForSelector('#step5TargetSelect');
   assert((await page.locator('.gapTargetBlock').innerText()).includes('직접입력 에너지기업'),'STEP5 must select the STEP3 custom company');
-  assert((await page.locator('[data-req="0"][data-reqkey="condition"]').inputValue()).includes('TOEIC 800'),'STEP5 custom target must auto-load required qualifications');
-  assert((await page.locator('[data-req="1"][data-reqkey="condition"]').inputValue()).includes('대기환경기사'),'STEP5 custom target must auto-load preferences');
+  assert((await page.locator('.requirementSource').nth(0).innerText()).includes('TOEIC 800'),'STEP5 custom target must auto-load required qualifications');
+  assert((await page.locator('.requirementSource').nth(1).innerText()).includes('대기환경기사'),'STEP5 custom target must auto-load preferences');
 
   await page.locator('#step5TargetSelect').selectOption('curated|hdelectric-2026-h2|설계·품질|품질경영');
   await page.waitForSelector('#step5TargetSelect');
@@ -232,6 +281,12 @@ try{
   await page.locator('#step5TargetSelect').selectOption('curated|kea-2026-h2|기술|화공·환경');
   await page.waitForSelector('#step5TargetSelect');
   assert((await page.locator('.gapTargetBlock').innerText()).includes('한국에너지공단'),'STEP5 must restore KEA target');
+  const step5Text=(await page.locator('#stepRoot').innerText())||'';
+  assert(step5Text.includes('② 공고 요구조건 × 내 스펙 한 번에 비교'),'STEP5 must merge spec entry and requirement comparison into one block');
+  assert(step5Text.includes('③ AI로 내 GAP 분석'),'STEP5 must keep AI GAP analysis as step 3');
+  assert(step5Text.includes('④ 최종 GAP과 3개월 행동'),'STEP5 must end at step 4');
+  assert(!step5Text.includes('⑤ 내가 정한 최종 GAP과 행동'),'STEP5 must remove the old fifth block');
+  assert(await page.locator('[data-path="student.otherSpec"]').count()===0,'STEP5 must remove duplicated other-spec input');
 
   await page.locator('[data-path="student.certificates"]').fill('대기환경기사 준비 중');
   await page.locator('[data-path="student.language"]').fill('TOEIC 820');
@@ -241,10 +296,10 @@ try{
   const reqStatus=page.locator('[data-req="0"][data-reqkey="status"]');
   await reqStatus.selectOption('충족');
   await page.locator('[data-req="0"][data-reqkey="note"]').fill('공통 지원자격 확인');
+  assert((await page.locator('#derivedGapAssetsPreview').innerText()).includes('공통 지원자격 확인'),'STEP5 confirmed evidence must update live without a duplicate strengths input');
   const gapPrompt=await page.locator('#gapPromptPreview').inputValue();
   assert(gapPrompt.includes('한국에너지공단'),'STEP5 GAP prompt must use restored KEA target');
   assert(gapPrompt.includes('개조식'),'STEP5 GAP prompt must request bullet-style output');
-  await page.locator('[data-path="fit.assets"]').fill('화공실험, 환경데이터 분석 경험, Excel/Python');
   await page.locator('[data-path="fit.gaps"]').fill('직무기술서 기반 전문지식 보강, 현장 경험 부족');
   await page.locator('[data-path="fit.actions"]').fill('공식 직무기술서 학습과 에너지 데이터 미니 프로젝트 완성');
   await page.locator('[data-path="ai.gapResult"]').fill('• 우선 GAP: 직무 전문지식과 현장형 Evidence');
@@ -259,6 +314,9 @@ try{
   const portfolio=await page.locator('.preview').innerText();
   assert(portfolio.includes('한국에너지공단'),'Portfolio must include selected public institution');
   assert(portfolio.includes('환경데이터 캡스톤'),'Portfolio must include student experience');
+  assert(!portfolio.includes('유형 미지정'),'Portfolio must not carry the removed experience-type field');
+  assert(!portfolio.includes('기타 스펙:'),'Portfolio must not carry the removed duplicate other-spec field');
+  assert(portfolio.includes('현재 확인된 근거'),'Portfolio must use derived evidence instead of a duplicate strengths input');
 
   const selfPrompt=await page.locator('#selfIntroPromptPreview').inputValue();
   const interviewPrompt=await page.locator('#interviewPromptPreview').inputValue();

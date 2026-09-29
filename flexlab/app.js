@@ -953,6 +953,8 @@ function refreshStep5Derived(){
     const note=document.querySelector('[data-req="'+i+'"][data-reqkey="note"]');
     if(note&&note.value!==r.note)note.value=r.note||"";
   });
+  const assets=document.getElementById("derivedGapAssetsPreview");
+  if(assets)assets.textContent=derivedGapAssets()||"아직 입력된 스펙·충족 근거가 없습니다.";
   syncPromptPreview("gap",gapPrompt,"gapPromptPreview");
 }
 
@@ -973,7 +975,7 @@ function jobAnalysisPrompt(){
     "기업: "+(j.company||"미입력"),
     "공고: "+(j.title||"미입력"),
     "선택한 직군·직무: "+(j.role||"미입력"),
-    "모집기간: "+(j.period||"미입력"),
+    ...(!custom&&filled(j.period)?["모집기간: "+j.period]:[]),
     "",
     custom?"[내가 입력한 공고·직무 정보]":"[선택한 직무 기준자료]",
     j.facts||"미입력",
@@ -1156,10 +1158,9 @@ function customJobFields(){
       '<div class="field"><label>공고 URL <span class="hint">(선택)</span></label><input class="input" data-customjob="sourceUrl" value="'+h(j.sourceUrl)+'" placeholder="https://..." /></div>'+
     '</div>'+
     '<div class="field"><label>공고의 담당업무·직무소개 <span class="hint">(필수)</span></label><textarea class="input" data-customjob="facts" placeholder="채용공고의 담당업무·직무소개를 그대로 붙여넣으세요. 여러 항목이면 줄바꿈해서 입력하세요.">'+h(j.facts)+'</textarea></div>'+
-    '<details class="optionBox"><summary>지원자격·우대사항·모집기간도 입력하기 · 선택</summary><div class="optionBody"><div class="grid2">'+
+    '<details class="optionBox"><summary>지원자격·우대사항도 입력하기 · 선택</summary><div class="optionBody"><div class="grid2">'+
       '<div class="field"><label>필수·지원자격</label><textarea class="input" data-customjob="required" placeholder="전공, 학력, 어학, 자격증 등">'+h(j.required)+'</textarea></div>'+
       '<div class="field"><label>우대사항</label><textarea class="input" data-customjob="preferred" placeholder="자격증, 경험, 기술 등">'+h(j.preferred)+'</textarea></div>'+
-      '<div class="field"><label>모집기간</label><input class="input" data-customjob="period" value="'+h(j.period)+'" placeholder="예: 2026.09.20 ~ 2026.10.05" /></div>'+
     '</div></div></details>'+
   '</div>';
 }
@@ -1233,16 +1234,12 @@ function step3(){
   );
 }
 
-const expTypes=["","전공수업","프로젝트·캡스톤","인턴·현장실습","아르바이트","학생회·동아리","공모전·대외활동","연구·실험","자격·교육","개인경험","기타"];
-
 function experienceRows(){
   return state.experiences.map((e,i)=>{
-    const opts=expTypes.map(x=>'<option value="'+h(x)+'" '+(e.type===x?"selected":"")+'>'+(x||"유형 선택")+'</option>').join("");
     const optional=i>0?' <span class="hint">(선택)</span>':'';
     return '<div class="experienceRow '+(state.selectedExperience===i?"selected":"")+'">'+
       '<label class="experiencePick"><input type="radio" name="selectedExperience" data-exp-select="'+i+'" '+(state.selectedExperience===i?"checked":"")+' /> '+(i===0?"대표 경험":"추가 경험 "+(i+1))+optional+'</label>'+
-      '<div class="grid2"><div class="field"><label>경험 이름</label><input class="input" data-exp="'+i+'" data-expkey="title" value="'+h(e.title)+'" placeholder="예: 캡스톤 에너지효율 프로젝트" /></div>'+
-      '<div class="field"><label>경험 유형</label><select class="input" data-exp="'+i+'" data-expkey="type">'+opts+'</select></div></div>'+
+      '<div class="field"><label>경험 이름</label><input class="input" data-exp="'+i+'" data-expkey="title" value="'+h(e.title)+'" placeholder="예: 캡스톤 에너지효율 프로젝트" /></div>'+
       '<div class="field"><label>내가 한 일 한 줄</label><input class="input" data-exp="'+i+'" data-expkey="summary" value="'+h(e.summary)+'" placeholder="예: 운전 데이터를 정리하고 이상값 원인을 비교했다" /></div>'+
     '</div>';
   }).join("");
@@ -1253,7 +1250,6 @@ function competencyKeywordPrompt(){
   const allExperiences=state.experiences.map((e,i)=>({
     no:i+1,
     title:e.title||"",
-    type:e.type||"",
     summary:e.summary||""
   })).filter(e=>filled(e.title)||filled(e.summary));
   const rep=state.experiences[state.selectedExperience]||emptyExperience();
@@ -1282,7 +1278,7 @@ function competencyKeywordPrompt(){
     "경력개발: "+(state.jobTable.careerPlan||"미입력"),
     "",
     "[학생이 입력한 경험 전체]",
-    ...(allExperiences.length?allExperiences.map(e=>e.no+". "+(e.title||"경험")+" ["+(e.type||"유형 미입력")+"] / 내가 한 일: "+(e.summary||"미입력")):["경험 미입력"]),
+    ...(allExperiences.length?allExperiences.map(e=>e.no+". "+(e.title||"경험")+" / 내가 한 일: "+(e.summary||"미입력")):["경험 미입력"]),
     "",
     "[대표 경험의 행동 근거]",
     "대표 경험: "+(rep.title||state.star.experience||"미입력"),
@@ -1481,8 +1477,7 @@ function buildRequirementEvidence(condition=""){
   if(/어학|TOEIC|OPIc|영어|외국어/.test(c)&&filled(state.student.language))parts.push("어학: "+state.student.language);
   if(/자격|기사|산업기사|컴퓨터활용|한국사|면허/.test(c)&&filled(state.student.certificates))parts.push("자격증: "+state.student.certificates);
   if(/도구|기술|CAD|Python|Excel|Minitab|SAP|ERP|PLM|SQL|컴퓨터|디지털/.test(c)&&filled(state.student.tools))parts.push("도구·기술: "+state.student.tools);
-  if(/인턴|교육|수상|현장|실습/.test(c)&&filled(state.student.otherSpec))parts.push("기타: "+state.student.otherSpec);
-  if(/경험|업무|과업|역량|설계|품질|영업|인사|데이터|분석|개발|운영|프로젝트/.test(c)){
+  if(/경험|업무|과업|역량|설계|품질|영업|인사|데이터|분석|개발|운영|프로젝트|인턴|교육|수상|현장|실습/.test(c)){
     const exps=state.experiences.filter(e=>filled(e.title)||filled(e.summary)).slice(0,2).map(e=>(e.title||"경험")+(e.summary?" - "+e.summary:""));
     if(exps.length)parts.push("경험: "+exps.join(" / "));
   }
@@ -1501,9 +1496,9 @@ function requirementRows(){
   ensureRequirements();
   syncRequirementEvidence();
   return state.requirements.map((r,i)=>'<div class="requirementRow">'+
-    '<div class="field"><label>공고·직무 조건 '+(i+1)+'</label><input class="input" data-req="'+i+'" data-reqkey="condition" value="'+h(r.condition)+'" placeholder="공고에서 확인한 필수·우대조건 또는 핵심 요구" /></div>'+
+    '<div class="field"><label>공고·직무 조건 '+(i+1)+'</label><div class="selectedEvidence requirementSource"><b>'+h(r.condition||"원문 확인 필요")+'</b></div></div>'+
     '<div class="field"><label>내 현재 상태</label><select class="input" data-req="'+i+'" data-reqkey="status"><option value="">선택</option><option value="충족" '+(r.status==="충족"?"selected":"")+'>충족</option><option value="일부 준비" '+(r.status==="일부 준비"?"selected":"")+'>일부 준비</option><option value="현재 GAP" '+(r.status==="현재 GAP"?"selected":"")+'>현재 GAP</option><option value="원문 확인 필요" '+(r.status==="원문 확인 필요"?"selected":"")+'>원문 확인 필요</option></select></div>'+
-    '<div class="field"><label>내 근거 <span class="hint">(선택)</span></label><input class="input" data-req="'+i+'" data-reqkey="note" value="'+h(r.note)+'" placeholder="예: TOEIC 820 / 전기기사 준비 중 / 해당 경험 없음" /></div>'+
+    '<div class="field"><label>내 근거 <span class="hint">(자동 불러오기 · 필요시 수정)</span></label><input class="input" data-req="'+i+'" data-reqkey="note" value="'+h(r.note)+'" placeholder="예: TOEIC 820 / 전기기사 준비 중 / 관련 경험 없음" /></div>'+
   '</div>').join("");
 }
 
@@ -1530,7 +1525,7 @@ function gapPrompt(){
     rd.exam?"[직무별 전공시험]\n"+rd.exam:"",
     rd.certs?"[직무기술자격]\n"+rd.certs:"",
     "",
-    "[내가 직접 판정한 조건]",
+    "[공고조건과 내가 직접 판정한 상태]",
     ...(reqs.length?reqs:["아직 입력하지 않음"]),
     "",
     "[나의 스펙]",
@@ -1538,7 +1533,6 @@ function gapPrompt(){
     "자격증: "+(state.student.certificates||"없음/미입력"),
     "어학: "+(state.student.language||"없음/미입력"),
     "도구·기술: "+(state.student.tools||"없음/미입력"),
-    "기타 스펙: "+(state.student.otherSpec||"없음/미입력"),
     "전공 근거: "+(state.student.majorEvidence||"미입력"),
     "",
     "[내 경험]",
@@ -1578,27 +1572,45 @@ function gapPrompt(){
   ].filter(Boolean).join("\n");
 }
 
+function derivedGapAssets(){
+  const met=state.requirements
+    .filter(r=>r.status==="충족"&&filled(r.note))
+    .map(r=>r.note.replace(/^자동 불러오기 ·\s*/,""));
+  if(met.length)return met.join(" / ");
+  const base=[
+    filled(state.student.certificates)?"자격증: "+state.student.certificates:"",
+    filled(state.student.language)?"어학: "+state.student.language:"",
+    filled(state.student.tools)?"도구·기술: "+state.student.tools:"",
+    filled(state.student.majorEvidence)?"전공 근거: "+state.student.majorEvidence:""
+  ].filter(Boolean);
+  return base.join(" / ");
+}
+
 function step5(){
-  return shell(5,"JD Requirements × My Spec → GAP","공고에서 요구하는 조건과 내 현재 스펙을 비교해 지금 준비할 GAP을 정합니다.",
+  return shell(5,"JD Requirements × My Spec → GAP","공고 요구조건과 내가 실제로 입력한 스펙을 한 화면에서 비교하고, 준비할 GAP을 정합니다.",
     step5TargetPicker()+
-    '<div class="block"><h3>② 내 스펙 확인 · 입력한 값 자동 불러오기</h3><div class="callout info"><b>자동 불러오기 원칙</b> 기업을 선택하면 공고의 요구조건이 ③에 자동 입력됩니다. 내 스펙은 Jobfit에 내가 실제로 입력한 전공·자격증·어학·도구·경험만 불러오며, 없는 스펙은 임의로 만들지 않습니다.</div><div class="grid2">'+
-      '<div class="field"><label>내 전공</label><input class="input" value="'+h(state.student.major||"")+'" disabled /></div>'+
-      field("student.certificates","자격증","예: 전기기사 / 산업안전기사 준비 중 / 없음",false)+
-      field("student.language","어학","예: TOEIC 820 / OPIc IM2 / 없음",false)+
-      field("student.tools","도구·기술","예: Excel, Python, CAD, Minitab, 실험장비",false)+
-      field("student.otherSpec","기타 스펙 <span class=\"hint\">(선택)</span>","인턴, 교육, 수상, 현장실습 등",false,true)+
-    '</div></div>'+
-    '<div class="divider"></div><div class="block"><h3>③ 공고 요구조건 자동 불러오기 × 내 스펙 비교</h3><p class="help">선택한 기업·직무의 필수조건·우대사항·핵심업무가 최대 3개로 자동 들어옵니다. 이미 입력한 내 스펙과 연결되는 내용은 ‘내 근거’에도 자동 표시되며, 충족 여부는 학생이 직접 확인합니다.</p><div class="requirementList">'+requirementRows()+'</div></div>'+
-    '<div class="divider"></div><div class="block"><h3>④ AI로 내 GAP 분석</h3><p class="help">공고, 직무분석, 전공, 경험, 스펙이 모두 들어간 개인 프롬프트입니다.</p>'+
+    '<div class="block"><h3>② 공고 요구조건 × 내 스펙 한 번에 비교</h3>'+
+      '<div class="callout info"><b>자동 연결</b> 기업·직무를 선택하면 공고 요구조건이 자동으로 들어옵니다. 전공·경험은 이전 STEP 값을 사용하고, 자격증·어학·도구만 필요한 만큼 입력하세요. 없는 스펙은 만들지 않습니다.</div>'+
+      '<div class="grid2 compactSpecGrid">'+
+        '<div class="field"><label>내 전공 · 자동</label><input class="input" value="'+h(state.student.major||"")+'" disabled /></div>'+
+        field("student.certificates","자격증 <span class=\"hint\">(없으면 비워도 됨)</span>","예: 전기기사 / 대기환경기사 준비 중",false)+
+        field("student.language","어학 <span class=\"hint\">(없으면 비워도 됨)</span>","예: TOEIC 820 / OPIc IM2",false)+
+        field("student.tools","도구·기술 <span class=\"hint\">(없으면 비워도 됨)</span>","예: Excel, Python, CAD, SAP",false)+
+      '</div>'+
+      '<p class="help">아래 조건은 공고·직무자료에서 가져옵니다. ‘내 근거’는 앞서 입력한 스펙·경험과 연결하고, 충족 여부만 직접 확인하세요.</p>'+
+      '<div class="requirementList">'+requirementRows()+'</div>'+
+    '</div>'+
+    '<div class="divider"></div><div class="block"><h3>③ AI로 내 GAP 분석</h3><p class="help">공고·직무분석·전공·경험·현재 스펙을 합쳐 개인별 GAP을 분석합니다.</p>'+
       '<textarea class="promptBox promptEditor shortPrompt" id="gapPromptPreview" data-prompt-key="gap">'+h(gapPrompt())+'</textarea>'+
       '<div class="actions compactActions"><button class="btn secondary" id="copyGapPromptBtn">내 GAP 분석 프롬프트 복사</button></div>'+
       field("ai.gapResult","AI GAP 분석 결과 <span class=\"hint\">(선택)</span>","AI의 GAP 분석 결과를 붙여넣으세요.")+
     '</div>'+
-    '<div class="divider"></div><div class="block"><h3>⑤ 내가 정한 최종 GAP과 행동</h3><div class="grid2">'+
-      field("fit.assets","현재 갖춘 강점·스펙","공고와 연결되는 내 근거")+
-      field("fit.gaps","우선 보완할 GAP","최대 3개만 남기세요.")+
-      field("fit.actions","3개월 행동계획","무엇을 언제까지 어떤 결과물로 만들 것인가?")+
-    '</div></div>');
+    '<div class="divider"></div><div class="block"><h3>④ 최종 GAP과 3개월 행동</h3>'+
+      '<div class="selectedEvidence"><span>현재 확인된 근거</span><b id="derivedGapAssetsPreview">'+h(derivedGapAssets()||"아직 입력된 스펙·충족 근거가 없습니다.")+'</b></div>'+
+      '<div class="grid2">'+
+        field("fit.gaps","우선 보완할 GAP","AI 결과를 보고 최대 3개만 남기세요.")+
+        field("fit.actions","3개월 행동계획","무엇을 언제까지 어떤 결과물로 만들 것인가?")+
+      '</div></div>');
 }
 
 function portfolio(){
@@ -1620,7 +1632,6 @@ function portfolio(){
     "기업: "+(j?.company||"-"),
     "공고: "+(j?.title||"-"),
     "분야: "+(j?.role||"-"),
-    "기간: "+(j?.period||"-"),
     "출처: "+(j?.sourceUrl||"-"),"",
     "4. JOB ANALYSIS TABLE",
     "고객·KPI: "+(jt.customerKpi||"-"),
@@ -1632,7 +1643,7 @@ function portfolio(){
     "5. MAJOR & EXPERIENCE EVIDENCE",
     "전공에서 찾은 근거: "+(st.majorEvidence||"-")
   ];
-  if(exps.length)exps.forEach((e,i)=>a.push("경험 "+(i+1)+": "+(e.title||"-")+" / "+(e.type||"유형 미지정")+" / "+(e.summary||"-")));
+  if(exps.length)exps.forEach((e,i)=>a.push("경험 "+(i+1)+": "+(e.title||"-")+" / "+(e.summary||"-")));
   else a.push("경험: -");
   a.push(
     "대표 경험 행동: "+(star.actionWhat||"-"),
@@ -1643,14 +1654,13 @@ function portfolio(){
     "7. MY SPEC",
     "자격증: "+(st.certificates||"-"),
     "어학: "+(st.language||"-"),
-    "도구·기술: "+(st.tools||"-"),
-    "기타 스펙: "+(st.otherSpec||"-"),"",
+    "도구·기술: "+(st.tools||"-"),"",
     "8. REQUIREMENTS & GAP"
   );
   if(req.length)req.forEach((r,i)=>a.push((i+1)+". "+r.condition+" / "+(r.status||"미판정")+" / 내 근거: "+(r.note||"-")));
   else a.push("조건 비교: -");
   a.push(
-    "현재 강점·자산: "+(f.assets||"-"),
+    "현재 확인된 근거: "+(derivedGapAssets()||"-"),
     "우선 보완 GAP: "+(f.gaps||"-"),
     "3개월 행동계획: "+(f.actions||"-"),"",
     "[AI GAP 분석 메모]",
@@ -1931,7 +1941,7 @@ function bind(){
       if(preview)preview.textContent=e.value||"-";
       const path=e.dataset.path||"";
       if(path==="student.majorEvidence"||path.startsWith("star."))refreshStep4Prompt();
-      if(["student.certificates","student.language","student.tools","student.otherSpec","student.majorEvidence"].includes(path))refreshStep5Derived();
+      if(["student.certificates","student.language","student.tools","student.majorEvidence"].includes(path))refreshStep5Derived();
       save();
     };
     e.oninput=handler;e.onchange=handler;
@@ -1987,7 +1997,7 @@ function bind(){
           if(note)note.value=state.requirements[i].note;
         }
       }
-      if(document.getElementById("gapPromptPreview"))syncPromptPreview("gap",gapPrompt,"gapPromptPreview");
+      refreshStep5Derived();
       save();
     };
     e.oninput=handler;e.onchange=handler;
