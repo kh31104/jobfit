@@ -185,6 +185,13 @@ try{
   assert(!step4Text.includes('③ 대표 경험에서 행동 근거 확인'),'STEP4 must remove the old separate action-evidence step');
 
   assert(await page.locator('[data-expkey="type"]').count()===0,'STEP4 must remove the experience-type dropdown and keep only evidence that changes the analysis');
+  const sparsePrompt=await page.locator('#keywordPromptPreview').inputValue();
+  assert(sparsePrompt.includes('[Jobfit의 현재 정보충분도 진단]'),'STEP4 prompt must diagnose evidence sufficiency before analysis');
+  assert(sparsePrompt.includes('현재 상태: 추가질문 필요'),'Sparse STEP4 evidence must be marked as needing follow-up questions');
+  assert(sparsePrompt.includes('대표 경험에서 내가 직접 한 행동'),'Sparse diagnostics must identify missing direct-action evidence');
+  assert(sparsePrompt.includes('[정보가 부족할 때의 AI 인터뷰 규칙]'),'STEP4 prompt must contain adaptive interview rules');
+  assert(sparsePrompt.includes('최종 분석을 하지 말고 [추가질문] 하나만 제시'),'AI must ask one focused question instead of analyzing insufficient evidence');
+  assert(sparsePrompt.includes('이미 입력되었거나 이전 답변으로 확인된 내용은 다시 묻지 마라'),'Adaptive interview must not repeat known information');
 
   // Persona A: data-oriented project evidence.
   await page.locator('[data-path="student.majorEvidence"]').fill('화공실험에서 공정 데이터와 환경변수를 비교해 해석했다.');
@@ -198,6 +205,9 @@ try{
   await page.locator('[data-path="star.result"]').fill('재시험 대상을 좁히고 결과를 보고서로 정리했다.');
   await page.locator('[data-path="star.evidence"]').fill('측정기록과 프로젝트 보고서');
   const promptA=await page.locator('#keywordPromptPreview').inputValue();
+  assert(promptA.includes('필수적으로 부족한 정보: 없음'),'Completed core evidence must clear mandatory STEP4 evidence gaps');
+  assert(promptA.includes('기본 분석 가능하지만 보강질문 권장'),'Missing optional WHY/HOW may trigger targeted enrichment without blocking analysis');
+  assert(promptA.includes('모든 STAR 항목을 억지로 채우는 것이 목적이 아니다'),'Adaptive interview must stop once evidence is sufficient rather than forcing a full STAR interview');
 
   // Persona B: service-operation evidence, same target job.
   await page.locator('[data-exp="0"][data-expkey="title"]').fill('카페 재고관리 아르바이트');
