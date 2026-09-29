@@ -26,12 +26,14 @@ try{
   await page.locator('[data-next="2"]').click();
   await page.waitForSelector('[data-path="step2Search.company"]');
 
-  await page.locator('[data-path="step2Search.company"]').fill('현재 찾지 못함');
-  await page.locator('[data-path="step2Search.title"]').fill('관심 직무 신입 공고 없음');
+  await page.locator('[data-path="step2Search.company"]').fill('학생이 찾은 에너지기업');
+  await page.locator('[data-path="step2Search.title"]').fill('2026 생산기술 신입');
+  await page.locator('[data-path="step2Search.sourceUrl"]').fill('https://example.com/student-found-job');
+  await page.locator('[data-path="step2Search.memo"]').fill('화학공학 관련 전공 우대\n생산 데이터 분석 경험 우대');
   await page.locator('#searchPromptPreview').evaluate(el=>{const d=el.closest('details');if(d)d.open=true;});
   await page.locator('#searchPromptPreview').fill((await page.locator('#searchPromptPreview').inputValue())+'\n• 학생 메모 프롬프트');
   await page.reload({waitUntil:'networkidle'});
-  assert((await page.locator('[data-path="step2Search.company"]').inputValue())==='현재 찾지 못함','STEP2 answer must persist after reload');
+  assert((await page.locator('[data-path="step2Search.company"]').inputValue())==='학생이 찾은 에너지기업','STEP2 answer must persist after reload');
   assert((await page.locator('#searchPromptPreview').inputValue()).includes('학생 메모 프롬프트'),'Edited STEP2 AI prompt must persist after reload');
   const searchPrompt=await page.locator('#searchPromptPreview').inputValue();
   assert(searchPrompt.includes('에너지 산업'),'STEP2 prompt must use the student-entered industry');
@@ -155,6 +157,9 @@ try{
   await page.locator('#useCustomJobBtn').click();
   assert(await page.locator('#jobPromptPreview').count()===0,'Custom analysis must not open from company/role alone without job-duty evidence');
   await page.locator('[data-customjob="facts"]').fill('생산 데이터 분석\n설비 이상 원인 확인\n공정 개선안 검토');
+  await page.locator('[data-customjob="required"]').evaluate(el=>{const d=el.closest('details');if(d)d.open=true;});
+  await page.locator('[data-customjob="required"]').fill('화학공학 등 관련 전공 / TOEIC 800 이상');
+  await page.locator('[data-customjob="preferred"]').fill('대기환경기사 / 생산데이터 분석 프로젝트 경험');
   await page.locator('#useCustomJobBtn').click();
   await page.waitForSelector('#jobPromptPreview');
   const customPrompt=await page.locator('#jobPromptPreview').inputValue();
@@ -169,18 +174,27 @@ try{
   assert((await page.locator('[data-curated-role="kea-2026-h2"]').inputValue())==='화공·환경','KEA role selection must persist');
   assert((await page.locator('[data-path="jobTable.tasks"]').inputValue()).includes('에너지·환경'),'KEA role table must survive company switching');
 
-  // STEP 4
+  // STEP 4: compact 3-part flow + fully personalized prompt.
   await page.locator('[data-next="4"]').click();
   await page.waitForSelector('[data-path="student.majorEvidence"]');
+  const step4Text=(await page.locator('#stepRoot').innerText())||'';
+  assert(step4Text.includes('① 전공에서 직무 근거 하나 찾기'),'STEP4 must keep the major evidence step');
+  assert(step4Text.includes('② 경험 3개 + 행동 근거 한 번에 정리'),'STEP4 must combine experiences and action evidence');
+  assert(step4Text.includes('③ AI로 나만의 직무역량 찾기'),'STEP4 must have only one AI analysis step after evidence');
+  assert(!step4Text.includes('③ 대표 경험에서 행동 근거 확인'),'STEP4 must remove the old separate action-evidence step');
+
   await page.locator('[data-path="student.majorEvidence"]').fill('화공실험에서 공정 데이터와 환경변수를 비교해 해석했다.');
   await page.locator('[data-exp="0"][data-expkey="title"]').fill('환경데이터 캡스톤');
   await page.locator('[data-exp="0"][data-expkey="summary"]').fill('측정 데이터를 정리하고 이상값 원인을 비교했다.');
+  await page.locator('[data-exp="1"][data-expkey="title"]').fill('화공실험 팀프로젝트');
+  await page.locator('[data-exp="1"][data-expkey="summary"]').fill('실험조건을 바꾸어 에너지 사용량 차이를 비교했다.');
+  await page.locator('[data-exp="2"][data-expkey="title"]').fill('학과 데이터 정리');
+  await page.locator('[data-exp="2"][data-expkey="summary"]').fill('엑셀로 반복 측정값을 정리하고 오류값을 표시했다.');
   await page.locator('[data-path="star.actionWhat"]').fill('기준값과 측정값을 비교해 원인 후보를 정리했다.');
   await page.locator('[data-path="star.result"]').fill('재시험 대상을 좁히고 결과를 보고서로 정리했다.');
   await page.locator('[data-path="star.evidence"]').fill('측정기록과 프로젝트 보고서');
-  await page.locator('#refreshKeywordPromptBtn').click();
   const keywordPrompt=await page.locator('#keywordPromptPreview').inputValue();
-  assert(keywordPrompt.includes('환경데이터 캡스톤'),'STEP4 prompt must include student experience');
+  for(const needle of ['환경데이터 캡스톤','화공실험 팀프로젝트','학과 데이터 정리','기준값과 측정값을 비교','직무의 주요 과업·해결과제·필요역량','모든 학생에게 같은 역량 목록을 주지 말고'])assert(keywordPrompt.includes(needle),'STEP4 personalized prompt missing: '+needle);
   assert(keywordPrompt.includes('개조식'),'STEP4 prompt must request bullet-style output');
   await page.locator('[data-path="ai.keywordResult"]').fill('• 데이터 해석\n• 기준 기반 문제분석\n• 환경업무 문서화');
   await page.reload({waitUntil:'networkidle'});
@@ -192,6 +206,20 @@ try{
   await page.waitForSelector('#step5TargetSelect');
   const autoTarget=await page.locator('#step5TargetSelect').inputValue();
   assert(autoTarget.includes('kea-2026-h2')&&autoTarget.includes('화공·환경'),'STEP5 must auto-fill the STEP3 comparison target');
+  const targetTexts=await page.locator('#step5TargetSelect option').allTextContents();
+  assert(targetTexts.some(x=>x.includes('직접입력 에너지기업')),'STEP5 must offer the STEP3 custom company');
+  assert(targetTexts.some(x=>x.includes('학생이 찾은 에너지기업')),'STEP5 must offer the STEP2 student-found posting');
+
+  await page.locator('#step5TargetSelect').selectOption('searched');
+  await page.waitForSelector('#step5TargetSelect');
+  assert((await page.locator('.gapTargetBlock').innerText()).includes('학생이 찾은 에너지기업'),'STEP5 must select the STEP2 student-found posting');
+  assert((await page.locator('[data-req="0"][data-reqkey="condition"]').inputValue()).includes('화학공학 관련 전공 우대'),'STEP5 must auto-load student-found posting memo into requirements');
+
+  await page.locator('#step5TargetSelect').selectOption('custom');
+  await page.waitForSelector('#step5TargetSelect');
+  assert((await page.locator('.gapTargetBlock').innerText()).includes('직접입력 에너지기업'),'STEP5 must select the STEP3 custom company');
+  assert((await page.locator('[data-req="0"][data-reqkey="condition"]').inputValue()).includes('TOEIC 800'),'STEP5 custom target must auto-load required qualifications');
+  assert((await page.locator('[data-req="1"][data-reqkey="condition"]').inputValue()).includes('대기환경기사'),'STEP5 custom target must auto-load preferences');
 
   await page.locator('#step5TargetSelect').selectOption('curated|hdelectric-2026-h2|설계·품질|품질경영');
   await page.waitForSelector('#step5TargetSelect');
@@ -208,10 +236,11 @@ try{
   await page.locator('[data-path="student.certificates"]').fill('대기환경기사 준비 중');
   await page.locator('[data-path="student.language"]').fill('TOEIC 820');
   await page.locator('[data-path="student.tools"]').fill('Excel, Python');
+  const autoEvidence=await page.locator('[data-req="1"][data-reqkey="note"]').inputValue();
+  assert(autoEvidence.includes('대기환경기사 준비 중'),'STEP5 must auto-connect previously entered student spec to matching requirements');
   const reqStatus=page.locator('[data-req="0"][data-reqkey="status"]');
   await reqStatus.selectOption('충족');
   await page.locator('[data-req="0"][data-reqkey="note"]').fill('공통 지원자격 확인');
-  await page.locator('#refreshGapPromptBtn').click();
   const gapPrompt=await page.locator('#gapPromptPreview').inputValue();
   assert(gapPrompt.includes('한국에너지공단'),'STEP5 GAP prompt must use restored KEA target');
   assert(gapPrompt.includes('개조식'),'STEP5 GAP prompt must request bullet-style output');
