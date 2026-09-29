@@ -185,6 +185,8 @@ try{
     assert(r.competencyPrompt.includes('[정보가 부족할 때의 AI 인터뷰 규칙]'),'Every persona must carry the adaptive evidence-interview protocol: '+r.id);
     assert(r.competencyPrompt.includes('필수적으로 부족한 정보: 없음'),'Completed persona core evidence must pass the mandatory evidence gate: '+r.id);
     assert(r.competencyPrompt.includes('[추가질문]'),'Every persona prompt must define the one-question-at-a-time follow-up format: '+r.id);
+    assert(r.gapPrompt.includes('[정보가 부족할 때의 GAP 확인 인터뷰 규칙]'),'Every persona GAP prompt must carry the adaptive evidence-check protocol: '+r.id);
+    assert(r.gapPrompt.includes('[추가질문]'),'Every persona GAP prompt must define the one-question-at-a-time follow-up format: '+r.id);
     for(const heading of ['1. TARGET JOB','2. JOB ANALYSIS','3. MY EVIDENCE','4. MY COMPETENCY','5. SPEC & GAP']){
       assert(r.portfolio.includes(heading),'Portfolio must retain concise five-part structure: '+r.id+' / '+heading);
     }

@@ -1562,6 +1562,48 @@ function requirementRows(){
   '</div>').join("");
 }
 
+function step5EvidenceDiagnostics(){
+  const j=selectedCuratedJob();
+  const rd=j?.roleData||selectedRoleData()||{};
+  const reqs=state.requirements.filter(r=>filled(r.condition));
+  const required=[];
+  const enrich=[];
+
+  if(!j)required.push("비교할 기업·직무 선택");
+  if(!reqs.length)required.push("공고에서 비교할 지원·우대·직무조건");
+  const unclassified=reqs.filter(r=>!filled(r.status));
+  if(unclassified.length)required.push("아직 판정하지 않은 공고조건 "+unclassified.length+"개");
+  const claimedWithoutEvidence=reqs.filter(r=>["충족","일부 준비"].includes(r.status)&&!filled(r.note));
+  if(claimedWithoutEvidence.length)required.push("'충족/일부 준비'라고 판정했지만 근거가 없는 조건 "+claimedWithoutEvidence.length+"개");
+
+  const hasJobBasis=filled(state.jobTable.tasks)||filled(state.jobTable.competencies)||filled(rd.tasks)||filled(j?.facts);
+  if(!hasJobBasis)required.push("선택 직무의 실제 업무·필요역량 정보");
+
+  const hasStudentBasis=
+    filled(state.student.majorEvidence)||
+    state.experiences.some(e=>filled(e.title)&&filled(e.summary))||
+    filled(state.ai.keywordResult);
+  if(!hasStudentBasis)required.push("직무와 비교할 전공·경험·역량 근거");
+
+  const gapWithoutReason=reqs.filter(r=>r.status==="현재 GAP"&&!filled(r.note));
+  if(gapWithoutReason.length)enrich.push("현재 GAP으로 판단한 이유 또는 현재 부족한 근거");
+  if(!filled(state.ai.keywordResult))enrich.push("STEP 4에서 정리한 핵심 직무역량 결과");
+
+  const status=required.length
+    ?"추가질문 필요"
+    :(enrich.length?"GAP 분석 가능하지만 보강질문 권장":"GAP 분석 준비 완료");
+  return {required,enrich,status};
+}
+
+function step5EvidenceDiagnosticText(){
+  const d=step5EvidenceDiagnostics();
+  return [
+    "현재 상태: "+d.status,
+    "필수적으로 부족한 정보: "+(d.required.length?d.required.join(" / "):"없음"),
+    "보강하면 GAP 우선순위가 더 정확해지는 정보: "+(d.enrich.length?d.enrich.join(" / "):"없음")
+  ].join("\n");
+}
+
 function gapPrompt(){
   const j=selectedCuratedJob(), rd=j?.roleData||selectedRoleData()||{};
   const taskText=state.jobTable.tasks||rd.tasks||"미입력";
@@ -1597,6 +1639,32 @@ function gapPrompt(){
     "",
     "[내 경험]",
     ...(exps.length?exps:["경험 미입력"]),
+    "",
+    "[Jobfit의 현재 GAP 정보충분도 진단]",
+    step5EvidenceDiagnosticText(),
+    "",
+    "[정보가 부족할 때의 GAP 확인 인터뷰 규칙]",
+    "1. 최종 GAP 분석 전에 공고조건별 현재상태와 그 판정 근거가 충분한지 먼저 확인해라.",
+    "2. '필수적으로 부족한 정보'가 있으면 최종 GAP 분석을 하지 말고 [추가질문] 하나만 제시한 뒤 학생의 답을 기다려라.",
+    "3. 한 번에 여러 질문을 묶지 말고 GAP 우선순위를 가장 크게 바꿀 질문 1개만 물어라.",
+    "4. 이미 입력된 자격증·어학·도구·경험·판정은 다시 묻지 마라.",
+    "5. 질문 우선순위는 ① 미판정 공고조건의 현재상태 ② 충족/일부 준비 판정의 실제 근거 ③ 직무업무·필요역량 근거 ④ 현재 GAP 판단 이유 순서다.",
+    "6. 학생이 '없다'고 답하면 그 자체를 현재 상태로 사용하고, 없는 자격·경험을 만들거나 취득한 것으로 바꾸지 마라.",
+    "7. '보강하면 좋은 정보'만 남은 경우, 그 정보가 GAP 1~3순위를 바꿀 가능성이 클 때만 질문 1개를 하고 그렇지 않으면 분석을 진행하되 불확실성을 표시해라.",
+    "8. 공고의 '우대'를 '필수'로 바꾸지 말고, 회사 내부 기준이나 합격 가능성을 임의로 추정하지 마라.",
+    "",
+    "[GAP 분석 시작 기준]",
+    "• 비교할 기업·직무와 공고조건이 확인됨",
+    "• 공고조건마다 학생이 충족 / 일부 준비 / 현재 GAP / 원문 확인 필요 중 하나로 판정함",
+    "• 충족·일부 준비 판정에는 실제 스펙·경험 근거가 연결됨",
+    "• 직무의 주요 업무 또는 필요역량과 학생의 전공·경험 근거를 비교할 수 있음",
+    "위 기준을 충족하면 추가질문을 멈추고 GAP을 최대 3개로 분석해라.",
+    "",
+    "[추가질문 출력 형식]",
+    "[추가질문]",
+    "• 질문: (현재 공고조건과 학생 입력값을 직접 언급해 한 문장으로 질문)",
+    "• 이 질문이 필요한 이유: (GAP 판정 또는 우선순위에 어떤 정보가 필요한지 한 줄)",
+    "이 단계에서는 GAP 1~3순위나 3개월 행동계획을 함께 출력하지 마라.",
     "",
     "공식 공고·직무기술서와 내 입력정보를 대조해 GAP을 분석해줘.",
     "공고에서 '우대'인 항목을 '필수'로 바꾸지 말고, 내가 준비 중인 자격은 취득한 것으로 처리하지 마.",
@@ -1661,6 +1729,7 @@ function step5(){
       '<div class="requirementList">'+requirementRows()+'</div>'+
     '</div>'+
     '<div class="divider"></div><div class="block"><h3>③ AI로 내 GAP 분석</h3><p class="help">공고·직무분석·전공·경험·현재 스펙을 합쳐 개인별 GAP을 분석합니다.</p>'+
+      '<div class="callout info"><b>GAP 분석 전 확인</b> AI가 공고조건별 판정과 근거가 충분한지 먼저 확인합니다. 부족하면 가장 중요한 질문을 한 번에 하나씩 하고, 근거가 확보되면 GAP 1~3순위와 3개월 행동을 분석합니다.</div>'+
       '<textarea class="promptBox promptEditor shortPrompt" id="gapPromptPreview" data-prompt-key="gap">'+h(gapPrompt())+'</textarea>'+
       '<div class="actions compactActions"><button class="btn secondary" id="copyGapPromptBtn">내 GAP 분석 프롬프트 복사</button></div>'+
       field("ai.gapResult","AI GAP 분석 결과 <span class=\"hint\">(선택)</span>","AI의 GAP 분석 결과를 붙여넣으세요.")+
