@@ -1245,6 +1245,38 @@ function experienceRows(){
   }).join("");
 }
 
+function step4EvidenceDiagnostics(){
+  const rep=state.experiences[state.selectedExperience]||emptyExperience();
+  const usable=state.experiences.filter(e=>filled(e.title)&&filled(e.summary));
+  const required=[];
+  const enrich=[];
+
+  if(!filled(state.student.majorEvidence))required.push("전공에서 직무와 연결되는 수업·과제·프로젝트 근거");
+  if(usable.length<2)required.push("서로 다른 경험 최소 2개의 '내가 한 일' 근거");
+  if(!filled(rep.title||state.star.experience))required.push("대표 경험 선택");
+  if(!filled(state.star.actionWhat))required.push("대표 경험에서 내가 직접 한 행동");
+  if(!filled(state.star.result)&&!filled(state.star.evidence))required.push("행동 뒤 결과 또는 확인 가능한 증거");
+
+  if(!filled(state.star.situation)&&!filled(state.star.task))enrich.push("대표 경험의 상황 또는 맡은 과제");
+  if(!filled(state.star.actionWhy))enrich.push("왜 그 방법을 선택했는지 판단 이유");
+  if(!filled(state.star.actionHow))enrich.push("실행 순서·사용 도구·판단 기준");
+
+  const status=required.length
+    ?"추가질문 필요"
+    :(enrich.length?"기본 분석 가능하지만 보강질문 권장":"분석에 필요한 핵심 근거 확보");
+
+  return {required,enrich,status};
+}
+
+function step4EvidenceDiagnosticText(){
+  const d=step4EvidenceDiagnostics();
+  return [
+    "현재 상태: "+d.status,
+    "필수적으로 부족한 정보: "+(d.required.length?d.required.join(" / "):"없음"),
+    "보강하면 분석 품질이 좋아지는 정보: "+(d.enrich.length?d.enrich.join(" / "):"없음")
+  ].join("\n");
+}
+
 function competencyKeywordPrompt(){
   const j=selectedCuratedJob(), rd=j?.roleData||selectedRoleData()||{};
   const allExperiences=state.experiences.map((e,i)=>({
@@ -1289,6 +1321,33 @@ function competencyKeywordPrompt(){
     "HOW 실행 방식·도구: "+(state.star.actionHow||"미입력"),
     "결과: "+(state.star.result||"미입력"),
     "확인 가능한 증거: "+(state.star.evidence||"미입력"),
+    "",
+    "[Jobfit의 현재 정보충분도 진단]",
+    step4EvidenceDiagnosticText(),
+    "",
+    "[정보가 부족할 때의 AI 인터뷰 규칙]",
+    "1. 최종 역량분석을 시작하기 전에, 지금 자료만으로 직무역량 3~5개를 각각 구체적인 행동근거와 연결할 수 있는지 먼저 판단해라.",
+    "2. 정보가 부족하면 최종 분석을 하지 말고 [추가질문] 하나만 제시한 뒤 학생의 답을 기다려라.",
+    "3. 한 번에 여러 질문을 묶지 말고 가장 중요한 질문 1개만 물어라. 답을 받으면 기존 정보와 합쳐 다시 충분성을 판단해라.",
+    "4. 이미 입력되었거나 이전 답변으로 확인된 내용은 다시 묻지 마라.",
+    "5. 질문은 '더 자세히 말해줘'처럼 넓게 묻지 말고, 선택 직무와 대표 경험을 직접 언급해 답하기 쉽게 구체적으로 물어라.",
+    "6. 질문 우선순위는 ① 내가 실제로 한 행동 ② 사용한 기준·도구·방법 ③ 결과·산출물·증거 ④ 판단 이유 ⑤ 상황·역할 순서다. 이미 충분한 항목은 건너뛰어라.",
+    "7. 필요한 질문은 정보가 충분해질 때까지 이어가되, 학생이 '모르겠다/없다'고 답한 정보는 사실처럼 만들어 채우지 마라.",
+    "8. 모든 STAR 항목을 억지로 채우는 것이 목적이 아니다. 직무역량을 행동근거로 설명할 수 있을 만큼만 질문해라.",
+    "",
+    "[분석 시작 기준]",
+    "• 대표 경험에서 본인의 행동이 무엇인지 구체적으로 확인됨",
+    "• 행동의 방법·도구·판단기준 중 최소 하나가 확인됨",
+    "• 결과·산출물·증거 중 최소 하나가 확인됨",
+    "• 최소 2개 경험에서 서로 다른 행동근거를 확인할 수 있음",
+    "• 핵심역량 3개 이상을 '직무 과업 ↔ 학생 행동'으로 연결할 수 있음",
+    "위 기준을 충족하면 추가질문을 멈추고 아래 분석을 시작해라.",
+    "",
+    "[추가질문 출력 형식]",
+    "[추가질문]",
+    "• 질문: (학생의 실제 경험명과 선택 직무를 넣어 한 문장으로 질문)",
+    "• 이 질문이 필요한 이유: (한 줄)",
+    "이 단계에서는 역량분석 결과를 함께 출력하지 마라.",
     "",
     "[분석 절차]",
     "1. 먼저 직무의 주요 과업·해결과제·필요역량을 기준축으로 잡아라.",
@@ -1350,6 +1409,7 @@ function step4(){
       '</div></div></details>'+
     '</div>'+
     '<div class="divider"></div><div class="block"><h3>③ AI로 나만의 직무역량 찾기</h3><p class="help">선택 직무의 실제 과업과 내가 입력한 전공·경험·행동을 교차 비교한 개인 프롬프트입니다.</p>'+
+      '<div class="callout info"><b>답변 품질 보완 방식</b> AI가 먼저 입력정보가 충분한지 확인합니다. 근거가 부족하면 분석을 서두르지 않고 질문을 한 번에 하나씩 이어갑니다. 학생은 질문에 답하면 되고, 필요한 근거가 확보되면 역량분석을 시작합니다.</div>'+
       '<textarea class="promptBox promptEditor shortPrompt" id="keywordPromptPreview" data-prompt-key="keyword">'+h(competencyKeywordPrompt())+'</textarea>'+
       '<div class="actions compactActions"><button class="btn secondary" id="copyKeywordPromptBtn">내 역량분석 프롬프트 복사</button></div>'+
       field("ai.keywordResult","AI 결과 붙여넣기 <span class=\"hint\">(선택)</span>","AI가 정리한 경험별 직무 연결과 핵심역량을 붙여넣으세요. STEP 6 Portfolio에 함께 들어갑니다.")+
