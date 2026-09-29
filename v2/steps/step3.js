@@ -43,7 +43,9 @@ export async function render(ctx){
 
     ${block('06','직무 × 산업 탐색','같은 직무도 산업이 달라지면 고객·Task·Tool이 달라질 수 있습니다.',`
       <div class="callout good"><b>예시</b><br>데이터분석 × 금융 = 고객·거래·리스크 데이터 / 데이터분석 × 제조 = 생산·품질·공정 데이터<br>생산기술 × 자동차 = 생산라인·공정 개선 / 생산기술 × 식품 = 생산공정·설비·품질조건 관리</div>
-      <textarea id="jobPrompt" rows="18">${esc(buildPrompt(s,data,experienceMap),ctx)}</textarea><div class="actions"><button class="btn secondary" id="refreshPrompt">현재 선택 반영</button><button class="btn primary" id="copyPrompt">AI 직무탐색 프롬프트 복사</button></div>`)}
+      <textarea id="jobPrompt" rows="18">${esc(buildPrompt(s,data,experienceMap),ctx)}</textarea><div class="actions"><button class="btn secondary" id="refreshPrompt">현재 선택 반영</button><button class="btn primary" id="copyPrompt">AI 직무탐색 프롬프트 복사</button></div>
+      <div class="callout info" style="margin-top:12px"><b>AI 결과를 다시 칸마다 옮길 필요가 없습니다.</b><br>AI 답변의 마지막 JSON 블록을 아래에 붙여넣으면 직무 후보 카드로 자동 불러옵니다.</div>
+      <textarea id="jobAiImport" rows="8" placeholder="AI 답변의 JSON 블록을 붙여넣으세요."></textarea><div class="actions"><button class="btn secondary" id="importJobAi">AI 후보 한 번에 불러오기</button></div>`)}
 
     ${block('07','탐색 직무 후보','AI 결과를 그대로 확정하지 말고, 후보가 나온 근거와 아직 확인하지 않은 것을 함께 남깁니다. 최대 5개를 권장합니다.',`
       <div class="grid2">${txt('jobTitle','직무명','','예: CRM 마케팅')}${sel('jobFamily','직무군','',JOB_FAMILIES)}${txt('jobIndustries','가능 산업','','예: 유통·물류, 금융, IT·플랫폼')}${txt('jobSummary','어떤 일인가요?','','1~2문장으로 간단히')}</div>
