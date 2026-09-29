@@ -12,7 +12,7 @@ const baseState={
   baseline:{jobDecision:'2–3개 후보 있음'},
   research:{consent:false,measurements:{pre:{},post:{}}},
   assessments:{
-    careerDNA:{hypothesis:{text:'문제를 확인하고 개선하는 활동에 관심이 있다.'}},
+    careerDNA:{hypothesis:{text:'문제를 확인하고 개선하는 활동에 관심이 있다.'},careerAnchor:{ranking:[{code:'TF',name:'전문·직무역량',score:28},{code:'SE',name:'안정·보장',score:25},{code:'AU',name:'자율·독립',score:23}]},selfStrengths:['분석력','책임감','협력'],viaTop5:['학구열','신중함','진정성','희망','친절']},
     experienceCompetency:{experiences:[{id:'exp1',title:'캡스톤',action:'시험 결과를 비교해 오류 원인을 확인했다',result:'설계조건을 수정했다',evidence:'시험기록',competencies:['문제해결','분석'],factChecked:true}]}
   },
   artifacts:{
@@ -142,7 +142,7 @@ await run('STEP 5 renders a three-page MY JOBFIT REPORT v1',async page=>{
   assert((await page.locator('h2').first().textContent()).includes('MY JOBFIT REPORT v1'),'STEP 5 title did not change');
   assert(await page.locator('.reportPage').count()===3,'MY JOBFIT REPORT v1 must render exactly three pages');
   const text=(await page.locator('#jobfitReportPrint').textContent())||'';
-  for(const expected of ['WHO AM I?','WHERE CAN I USE IT?',"WHAT DO I HAVE & WHAT'S NEXT?",'자동차·모빌리티','생산기술','공정 데이터 분석','준비 필요'])assert(text.includes(expected),`Report missing: ${expected}`);
+  for(const expected of ['WHO AM I?','WHERE CAN I USE IT?',"WHAT DO I HAVE & WHAT'S NEXT?",'CAREER ANCHOR · TOP 3','전문·직무역량','VIA 성격강점 · TOP 5','학구열','자동차·모빌리티','생산기술','공정 데이터 분석','준비 필요'])assert(text.includes(expected),`Report missing: ${expected}`);
 
   const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   assert(stored.artifacts.jobfitReportV1?.version==='my-jobfit-report-v1','STEP 5 report metadata missing');
