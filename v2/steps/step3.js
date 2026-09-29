@@ -1,168 +1,105 @@
 const JOB_FAMILIES=['기획·전략','인사·조직','재무·회계','영업·사업개발','마케팅·브랜드','고객·서비스','구매·물류·SCM','생산·공정·설비','품질·안전·환경','R&D·연구','IT·데이터','디자인·콘텐츠','공공·행정','상담·교육','기타'];
-const JOB_EXPLORER_VERSION='job-explorer-week6-v2';
+const WORK_ACTIVITIES=['자료·데이터를 분석하는 일','문제의 원인을 찾아 해결하는 일','제품·서비스를 기획하는 일','프로그램·시스템을 개발하는 일','기계·장비를 다루는 일','제품·공정을 설계하는 일','기준에 맞는지 검사·점검하는 일','일정·업무를 계획하는 일','사람들과 협의·조정하는 일','고객에게 설명·설득하는 일','콘텐츠를 만드는 일','사람을 교육·지원하는 일'];
+const INDUSTRIES=['IT·플랫폼','반도체·전자','자동차·모빌리티','기계·산업재','바이오·제약','금융','유통·물류','식품','화학·소재','건설·부동산','에너지','콘텐츠·미디어','교육','기타'];
+const VERSION='job-explorer-v3-activity-industry';
 
 export async function render(ctx){
-  const s=ctx.getState();
-  const dna=s.assessments?.careerDNA||{};
-  const exp=s.assessments?.experienceCompetency||{experiences:[]};
-  const mappedExperiences=Array.isArray(s.artifacts?.experienceMap)?s.artifacts.experienceMap.filter(x=>x?.factChecked):[];
-  const experienceMap=mappedExperiences.length?mappedExperiences:(exp.experiences||[]).filter(x=>x?.factChecked);
-  const saved=s.artifacts?.jobExplorer||{candidates:[],targets:[],notes:''};
-  const data=structuredClone(saved);
-  data.candidates=Array.isArray(data.candidates)?data.candidates:[];
-  data.targets=Array.isArray(data.targets)?data.targets:[];
-  const root=document.getElementById('stepRoot');
+  const s=ctx.getState(),dna=s.assessments?.careerDNA||{},exp=s.assessments?.experienceCompetency||{experiences:[]};
+  const mapped=Array.isArray(s.artifacts?.experienceMap)?s.artifacts.experienceMap.filter(x=>x?.factChecked):[];
+  const experienceMap=mapped.length?mapped:(exp.experiences||[]).filter(x=>x?.factChecked);
+  const old=s.artifacts?.jobExplorer||{};
+  const d=structuredClone({candidates:[],targets:[],targetDetails:[],notes:'',confirmedActions:[],desiredWorkActivities:[],interestOnlyActivities:[],industryInterests:[],industryStatus:'selected',compareIds:[],...old});
+  for(const k of ['candidates','targets','targetDetails','confirmedActions','desiredWorkActivities','interestOnlyActivities','industryInterests','compareIds'])if(!Array.isArray(d[k]))d[k]=[];
+  const actions=extractActions(experienceMap),root=document.getElementById('stepRoot');
+  root.innerHTML='<section class="card jobExplorerV3">'+styleBlock()+
+    '<div class="sectionHead"><div><div class="kicker">STEP 3 · JOB EXPLORATION</div><h2>어떤 일을, 어느 산업에서 탐색해볼까?</h2><p>STEP 1의 자기이해와 STEP 2의 실제 경험을 바탕으로 <b>행동 → 업무활동 → 직무 → 산업</b> 순서로 탐색합니다.</p></div><span class="badge">직무탐색</span></div>'+
+    '<div class="progress"><span style="width:29%"></span></div>'+
+    '<div class="callout info"><b>직무를 결정하는 단계가 아닙니다.</b><br>내가 실제로 해온 행동과 앞으로 해보고 싶은 일을 근거로 STEP 4에서 확인할 Target을 2~3개 정합니다.</div>'+
+    '<div class="callout warn"><b>산업은 고정하지 않습니다.</b><br>에너지·금융·IT·제조·유통 등은 모두 같은 선택지입니다. 산업을 아직 모르겠다면 ‘아직 잘 모르겠어요’를 선택해도 됩니다.</div>'+
+    mod('01','지금까지 확인한 나','STEP 1·2 결과를 다시 입력하지 않고 핵심만 확인합니다.',
+      '<div class="grid3"><div class="miniCard"><b>Career DNA</b><span>'+esc(summaryDNA(dna,s.artifacts?.careerDNAProfile),ctx)+'</span></div><div class="miniCard"><b>Best Experience</b><span>'+esc(summaryExp(experienceMap),ctx)+'</span></div><div class="miniCard"><b>Competency Map</b><span>'+esc(summaryComp(experienceMap),ctx)+'</span></div></div><div class="actions"><button class="btn secondary" data-nav="1">STEP 1 수정</button><button class="btn secondary" data-nav="2">STEP 2 수정</button></div>')+
+    mod('02','경험에서 반복된 행동','강점명보다 실제로 한 행동을 확인합니다.',
+      '<p class="help">내 경험에서 실제로 했다고 확인되는 행동을 선택하세요.</p><div class="choiceGrid" id="actionChoices">'+(actions.length?actions.map(a=>choice('confirmedAction',a,d.confirmedActions.includes(a)||!d.confirmedActions.length)).join(''):'<div class="placeholder"><b>반복 행동을 아직 만들 수 없습니다.</b> STEP 2에서 행동과 Evidence를 먼저 정리하세요.</div>')+'</div><div class="actions"><button class="btn primary" id="saveActions">반복 행동 저장</button></div>')+
+    mod('03','실제 직장에서 해보고 싶은 일','잘했던 일과 앞으로 하고 싶은 일을 분리합니다.',
+      '<p class="help">실제 직장에서 해보고 싶은 활동을 3~5개 골라보세요.</p><div class="choiceGrid" id="workChoices">'+WORK_ACTIVITIES.map(a=>choice('workActivity',a,d.desiredWorkActivities.includes(a))).join('')+'</div><div class="actions"><button class="btn primary" id="saveWork">관심 업무 저장</button></div>')+
+    mod('04','아직 해보지 않았지만 관심 있는 일','과거 경험만으로 미래 직무 가능성을 제한하지 않습니다.',
+      '<div class="field"><label>새롭게 관심 있는 업무</label><textarea id="interestOnly" placeholder="예: 고객 인터뷰, 서비스 기획, 공정 자동화 등. 여러 개면 줄바꿈으로 적으세요.">'+esc(d.interestOnlyActivities.join('\n'),ctx)+'</textarea></div><div class="actions"><button class="btn primary" id="saveInterestOnly">새로운 관심 저장</button><button class="btn ghost" id="clearInterestOnly">특별히 없음</button></div>')+
+    mod('05','관심 산업·분야 탐색','특정 산업을 기본값으로 두지 않습니다.',
+      '<p class="help">관심이 있거나 한번 알아보고 싶은 산업을 최대 3개 선택하세요.</p><div class="choiceGrid" id="industryChoices">'+INDUSTRIES.map(a=>choice('industry',a,d.industryInterests.includes(a))).join('')+'</div><label class="checkRow undecided"><input type="checkbox" id="industryUndecided" '+(d.industryStatus==='undecided'?'checked':'')+'><div><b>아직 관심 산업을 모르겠어요</b><span>산업을 정하지 않은 상태로도 다음 단계로 진행할 수 있습니다.</span></div></label><div class="actions"><button class="btn primary" id="saveIndustries">산업 선택 저장</button></div>')+
+    mod('06','직무 × 산업 탐색','같은 직무도 산업에 따라 고객·Task·Tool이 달라질 수 있습니다.',
+      '<div id="industryGuide">'+guide(d,ctx)+'</div><div class="callout info"><b>예시</b><br>데이터분석 × 금융 = 고객·거래·리스크 데이터 / 데이터분석 × 제조 = 생산·품질·공정 데이터. 예시는 학생 선택에 맞춰 바뀌며 에너지로 고정하지 않습니다.</div>')+
+    mod('07','탐색 직무 후보','AI 결과를 정답으로 저장하지 않고 근거가 분명한 후보만 추가합니다.',
+      '<p class="help">프롬프트로 후보를 탐색한 뒤 실제로 더 알아볼 가치가 있는 후보만 4~5개 정도 저장하세요.</p><textarea id="jobPrompt" rows="15">'+esc(buildPrompt(s,d),ctx)+'</textarea><div class="actions"><button class="btn secondary" id="copyPrompt">직무탐색 프롬프트 복사</button></div><div class="candidateForm"><div class="grid3">'+txt('jobTitle','직무명','','예: CRM마케팅')+sel('jobFamily','직무군','',JOB_FAMILIES)+txt('candidateIndustries','산업 예시','','예: 유통, 금융, IT·플랫폼')+'</div><div class="grid2">'+area('jobDescription','어떤 일인가요?','','1~2문장으로 실제 업무를 설명')+area('experienceEvidence','경험 근거','','STEP 2의 어떤 경험과 연결되는가?')+area('behaviorEvidence','행동 근거','','실제로 한 행동은 무엇인가?')+area('interestEvidence','관심 근거','','STEP 3에서 선택한 어떤 업무활동과 연결되는가?')+area('competencyEvidence','역량 근거','','Competency Map의 어떤 근거가 연결되는가?')+area('unknowns','아직 확인하지 않은 것','','세부업무, 요구기술, 근무환경 등')+'</div><div class="actions"><button class="btn primary" id="addCandidate">직무 후보 추가</button></div><div class="status" id="status"></div></div><div id="candidateList" style="margin-top:14px"></div>')+
+    mod('08','직무 후보 비교','점수나 적합도 % 대신 근거와 확인할 점을 비교합니다.','<div id="comparePick"></div><div id="compareTable" style="margin-top:12px"></div>')+
+    mod('09','STEP 4에서 확인할 Target','직무 × 산업 조합을 2~3개 선택합니다.','<div id="targetPick"></div><div class="field" style="margin-top:12px"><label>선택 메모</label><textarea id="notes" placeholder="왜 이 조합을 더 알아보고 싶은지 내 말로 적으세요.">'+esc(d.notes||'',ctx)+'</textarea></div><div class="actions"><button class="btn primary" id="saveTargets">Target 저장</button><button class="btn secondary" id="nextStep">STEP 4 실제 직무 확인 →</button></div><div id="targetStatus" class="status"></div>')+
+    '</section>';
 
-  root.innerHTML=`<section class="card jobExplorerWeek6">
-    ${styleBlock()}
-    <div class="sectionHead"><div><div class="kicker">STEP 3 · JOB EXPLORER</div><h2>강점·경험역량을 직무 후보로 연결하기</h2><p>3주차의 자기이해와 4주차 Experience Map을 출발점으로, <b>내 강점을 실제로 사용할 수 있는 직무 후보</b>를 넓게 탐색합니다.</p></div><span class="badge">6주차 · 탐색</span></div>
-    <div class="progress"><span style="width:29%"></span></div>
-    <div class="callout info"><b>6주차의 핵심 질문</b><br>“내가 가진 강점·역량은 어떤 직무의 실제 업무에서 사용될 수 있는가?” 직무명을 먼저 정하지 않고, <b>내 행동근거 → 업무(Task) → 직무 후보</b> 순서로 탐색합니다.</div>
-    <div class="callout warn"><b>직무추천과 직무탐색은 다릅니다.</b> 검사결과 하나만으로 ‘이 직무가 잘 맞는다’고 확정하지 않습니다. 후보를 넓게 만든 뒤 공식 직무정보를 확인하고 학생이 직접 Target Job을 선택합니다.</div>
-
-    <div class="block"><div class="moduleHead"><span>01</span><div><h3>나의 직무탐색 근거 확인</h3><p>직무 후보를 만들기 전에 3주차와 4주차에서 확인한 자료를 분리해서 봅니다.</p></div></div>
-      <div class="grid3">
-        <div class="miniCard"><b>강점 단서</b><span>${esc(summaryStrengths(dna,s.artifacts?.careerDNAProfile),ctx)}</span></div>
-        <div class="miniCard"><b>가치·커리어 기준</b><span>${esc(summaryValues(dna,s.artifacts?.careerDNAProfile),ctx)}</span></div>
-        <div class="miniCard"><b>경험에서 확인한 역량</b><span>${esc(summaryCompetencies(exp,experienceMap),ctx)}</span></div>
-      </div>
-      <div class="experienceEvidence">${experienceBridgeHtml(experienceMap,ctx)}</div>
-    </div>
-
-    <div class="hr"></div><div class="block"><div class="moduleHead"><span>02</span><div><h3>AI 직무탐색 프롬프트</h3><p>AI에게 ‘나에게 맞는 직무 3개’를 묻지 않습니다. 서로 다른 업무군의 후보를 넓게 만들고, <b>왜 후보인지 내 행동근거</b>를 함께 확인합니다.</p></div></div>
-      <textarea id="jobPrompt" rows="17">${esc(buildPrompt(s),ctx)}</textarea><div class="actions"><button class="btn secondary" id="copyPrompt">프롬프트 복사</button></div>
-    </div>
-
-    <div class="hr"></div><div class="block"><div class="moduleHead"><span>03</span><div><h3>직무 후보 Pool</h3><p>AI가 낸 직무를 그대로 저장하지 말고, NCS·고용24 직업정보·기업 공식 직무소개·실제 채용공고 등에서 업무를 확인한 뒤 추가합니다.</p></div></div>
-      <div class="callout good"><b>권장 탐색폭</b> · 후보 8~12개, 최소 4개 이상의 서로 다른 직무군. 같은 업무군의 이름만 바꾼 후보가 반복되지 않도록 합니다.</div>
-      <div class="grid2">${txt('jobTitle','직무명','','예: 공정기술, 구매, 데이터분석')}${sel('jobFamily','직무군','',JOB_FAMILIES)}${txt('source','확인 출처','','예: NCS, 고용24 직업정보, 기업 직무소개')}${txt('sourceUrl','출처 URL','','https://...')}</div>
-      <div class="grid2" style="margin-top:12px">${area('tasks','대표 업무','','실제로 수행하는 대표 Task 2~3개')}${area('why','관심·강점 연결','','내 강점 또는 관심 중 무엇과 연결되는가?')}${area('evidence','나의 경험 근거','','4주차 Experience Map의 어떤 행동·역량과 연결되는가?')}${area('gap','더 확인할 점','','Task·KSA·KPI 중 아직 모르는 것은?')}</div>
-      <div class="grid4" style="margin-top:12px">${score('interestScore','업무 관심')}${score('evidenceScore','경험 근거')}${score('valueScore','가치 적합')}${score('infoScore','정보 확인도')}</div>
-      <label class="checkRow"><input type="checkbox" id="sourceVerified"><div><b>공식/실제 자료 확인</b><span>NCS·고용24 직업정보·기업 공식 직무소개·실제 채용공고 중 하나 이상에서 대표 업무를 직접 확인했습니다.</span></div></label>
-      <div class="actions"><button class="btn primary" id="addCandidate">후보 추가</button></div><div class="status" id="status"></div>
-    </div>
-
-    <div class="block"><div id="diversityCheck"></div><div id="candidateList"></div></div>
-
-    <div class="hr"></div><div class="block"><div class="moduleHead"><span>04</span><div><h3>Target Job 1·2·3 직접 선택</h3><p>6주차 후반 STEP 4에서 Task·KSA·KPI와 내 Experience Map을 깊게 매칭할 직무를 최대 3개 고릅니다.</p></div></div>
-      <div id="targetPick"></div><div id="targetWarning"></div>
-      <div class="field" style="margin-top:12px"><label>선택 메모</label><textarea id="notes" placeholder="왜 이 직무를 더 깊게 확인하려 하는지, 어떤 경험근거가 있고 무엇을 더 확인해야 하는지 적으세요.">${esc(data.notes||'',ctx)}</textarea></div>
-      <div class="actions"><button class="btn primary" id="saveTargets">Target Job 저장</button><button class="btn secondary" id="nextStep">STEP 4 Task·KSA·KPI 심층분석 →</button></div>
-    </div>
-  </section>`;
-
-  renderCandidates();renderTargets();renderDiversity();
-  document.getElementById('copyPrompt').addEventListener('click',()=>copy(document.getElementById('jobPrompt').value,ctx));
-  document.getElementById('addCandidate').addEventListener('click',addCandidate);
-  document.getElementById('saveTargets').addEventListener('click',saveTargets);
-  document.getElementById('nextStep').addEventListener('click',()=>{saveTargets();ctx.navigate(4)});
+  bindToggles();paintCandidates();paintComparePick();paintCompare();paintTargets();
+  root.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>ctx.navigate(Number(b.dataset.nav))));
+  document.getElementById('saveActions').onclick=()=>{d.confirmedActions=checked('confirmedAction');persist();ctx.toast('반복 행동을 저장했습니다.');};
+  document.getElementById('saveWork').onclick=()=>{const a=checked('workActivity');if(a.length>5)return ctx.toast('업무활동은 최대 5개까지 선택하세요.');d.desiredWorkActivities=a;persist();refresh();ctx.toast('관심 업무를 저장했습니다.');};
+  document.getElementById('saveInterestOnly').onclick=()=>{d.interestOnlyActivities=lines(v('interestOnly'));persist();refresh();ctx.toast('새로운 관심을 저장했습니다.');};
+  document.getElementById('clearInterestOnly').onclick=()=>{set('interestOnly','');d.interestOnlyActivities=[];persist();refresh();ctx.toast('새로운 관심 없음으로 저장했습니다.');};
+  document.getElementById('saveIndustries').onclick=()=>{const a=checked('industry');if(a.length>3)return ctx.toast('관심 산업은 최대 3개까지 선택하세요.');d.industryStatus=document.getElementById('industryUndecided').checked?'undecided':'selected';d.industryInterests=d.industryStatus==='undecided'?[]:a;persist();refresh();ctx.toast('관심 산업을 저장했습니다.');};
+  document.getElementById('industryUndecided').onchange=e=>{if(e.target.checked)document.querySelectorAll('[name="industry"]').forEach(x=>x.checked=false);};
+  document.querySelectorAll('[name="industry"]').forEach(x=>x.onchange=()=>{if(x.checked)document.getElementById('industryUndecided').checked=false;});
+  document.getElementById('copyPrompt').onclick=()=>copy(v('jobPrompt'),ctx);
+  document.getElementById('addCandidate').onclick=addCandidate;
+  document.getElementById('saveTargets').onclick=saveTargets;
+  document.getElementById('nextStep').onclick=()=>{saveTargets();ctx.navigate(4);};
 
   function addCandidate(){
-    const title=v('jobTitle'),family=v('jobFamily');
-    if(!title){status('직무명을 입력하세요.');return}
-    if(!family){status('직무군을 선택하세요.');return}
-    data.candidates.push({
-      id:`job_${Date.now()}`,title,family,source:v('source'),sourceUrl:v('sourceUrl'),tasks:v('tasks'),why:v('why'),evidence:v('evidence'),gap:v('gap'),
-      interestScore:n('interestScore'),evidenceScore:n('evidenceScore'),valueScore:n('valueScore'),infoScore:n('infoScore'),
-      sourceVerified:!!document.getElementById('sourceVerified').checked,createdAt:new Date().toISOString()
-    });
-    ['jobTitle','source','sourceUrl','tasks','why','evidence','gap'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('jobFamily').value='';
-    ['interestScore','evidenceScore','valueScore','infoScore'].forEach(id=>document.getElementById(id).value='3');
-    document.getElementById('sourceVerified').checked=false;
-    persist();renderCandidates();renderTargets();renderDiversity();status('직무 후보를 추가했습니다.');
+    const title=v('jobTitle');if(!title)return status('직무명을 입력하세요.');
+    d.candidates.push({id:'job_'+Date.now(),title,family:v('jobFamily'),industries:split(v('candidateIndustries')),description:v('jobDescription'),experienceEvidence:v('experienceEvidence'),behaviorEvidence:v('behaviorEvidence'),interestEvidence:v('interestEvidence'),competencyEvidence:v('competencyEvidence'),unknowns:v('unknowns'),createdAt:new Date().toISOString()});
+    persist();['jobTitle','candidateIndustries','jobDescription','experienceEvidence','behaviorEvidence','interestEvidence','competencyEvidence','unknowns'].forEach(x=>set(x,''));set('jobFamily','');paintCandidates();paintComparePick();paintCompare();paintTargets();status('직무 후보를 추가했습니다.');
   }
-  function renderCandidates(){
-    const box=document.getElementById('candidateList');
-    if(!data.candidates.length){box.innerHTML='<div class="placeholder"><b>아직 직무 후보가 없습니다.</b> AI로 넓게 탐색한 뒤 실제 자료를 확인하고 후보를 직접 추가하세요.</div>';return}
-    box.innerHTML=data.candidates.map((j,i)=>{
-      const avg=avgScore(j);
-      return `<div class="listCard"><div class="listHead"><div><span class="rankTag">후보 ${i+1}</span><h3>${esc(j.title,ctx)}</h3><div class="muted small">${esc(j.family||'직무군 미입력',ctx)}</div></div><div class="scoreChip">탐색우선 ${avg.toFixed(1)}/5</div></div><div class="grid2"><div><b>대표 Task</b><p>${esc(j.tasks||'—',ctx)}</p></div><div><b>강점·관심 연결</b><p>${esc(j.why||'—',ctx)}</p></div><div><b>Experience Map 근거</b><p>${esc(j.evidence||'—',ctx)}</p></div><div><b>더 확인할 점</b><p>${esc(j.gap||'—',ctx)}</p></div></div><div class="sourceLine"><b>확인 출처</b> ${esc(j.source||'미입력',ctx)} ${j.sourceUrl?`· <a href="${esc(j.sourceUrl,ctx)}" target="_blank" rel="noopener">열기</a>`:''}</div><div class="pillRow"><span class="pill">업무관심 ${j.interestScore||0}</span><span class="pill">경험근거 ${j.evidenceScore||0}</span><span class="pill">가치 ${j.valueScore||0}</span><span class="pill">정보확인 ${j.infoScore||0}</span><span class="pill">${j.sourceVerified?'자료 확인완료':'자료 확인필요'}</span></div><div class="actions"><button class="btn danger smallBtn" data-del="${j.id}">삭제</button></div></div>`;
-    }).join('');
-    box.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{data.candidates=data.candidates.filter(x=>x.id!==b.dataset.del);data.targets=data.targets.filter(x=>x!==b.dataset.del);persist();renderCandidates();renderTargets();renderDiversity()}));
+  function paintCandidates(){
+    const box=document.getElementById('candidateList');if(!box)return;
+    if(!d.candidates.length){box.innerHTML='<div class="placeholder"><b>아직 직무 후보가 없습니다.</b> 프롬프트로 탐색한 뒤 근거가 분명한 후보만 추가하세요.</div>';return;}
+    box.innerHTML=d.candidates.map((j,i)=>'<div class="listCard"><div class="listHead"><div><span class="rankTag">후보 '+(i+1)+'</span><h3>'+esc(j.title,ctx)+'</h3><div class="muted small">'+esc(j.family||'직무군 미입력',ctx)+(j.industries?.length?' · '+esc(j.industries.join(' / '),ctx):'')+'</div></div><button class="btn danger smallBtn" data-del="'+j.id+'">삭제</button></div><p><b>어떤 일?</b> '+esc(j.description||'—',ctx)+'</p><div class="grid2"><div><b>경험·행동 근거</b><p>'+esc([j.experienceEvidence,j.behaviorEvidence].filter(Boolean).join(' / ')||'—',ctx)+'</p></div><div><b>관심·역량 근거</b><p>'+esc([j.interestEvidence,j.competencyEvidence].filter(Boolean).join(' / ')||'—',ctx)+'</p></div></div><details class="subDetails"><summary>아직 확인해야 할 것</summary><p>'+esc(j.unknowns||'세부업무·요구기술·근무환경·기업별 조건을 STEP 4에서 확인합니다.',ctx)+'</p></details></div>').join('');
+    box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{d.candidates=d.candidates.filter(x=>x.id!==b.dataset.del);d.targets=d.targets.filter(x=>x!==b.dataset.del);d.targetDetails=d.targetDetails.filter(x=>x.candidateId!==b.dataset.del);d.compareIds=d.compareIds.filter(x=>x!==b.dataset.del);persist();paintCandidates();paintComparePick();paintCompare();paintTargets();});
   }
-  function renderDiversity(){
-    const box=document.getElementById('diversityCheck'),families=familyStats(data.candidates);
-    if(!data.candidates.length){box.innerHTML='';return}
-    const distinct=Object.keys(families).length,max=Math.max(...Object.values(families)),total=data.candidates.length;
-    let cls='good',msg=`현재 ${total}개 후보 · ${distinct}개 직무군.`;
-    if(total>=6&&distinct<4){cls='warn';msg+=` 후보 수에 비해 직무군이 ${distinct}개뿐입니다. 서로 다른 업무군을 더 탐색하세요.`}
-    else if(max>2&&total>=6){cls='warn';const top=Object.entries(families).sort((a,b)=>b[1]-a[1])[0];msg+=` ${top[0]} 직무군이 ${top[1]}개로 몰려 있습니다. 이름만 다른 비슷한 직무가 반복되지 않았는지 확인하세요.`}
-    else msg+=' 탐색 폭을 유지하면서 실제 업무를 확인하세요.';
-    box.innerHTML=`<div class="callout ${cls}"><b>직무 후보 다양성 체크</b><br>${esc(msg,ctx)}<div class="pillRow" style="margin-top:8px">${Object.entries(families).map(([k,v])=>`<span class="pill">${esc(k,ctx)} ${v}</span>`).join('')}</div></div>`;
+  function paintComparePick(){
+    const box=document.getElementById('comparePick');if(!box)return;
+    if(!d.candidates.length){box.innerHTML='<div class="callout warn">먼저 직무 후보를 추가하세요.</div>';return;}
+    box.innerHTML='<p class="help">비교할 직무를 최대 3개 선택하세요.</p>'+d.candidates.map(j=>'<label class="checkRow"><input type="checkbox" data-compare="'+j.id+'" '+(d.compareIds.includes(j.id)?'checked':'')+'><div><b>'+esc(j.title,ctx)+'</b><span>'+esc(j.family||'',ctx)+'</span></div></label>').join('');
+    box.querySelectorAll('[data-compare]').forEach(c=>c.onchange=()=>{const ids=[...box.querySelectorAll('[data-compare]:checked')];if(ids.length>3){c.checked=false;return ctx.toast('비교는 최대 3개입니다.');}d.compareIds=ids.map(x=>x.dataset.compare);persist();paintCompare();});
   }
-  function renderTargets(){
-    const box=document.getElementById('targetPick');
-    if(!data.candidates.length){box.innerHTML='<div class="callout warn">먼저 직무 후보를 추가하세요.</div>';return}
-    box.innerHTML=data.candidates.map(j=>`<label class="checkRow"><input type="checkbox" data-target="${j.id}" ${data.targets.includes(j.id)?'checked':''}><div><b>${esc(j.title,ctx)}</b><span>${esc(j.family||'',ctx)} · ${j.sourceVerified?'자료 확인완료':'자료 확인필요'}</span></div></label>`).join('');
-    box.querySelectorAll('[data-target]').forEach(c=>c.addEventListener('change',()=>{const ids=[...box.querySelectorAll('[data-target]:checked')];if(ids.length>3){c.checked=false;ctx.toast('Target Job은 최대 3개입니다.')}renderTargetWarning()}));
-    renderTargetWarning();
+  function paintCompare(){
+    const box=document.getElementById('compareTable');if(!box)return;const a=d.compareIds.map(id=>d.candidates.find(x=>x.id===id)).filter(Boolean);
+    if(!a.length){box.innerHTML='<div class="callout info">비교할 후보를 선택하면 경험근거·관심근거·산업·확인할 점을 한 화면에서 볼 수 있습니다.</div>';return;}
+    box.innerHTML='<div class="matrixWrap"><table class="matrix"><thead><tr><th>직무</th><th>경험·행동 근거</th><th>관심·역량 근거</th><th>산업 예시</th><th>더 확인할 것</th></tr></thead><tbody>'+a.map(j=>'<tr><td><b>'+esc(j.title,ctx)+'</b></td><td>'+esc([j.experienceEvidence,j.behaviorEvidence].filter(Boolean).join(' / ')||'—',ctx)+'</td><td>'+esc([j.interestEvidence,j.competencyEvidence].filter(Boolean).join(' / ')||'—',ctx)+'</td><td>'+esc(j.industries?.join(', ')||'미정',ctx)+'</td><td>'+esc(j.unknowns||'STEP 4에서 확인',ctx)+'</td></tr>').join('')+'</tbody></table></div>';
   }
-  function renderTargetWarning(){
-    const el=document.getElementById('targetWarning');if(!el)return;
-    const ids=[...document.querySelectorAll('[data-target]:checked')].map(x=>x.dataset.target),jobs=ids.map(id=>data.candidates.find(x=>x.id===id)).filter(Boolean);
-    if(!jobs.length){el.innerHTML='';return}
-    const unver=jobs.filter(x=>!x.sourceVerified).length,fams=new Set(jobs.map(x=>x.family));let msg='';
-    if(unver)msg+=`선택 직무 중 ${unver}개는 실제 자료 확인이 더 필요합니다. `;
-    if(jobs.length===3&&fams.size===1)msg+='3개가 모두 같은 직무군입니다. 의도한 선택인지 한 번 더 확인하세요.';
-    el.innerHTML=msg?`<div class="callout warn">${esc(msg,ctx)}</div>`:'';
+  function paintTargets(){
+    const box=document.getElementById('targetPick');if(!box)return;
+    if(!d.candidates.length){box.innerHTML='<div class="callout warn">먼저 직무 후보를 추가하세요.</div>';return;}
+    box.innerHTML=d.candidates.map(j=>{const z=d.targetDetails.find(x=>x.candidateId===j.id)||{},inds=[...new Set([...(j.industries||[]),...(d.industryInterests||[])])];return '<div class="targetCard"><label class="checkRow"><input type="checkbox" data-target="'+j.id+'" '+(d.targets.includes(j.id)?'checked':'')+'><div><b>'+esc(j.title,ctx)+'</b><span>'+esc(j.family||'',ctx)+'</span></div></label><div class="grid2 targetMeta"><div class="field"><label>함께 확인할 산업</label><select data-target-industry="'+j.id+'"><option value="">산업 미정</option>'+inds.map(x=>'<option '+(z.industry===x?'selected':'')+'>'+esc(x,ctx)+'</option>').join('')+'</select></div><div class="field"><label>선택 이유</label><input class="input" data-target-reason="'+j.id+'" value="'+esc(z.reason||'',ctx)+'" placeholder="왜 더 알아보고 싶은지 내 말로"></div></div></div>';}).join('');
+    box.querySelectorAll('[data-target]').forEach(c=>c.onchange=()=>{const ids=[...box.querySelectorAll('[data-target]:checked')];if(ids.length>3){c.checked=false;ctx.toast('Target은 최대 3개입니다.');}});
   }
   function saveTargets(){
-    data.targets=[...document.querySelectorAll('[data-target]:checked')].map(x=>x.dataset.target);
-    data.notes=v('notes');persist();
-    status(data.targets.length?`Target Job ${data.targets.length}개를 저장했습니다.`:'직무 후보 Pool을 저장했습니다.');
+    d.targets=[...document.querySelectorAll('[data-target]:checked')].map(x=>x.dataset.target);
+    d.targetDetails=d.targets.map((id,i)=>({candidateId:id,priority:i+1,industry:document.querySelector('[data-target-industry="'+id+'"]')?.value||'',reason:document.querySelector('[data-target-reason="'+id+'"]')?.value?.trim()||''}));
+    d.notes=v('notes');persist();const t=d.targets.length?'Target '+d.targets.length+'개를 저장했습니다.':'Target을 아직 선택하지 않았습니다.';document.getElementById('targetStatus').textContent=t;ctx.toast(t);
   }
-  function persist(){
-    data.version=JOB_EXPLORER_VERSION;
-    data.sourceExperienceMapVersion=s.assessments?.experienceCompetency?.version||'';
-    data.diversity={families:familyStats(data.candidates),updatedAt:new Date().toISOString()};
-    ctx.saveState({artifacts:{jobExplorer:data}});
-  }
-  function v(id){return document.getElementById(id)?.value?.trim()||''}
-  function n(id){return Number(document.getElementById(id)?.value||0)}
-  function status(t){document.getElementById('status').textContent=t;ctx.toast(t)}
+  function refresh(){document.getElementById('jobPrompt').value=buildPrompt(ctx.getState(),d);document.getElementById('industryGuide').innerHTML=guide(d,ctx);}
+  function persist(){d.version=VERSION;d.updatedAt=new Date().toISOString();ctx.saveState({artifacts:{jobExplorer:d}});}
+  function checked(name){return [...document.querySelectorAll('[name="'+name+'"]:checked')].map(x=>x.value);}
+  function v(id){return document.getElementById(id)?.value?.trim()||''}function set(id,x){const e=document.getElementById(id);if(e)e.value=x}function status(x){const e=document.getElementById('status');if(e)e.textContent=x;ctx.toast(x)}
 }
 
-function buildPrompt(s){
-  const dna=s.assessments?.careerDNA||{},profile=s.artifacts?.careerDNAProfile||{},exp=s.assessments?.experienceCompetency||{},map=Array.isArray(s.artifacts?.experienceMap)?s.artifacts.experienceMap.filter(x=>x?.factChecked):[];
-  const valueClues=profile.valueClues||((dna.balance?.answers||[]).filter(Boolean).map(x=>x.value));
-  const anchorTop=profile.careerAnchorTop||dna.careerAnchor?.ranking?.slice(0,3)||[];
-  const selfStrengths=profile.selfStrengths||dna.selfStrengths||[];
-  const via=profile.viaTop5||dna.viaTop5||[];
-  const mi=profile.multipleIntelligenceTop3||dna.multipleIntelligence?.top3||[];
-  const comparison=profile.comparison||dna.comparison||{};
-  const hypothesis=profile.hypothesis||dna.hypothesis||{};
-  const verifiedExperiences=(exp.experiences||[]).filter(x=>x?.factChecked);
-  const evidence=(map.length?map:verifiedExperiences).slice(0,8).map(x=>({
-    experience:x.title||'경험',action:x.action||'',result:x.result||'',competencies:x.competencies||[],competencyEvidence:x.competencyEvidence||[]
-  }));
-  return `당신은 대학생의 직무탐색을 돕는 조력자다. 목표는 검사결과로 직업을 추천하는 것이 아니라, 학생의 자기이해와 실제 경험근거에서 출발해 서로 다른 업무군의 직무 후보를 넓게 탐색하게 돕는 것이다.\n\n[3주차 Career DNA]\n가치 단서: ${valueClues.length?valueClues.join(', '):'입력 없음'}\nCareer Anchor 상위: ${anchorTop.length?anchorTop.map(x=>x.name||x.code).join(', '):'입력 없음'}\n내가 선택한 강점: ${selfStrengths.length?selfStrengths.join(', '):'입력 없음'}\nVIA TOP5: ${via.length?via.join(', '):'입력 없음'}\n다중지능 TOP3: ${mi.length?mi.join(', '):'입력 없음'}\n반복해서 나타난다고 본 부분: ${comparison.repeat||'입력 없음'}\nCareer DNA 가설: ${hypothesis.text||'입력 없음'}\n\n[4주차 Experience Map]\n${evidence.length?evidence.map((x,i)=>`${i+1}. ${x.experience}\n- 행동: ${x.action||'미입력'}\n- 결과: ${x.result||'미입력'}\n- 역량 후보: ${x.competencies.length?x.competencies.join(', '):'미입력'}\n- 근거행동: ${x.competencyEvidence.length?x.competencyEvidence.map(c=>`${c.keyword}: ${c.evidence}`).join(' / '):'미입력'}`).join('\n'):'저장된 Experience Map 없음'}\n\n[탐색 규칙]\n1. 특정 검사 하나만 보고 직무를 추천하지 않는다.\n2. 직무 후보는 가능하면 8~12개, 최소 4개 이상의 서로 다른 직무군에서 제안한다.\n3. 각 후보는 '내 강점/경험 → 실제로 활용될 가능성이 있는 업무(Task) → 직무 후보' 순서로 설명한다.\n4. 학생이 실제로 보여준 행동근거가 없는 역량을 새로 만들어내지 않는다.\n5. VIA나 다중지능 결과만으로 역량 또는 직무적합성을 단정하지 않는다.\n6. 직무 적합도, 취업성공확률, 추천순위를 만들지 않는다.\n7. 실제 Task·KSA·KPI는 기업·산업마다 다를 수 있으므로 반드시 추가 확인이 필요하다고 표시한다.\n8. NCS·고용24·기업 직무소개·채용공고를 실제로 확인하지 않았다면 출처나 URL을 만들어내지 않는다.\n\n[출력]\n표로 정리해줘.\n열: 직무 후보 / 직무군 / 대표 Task 가설 2~3개 / 연결되는 내 강점·경험 행동 / 왜 더 탐색할 가치가 있는지 / 공식자료에서 확인할 질문\n\n마지막에는 '직접 확인할 것'으로\n- 실제 Task\n- KSA\n- KPI·성과기준\n- 신입에게 요구하는 경험\n을 정리해줘.\n\n학생이 후보를 직접 비교하고 선택할 수 있도록 하고, 최종 직무를 대신 결정하지 마.`;
-}
-function summaryStrengths(dna,profile){
-  const self=profile?.selfStrengths||dna.selfStrengths||[],via=profile?.viaTop5||dna.viaTop5||[],mi=profile?.multipleIntelligenceTop3||dna.multipleIntelligence?.top3||[];
-  const parts=[];if(self.length)parts.push(`내가 고른 강점: ${self.join(', ')}`);if(via.length)parts.push(`VIA: ${via.join(', ')}`);if(mi.length)parts.push(`활동방식 단서: ${mi.join(', ')}`);return parts.join(' / ')||'3주차 입력자료 없음';
-}
-function summaryValues(dna,profile){
-  const values=profile?.valueClues||((dna.balance?.answers||[]).filter(Boolean).map(x=>x.value)),anchors=profile?.careerAnchorTop||dna.careerAnchor?.ranking?.slice(0,3)||[];
-  const parts=[];if(values.length)parts.push(`가치 단서: ${[...new Set(values)].join(', ')}`);if(anchors.length)parts.push(`Career Anchor: ${anchors.map(x=>x.name||x.code).join(', ')}`);return parts.join(' / ')||'3주차 입력자료 없음';
-}
-function summaryCompetencies(exp,map){
-  const verified=(exp.experiences||[]).filter(x=>x?.factChecked),src=map.length?map:verified,comps=[...new Set(src.flatMap(x=>x.competencies||[]))];
-  const evidenceCount=src.filter(x=>x.action&&(x.evidence||x.result)).length;
-  return comps.length?`${comps.join(', ')} · 근거가 정리된 경험 ${evidenceCount}/${src.length}개`:(src.length?`저장 경험 ${src.length}개 · 역량키워드 추가 필요`:'4주차 Experience Map 없음');
-}
-function experienceBridgeHtml(map,ctx){
-  if(!map.length)return '<div class="callout warn" style="margin-top:12px"><b>Experience Map이 비어 있습니다.</b> STEP 2에서 최소 한 개의 경험을 행동·결과·역량근거까지 정리한 뒤 직무탐색을 시작하는 것을 권장합니다.</div>';
-  return `<div class="evidenceStrip">${map.slice(0,4).map(x=>`<div><b>${ctx.escapeHtml(x.title||'경험')}</b><span>${ctx.escapeHtml((x.competencies||[]).join(', ')||'역량 미입력')}</span><small>${ctx.escapeHtml(x.action||'행동 미입력')}</small></div>`).join('')}</div>`;
-}
-function familyStats(cands){const out={};for(const c of cands||[])if(c.family)out[c.family]=(out[c.family]||0)+1;return out}
-function avgScore(j){const xs=[j.interestScore,j.evidenceScore,j.valueScore,j.infoScore].map(Number).filter(Number.isFinite);return xs.length?xs.reduce((a,b)=>a+b,0)/xs.length:0}
-function copy(text,ctx){navigator.clipboard.writeText(text).then(()=>ctx.toast('프롬프트를 복사했습니다.')).catch(()=>ctx.toast('직접 선택해 복사해 주세요.'))}
+function mod(n,t,s,b){return '<details class="jobfitModule"><summary><span class="moduleNo">'+n+'</span><span><b>'+t+'</b><small>'+s+'</small></span><span class="chev">⌄</span></summary><div class="moduleBody">'+b+'</div></details>'}
+function choice(n,v,c){return '<label class="choiceCard"><input type="checkbox" name="'+n+'" value="'+v+'" '+(c?'checked':'')+'><span>'+v+'</span></label>'}
+function bindToggles(){document.querySelectorAll('.jobExplorerV3 .jobfitModule').forEach(d=>d.addEventListener('toggle',()=>{const c=d.querySelector('.chev');if(c)c.textContent=d.open?'⌃':'⌄';}));}
+function extractActions(m){const out=[];for(const x of m||[]){for(const p of String(x.action||'').split(/[\n·,;/→]+/).map(z=>z.trim()).filter(z=>z.length>=3)){if(!out.some(y=>norm(y)===norm(p)))out.push(p);if(out.length>=6)return out;}}return out}
+function summaryDNA(d,p){const v=p?.valueClues||((d.balance?.answers||[]).filter(Boolean).map(x=>x.value)),a=p?.careerAnchorTop||d.careerAnchor?.ranking?.slice(0,3)||[],h=p?.hypothesis?.text||d.hypothesis?.text||'',r=[];if(v.length)r.push('가치: '+[...new Set(v)].slice(0,4).join(', '));if(a.length)r.push('Career Anchor: '+a.map(x=>x.name||x.code).join(', '));if(h)r.push('가설: '+h);return r.join(' / ')||'저장된 Career DNA 핵심결과 없음'}
+function summaryExp(m){return m.length?m.slice(0,3).map(x=>x.title||'경험').join(' / '):'STEP 2에서 확인된 경험 없음'}
+function summaryComp(m){const c=[...new Set((m||[]).flatMap(x=>x.competencies||[]))];return c.length?c.slice(0,8).join(', '):'Competency Map 근거 없음'}
+function guide(d,ctx){const i=d.industryStatus==='undecided'?[]:(d.industryInterests||[]),w=[...(d.desiredWorkActivities||[]),...(d.interestOnlyActivities||[])];if(!i.length&&!w.length)return '<div class="callout info">03~05에서 관심 업무와 산업을 선택하면 직무×산업 탐색 기준을 보여줍니다.</div>';return '<div class="grid2"><div class="miniCard"><b>내가 해보고 싶은 업무</b><span>'+ctx.escapeHtml(w.join(' / ')||'미정')+'</span></div><div class="miniCard"><b>관심 산업</b><span>'+ctx.escapeHtml(i.join(' / ')||'아직 미정')+'</span></div></div><div class="callout good" style="margin-top:12px"><b>탐색 질문</b><br>“이 업무가 '+ctx.escapeHtml(i.join('·')||'여러 산업')+'에서는 실제로 어떤 고객·문제·Task와 연결되는가?”를 기준으로 후보를 넓혀보세요.</div>'}
+function buildPrompt(s,d){const dna=s.assessments?.careerDNA||{},p=s.artifacts?.careerDNAProfile||{},exp=s.assessments?.experienceCompetency||{},m=Array.isArray(s.artifacts?.experienceMap)?s.artifacts.experienceMap.filter(x=>x?.factChecked):[],src=m.length?m:(exp.experiences||[]).filter(x=>x?.factChecked),e=src.slice(0,6).map((x,i)=>(i+1)+'. '+(x.title||'경험')+' | 행동: '+(x.action||'미입력')+' | 결과: '+(x.result||'미입력')+' | 역량: '+((x.competencies||[]).join(', ')||'미입력')).join('\n'),v=p.valueClues||((dna.balance?.answers||[]).filter(Boolean).map(x=>x.value)),a=p.careerAnchorTop||dna.careerAnchor?.ranking?.slice(0,3)||[];return '당신은 대학생의 직무탐색을 돕는 조력자다. 직무를 대신 결정하지 말고 학생의 실제 경험과 관심에서 출발해 탐색 후보를 만든다.\n\n[STEP 1 Career DNA]\n가치 단서: '+(v.length?[...new Set(v)].join(', '):'입력 없음')+'\nCareer Anchor: '+(a.length?a.map(x=>x.name||x.code).join(', '):'입력 없음')+'\nCareer DNA 가설: '+(p?.hypothesis?.text||dna.hypothesis?.text||'입력 없음')+'\n\n[STEP 2 Experience Evidence]\n'+(e||'확인된 경험 없음')+'\n\n[STEP 3 학생 선택]\n반복 행동: '+((d.confirmedActions||[]).join(', ')||'미정')+'\n해보고 싶은 업무: '+((d.desiredWorkActivities||[]).join(', ')||'미정')+'\n경험은 없지만 관심 있는 업무: '+((d.interestOnlyActivities||[]).join(', ')||'없음')+'\n관심 산업: '+(d.industryStatus==='undecided'?'아직 미정':((d.industryInterests||[]).join(', ')||'미정'))+'\n\n[규칙]\n1. Holland RIASEC 결과를 임의로 만들거나 추정하지 않는다.\n2. Career Anchor·성격강점·전공 하나만으로 직무를 결정하지 않는다.\n3. 학생이 실제로 하지 않은 행동이나 경험을 만들어내지 않는다.\n4. 경험근거와 관심근거를 구분한다.\n5. 특정 산업을 기본값으로 두지 않는다. 에너지는 여러 산업 중 하나일 뿐이다.\n6. 같은 직무가 서로 다른 산업에서 어떻게 달라지는지 보여준다.\n7. 직무 적합도 %, 추천점수, 합격가능성은 만들지 않는다.\n8. 후보는 4~5개 정도로 제한하고 서로 다른 업무특성이 보이게 한다.\n9. 실제 세부업무·요구기술·기업조건은 STEP 4에서 확인할 항목으로 남긴다.\n10. 최종선택은 학생이 한다.\n\n[출력]\n표로 작성한다.\n열: 직무 후보 / 직무군 / 어떤 일을 하는가 / 경험 근거 / 행동 근거 / 관심 근거 / 역량 근거 / 가능한 산업 예시 / 아직 확인할 것\n\n마지막에 학생이 비교할 질문 3개만 제시한다.'}
+function lines(v=''){return String(v).split(/\n+/).map(x=>x.trim()).filter(Boolean)}function split(v=''){return String(v).split(/[,/\n]+/).map(x=>x.trim()).filter(Boolean)}function norm(x=''){return String(x).replace(/\s+/g,'').toLowerCase()}
+function copy(t,ctx){navigator.clipboard.writeText(t).then(()=>ctx.toast('프롬프트를 복사했습니다.')).catch(()=>ctx.toast('직접 선택해 복사해 주세요.'))}
 function esc(x,ctx){return ctx.escapeHtml(String(x??''))}
-function txt(id,label,value,ph){return `<div class="field"><label>${label}</label><input class="input" id="${id}" value="${value||''}" placeholder="${ph||''}"></div>`}
-function area(id,label,value,ph){return `<div class="field"><label>${label}</label><textarea id="${id}" placeholder="${ph||''}">${value||''}</textarea></div>`}
-function sel(id,label,value,opts){return `<div class="field"><label>${label}</label><select id="${id}"><option value="">선택</option>${opts.map(x=>`<option ${x===value?'selected':''}>${x}</option>`).join('')}</select></div>`}
-function score(id,label){return `<div class="field"><label>${label} <span class="muted">1–5</span></label><select id="${id}">${[1,2,3,4,5].map(n=>`<option value="${n}" ${n===3?'selected':''}>${n}</option>`).join('')}</select></div>`}
-function styleBlock(){return `<style>
-.jobExplorerWeek6 .moduleHead{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}.jobExplorerWeek6 .moduleHead>span{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#eef0ff;color:#4940b8;font-weight:900;flex:0 0 auto}.jobExplorerWeek6 .moduleHead h3{margin:0 0 3px}.jobExplorerWeek6 .moduleHead p{margin:0;color:var(--muted);font-size:13px}.miniCard{display:flex;flex-direction:column;gap:8px}.miniCard span{font-size:13px;line-height:1.55}.evidenceStrip{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}.evidenceStrip>div{border:1px solid var(--line);border-radius:12px;padding:10px}.evidenceStrip b,.evidenceStrip span,.evidenceStrip small{display:block}.evidenceStrip span{margin-top:4px;font-size:12px}.evidenceStrip small{margin-top:5px;color:var(--muted)}@media(max-width:760px){.evidenceStrip{grid-template-columns:1fr}}
-</style>`}
+function txt(id,l,v,p){return '<div class="field"><label>'+l+'</label><input class="input" id="'+id+'" value="'+(v||'')+'" placeholder="'+(p||'')+'"></div>'}
+function area(id,l,v,p){return '<div class="field"><label>'+l+'</label><textarea id="'+id+'" placeholder="'+(p||'')+'">'+(v||'')+'</textarea></div>'}
+function sel(id,l,v,o){return '<div class="field"><label>'+l+'</label><select id="'+id+'"><option value="">선택</option>'+o.map(x=>'<option '+(x===v?'selected':'')+'>'+x+'</option>').join('')+'</select></div>'}
+function styleBlock(){return '<style>.jobExplorerV3 .jobfitModule{border:1px solid var(--line);border-radius:16px;margin:12px 0;background:#fff;overflow:hidden}.jobExplorerV3 .jobfitModule>summary{list-style:none;display:flex;align-items:center;gap:12px;padding:15px 16px;cursor:pointer}.jobExplorerV3 .jobfitModule>summary::-webkit-details-marker{display:none}.jobExplorerV3 .jobfitModule>summary>span:nth-child(2){flex:1;display:flex;flex-direction:column;gap:3px}.jobExplorerV3 .jobfitModule>summary small{color:var(--muted);font-size:12px;font-weight:400}.moduleNo{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#eef0ff;color:#4940b8;font-weight:900}.chev{color:var(--muted);font-size:18px}.jobExplorerV3 .moduleBody{padding:0 16px 16px;border-top:1px solid var(--line)}.jobExplorerV3 .moduleBody>*:first-child{margin-top:14px}.choiceGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.choiceCard{border:1px solid var(--line);border-radius:12px;padding:11px;display:flex;gap:8px;align-items:flex-start;cursor:pointer;background:#fff}.choiceCard:has(input:checked){border-color:#7a76d8;background:#f4f3ff}.miniCard{display:flex;flex-direction:column;gap:7px}.miniCard span{font-size:13px;line-height:1.55}.candidateForm{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}.subDetails{margin-top:8px}.subDetails summary{cursor:pointer;font-weight:700;color:var(--muted)}.targetCard{border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:9px 0}.targetMeta{margin-top:8px}.undecided{margin-top:10px}@media(max-width:820px){.choiceGrid{grid-template-columns:repeat(2,1fr)}}@media(max-width:620px){.choiceGrid{grid-template-columns:1fr}.jobExplorerV3 .jobfitModule>summary{padding:13px 12px}.jobExplorerV3 .moduleBody{padding:0 12px 14px}}</style>'}
