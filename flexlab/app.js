@@ -942,6 +942,20 @@ function syncPromptPreview(key,generator,elementId){
   if(el)el.value=value;
 }
 
+function refreshStep4Prompt(){
+  if(document.getElementById("keywordPromptPreview"))syncPromptPreview("keyword",competencyKeywordPrompt,"keywordPromptPreview");
+}
+
+function refreshStep5Derived(){
+  if(!document.getElementById("gapPromptPreview"))return;
+  syncRequirementEvidence();
+  state.requirements.forEach((r,i)=>{
+    const note=document.querySelector('[data-req="'+i+'"][data-reqkey="note"]');
+    if(note&&note.value!==r.note)note.value=r.note||"";
+  });
+  syncPromptPreview("gap",gapPrompt,"gapPromptPreview");
+}
+
 function jobAnalysisPrompt(){
   const j=selectedJob();
   if(!j)return "먼저 STEP 3에서 분석 방법을 선택하세요.";
@@ -1915,6 +1929,9 @@ function bind(){
       set(e.dataset.path,e.value);
       const preview=document.querySelector('[data-preview="'+e.dataset.path+'"]');
       if(preview)preview.textContent=e.value||"-";
+      const path=e.dataset.path||"";
+      if(path==="student.majorEvidence"||path.startsWith("star."))refreshStep4Prompt();
+      if(["student.certificates","student.language","student.tools","student.otherSpec","student.majorEvidence"].includes(path))refreshStep5Derived();
       save();
     };
     e.oninput=handler;e.onchange=handler;
@@ -1938,7 +1955,15 @@ function bind(){
     e.oninput=handler;e.onchange=handler;
   });
   document.querySelectorAll("[data-exp]").forEach(e=>{
-    const handler=()=>{const i=Number(e.dataset.exp),k=e.dataset.expkey;state.experiences[i]??=emptyExperience();state.experiences[i][k]=e.value;if(i===state.selectedExperience&&k==="title")state.star.experience=e.value;save();};
+    const handler=()=>{
+      const i=Number(e.dataset.exp),k=e.dataset.expkey;
+      state.experiences[i]??=emptyExperience();
+      state.experiences[i][k]=e.value;
+      if(i===state.selectedExperience&&k==="title")state.star.experience=e.value;
+      refreshStep4Prompt();
+      refreshStep5Derived();
+      save();
+    };
     e.oninput=handler;e.onchange=handler;
   });
   document.querySelectorAll("[data-exp-select]").forEach(e=>e.onchange=()=>{
@@ -1950,7 +1975,21 @@ function bind(){
     }
   });
   document.querySelectorAll("[data-req]").forEach(e=>{
-    const handler=()=>{const i=Number(e.dataset.req),k=e.dataset.reqkey;state.requirements[i]??={condition:"",status:"",note:""};state.requirements[i][k]=e.value;save();};
+    const handler=()=>{
+      const i=Number(e.dataset.req),k=e.dataset.reqkey;
+      state.requirements[i]??={condition:"",status:"",note:""};
+      state.requirements[i][k]=e.value;
+      if(k==="condition"){
+        const auto=buildRequirementEvidence(e.value);
+        if(!filled(state.requirements[i].note)||String(state.requirements[i].note).startsWith("자동 불러오기 ·")){
+          state.requirements[i].note=filled(auto)?"자동 불러오기 · "+auto:"";
+          const note=document.querySelector('[data-req="'+i+'"][data-reqkey="note"]');
+          if(note)note.value=state.requirements[i].note;
+        }
+      }
+      if(document.getElementById("gapPromptPreview"))syncPromptPreview("gap",gapPrompt,"gapPromptPreview");
+      save();
+    };
     e.oninput=handler;e.onchange=handler;
   });
   document.querySelectorAll("[data-next]").forEach(e=>e.onclick=()=>go(Number(e.dataset.next)));
@@ -1961,9 +2000,7 @@ function bind(){
   document.getElementById("refreshJobPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("jobPromptPreview"),v=jobAnalysisPrompt();if(e)e.value=v;updatePromptDraft("job",v);toast("현재 분석 대상 정보를 프롬프트에 반영했습니다.");});
   document.getElementById("copyReviewedJobPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("jobPromptPreview")?.value||jobAnalysisPrompt(),"내 직무분석 프롬프트를 복사했습니다."));
   document.getElementById("applyJobTableAiBtn")?.addEventListener("click",applyJobTableAi);
-  document.getElementById("refreshKeywordPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("keywordPromptPreview"),v=competencyKeywordPrompt();if(e)e.value=v;updatePromptDraft("keyword",v);toast("현재 전공·경험을 프롬프트에 반영했습니다.");});
   document.getElementById("copyKeywordPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("keywordPromptPreview")?.value||competencyKeywordPrompt(),"내 역량분석 프롬프트를 복사했습니다."));
-  document.getElementById("refreshGapPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("gapPromptPreview"),v=gapPrompt();if(e)e.value=v;updatePromptDraft("gap",v);toast("현재 스펙·GAP 정보를 프롬프트에 반영했습니다.");});
   document.getElementById("copyGapPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("gapPromptPreview")?.value||gapPrompt(),"내 GAP 분석 프롬프트를 복사했습니다."));
   document.getElementById("refreshSelfIntroPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("selfIntroPromptPreview"),v=selfIntroPrompt();if(e)e.value=v;updatePromptDraft("selfIntro",v);toast("현재 입력을 자기소개서 프롬프트에 반영했습니다.");});
   document.getElementById("copySelfIntroPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("selfIntroPromptPreview")?.value||selfIntroPrompt(),"내 자기소개서 프롬프트를 복사했습니다."));
