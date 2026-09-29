@@ -39,8 +39,8 @@ const CURATED_JOBS=[
     title:"2026년도 하반기 신입직원(채용형 인턴) 채용",
     role:"사무·기술",
     period:"2026.09.21 ~ 2026.10.01 14:00",
-    sourceUrl:"https://www.korea.kr/archive/recruitInfoView.do?dataId=394687&pWise=sub&pWiseSub=J2",
-    source:"한국에너지공단 · 정책브리핑 공식 채용정보",
+    sourceUrl:"https://kea.recruitlab.co.kr/app/recruitment-announcement/view/1020",
+    source:"한국에너지공단 2026년도 하반기 신입직원 채용 · RecruitLab 공고",
     facts:"채용형 인턴 총 93명 · 일반 77명, 보훈 2명, 사회형평 5명, 고졸 9명 · 본사(울산) 및 전국 사무소 · 정규직 전환평가 실시",
     required:"공통: 성별·학력·전공·연령 제한 없음(정년 기준 제외) · 병역의무 불이행 사실 없음 · 2026.12.28부터 즉시 근무 가능 · 공단 결격사유 없음",
     preferred:"직무별 시험·평가 및 우대사항은 공식 공고문·별첨 직무기술서 확인",
@@ -81,7 +81,7 @@ const KEA_COMMON_RECRUITMENT={
 };
 
 const KEA_ROLE_LIBRARY={
-  sourceLabel:"한국에너지공단 2026년도 하반기 신입직원 채용 공고 + [별첨] NCS 기반 직무기술서 + [별첨8] 직무기술자격 기준",
+  sourceLabel:"한국에너지공단 2026년도 하반기 신입직원 채용 RecruitLab 공고 + [별첨] NCS 기반 직무기술서 + [별첨8] 직무기술자격 기준",
   groupLabel:"직군",
   roleLabel:"분석할 모집직무",
   majorNote:"공통 응시자격은 성별·학력·전공 제한이 없습니다. 전공은 탐색 참고정보이고, 실제 선택은 직무수행내용·필기범위·자격요건을 함께 비교해 결정하세요.",
@@ -1029,7 +1029,7 @@ function customJobFields(){
   const j=state.customJob||emptyCustomJob();
   const active=state.sampleJobId==="custom";
   return '<div class="customJobBox customAlways" id="customJobEntry">'+
-    '<div class="customEntryHead"><div><span>방법 3</span><h3>내가 찾은 기업 · 직무 · 공고정보 직접 입력</h3><p>입력칸은 항상 여기 보입니다. 핵심 정보만 넣어도 직무분석을 시작할 수 있습니다.</p></div><button class="btn '+(active?"primary":"secondary")+'" id="useCustomJobBtn">'+(active?"현재 직접입력 분석 중":"이 정보로 분석")+'</button></div>'+
+    '<div class="customEntryHead"><div><span>방법 3</span><h3>내가 찾은 기업 · 직무 · 공고정보 직접 입력</h3><p>기업명과 분석할 직무를 입력한 뒤 ③ AI 직무분석으로 이어갑니다.</p></div><button class="btn '+(active?"primary":"secondary")+'" id="useCustomJobBtn">'+(active?"③ AI 직무분석 열기":"② 입력 완료 → ③ AI 직무분석 열기")+'</button></div>'+
     '<div class="grid2">'+
       '<div class="field"><label>기업명</label><input class="input" data-customjob="company" value="'+h(j.company)+'" placeholder="예: 한화솔루션" /></div>'+
       '<div class="field"><label>직무·분야</label><input class="input" data-customjob="role" value="'+h(j.role)+'" placeholder="예: 생산기술 / 전기설비 / 안전환경" /></div>'+
@@ -1079,7 +1079,20 @@ function step3(){
     ? '<div class="block"><h3>② 내 전공 확인 → 이 기업에서 분석할 직무 선택</h3>'+curatedRoleSelector(state.sampleJobId)+'</div>'
     : "";
   const customEntry = isCustom
-    ? '<div class="block customEntryBlock">'+customJobFields()+'</div>'
+    ? '<div class="block customEntryBlock"><h3>② 내 전공 확인 → 이 기업에서 분석할 직무 입력</h3><div class="majorStrip"><span>내 전공</span><b>'+h(state.student.major||"STEP 1에서 전공을 입력하세요.")+'</b></div><div class="callout info">'+h(majorExplorationHint(state.student.major))+'</div>'+customJobFields()+'</div>'
+    : "";
+  const sourceDetails = j&&ready
+    ? '<details class="optionBox"><summary>선택 직무의 기준자료 보기</summary><div class="optionBody">'+
+        '<div class="callout info"><b>'+h(isCustom?"직접 입력한 공고·직무 자료":j.source||"공고 기준자료")+'</b><br>'+h(j.facts||"담당업무·직무기술서 핵심내용 미입력").replace(/\n/g,"<br>")+'</div>'+
+        '<div class="callout warn"><b>필수·지원자격:</b><br>'+h(j.required||"입력 또는 공고 확인 필요").replace(/\n/g,"<br>")+'<br><br><b>우대·확인사항:</b><br>'+h(j.preferred||"입력 또는 공고 확인 필요").replace(/\n/g,"<br>")+'</div>'+
+        (j.sourceUrl?'<div class="actions compactActions"><a class="btn ghost" href="'+h(j.sourceUrl)+'" target="_blank" rel="noopener">선택 직무 공고 원문 열기</a></div>':"")+
+      '</div></details>'
+    : "";
+  const lockedFlow = state.sampleJobId&&!ready
+    ? '<div class="divider"></div>'+
+      '<div class="block"><h3>③ AI에게 선택한 직무만 분석시키기</h3><div class="callout info"><b>②를 먼저 완료하세요.</b> '+(isCustom?"기업명과 직무·분야를 입력한 뒤 “② 입력 완료 → ③ AI 직무분석 열기”를 누르면":"직무군과 세부직무를 하나 선택하면")+' 이 영역이 바로 열립니다.</div></div>'+
+      '<div class="block"><h3>④ 직무분석 테이블 완성</h3><p class="help">③에서 받은 AI 답변을 붙여넣거나 직접 입력해 6개 항목을 완성합니다.</p></div>'+
+      '<div class="block"><h3>⑤ 완성된 직무분석표</h3><p class="help">④에서 입력한 내용을 한 표로 확인합니다.</p></div>'
     : "";
   const analysisArea = j&&ready
     ? '<div class="selectedJobSummary"><b>현재 분석 대상 · '+h(j.company||"직접 입력")+" / "+h(j.role||j.title||"직무 미입력")+'</b><span>'+h(j.note||"이 분석 결과는 다른 방법과 별도로 저장됩니다.")+'</span></div>'+
@@ -1091,12 +1104,10 @@ function step3(){
       '</div>'+
       '<div class="divider"></div><div class="block"><h3>④ 직무분석 테이블 완성</h3><p class="help">이 표는 현재 선택한 세부직무의 작업공간에 따로 저장됩니다.</p>'+jobTableFields()+'</div>'+
       '<div class="block"><h3>⑤ 완성된 직무분석표</h3><p class="help">모바일에서는 좌우로 밀어서 전체 표를 확인합니다.</p>'+jobTablePreview()+'</div>'+
-      (!isCustom?'<details class="optionBox"><summary>선택 직무의 기준자료 보기</summary><div class="optionBody"><div class="callout info"><b>'+h(j.source)+'</b><br>'+h(j.facts).replace(/\n/g,"<br>")+'</div><div class="callout warn"><b>공고 공통 지원자격:</b><br>'+h(j.required).replace(/\n/g,"<br>")+'<br><br><b>우대·확인사항:</b><br>'+h(j.preferred).replace(/\n/g,"<br>")+'</div></div></details>':"")
-    : (state.sampleJobId&&state.sampleJobId!=="custom"
-        ? '<div class="callout warn"><b>직무 선택이 먼저입니다.</b> 지원 직군과 세부직무를 하나 선택하면 그 직무에 대한 AI 분석과 직무분석표가 열립니다.</div>'
-        : (isCustom?'<div class="callout warn"><b>직접입력 핵심정보가 필요합니다.</b> 아래에서 기업명과 직무·분야를 입력한 뒤 “이 정보로 분석”을 누르세요.</div>':""));
+      sourceDetails
+    : lockedFlow;
   return shell(3,"3 Ways → Job Analysis","공기업 예시, 대기업 예시, 직접 입력 중 원하는 방법을 선택하고, 그 안에서 분석할 직무 하나를 정합니다.",
-    '<div class="block"><h3>① 분석 방법 선택</h3><p class="help">기업을 바꾸거나 같은 기업 안에서 직무를 바꿔도 각 직무의 분석표는 별도로 저장됩니다. 현재 저장된 분석: <b>'+analyzedCount+'개</b></p>'+analysisMethodCards()+'</div>'+
+    '<div class="block"><h3>① 분석 방법 선택</h3><p class="help">한국에너지공단, HD현대일렉트릭, 직접 입력 모두 ② 직무선택 → ③ AI 분석 → ④ 직무분석 테이블 → ⑤ 완성표의 같은 순서로 진행합니다. 기업을 바꾸거나 같은 기업 안에서 직무를 바꿔도 각 직무의 분석표는 별도로 저장됩니다. 현재 저장된 분석: <b>'+analyzedCount+'개</b></p>'+analysisMethodCards()+'</div>'+
     methodSpecific+
     customEntry+
     analysisArea
@@ -1669,7 +1680,13 @@ function selectCuratedRole(id,role){
   restoreAnalysisCase(roleCaseKey(id));
   syncSelectedPosting();
   save();render();
-  if(role)toast(role+" 직무만 분석하도록 선택했습니다.");
+  if(role){
+    toast(role+" 직무만 분석하도록 선택했습니다.");
+    requestAnimationFrame(()=>{
+      const p=document.getElementById("jobPromptPreview");
+      if(p)p.scrollIntoView({behavior:"smooth",block:"center"});
+    });
+  }
 }
 
 function useCustomJob(){
