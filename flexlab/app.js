@@ -403,7 +403,7 @@ const defaults=()=>({
   version:11,currentStep:1,updatedAt:"",
   target:{industry:"",job:"",company:"",initialView:""},
   student:{major:"",majorEvidence:"",certificates:"",language:"",tools:"",otherSpec:""},
-  step2Search:{company:"",title:"",sourceUrl:"",memo:""},
+  step2Search:{company:"",title:"",sourceUrl:"",facts:"",memo:""},
   sampleJobId:"",
   curatedSelection:emptyCuratedSelection(),
   customJob:emptyCustomJob(),
@@ -686,8 +686,9 @@ function step2(){
       field("step2Search.company","찾은 기업","예: 관심 기업명 / 찾지 못함",false)+
       field("step2Search.title","찾은 직무·공고","예: 기술직 신입 / 현재 관련 공고 없음",false)+
       '<div class="field span2"><label>공고 주소 <span class="hint">(선택)</span></label><input class="input" data-path="step2Search.sourceUrl" value="'+h(state.step2Search.sourceUrl||"")+'" placeholder="https://..." /></div>'+
+      field("step2Search.facts","담당업무·직무소개 <span class=\"hint\">(가능하면 붙여넣기)</span>","공고의 담당업무·직무소개를 그대로 붙여넣으면 STEP 3에서 다시 입력하지 않아도 됩니다.")+
       field("step2Search.memo","검색 메모 <span class=\"hint\">(선택)</span>","어떤 검색어를 썼는지, 왜 적절한 공고를 찾기 어려웠는지 간단히 적어도 됩니다.")+
-    '</div></div>'+step2SearchPromptBox()+
+    '</div><div class="actions compactActions"><button class="btn primary" id="useStep2JobBtn">이 공고로 STEP 3 직무분석하기</button></div></div>'+step2SearchPromptBox()+
     '<div class="callout info"><b>공고가 없어도 수업은 계속됩니다.</b> STEP 3에서는 수업용 예시로 한국에너지공단과 HD현대일렉트릭의 2026년 신입 채용을 제공합니다.</div>');
 }
 
@@ -851,7 +852,7 @@ function hdElectricRecruitmentContext(roleData){
 
 function searchedJob(){
   const x=state.step2Search||{};
-  const ready=filled(x.company)&&filled(x.title)&&(filled(x.sourceUrl)||filled(x.memo));
+  const ready=filled(x.company)&&filled(x.title)&&(filled(x.sourceUrl)||filled(x.facts)||filled(x.memo));
   if(!ready)return null;
   return {
     id:"searched",
@@ -862,7 +863,7 @@ function searchedJob(){
     period:"",
     sourceUrl:x.sourceUrl||"",
     source:"STEP 2에서 학생이 직접 찾은 공고",
-    facts:x.memo||"",
+    facts:x.facts||x.memo||"",
     required:"",
     preferred:"",
     note:"STEP 2에서 직접 찾은 공고입니다. 입력하지 않은 지원조건은 공고 원문에서 추가 확인합니다."
@@ -1004,7 +1005,7 @@ function jobAnalysisPrompt(){
     isHd?"[경력개발 지침] "+hdGuide.career:"",
     "확인되지 않은 내용은 사실처럼 만들지 말고 [추론] 또는 [추가 확인 필요]라고 표시해줘.",
     "",
-    "아래 6개 제목을 정확히 그대로 사용하고 각 제목 아래에 '• ' bullet 2~4개로 답해줘. 제목에 번호·굵게표시·이모지를 붙이지 말고, 표 형식으로 바꾸지 마.",
+    "아래 핵심 5개 제목을 정확히 그대로 사용하고 각 제목 아래에 '• ' bullet 2~4개로 답해줘. 마지막 경력개발은 선택 참고정보로 짧게 작성해줘. 제목에 번호·굵게표시·이모지를 붙이지 말고, 표 형식으로 바꾸지 마.",
     "고객·KPI:",
     "• 실제 업무의 고객/이해관계자를 먼저 쓰고, KPI는 공식 자료에 없으면 [추론]으로 업무 품질·정확성·일정·성과 관점만 제시",
     "주요 과업:",
@@ -1021,7 +1022,7 @@ function jobAnalysisPrompt(){
     "필요역량:",
     "• Knowledge / Skill / Behavior를 구분하고 각 역량 옆에 [공식] 또는 [추론] 표시",
     isKea?"• Knowledge는 공식 '필요지식', Skill은 공식 '필요기술', Behavior는 공식 '직무수행태도'에서 우선 추출하고 직업공통능력은 별도 bullet로 표시한다.":"",
-    "경력개발:",
+    "경력개발(선택):",
     isKea
       ?"• 전공시험 범위("+((rd.exam)||"공고 확인")+")와 직무기술자격을 반영해 '지금 준비 → 첫 직무 → 확장 분야'를 현실적으로 제시"
       :isHd
@@ -1047,7 +1048,7 @@ function parseJobTableResult(raw){
     ["challenge",/^(?:주요\s*해결과제|해결과제|과제)\s*[:：]?/i],
     ["method",/^(?:해결방법|해결\s*방법|방법)\s*[:：]?/i],
     ["competencies",/^(?:필요역량|필요\s*역량|역량)\s*[:：]?/i],
-    ["careerPlan",/^(?:경력개발|경력\s*개발|경력계획)\s*[:：]?/i]
+    ["careerPlan",/^(?:경력개발(?:\(선택\))?|경력\s*개발|경력계획)\s*[:：]?/i]
   ];
   const out={};let current="";
   for(const original of String(raw||"").split(/\r?\n/)){
@@ -1172,7 +1173,7 @@ function jobTableFields(){
     '<div class="jobTableItem"><span>03</span>'+field("jobTable.challenge","주요 해결과제","업무에서 해결해야 하는 문제는 무엇인가?")+'</div>'+
     '<div class="jobTableItem"><span>04</span>'+field("jobTable.method","해결방법","어떤 방법·절차·도구로 해결하는가?")+'</div>'+
     '<div class="jobTableItem"><span>05</span>'+field("jobTable.competencies","필요역량","필요한 지식·기술·행동은 무엇인가?")+'</div>'+
-    '<div class="jobTableItem"><span>06</span>'+field("jobTable.careerPlan","경력개발","이 직무에서 경험을 쌓으면 어떤 방향으로 전문성이 넓어지는가?")+'</div>'+
+    '<details class="optionBox"><summary>경력개발 방향 보기 · 선택</summary><div class="optionBody">'+field("jobTable.careerPlan","경력개발 <span class=\"hint\">(선택)</span>","지금 준비 → 신입 초기 → 전문성 확장 방향")+'</div></details>'+
   '</div>';
 }
 
@@ -1182,8 +1183,7 @@ function jobTablePreview(){
     ["과업","jobTable.tasks",state.jobTable.tasks],
     ["주요 해결과제","jobTable.challenge",state.jobTable.challenge],
     ["해결방법","jobTable.method",state.jobTable.method],
-    ["필요역량","jobTable.competencies",state.jobTable.competencies],
-    ["경력계획","jobTable.careerPlan",state.jobTable.careerPlan]
+    ["필요역량","jobTable.competencies",state.jobTable.competencies]
   ];
   return '<div class="tableWrap jobAnalysisPreview"><table><thead><tr>'+cells.map(x=>'<th>'+x[0]+'</th>').join("")+'</tr></thead><tbody><tr>'+cells.map(x=>'<td data-preview="'+x[1]+'">'+h(x[2]||"-")+'</td>').join("")+'</tr></tbody></table></div>';
 }
@@ -1211,7 +1211,7 @@ function step3(){
   const lockedFlow = state.sampleJobId&&!ready
     ? '<div class="divider"></div>'+
       '<div class="block"><h3>③ AI에게 선택한 직무만 분석시키기</h3><div class="callout info"><b>②를 먼저 완료하세요.</b> '+(isCustom?"기업명·직무·공고의 담당업무를 입력한 뒤 “② 입력 완료 → ③ AI 직무분석 열기”를 누르면":"직무군과 세부직무를 하나 선택하면")+' 이 영역이 바로 열립니다.</div></div>'+
-      '<div class="block"><h3>④ 직무분석 테이블 완성</h3><p class="help">③에서 받은 AI 답변을 붙여넣거나 직접 입력해 6개 항목을 완성합니다.</p></div>'+
+      '<div class="block"><h3>④ 직무분석 테이블 완성</h3><p class="help">③에서 받은 AI 답변을 붙여넣어 핵심 5개 항목을 완성합니다. 경력개발은 선택적으로 확인합니다.</p></div>'+
       '<div class="block"><h3>⑤ 완성된 직무분석표</h3><p class="help">④에서 입력한 내용을 한 표로 확인합니다.</p></div>'
     : "";
   const analysisArea = j&&ready
@@ -1219,8 +1219,8 @@ function step3(){
       '<div class="block"><h3>③ AI에게 선택한 직무만 분석시키기</h3><p class="help">현재 선택한 기업·세부직무와 내 전공만 들어갑니다. 같은 기업의 다른 직무는 프롬프트에 섞지 않습니다.</p>'+
         '<textarea class="promptBox promptEditor shortPrompt" id="jobPromptPreview" data-prompt-key="job">'+h(promptValue("job",jobAnalysisPrompt()))+'</textarea>'+
         '<div class="actions compactActions"><button class="btn ghost" id="refreshJobPromptBtn">현재 선택 반영</button><button class="btn secondary" id="copyReviewedJobPromptBtn">내 직무분석 프롬프트 복사</button></div>'+
-        '<div class="field aiPaste"><label>AI 답변 붙여넣기 <span class="hint">(선택)</span></label><textarea class="input" data-path="jobTable.aiResult" id="jobTableAiResult" placeholder="AI 답변을 붙여넣으면 아래 6칸으로 나눌 수 있습니다.">'+h(state.jobTable.aiResult||"")+'</textarea></div>'+
-        '<div class="actions compactActions"><button class="btn secondary" id="applyJobTableAiBtn">AI 답변을 6칸에 반영</button></div>'+
+        '<div class="field aiPaste"><label>AI 답변 붙여넣기 <span class="hint">(선택)</span></label><textarea class="input" data-path="jobTable.aiResult" id="jobTableAiResult" placeholder="AI 답변을 붙여넣으면 핵심 5개 항목과 선택형 경력개발로 나눕니다.">'+h(state.jobTable.aiResult||"")+'</textarea></div>'+
+        '<div class="actions compactActions"><button class="btn secondary" id="applyJobTableAiBtn">AI 답변을 직무분석표에 반영</button></div>'+
       '</div>'+
       '<div class="divider"></div><div class="block"><h3>④ 직무분석 테이블 완성</h3><p class="help">이 표는 현재 선택한 세부직무의 작업공간에 따로 저장됩니다.</p>'+jobTableFields()+'</div>'+
       '<div class="block"><h3>⑤ 완성된 직무분석표</h3><p class="help">모바일에서는 좌우로 밀어서 전체 표를 확인합니다.</p>'+jobTablePreview()+'</div>'+
@@ -1382,10 +1382,32 @@ function competencyKeywordPrompt(){
     "[출력 4 · 아직 증거가 부족한 직무역량]",
     "• 부족한 역량 → 현재 부족한 근거 → 앞으로 만들 수 있는 경험/결과물",
     "",
+    "[Portfolio용 핵심역량 요약]",
+    "• 핵심역량 3~5개만 작성한다.",
+    "• 한 줄 형식: 역량명 → 연결 직무과업 → 학생의 실제 행동근거 → 근거수준(충분/일부)",
+    "• 위 상세분석을 그대로 반복하지 말고 각 역량을 1줄로 압축한다.",
+    "",
     "학생이 입력하지 않은 역할·수치·성과·자격·도구는 만들지 마.",
     "근거가 약하면 그 사실을 그대로 표시하고 과장하지 마.",
     ...bulletOutputRules()
   ].filter(Boolean).join("\n");
+}
+
+function extractPortfolioCompetency(raw=""){
+  const text=String(raw||"");
+  const m=text.match(/\[Portfolio용 핵심역량 요약\]([\s\S]*?)(?=\n\s*\[[^\]]+\]|$)/i);
+  if(!m)return "";
+  return m[1].split(/\r?\n/).map(x=>x.trim().replace(/^[-*•]\s*/,"")).filter(Boolean).slice(0,5).map(x=>"• "+x).join("\n");
+}
+
+function applyCompetencySummary(){
+  const raw=document.querySelector('[data-path="ai.keywordResult"]')?.value||state.ai.keywordResult||"";
+  if(!filled(raw)){toast("먼저 AI 역량분석 결과를 붙여넣어 주세요.");return;}
+  state.ai.keywordResult=raw;
+  const summary=extractPortfolioCompetency(raw);
+  if(!filled(summary)){toast("‘Portfolio용 핵심역량 요약’ 부분을 찾지 못했습니다. AI 결과 형식을 확인해 주세요.");return;}
+  state.star.competency=summary;
+  save();render();toast("핵심역량 3~5개만 Portfolio에 반영했습니다.");
 }
 
 function step4(){
@@ -1412,7 +1434,9 @@ function step4(){
       '<div class="callout info"><b>답변 품질 보완 방식</b> AI가 먼저 입력정보가 충분한지 확인합니다. 근거가 부족하면 분석을 서두르지 않고 질문을 한 번에 하나씩 이어갑니다. 학생은 질문에 답하면 되고, 필요한 근거가 확보되면 역량분석을 시작합니다.</div>'+
       '<textarea class="promptBox promptEditor shortPrompt" id="keywordPromptPreview" data-prompt-key="keyword">'+h(competencyKeywordPrompt())+'</textarea>'+
       '<div class="actions compactActions"><button class="btn secondary" id="copyKeywordPromptBtn">내 역량분석 프롬프트 복사</button></div>'+
-      field("ai.keywordResult","AI 결과 붙여넣기 <span class=\"hint\">(선택)</span>","AI가 정리한 경험별 직무 연결과 핵심역량을 붙여넣으세요. STEP 6 Portfolio에 함께 들어갑니다.")+
+      field("ai.keywordResult","AI 결과 붙여넣기 <span class=\"hint\">(선택)</span>","AI가 정리한 경험별 직무 연결과 핵심역량을 붙여넣으세요.")+
+      '<div class="actions compactActions"><button class="btn secondary" id="applyCompetencySummaryBtn">핵심역량 3~5개만 Portfolio에 반영</button></div>'+
+      '<div class="selectedEvidence"><span>Portfolio에 남을 핵심역량</span><b>'+h(state.star.competency||"아직 반영하지 않았습니다.")+'</b></div>'+
     '</div>'+
     '<div class="callout warn"><b>확인 원칙:</b> 내 경험·행동으로 설명할 수 없는 역량은 최종 강점에서 제외합니다.</div>');
 }
@@ -1700,6 +1724,30 @@ function gapPrompt(){
   ].filter(Boolean).join("\n");
 }
 
+function extractGapAndActions(raw=""){
+  const text=String(raw||"");
+  const gapBlock=(text.match(/\[5\.\s*현재 GAP[^\]]*\]([\s\S]*?)(?=\n\s*\[6\.|\n\s*\[7\.|$)/i)||[])[1]||"";
+  const actionBlock=(text.match(/\[7\.\s*3개월 보완 행동\]([\s\S]*?)(?=\n\s*\[[^\]]+\]|$)/i)||[])[1]||"";
+  const clean=(block,max)=>block.split(/\r?\n/).map(x=>x.trim()).filter(Boolean)
+    .map(x=>x.replace(/^[-*•]\s*/,"").replace(/^GAP\s*\d+\s*:\s*/i,""))
+    .filter(Boolean).slice(0,max);
+  return {
+    gaps:clean(gapBlock,3).map((x,i)=>(i+1)+". "+x).join("\n"),
+    actions:clean(actionBlock,5).map(x=>"• "+x).join("\n")
+  };
+}
+
+function applyGapResult(){
+  const raw=document.querySelector('[data-path="ai.gapResult"]')?.value||state.ai.gapResult||"";
+  if(!filled(raw)){toast("먼저 AI GAP 분석 결과를 붙여넣어 주세요.");return;}
+  state.ai.gapResult=raw;
+  const parsed=extractGapAndActions(raw);
+  if(!filled(parsed.gaps)&&!filled(parsed.actions)){toast("GAP 또는 3개월 행동 항목을 찾지 못했습니다. AI 결과 형식을 확인해 주세요.");return;}
+  if(filled(parsed.gaps))state.fit.gaps=parsed.gaps;
+  if(filled(parsed.actions))state.fit.actions=parsed.actions;
+  save();render();toast("GAP과 3개월 행동을 자동 반영했습니다. 필요한 부분만 수정하세요.");
+}
+
 function derivedGapAssets(){
   const met=state.requirements
     .filter(r=>r.status==="충족"&&filled(r.note))
@@ -1733,8 +1781,9 @@ function step5(){
       '<textarea class="promptBox promptEditor shortPrompt" id="gapPromptPreview" data-prompt-key="gap">'+h(gapPrompt())+'</textarea>'+
       '<div class="actions compactActions"><button class="btn secondary" id="copyGapPromptBtn">내 GAP 분석 프롬프트 복사</button></div>'+
       field("ai.gapResult","AI GAP 분석 결과 <span class=\"hint\">(선택)</span>","AI의 GAP 분석 결과를 붙여넣으세요.")+
+      '<div class="actions compactActions"><button class="btn secondary" id="applyGapResultBtn">GAP·3개월 행동 자동 반영</button></div>'+
     '</div>'+
-    '<div class="divider"></div><div class="block"><h3>④ 최종 GAP과 3개월 행동</h3>'+
+    '<div class="divider"></div><div class="block"><h3>④ 최종 GAP과 3개월 행동 · 확인·수정</h3>'+
       '<div class="selectedEvidence"><span>현재 확인된 근거</span><b id="derivedGapAssetsPreview">'+h(derivedGapAssets()||"아직 입력된 스펙·충족 근거가 없습니다.")+'</b></div>'+
       '<div class="grid2">'+
         field("fit.gaps","우선 보완할 GAP","AI 결과를 보고 최대 3개만 남기세요.")+
@@ -1769,7 +1818,7 @@ function portfolio(){
     "대표 경험 결과: "+(star.result||"-"),
     "대표 경험 증거: "+(star.evidence||"-"),"",
     "4. MY COMPETENCY",
-    state.ai.keywordResult||"AI 역량분석 결과 미입력","",
+    state.star.competency||extractPortfolioCompetency(state.ai.keywordResult)||"핵심역량 요약 미반영","",
     "5. SPEC & GAP",
     "자격증: "+(st.certificates||"-"),
     "어학: "+(st.language||"-"),
@@ -1963,6 +2012,28 @@ function syncSelectedPosting(){
   };
 }
 
+function useStep2JobInStep3(){
+  const x=state.step2Search||{};
+  if(!filled(x.company)||!filled(x.title)){toast("STEP 2에서 찾은 기업과 공고명을 먼저 입력해 주세요.");return;}
+  snapshotActiveCase();
+  state.customJob={
+    ...emptyCustomJob(),
+    ...(state.customJob||{}),
+    company:x.company,
+    title:x.title,
+    role:state.target.job||x.title,
+    sourceUrl:x.sourceUrl||"",
+    facts:x.facts||"",
+    note:"STEP 2에서 찾은 실제 공고를 이어서 분석합니다."
+  };
+  state.sampleJobId="custom";
+  restoreAnalysisCase("custom");
+  syncSelectedPosting();
+  state.currentStep=3;
+  save();render();
+  toast(filled(x.facts)?"STEP 2 공고를 STEP 3으로 가져왔습니다.":"기업·공고·URL을 가져왔습니다. 담당업무만 추가해 주세요.");
+}
+
 function selectAnalysisMethod(id){
   if(!["kea-2026-h2","hdelectric-2026-h2","custom"].includes(id))return;
   snapshotActiveCase();
@@ -2034,7 +2105,7 @@ function applyJobTableAi(){
   const parsed=parseJobTableResult(raw);
   const keys=["customerKpi","tasks","challenge","method","competencies","careerPlan"];
   const count=keys.filter(k=>filled(parsed[k])).length;
-  if(!count){toast("6개 제목을 찾지 못했습니다. 직접 입력해 주세요.");return;}
+  if(!count){toast("직무분석 제목을 찾지 못했습니다. 직접 입력해 주세요.");return;}
   keys.forEach(k=>{if(filled(parsed[k]))state.jobTable[k]=parsed[k];});
   state.jobTable.aiResult=raw;
   state.postings[0].tasks=state.jobTable.tasks;
@@ -2066,6 +2137,7 @@ function bind(){
   document.querySelectorAll("[data-analysis-method]").forEach(e=>e.onclick=()=>selectAnalysisMethod(e.dataset.analysisMethod));
   document.querySelectorAll("[data-curated-group]").forEach(e=>e.onchange=()=>selectCuratedGroup(e.dataset.curatedGroup,e.value));
   document.querySelectorAll("[data-curated-role]").forEach(e=>e.onchange=()=>selectCuratedRole(e.dataset.curatedRole,e.value));
+  document.getElementById("useStep2JobBtn")?.addEventListener("click",useStep2JobInStep3);
   document.getElementById("useCustomJobBtn")?.addEventListener("click",useCustomJob);
   document.querySelectorAll("[data-customjob]").forEach(e=>{
     const handler=()=>{
@@ -2124,7 +2196,9 @@ function bind(){
   document.getElementById("copyReviewedJobPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("jobPromptPreview")?.value||jobAnalysisPrompt(),"내 직무분석 프롬프트를 복사했습니다."));
   document.getElementById("applyJobTableAiBtn")?.addEventListener("click",applyJobTableAi);
   document.getElementById("copyKeywordPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("keywordPromptPreview")?.value||competencyKeywordPrompt(),"내 역량분석 프롬프트를 복사했습니다."));
+  document.getElementById("applyCompetencySummaryBtn")?.addEventListener("click",applyCompetencySummary);
   document.getElementById("copyGapPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("gapPromptPreview")?.value||gapPrompt(),"내 GAP 분석 프롬프트를 복사했습니다."));
+  document.getElementById("applyGapResultBtn")?.addEventListener("click",applyGapResult);
   document.getElementById("refreshSelfIntroPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("selfIntroPromptPreview"),v=selfIntroPrompt();if(e)e.value=v;updatePromptDraft("selfIntro",v);toast("현재 입력을 자기소개서 프롬프트에 반영했습니다.");});
   document.getElementById("copySelfIntroPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("selfIntroPromptPreview")?.value||selfIntroPrompt(),"내 자기소개서 프롬프트를 복사했습니다."));
   document.getElementById("refreshInterviewPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("interviewPromptPreview"),v=interviewPrompt();if(e)e.value=v;updatePromptDraft("interview",v);toast("현재 입력을 면접 프롬프트에 반영했습니다.");});
