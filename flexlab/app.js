@@ -1101,9 +1101,9 @@ function curatedRoleSelector(id){
 
 function customJobFields(){
   const j=state.customJob||emptyCustomJob();
-  const active=state.sampleJobId==="custom";
+  const ready=filled(j.company)&&filled(j.role)&&filled(j.facts);
   return '<div class="customJobBox customAlways" id="customJobEntry">'+
-    '<div class="customEntryHead"><div><span>방법 3</span><h3>내가 찾은 기업 · 직무 · 공고정보 직접 입력</h3><p>기업명·직무와 공고의 담당업무를 입력한 뒤 ③ AI 직무분석으로 이어갑니다.</p></div><button class="btn '+(active?"primary":"secondary")+'" id="useCustomJobBtn">'+(active?"③ AI 직무분석 열기":"② 입력 완료 → ③ AI 직무분석 열기")+'</button></div>'+
+    '<div class="customEntryHead"><div><span>방법 3</span><h3>내가 찾은 기업 · 직무 · 공고정보 직접 입력</h3><p>기업명·직무와 공고의 담당업무를 입력한 뒤 ③ AI 직무분석으로 이어갑니다.</p></div><button class="btn '+(ready?"primary":"secondary")+'" id="useCustomJobBtn">'+(ready?"③ AI 직무분석 열기":"② 입력 완료 → ③ AI 직무분석 열기")+'</button></div>'+
     '<div class="callout good"><b>정확한 분석에 필요한 최소 자료</b> 기업명 + 직무 + 공고에 적힌 담당업무가 필요합니다. 공고 URL과 지원자격·우대사항까지 넣으면 분석 근거가 더 선명해집니다.</div>'+
     '<div class="grid2">'+
       '<div class="field"><label>기업명</label><input class="input" data-customjob="company" value="'+h(j.company)+'" placeholder="예: 한화솔루션" /></div>'+
@@ -1165,7 +1165,7 @@ function step3(){
     : "";
   const lockedFlow = state.sampleJobId&&!ready
     ? '<div class="divider"></div>'+
-      '<div class="block"><h3>③ AI에게 선택한 직무만 분석시키기</h3><div class="callout info"><b>②를 먼저 완료하세요.</b> '+(isCustom?"기업명과 직무·분야를 입력한 뒤 “② 입력 완료 → ③ AI 직무분석 열기”를 누르면":"직무군과 세부직무를 하나 선택하면")+' 이 영역이 바로 열립니다.</div></div>'+
+      '<div class="block"><h3>③ AI에게 선택한 직무만 분석시키기</h3><div class="callout info"><b>②를 먼저 완료하세요.</b> '+(isCustom?"기업명·직무·공고의 담당업무를 입력한 뒤 “② 입력 완료 → ③ AI 직무분석 열기”를 누르면":"직무군과 세부직무를 하나 선택하면")+' 이 영역이 바로 열립니다.</div></div>'+
       '<div class="block"><h3>④ 직무분석 테이블 완성</h3><p class="help">③에서 받은 AI 답변을 붙여넣거나 직접 입력해 6개 항목을 완성합니다.</p></div>'+
       '<div class="block"><h3>⑤ 완성된 직무분석표</h3><p class="help">④에서 입력한 내용을 한 표로 확인합니다.</p></div>'
     : "";
