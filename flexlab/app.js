@@ -2133,6 +2133,40 @@ function selectCuratedRole(id,role){
   }
 }
 
+function useStep2SearchForAnalysis(){
+  const x=state.step2Search||{};
+  if(!filled(x.company)||!filled(x.title)){
+    toast("STEP 2에서 찾은 기업과 공고·직무를 먼저 입력해 주세요.");
+    return;
+  }
+  snapshotActiveCase();
+  const previous=state.customJob||emptyCustomJob();
+  state.customJob={
+    ...emptyCustomJob(),
+    ...previous,
+    company:x.company,
+    title:x.title,
+    role:state.target.job||previous.role||"",
+    sourceUrl:x.sourceUrl||previous.sourceUrl||"",
+    facts:"",
+    required:"",
+    preferred:"",
+    source:"STEP 2에서 찾은 공고를 STEP 3으로 연결",
+    note:"STEP 2에서 찾은 공고입니다. 담당업무·직무소개 원문을 확인해 분석합니다."
+  };
+  state.sampleJobId="custom";
+  restoreAnalysisCase("custom");
+  clearPromptDrafts(["job","keyword","gap","selfIntro","interview"]);
+  syncSelectedPosting();
+  state.currentStep=3;
+  save();render();
+  requestAnimationFrame(()=>{
+    const entry=document.getElementById("customJobEntry");
+    if(entry)entry.scrollIntoView({behavior:"smooth",block:"start"});
+  });
+  toast("STEP 2 공고를 STEP 3으로 가져왔습니다.");
+}
+
 function useCustomJob(){
   if(!filled(state.customJob?.company)||!filled(state.customJob?.role)){
     toast("기업명과 직무·분야를 먼저 입력해 주세요.");
@@ -2242,11 +2276,14 @@ function bind(){
   document.getElementById("step5TargetSelect")?.addEventListener("change",e=>selectStep5Target(e.target.value));
 
   document.getElementById("copySearchPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("searchPromptPreview")?.value||energySearchPrompt(),"내 채용공고 검색 프롬프트를 복사했습니다."));
+  document.getElementById("useStep2SearchBtn")?.addEventListener("click",useStep2SearchForAnalysis);
   document.getElementById("refreshJobPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("jobPromptPreview"),v=jobAnalysisPrompt();if(e)e.value=v;updatePromptDraft("job",v);toast("현재 분석 대상 정보를 프롬프트에 반영했습니다.");});
   document.getElementById("copyReviewedJobPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("jobPromptPreview")?.value||jobAnalysisPrompt(),"내 직무분석 프롬프트를 복사했습니다."));
   document.getElementById("applyJobTableAiBtn")?.addEventListener("click",applyJobTableAi);
   document.getElementById("copyKeywordPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("keywordPromptPreview")?.value||competencyKeywordPrompt(),"내 역량분석 프롬프트를 복사했습니다."));
+  document.getElementById("applyCompetencySummaryBtn")?.addEventListener("click",applyCompetencySummary);
   document.getElementById("copyGapPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("gapPromptPreview")?.value||gapPrompt(),"내 GAP 분석 프롬프트를 복사했습니다."));
+  document.getElementById("applyGapPortfolioBtn")?.addEventListener("click",applyGapPortfolio);
   document.getElementById("refreshSelfIntroPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("selfIntroPromptPreview"),v=selfIntroPrompt();if(e)e.value=v;updatePromptDraft("selfIntro",v);toast("현재 입력을 자기소개서 프롬프트에 반영했습니다.");});
   document.getElementById("copySelfIntroPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("selfIntroPromptPreview")?.value||selfIntroPrompt(),"내 자기소개서 프롬프트를 복사했습니다."));
   document.getElementById("refreshInterviewPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("interviewPromptPreview"),v=interviewPrompt();if(e)e.value=v;updatePromptDraft("interview",v);toast("현재 입력을 면접 프롬프트에 반영했습니다.");});
