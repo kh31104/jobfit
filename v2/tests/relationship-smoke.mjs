@@ -52,6 +52,33 @@ await run('STEP 3 stores Job × Industry targets and does not default to energy'
   assert(stored.artifacts.industryCompany.targetIndustries.length===2,'Industry compatibility bridge was not generated');
 });
 
+await run('STEP 3 imports AI job candidates without retyping',async page=>{
+  const state=structuredClone(baseState);
+  state.activeStep=3;
+  state.artifacts.jobExplorer.candidates=[];
+  state.artifacts.jobExplorer.targets=[];
+  state.artifacts.jobExplorer.targetCombos=[];
+  await page.goto(base,{waitUntil:'networkidle'});
+  await page.evaluate(s=>localStorage.setItem('jobfit:v2:learner',JSON.stringify(s)),state);
+  await page.reload({waitUntil:'networkidle'});
+  await page.waitForSelector('#jobAiImport');
+  const body=(await page.locator('#stepRoot').textContent())||'';
+  assert(body.includes('내 경험에서 확인된 행동'),'STEP 3 verified-action label missing');
+  const ai={
+    candidates:[
+      {title:'생산기술',family:'생산·공정·설비',summary:'생산공정 문제를 확인하고 개선한다.',evidence:'캡스톤에서 시험 결과를 비교해 오류 원인을 확인했다.',why:'문제 원인 해결 활동에 관심',industries:['자동차·모빌리티','반도체·전자'],unknowns:'실제 공정업무와 요구기술 확인'},
+      {title:'기계설계',family:'R&D·연구',summary:'제품 구조를 설계하고 검증한다.',evidence:'캡스톤 설계조건 수정 경험',why:'제품·공정 설계 활동에 관심',industries:['기계·산업재','자동차·모빌리티'],unknowns:'설계도구와 기업별 업무 확인'}
+    ]
+  };
+  await page.locator('#jobAiImport').fill(JSON.stringify(ai));
+  await page.locator('#importJobAi').click();
+  const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
+  assert(stored.artifacts.jobExplorer.candidates.length===2,'AI candidate import count mismatch');
+  assert(stored.artifacts.jobExplorer.candidates[0].title==='생산기술','AI candidate title not imported');
+  assert(stored.artifacts.jobExplorer.candidates[0].industries.includes('자동차·모빌리티'),'AI candidate industries not imported');
+  assert(!stored.artifacts.jobExplorer.candidates.some(x=>(x.industries||[]).includes('에너지')),'AI candidate import unexpectedly defaulted to energy');
+});
+
 await run('STEP 4 stores source-grounded Job Analysis and keeps downstream relations',async page=>{
   const state=structuredClone(baseState);
   state.activeStep=4;
@@ -108,6 +135,52 @@ await run('STEP 4 stores source-grounded Job Analysis and keeps downstream relat
   assert(ind,'Industry relation was not created by STEP 4');
   assert(co?.industryId===ind.id,'Company did not retain Industry relation');
   assert(ic.targetCompanies.includes(co.id),'Company was not retained as downstream target');
+});
+
+await run('STEP 4 imports AI analysis into reviewable fields',async page=>{
+  const state=structuredClone(baseState);
+  state.activeStep=4;
+  state.artifacts.jobExplorer.targets=['job1','job2'];
+  state.artifacts.jobExplorer.targetCombos=[
+    {id:'target_job1_auto',jobId:'job1',industry:'자동차·모빌리티',priority:1},
+    {id:'target_job2_it',jobId:'job2',industry:'IT·플랫폼',priority:2}
+  ];
+  state.artifacts.industryCompany={industries:[],targetIndustries:[],companies:[],targetCompanies:[],notes:''};
+  await page.goto(base,{waitUntil:'networkidle'});
+  await page.evaluate(s=>localStorage.setItem('jobfit:v2:learner',JSON.stringify(s)),state);
+  await page.reload({waitUntil:'networkidle'});
+  await page.waitForSelector('#deepAiImport');
+  await page.locator('#sourceType').selectOption({label:'기업 공식 채용공고'});
+  await page.locator('#sourceName').fill('생산기술 신입공고');
+  await page.locator('#sourceUrl').fill('https://example.com/job1');
+  await page.locator('#sourceNote').fill('생산공정 문제 분석과 개선 업무');
+  await page.locator('#addSource').click();
+  const ai={
+    purpose:'생산공정의 문제를 확인하고 안정적으로 생산되도록 개선한다.',
+    newHireWork:'공정 데이터를 확인하고 이상 원인을 분석한다.',
+    gate:'기계계열 전공',
+    preference:'제조 프로젝트 경험',
+    knowledge:'생산공정 기초',
+    skills:'데이터 분석, 문제해결',
+    behaviors:'문제를 확인하고 관련부서와 조정한다.',
+    experienceRequired:'공정 또는 설비 관련 프로젝트',
+    signals:'공정개선, 협업',
+    unknowns:'세부 근무환경 확인 필요',
+    tasks:[{name:'생산공정 이상 원인을 분석한다',skill:'데이터 분석 · 문제해결',sourceRef:'S1',output:'개선안',context:'생산·품질부서 협업'}],
+    requirements:[{name:'공정 데이터 분석',type:'Skill',evidence:'캡스톤에서 시험 결과를 비교해 오류 원인을 확인함',status:'근거 있음',gap:''},{name:'생산공정 기본지식',type:'Knowledge',evidence:'없음',status:'준비 필요',gap:'기초학습 필요'}],
+    have:'문제 원인 분석 경험',
+    verify:'실제 현장업무',
+    prepare:'생산공정 기본지식',
+    conclusion:'경험 근거는 있으나 생산공정 지식은 추가 준비가 필요하다.'
+  };
+  await page.locator('#deepAiImport').fill(JSON.stringify(ai));
+  await page.locator('#importDeepAi').click();
+  const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
+  const a=stored.artifacts.jobDeepDive.targetAnalyses.target_job1_auto;
+  assert(a?.purpose.includes('생산공정'),'AI analysis purpose not imported');
+  assert(a?.tasks?.length===1&&a.tasks[0].sourceId===a.sources[0].id,'AI task or source relation not imported');
+  assert(a?.requirements?.some(x=>x.name==='공정 데이터 분석'&&x.status==='근거 있음'),'AI evidence matrix not imported');
+  assert(a?.prepare==='생산공정 기본지식','AI preparation item not imported');
 });
 
 await run('STEP 5 renders a three-page MY JOBFIT REPORT v1',async page=>{
