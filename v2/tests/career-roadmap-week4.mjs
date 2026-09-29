@@ -208,7 +208,7 @@ await run('Week4 save stores Best3 in Experience & Competency without creating n
 await run('Week6 Job Explorer bridges current Career DNA and Experience Map',async page=>{
   await page.locator('.stepBtn[data-step="3"]').click();await page.waitForSelector('#jobPrompt');
   const body=(await page.locator('#stepRoot').textContent())||'';
-  for(const text of ['어떤 일을, 어느 산업에서 탐색해볼까?','지금까지 확인한 나','내 경험에서 반복된 행동','실제 직장에서 해보고 싶은 일','관심 산업 탐색','직무 × 산업 탐색','탐색 직무 후보','직무 후보 비교','STEP 4에서 확인할 Target'])assert(body.includes(text),`Missing STEP3 module: ${text}`);
+  for(const text of ['어떤 일을, 어느 산업에서 탐색해볼까?','지금까지 확인한 나','내 경험에서 확인된 행동','실제 직장에서 해보고 싶은 일','관심 산업 탐색','직무 × 산업 탐색','탐색 직무 후보','직무 후보 비교','STEP 4에서 확인할 Target'])assert(body.includes(text),`Missing STEP3 module: ${text}`);
   assert(body.includes('분석'),'Experience Map competency not shown in Week6 bridge');
   const prompt=await page.locator('#jobPrompt').inputValue();
   assert(prompt.includes('[STEP 1 Career DNA · 보조근거]'),'Career DNA auxiliary block missing');
