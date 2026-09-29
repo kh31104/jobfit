@@ -75,10 +75,10 @@ async function run(name,viewport){
 
     await page.locator('.stepBtn[data-step="3"]').click();await page.waitForSelector('#jobPrompt');
     const week6=(await page.locator('#stepRoot').textContent())||'';
-    for(const text of ['강점·경험역량을 직무 후보로 연결하기','나의 직무탐색 근거 확인','AI 직무탐색 프롬프트','직무 후보 Pool','Target Job 1·2·3 직접 선택'])assert(week6.includes(text),`Missing deployed Week6 STEP3 module: ${text}`);
+    for(const text of ['어떤 일을, 어느 산업에서 탐색해볼까?','지금까지 확인한 나','실제 직장에서 해보고 싶은 일','관심 산업·분야 탐색','직무 × 산업 탐색','탐색 직무 후보','STEP 4에서 확인할 Target'])assert(week6.includes(text),`Missing deployed Week6 STEP3 module: ${text}`);
     const jobPrompt=await page.locator('#jobPrompt').inputValue();
-    assert(jobPrompt.includes('[3주차 Career DNA]'),'Week6 prompt missing Career DNA bridge');
-    assert(jobPrompt.includes('[4주차 Experience Map]'),'Week6 prompt missing Experience Map bridge');
+    assert(jobPrompt.includes('[STEP 1 Career DNA]'),'Week6 prompt missing Career DNA bridge');
+    assert(jobPrompt.includes('[STEP 2 Experience Evidence]'),'Week6 prompt missing Experience Map bridge');
     assert(jobPrompt.includes('Task·KSA·KPI'),'Week6 prompt missing Task/KSA/KPI validation');
     assert(!jobPrompt.includes('RIASEC'),'Legacy RIASEC dependency remains in Week6 prompt');
     if(viewport.width<=480){const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);assert(overflow<=2,`Week6 STEP3 mobile horizontal overflow detected: ${overflow}px`)}
