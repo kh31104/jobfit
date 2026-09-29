@@ -975,7 +975,7 @@ function jobAnalysisPrompt(){
     "기업: "+(j.company||"미입력"),
     "공고: "+(j.title||"미입력"),
     "선택한 직군·직무: "+(j.role||"미입력"),
-    "모집기간: "+(j.period||"미입력"),
+    ...(!custom&&filled(j.period)?["모집기간: "+j.period]:[]),
     "",
     custom?"[내가 입력한 공고·직무 정보]":"[선택한 직무 기준자료]",
     j.facts||"미입력",
@@ -1632,7 +1632,6 @@ function portfolio(){
     "기업: "+(j?.company||"-"),
     "공고: "+(j?.title||"-"),
     "분야: "+(j?.role||"-"),
-    "기간: "+(j?.period||"-"),
     "출처: "+(j?.sourceUrl||"-"),"",
     "4. JOB ANALYSIS TABLE",
     "고객·KPI: "+(jt.customerKpi||"-"),
@@ -1942,7 +1941,7 @@ function bind(){
       if(preview)preview.textContent=e.value||"-";
       const path=e.dataset.path||"";
       if(path==="student.majorEvidence"||path.startsWith("star."))refreshStep4Prompt();
-      if(["student.certificates","student.language","student.tools","student.otherSpec","student.majorEvidence"].includes(path))refreshStep5Derived();
+      if(["student.certificates","student.language","student.tools","student.majorEvidence"].includes(path))refreshStep5Derived();
       save();
     };
     e.oninput=handler;e.onchange=handler;
