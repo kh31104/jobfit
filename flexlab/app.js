@@ -1393,10 +1393,62 @@ function competencyKeywordPrompt(){
     "[출력 4 · 아직 증거가 부족한 직무역량]",
     "• 부족한 역량 → 현재 부족한 근거 → 앞으로 만들 수 있는 경험/결과물",
     "",
+    "[PORTFOLIO 핵심역량]",
+    "최종적으로 근거가 가장 분명한 역량 3~5개만 아래 한 줄 형식으로 다시 정리해.",
+    "역량 1: 역량명 | 직무과업: 연결 과업 | 행동근거: 학생이 실제 한 행동 | 근거수준: 충분/일부",
+    "역량 2: 역량명 | 직무과업: 연결 과업 | 행동근거: 학생이 실제 한 행동 | 근거수준: 충분/일부",
+    "같은 형식으로 최대 역량 5까지 작성하고, 근거 부족 역량은 이 블록에 넣지 마.",
+    "",
     "학생이 입력하지 않은 역할·수치·성과·자격·도구는 만들지 마.",
     "근거가 약하면 그 사실을 그대로 표시하고 과장하지 마.",
     ...bulletOutputRules()
   ].filter(Boolean).join("\n");
+}
+
+function parseCompetencySummary(raw){
+  const lines=String(raw||"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  const start=lines.findIndex(x=>/^\[?PORTFOLIO\s*핵심역량\]?/i.test(x.replace(/\*\*/g,"")));
+  if(start>=0){
+    const picked=[];
+    for(let i=start+1;i<lines.length;i++){
+      const clean=lines[i].replace(/^[-*•]\s*/,"").replace(/\*\*/g,"").trim();
+      if(/^\[.+\]$/.test(clean)&&picked.length)break;
+      if(/^역량\s*\d+\s*[:：]/.test(clean))picked.push(clean);
+      if(picked.length>=5)break;
+    }
+    if(picked.length)return picked.join("\n");
+  }
+  const items=[];let current=null;
+  const flush=()=>{if(current?.name){
+    items.push("역량 "+(items.length+1)+": "+current.name+
+      (current.task?" | 직무과업: "+current.task:"")+
+      (current.evidence?" | 행동근거: "+current.evidence:"")+
+      (current.level?" | 근거수준: "+current.level:""));
+  }};
+  for(const line of lines){
+    const clean=line.replace(/^[-*•]\s*/,"").replace(/\*\*/g,"").trim();
+    let m=clean.match(/^역량명\s*[:：]\s*(.+)$/);
+    if(m){flush();current={name:m[1]};continue;}
+    if(!current)continue;
+    m=clean.match(/^(?:연결되는\s*직무\s*과업(?:·해결과제)?|직무과업)\s*[:：]\s*(.+)$/);
+    if(m){current.task=m[1];continue;}
+    m=clean.match(/^(?:학생\s*경험·행동\s*근거|학생\s*경험.*근거|행동근거)\s*[:：]\s*(.+)$/);
+    if(m){current.evidence=m[1];continue;}
+    m=clean.match(/^근거\s*수준\s*[:：]\s*(.+)$/);
+    if(m){current.level=m[1];continue;}
+  }
+  flush();
+  return items.slice(0,5).join("\n");
+}
+
+function applyCompetencySummary(){
+  const raw=document.querySelector('[data-path="ai.keywordResult"]')?.value||state.ai.keywordResult||"";
+  if(!filled(raw)){toast("먼저 AI 역량분석 결과를 붙여넣어 주세요.");return;}
+  const summary=parseCompetencySummary(raw);
+  if(!filled(summary)){toast("핵심역량 블록을 찾지 못했습니다. AI가 최종 분석까지 완료했는지 확인해 주세요.");return;}
+  state.ai.keywordResult=raw;
+  state.ai.keywordSummary=summary;
+  save();render();toast("핵심역량을 Portfolio용으로 자동 정리했습니다.");
 }
 
 function step4(){
@@ -1423,7 +1475,9 @@ function step4(){
       '<div class="callout info"><b>답변 품질 보완 방식</b> AI가 먼저 입력정보가 충분한지 확인합니다. 근거가 부족하면 분석을 서두르지 않고 질문을 한 번에 하나씩 이어갑니다. 학생은 질문에 답하면 되고, 필요한 근거가 확보되면 역량분석을 시작합니다.</div>'+
       '<textarea class="promptBox promptEditor shortPrompt" id="keywordPromptPreview" data-prompt-key="keyword">'+h(competencyKeywordPrompt())+'</textarea>'+
       '<div class="actions compactActions"><button class="btn secondary" id="copyKeywordPromptBtn">내 역량분석 프롬프트 복사</button></div>'+
-      field("ai.keywordResult","AI 결과 붙여넣기 <span class=\"hint\">(선택)</span>","AI가 정리한 경험별 직무 연결과 핵심역량을 붙여넣으세요. STEP 6 Portfolio에 함께 들어갑니다.")+
+      field("ai.keywordResult","AI 결과 붙여넣기 <span class=\"hint\">(선택)</span>","AI가 정리한 경험별 직무 연결과 핵심역량을 붙여넣으세요.")+
+      '<div class="actions compactActions"><button class="btn secondary" id="applyCompetencySummaryBtn">핵심역량 3~5개 자동 추출</button></div>'+
+      field("ai.keywordSummary","Portfolio에 저장할 핵심역량","역량 → 직무과업 → 내 행동근거 → 근거수준 형식으로 자동 정리됩니다.")+
     '</div>'+
     '<div class="callout warn"><b>확인 원칙:</b> 내 경험·행동으로 설명할 수 없는 역량은 최종 강점에서 제외합니다.</div>');
 }
@@ -1704,11 +1758,66 @@ function gapPrompt(){
     "[7. 3개월 보완 행동]",
     "• GAP → 행동 → 확인 가능한 결과물 형식",
     "",
+    "[PORTFOLIO 반영]",
+    "• GAP: 최종 GAP 1 | 최종 GAP 2 | 최종 GAP 3",
+    "• 3개월 행동: 행동 1 → 확인 가능한 결과물 | 행동 2 → 확인 가능한 결과물 | 행동 3 → 확인 가능한 결과물",
+    "위 두 줄은 앞 분석과 모순되지 않게 작성하고, 실제로 없는 GAP은 억지로 3개를 채우지 마.",
+    "",
     "내가 입력하지 않은 자격증·점수·경험을 있다고 가정하지 마.",
     "채용 가능성을 점수나 확률로 계산하지 마.",
     "확인되지 않은 내용은 '추가 확인 필요'로 남겨줘.",
     ...bulletOutputRules()
   ].filter(Boolean).join("\n");
+}
+
+function parseGapPortfolio(raw){
+  const lines=String(raw||"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  const start=lines.findIndex(x=>/^\[?PORTFOLIO\s*반영\]?/i.test(x.replace(/\*\*/g,"")));
+  let gaps="",actions="";
+  if(start>=0){
+    for(let i=start+1;i<Math.min(lines.length,start+8);i++){
+      const clean=lines[i].replace(/^[-*•]\s*/,"").replace(/\*\*/g,"").trim();
+      if(/^GAP\s*[:：]/i.test(clean))gaps=clean.replace(/^GAP\s*[:：]\s*/i,"").replace(/\s*\|\s*/g,", ");
+      if(/^3개월\s*행동\s*[:：]/.test(clean))actions=clean.replace(/^3개월\s*행동\s*[:：]\s*/,"").replace(/\s*\|\s*/g," / ");
+    }
+  }
+  if(!gaps){
+    const a=lines.findIndex(x=>/현재\s*GAP/.test(x));
+    if(a>=0){
+      const vals=[];
+      for(let i=a+1;i<lines.length;i++){
+        const clean=lines[i].replace(/^[-*•]\s*/,"").replace(/\*\*/g,"").trim();
+        if(/^\[/.test(clean))break;
+        const m=clean.match(/^GAP\s*\d+\s*[:：]\s*(.+)$/i);
+        if(m&&filled(m[1]))vals.push(m[1]);
+      }
+      gaps=vals.slice(0,3).join(", ");
+    }
+  }
+  if(!actions){
+    const a=lines.findIndex(x=>/3개월\s*보완\s*행동/.test(x));
+    if(a>=0){
+      const vals=[];
+      for(let i=a+1;i<lines.length;i++){
+        const clean=lines[i].replace(/^[-*•]\s*/,"").replace(/\*\*/g,"").trim();
+        if(/^\[/.test(clean))break;
+        if(clean)vals.push(clean);
+      }
+      actions=vals.slice(0,3).join(" / ");
+    }
+  }
+  return {gaps,actions};
+}
+
+function applyGapPortfolio(){
+  const raw=document.querySelector('[data-path="ai.gapResult"]')?.value||state.ai.gapResult||"";
+  if(!filled(raw)){toast("먼저 AI GAP 분석 결과를 붙여넣어 주세요.");return;}
+  const parsed=parseGapPortfolio(raw);
+  if(!filled(parsed.gaps)&&!filled(parsed.actions)){toast("최종 GAP·행동계획을 찾지 못했습니다. AI가 최종 분석까지 완료했는지 확인해 주세요.");return;}
+  state.ai.gapResult=raw;
+  if(filled(parsed.gaps))state.fit.gaps=parsed.gaps;
+  if(filled(parsed.actions))state.fit.actions=parsed.actions;
+  save();render();toast("GAP과 3개월 행동계획을 자동 반영했습니다. 필요한 부분만 수정하세요.");
 }
 
 function derivedGapAssets(){
@@ -1743,13 +1852,14 @@ function step5(){
       '<div class="callout info"><b>GAP 분석 전 확인</b> AI가 공고조건별 판정과 근거가 충분한지 먼저 확인합니다. 부족하면 가장 중요한 질문을 한 번에 하나씩 하고, 근거가 확보되면 GAP 1~3순위와 3개월 행동을 분석합니다.</div>'+
       '<textarea class="promptBox promptEditor shortPrompt" id="gapPromptPreview" data-prompt-key="gap">'+h(gapPrompt())+'</textarea>'+
       '<div class="actions compactActions"><button class="btn secondary" id="copyGapPromptBtn">내 GAP 분석 프롬프트 복사</button></div>'+
-      field("ai.gapResult","AI GAP 분석 결과 <span class=\"hint\">(선택)</span>","AI의 GAP 분석 결과를 붙여넣으세요.")+
+      field("ai.gapResult","AI GAP 분석 결과 <span class=\"hint\">(선택)</span>","AI의 최종 GAP 분석 결과를 붙여넣으세요.")+
+      '<div class="actions compactActions"><button class="btn secondary" id="applyGapPortfolioBtn">GAP·3개월 행동 자동 반영</button></div>'+
     '</div>'+
     '<div class="divider"></div><div class="block"><h3>④ 최종 GAP과 3개월 행동</h3>'+
       '<div class="selectedEvidence"><span>현재 확인된 근거</span><b id="derivedGapAssetsPreview">'+h(derivedGapAssets()||"아직 입력된 스펙·충족 근거가 없습니다.")+'</b></div>'+
       '<div class="grid2">'+
-        field("fit.gaps","우선 보완할 GAP","AI 결과를 보고 최대 3개만 남기세요.")+
-        field("fit.actions","3개월 행동계획","무엇을 언제까지 어떤 결과물로 만들 것인가?")+
+        field("fit.gaps","우선 보완할 GAP","AI 결과에서 자동 반영됩니다. 최대 3개만 남기고 수정·확정하세요.")+
+        field("fit.actions","3개월 행동계획","AI 결과에서 자동 반영됩니다. 현실적인 행동과 결과물만 수정·확정하세요.")+
       '</div></div>');
 }
 
@@ -1780,7 +1890,7 @@ function portfolio(){
     "대표 경험 결과: "+(star.result||"-"),
     "대표 경험 증거: "+(star.evidence||"-"),"",
     "4. MY COMPETENCY",
-    state.ai.keywordResult||"AI 역량분석 결과 미입력","",
+    state.ai.keywordSummary||"핵심역량 미확정 · STEP 4에서 AI 결과를 자동 추출하세요.","",
     "5. SPEC & GAP",
     "자격증: "+(st.certificates||"-"),
     "어학: "+(st.language||"-"),
@@ -1815,7 +1925,7 @@ function selfIntroPrompt(){
     "[내 행동] "+(state.star.actionWhat||"-"),
     "[결과] "+(state.star.result||"-"),
     "[증거] "+(state.star.evidence||"-"),
-    "[역량 키워드 분석] "+(state.ai.keywordResult||"-"),
+    "[역량 키워드 분석] "+(state.ai.keywordSummary||state.ai.keywordResult||"-"),
     "[현재 GAP과 준비] "+(state.fit.gaps||"-")+" / "+(state.fit.actions||"-"),
     ...(isKea?[
       "",
