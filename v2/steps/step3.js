@@ -65,6 +65,7 @@ export async function render(ctx){
   document.getElementById('addInterest')?.addEventListener('click',addInterest);
   document.getElementById('refreshPrompt')?.addEventListener('click',refreshPrompt);
   document.getElementById('copyPrompt')?.addEventListener('click',()=>copy(document.getElementById('jobPrompt').value,ctx));
+  document.getElementById('importJobAi')?.addEventListener('click',importJobAi);
   document.getElementById('addCandidate')?.addEventListener('click',addCandidate);
   document.getElementById('saveTargets')?.addEventListener('click',saveTargets);
   document.getElementById('nextStep')?.addEventListener('click',()=>{saveTargets();ctx.navigate(4)});
@@ -76,6 +77,14 @@ export async function render(ctx){
   function checked(type){return [...document.querySelectorAll(`[data-choice="${type}"]:checked`)].map(x=>x.value)}
   function addInterest(){const input=document.getElementById('newInterestInput'),value=input?.value?.trim();if(!value)return; if(!data.newInterests.includes(value))data.newInterests.push(value);input.value='';persist(false);renderInterests();refreshPrompt();}
   function renderInterests(){const box=document.getElementById('interestList');if(!box)return;box.innerHTML=data.newInterests.length?data.newInterests.map((x,i)=>`<span class="pill interestPill">${esc(x,ctx)} <button data-del-interest="${i}" aria-label="삭제">×</button></span>`).join(''):'<span class="muted small">추가한 관심 활동이 없습니다.</span>';box.querySelectorAll('[data-del-interest]').forEach(b=>b.addEventListener('click',()=>{data.newInterests.splice(Number(b.dataset.delInterest),1);persist(false);renderInterests();refreshPrompt();}));}
+  function importJobAi(){
+    const raw=v('jobAiImport');if(!raw){status('candidateStatus','AI 결과를 먼저 붙여넣어 주세요.');return}
+    const parsed=parseJsonBlock(raw),rows=Array.isArray(parsed)?parsed:(Array.isArray(parsed?.candidates)?parsed.candidates:[]);
+    if(!rows.length){status('candidateStatus','후보 JSON을 읽지 못했습니다. 프롬프트의 JSON 형식 그대로 붙여넣어 주세요.');return}
+    const now=Date.now(),normalized=rows.slice(0,5).map((x,i)=>({id:'job_ai_'+now+'_'+i,title:String(x.title||x.job||'').trim(),family:String(x.family||'').trim(),industries:Array.isArray(x.industries)?x.industries.map(v=>String(v).trim()).filter(Boolean):splitList(x.industries||''),summary:String(x.summary||x.description||'').trim(),why:String(x.why||x.interestEvidence||'').trim(),evidence:String(x.evidence||x.experienceEvidence||'').trim(),unknowns:String(x.unknowns||'').trim(),source:'AI 탐색결과 · STEP 4에서 공식자료 확인 필요',createdAt:new Date().toISOString()})).filter(x=>x.title);
+    if(!normalized.length){status('candidateStatus','직무명이 있는 후보를 찾지 못했습니다.');return}
+    data.candidates=normalized;data.targets=[];data.targetCombos=[];persist(false);renderCandidates();renderCompare();renderTargets();status('candidateStatus','AI 후보 '+normalized.length+'개를 불러왔습니다. 내용을 확인한 뒤 Target을 선택하세요.');
+  }
   function addCandidate(){
     const title=v('jobTitle');if(!title){status('candidateStatus','직무명을 입력하세요.');return}if(data.candidates.length>=5){status('candidateStatus','직무 후보는 5개까지 비교하는 것을 권장합니다. 기존 후보를 정리한 뒤 추가하세요.');return}
     const industries=splitList(v('jobIndustries'));
@@ -107,6 +116,7 @@ function choice(type,label,on,ctx){return `<label class="choiceTile"><input type
 function txt(id,label,value,ph){return `<div class="field"><label>${label}</label><input class="input" id="${id}" value="${value||''}" placeholder="${ph||''}"></div>`}
 function area(id,label,value,ph){return `<div class="field"><label>${label}</label><textarea id="${id}" placeholder="${ph||''}">${value||''}</textarea></div>`}
 function sel(id,label,value,opts){return `<div class="field"><label>${label}</label><select id="${id}"><option value="">선택</option>${opts.map(o=>`<option ${o===value?'selected':''}>${o}</option>`).join('')}</select></div>`}
+function parseJsonBlock(raw=''){const text=String(raw).trim(),fenced=text.match(/```(?:json)?\s*([\s\S]*?)```/i),source=(fenced?.[1]||text).trim();try{return JSON.parse(source)}catch{}const s=source.indexOf('{'),e=source.lastIndexOf('}');if(s>=0&&e>s){try{return JSON.parse(source.slice(s,e+1))}catch{}}const a=source.indexOf('['),b=source.lastIndexOf(']');if(a>=0&&b>a){try{return JSON.parse(source.slice(a,b+1))}catch{}}return null}
 function splitList(v){return [...new Set(String(v||'').split(/[,/|]/).map(x=>x.trim()).filter(Boolean))]}
 function slug(x=''){return String(x).trim().replace(/[^0-9A-Za-z가-힣]+/g,'-').replace(/^-|-$/g,'').slice(0,30)||'undecided'}
 function esc(x,ctx){return ctx.escapeHtml(String(x??''))}
