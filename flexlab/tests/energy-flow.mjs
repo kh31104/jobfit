@@ -93,7 +93,7 @@ try{
   ].join('\n'));
   await page.locator('#applyJobTableAiBtn').click();
   assert((await page.locator('[data-path="jobTable.tasks"]').inputValue()).includes('에너지·환경'),'KEA AI result must populate role-specific job table');
-  assert(await page.locator('.jobAnalysisPreview th').count()===6,'STEP3 must render the six-column job-analysis table');
+  assert(await page.locator('.jobAnalysisPreview th').count()===5,'STEP3 must render the five-column core job-analysis table');
   await page.reload({waitUntil:'networkidle'});
   assert((await page.locator('[data-curated-role="kea-2026-h2"]').inputValue())==='화공·환경','STEP3 selected role must persist after reload');
   assert((await page.locator('[data-path="jobTable.tasks"]').inputValue()).includes('에너지·환경'),'STEP3 analysis answer must persist after reload');
