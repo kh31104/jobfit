@@ -76,12 +76,18 @@ try{
   assert(keaPrompt.includes('개조식'),'KEA prompt must request bullet-style output');
 
   await page.locator('#jobTableAiResult').fill([
-    '고객·KPI: • 정책·사업 수혜자 / 제도 운영성과와 정확성',
-    '주요 과업: • 에너지·환경 사업 자료 검토 • 사업 운영 지원',
-    '주요 해결과제: • 기준과 데이터에 맞는 사업 판단',
-    '해결방법: • 공고·직무기술서와 데이터 근거를 확인',
-    '필요역량: • 화공·환경 기초지식 • 데이터 해석 • 기준 준수',
-    '경력개발: • 에너지효율·기후변화·신재생 분야 전문성 확대'
+    '**고객·KPI:**',
+    '• 정책·사업 수혜자 / 제도 운영성과와 정확성',
+    '2. 주요 과업:',
+    '• 에너지·환경 사업 자료 검토 • 사업 운영 지원',
+    '### 주요 해결과제',
+    '• 기준과 데이터에 맞는 사업 판단',
+    '__해결방법:__',
+    '• 공고·직무기술서와 데이터 근거를 확인',
+    '5) 필요역량:',
+    '• 화공·환경 기초지식 • 데이터 해석 • 기준 준수',
+    '## 경력개발:',
+    '• 에너지효율·기후변화·신재생 분야 전문성 확대'
   ].join('\n'));
   await page.locator('#applyJobTableAiBtn').click();
   assert((await page.locator('[data-path="jobTable.tasks"]').inputValue()).includes('에너지·환경'),'KEA AI result must populate role-specific job table');
@@ -146,10 +152,16 @@ try{
   for(const heading of ['② 내 전공 확인 → 이 기업에서 분석할 직무 입력','③ AI에게 선택한 직무만 분석시키기','④ 직무분석 테이블 완성','⑤ 완성된 직무분석표'])assert(customLockedText.includes(heading),'Custom method must show the full ②→⑤ path: '+heading);
   await page.locator('[data-customjob="company"]').fill('직접입력 에너지기업');
   await page.locator('[data-customjob="role"]').fill('생산기술');
-  await page.locator('[data-customjob="facts"]').fill('생산 데이터 분석과 설비 개선');
+  await page.locator('#useCustomJobBtn').click();
+  assert(await page.locator('#jobPromptPreview').count()===0,'Custom analysis must not open from company/role alone without job-duty evidence');
+  await page.locator('[data-customjob="facts"]').fill('생산 데이터 분석\n설비 이상 원인 확인\n공정 개선안 검토');
   await page.locator('#useCustomJobBtn').click();
   await page.waitForSelector('#jobPromptPreview');
-  assert((await page.locator('#jobPromptPreview').inputValue()).includes('직접입력 에너지기업'),'Custom prompt must include student-entered company');
+  const customPrompt=await page.locator('#jobPromptPreview').inputValue();
+  assert(customPrompt.includes('직접입력 에너지기업'),'Custom prompt must include student-entered company');
+  assert(customPrompt.includes('3~5개 업무축'),'Custom prompt must derive role axes from pasted duties');
+  assert(customPrompt.includes('[공고근거]'),'Custom prompt must distinguish pasted evidence from inference');
+  assert(customPrompt.includes('직무명만 보고 일반적인 업무를 사실처럼 추가하지 마'),'Custom prompt must block generic role hallucination');
 
   // Return to KEA: selected role + analysis must be preserved.
   await page.locator('[data-analysis-method="kea-2026-h2"]').click();
