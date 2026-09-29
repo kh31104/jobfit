@@ -39,7 +39,14 @@ try{
   assert(searchPrompt.includes('에너지 산업'),'STEP2 prompt must use the student-entered industry');
   assert(searchPrompt.includes('화학공학'),'STEP2 prompt must include major');
   assert(searchPrompt.includes('개조식'),'STEP2 prompt must request readable bullet output');
-  await page.locator('[data-next="3"]').click();
+  await page.locator('#useStep2SearchBtn').click();
+  await page.waitForSelector('[data-customjob="company"]');
+  assert((await page.locator('[data-customjob="company"]').inputValue())==='학생이 찾은 에너지기업','STEP2 company must hand off to STEP3');
+  assert((await page.locator('[data-customjob="title"]').inputValue())==='2026 생산기술 신입','STEP2 posting title must hand off to STEP3');
+  assert((await page.locator('[data-customjob="role"]').inputValue())==='화공·환경','STEP1 target job must hand off as STEP3 direct-analysis role');
+  assert((await page.locator('[data-customjob="sourceUrl"]').inputValue())==='https://example.com/student-found-job','STEP2 URL must hand off to STEP3');
+  assert((await page.locator('[data-customjob="facts"]').inputValue())==='','STEP2 memo must not be misrepresented as official job-duty evidence');
+  assert(((await page.locator('#customJobEntry').innerText())||'').includes('STEP 2 공고를 가져왔습니다'),'STEP3 must explain what was auto-carried and what still needs evidence');
 
   await page.waitForSelector('[data-analysis-method="kea-2026-h2"]');
   assert(await page.locator('.curatedJob').count()===3,'STEP3 must offer KEA, HD Electric and custom methods');
@@ -93,7 +100,8 @@ try{
   ].join('\n'));
   await page.locator('#applyJobTableAiBtn').click();
   assert((await page.locator('[data-path="jobTable.tasks"]').inputValue()).includes('에너지·환경'),'KEA AI result must populate role-specific job table');
-  assert(await page.locator('.jobAnalysisPreview th').count()===6,'STEP3 must render the six-column job-analysis table');
+  assert(await page.locator('.jobAnalysisPreview th').count()===5,'STEP3 must render only the five core job-analysis columns');
+  assert(((await page.locator('#stepRoot').innerText())||'').includes('경력개발 방향 보기 · 선택'),'STEP3 career development must be optional rather than a sixth core field');
   await page.reload({waitUntil:'networkidle'});
   assert((await page.locator('[data-curated-role="kea-2026-h2"]').inputValue())==='화공·환경','STEP3 selected role must persist after reload');
   assert((await page.locator('[data-path="jobTable.tasks"]').inputValue()).includes('에너지·환경'),'STEP3 analysis answer must persist after reload');
@@ -255,10 +263,17 @@ try{
   await page.locator('[data-path="star.evidence"]').fill('측정기록과 프로젝트 보고서');
   const keywordPrompt=await page.locator('#keywordPromptPreview').inputValue();
   assert(keywordPrompt.includes('환경데이터 캡스톤'),'Restored STEP4 prompt must contain Persona A evidence');
-  await page.locator('[data-path="ai.keywordResult"]').fill('• 데이터 해석\n• 기준 기반 문제분석\n• 환경업무 문서화');
+  await page.locator('[data-path="ai.keywordResult"]').fill([
+    '[PORTFOLIO 핵심역량]',
+    '역량 1: 데이터 해석 | 직무과업: 에너지·환경 데이터 검토 | 행동근거: 기준값과 측정값 비교 | 근거수준: 충분',
+    '역량 2: 기준 기반 문제분석 | 직무과업: 사업·기술기준 검토 | 행동근거: 원인 후보를 정리 | 근거수준: 충분',
+    '역량 3: 결과 문서화 | 직무과업: 분석결과 보고 | 행동근거: 결과를 보고서로 정리 | 근거수준: 일부'
+  ].join('\n'));
+  await page.locator('#applyCompetencySummaryBtn').click();
+  assert((await page.locator('[data-path="ai.keywordSummary"]').inputValue()).includes('직무과업: 에너지·환경 데이터 검토'),'STEP4 must auto-extract concise competencies for the Portfolio');
   await page.reload({waitUntil:'networkidle'});
   assert((await page.locator('[data-exp="0"][data-expkey="title"]').inputValue())==='환경데이터 캡스톤','STEP4 experience must persist after reload');
-  assert((await page.locator('[data-path="ai.keywordResult"]').inputValue()).includes('데이터 해석'),'STEP4 AI result must persist after reload');
+  assert((await page.locator('[data-path="ai.keywordSummary"]').inputValue()).includes('데이터 해석'),'STEP4 concise competency summary must persist after reload');
   await page.locator('[data-next="5"]').click();
 
   // STEP 5: auto-fill STEP3 target, but allow direct switching.
@@ -321,13 +336,24 @@ try{
   assert(gapPrompt.includes('현재 상태: GAP 분석 준비 완료'),'STEP5 must stop follow-up questioning once GAP evidence is sufficient');
   assert(gapPrompt.includes('이미 입력된 자격증·어학·도구·경험·판정은 다시 묻지 마라'),'STEP5 adaptive interview must not repeat known information');
   assert(gapPrompt.includes('개조식'),'STEP5 GAP prompt must request bullet-style output');
-  await page.locator('[data-path="fit.gaps"]').fill('직무기술서 기반 전문지식 보강, 현장 경험 부족');
-  await page.locator('[data-path="fit.actions"]').fill('공식 직무기술서 학습과 에너지 데이터 미니 프로젝트 완성');
-  await page.locator('[data-path="ai.gapResult"]').fill('• 우선 GAP: 직무 전문지식과 현장형 Evidence');
+  await page.locator('[data-path="ai.gapResult"]').fill([
+    '[5. 현재 GAP · 최대 3개]',
+    '• GAP 1: 직무기술서 기반 전문지식 보강',
+    '• GAP 2: 현장 경험 부족',
+    '[7. 3개월 보완 행동]',
+    '• 공식 직무기술서 학습 → 직무노트 1개',
+    '• 에너지 데이터 미니 프로젝트 → 분석 결과물 1개',
+    '[PORTFOLIO 반영]',
+    '• GAP: 직무기술서 기반 전문지식 보강 | 현장 경험 부족',
+    '• 3개월 행동: 공식 직무기술서 학습 → 직무노트 1개 | 에너지 데이터 미니 프로젝트 → 분석 결과물 1개'
+  ].join('\n'));
+  await page.locator('#applyGapPortfolioBtn').click();
+  assert((await page.locator('[data-path="fit.gaps"]').inputValue()).includes('현장 경험 부족'),'STEP5 must auto-apply final GAP instead of making the student retype it');
+  assert((await page.locator('[data-path="fit.actions"]').inputValue()).includes('직무노트 1개'),'STEP5 must auto-apply the 3-month action plan');
   await page.reload({waitUntil:'networkidle'});
   assert((await page.locator('[data-path="student.language"]').inputValue())==='TOEIC 820','STEP5 spec must persist after reload');
-  assert((await page.locator('[data-path="fit.gaps"]').inputValue()).includes('현장 경험 부족'),'STEP5 GAP must persist after reload');
-  assert((await page.locator('[data-path="ai.gapResult"]').inputValue()).includes('우선 GAP'),'STEP5 AI result must persist after reload');
+  assert((await page.locator('[data-path="fit.gaps"]').inputValue()).includes('현장 경험 부족'),'STEP5 auto-applied GAP must persist after reload');
+  assert((await page.locator('[data-path="ai.gapResult"]').inputValue()).includes('PORTFOLIO 반영'),'STEP5 AI result must persist after reload');
   await page.locator('[data-next="6"]').click();
 
   // STEP 6
@@ -338,6 +364,8 @@ try{
   assert(!portfolio.includes('유형 미지정'),'Portfolio must not carry the removed experience-type field');
   assert(!portfolio.includes('기타 스펙:'),'Portfolio must not carry the removed duplicate other-spec field');
   assert(portfolio.includes('현재 확인된 근거'),'Portfolio must use derived evidence instead of a duplicate strengths input');
+  assert(portfolio.includes('역량 1: 데이터 해석'),'Portfolio must use the concise STEP4 competency summary');
+  assert(!portfolio.includes('[PORTFOLIO 핵심역량]'),'Portfolio must not dump the raw STEP4 AI response');
 
   const selfPrompt=await page.locator('#selfIntroPromptPreview').inputValue();
   const interviewPrompt=await page.locator('#interviewPromptPreview').inputValue();
