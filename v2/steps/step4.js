@@ -1,103 +1,91 @@
-const SOURCE_TYPES=['기업 공식 직무소개','기업 공식 채용공고','NCS','고용24 직업정보','공공기관·정부자료','산업협회·전문기관','기타'];
-const REQ_TYPES=['Task','Knowledge','Skill','Attitude','Tool','Experience','Qualification','기타'];
+const SOURCE_TYPES=['기업 공식 채용공고','기업 공식 직무소개','기업 공식 직무기술서','NCS','고용24 직업정보','공공기관·정부자료','산업협회·전문기관','기타 신뢰자료'];
+const REQ_TYPES=['Gate · 필수조건','Preference · 우대조건','Knowledge','Skill','Behavior','Experience','Tool·System','기타'];
+const GAP_STATUS=['근거 있음','일부 근거 있음','확인 필요','준비 필요'];
+const VERSION='job-deep-dive-v3';
 
 export async function render(ctx){
-  const s=ctx.getState();
-  const explorer=s.artifacts?.jobExplorer||{candidates:[],targets:[]};
-  const saved=s.artifacts?.jobDeepDive||{analyses:{}};
-  const targetJobs=(explorer.targets||[]).map(id=>explorer.candidates?.find(x=>x.id===id)).filter(Boolean);
+  const s=ctx.getState(),explorer=s.artifacts?.jobExplorer||{candidates:[],targets:[]},targets=getTargets(explorer),saved=s.artifacts?.jobDeepDive||{analyses:{},targetAnalyses:{}};
+  saved.analyses=saved.analyses||{};saved.targetAnalyses=saved.targetAnalyses||{};
   const root=document.getElementById('stepRoot');
-
-  root.innerHTML=`<section class="card">
-    <div class="sectionHead"><div><div class="kicker">STEP 4</div><h2>Job Deep Dive</h2><p>직무명을 보는 데서 멈추지 않고 실제 Task·KSA·KPI·Tool·협업대상·요구경험을 출처별로 확인합니다.</p></div><span class="badge">6주차 · 분석</span></div>
+  root.innerHTML=`<section class="card jobDeepV3">${styleBlock()}
+    <div class="sectionHead"><div><div class="kicker">STEP 4 · JOB ANALYSIS</div><h2>선택한 직무를 실제 기업·채용정보로 확인하기</h2><p>STEP 3의 Target을 실제 자료로 검증하고 <b>TASK → SKILL → MY EVIDENCE → GAP</b>으로 연결합니다.</p></div><span class="badge">직무분석</span></div>
     <div class="progress"><span style="width:36%"></span></div>
-    <div class="callout info"><b>핵심 원칙</b><br>같은 직무명이라도 기업·산업에 따라 실제 Task가 다를 수 있습니다. 최소 2개 출처를 교차확인하고, <b>각 Task가 어디서 확인됐는지</b> 남깁니다.</div>
-    ${targetJobs.length?`<div class="block"><h3>1. 분석할 Target Job</h3><div class="pillRow">${targetJobs.map((j,i)=>`<button class="btn outline smallBtn jobPick" data-id="${j.id}">${i+1}. ${esc(j.title,ctx)}</button>`).join('')}</div></div>`:`<div class="callout warn"><b>Target Job이 아직 없습니다.</b><br>STEP 3에서 직무 후보를 만들고 최대 3개를 선택한 뒤 돌아오세요.</div>`}
+    <div class="callout info"><b>자료 우선순위</b><br>기업 공식 채용공고 → 기업 공식 직무소개/직무기술서 → NCS → 고용24 직업정보. 자료에 없는 내용은 추측하지 않고 ‘확인 필요’로 남깁니다.</div>
+    ${targets.length?`<div class="block"><div class="moduleHead"><span>01</span><div><h3>분석할 Target 선택</h3><p>STEP 3에서 고른 직무 × 산업 조합입니다.</p></div></div><div class="pillRow">${targets.map((t,i)=>`<button class="btn outline smallBtn targetPick" data-id="${esc(t.id,ctx)}">${i+1}. ${esc(t.job?.title||'직무',ctx)} × ${esc(t.industry||'산업 미정',ctx)}</button>`).join('')}</div></div>`:`<div class="callout warn"><b>Target이 없습니다.</b><br>STEP 3에서 직무 × 산업 Target을 2개 이상 선택한 뒤 돌아오세요.</div>`}
     <div id="analysisRoot"></div>
   </section>`;
-
-  if(!targetJobs.length)return;
-  let currentId=targetJobs[0].id;
-  root.querySelectorAll('.jobPick').forEach(b=>b.addEventListener('click',()=>{currentId=b.dataset.id;paint()}));
+  if(!targets.length)return;
+  let currentId=targets[0].id;
+  root.querySelectorAll('.targetPick').forEach(b=>b.addEventListener('click',()=>{currentId=b.dataset.id;paint()}));
   paint();
 
   function paint(){
-    const job=explorer.candidates.find(x=>x.id===currentId);
-    const a=structuredClone(saved.analyses?.[currentId]||defaultAnalysis(job));
+    const target=targets.find(x=>x.id===currentId)||targets[0],job=target.job;
+    const legacy=saved.analyses?.[job?.id]||{};
+    const a=structuredClone(saved.targetAnalyses?.[target.id]||defaultAnalysis(target,legacy));
     const box=document.getElementById('analysisRoot');
-    box.innerHTML=`<div class="hr"></div>
-      <div class="block"><div class="sectionHead"><div><h3>2. ${esc(job.title,ctx)} — Source Register</h3><p class="help">AI 답변 자체는 출처로 인정하지 않습니다. 기업 공식자료·채용공고·NCS·고용24 등 실제 자료를 등록하세요.</p></div><span class="badge">${sourceQualityLabel(a.sources)}</span></div>
-        <div class="grid4">
-          ${sel('sourceType','출처 유형','',SOURCE_TYPES)}
-          ${txt('sourceName','자료명','','예: 2026 하반기 생산기술 신입공고')}
-          ${txt('sourceUrl','URL','','https://...')}
-          ${txt('sourceChecked','확인일','',today())}
-        </div>
-        <div class="field" style="margin-top:12px"><label>이 출처에서 확인한 핵심 내용</label><textarea id="sourceNote" placeholder="Task·KSA·Tool·요구경험 중 실제로 확인된 내용만 짧게 기록"></textarea></div>
-        <div class="actions"><button class="btn primary" id="addSource">출처 추가</button></div><div id="sourceList" style="margin-top:12px"></div>
-      </div>
+    box.innerHTML=`
+      ${block('02','기업 선택','관심기업이 있으면 입력하고, 아직 없다면 비워둔 채 산업 × 직무 공통정보로 진행할 수 있습니다.',`
+        <div class="grid3">${txt('companyName','기업명',a.company?.name||'','예: ○○전자 · 미정 가능')}${txt('companySource','기업 공식자료',a.company?.source||'','예: 공식 홈페이지 / 사업보고서')}${txt('companyUrl','기업자료 URL',a.company?.url||'','https://...')}</div>
+        <div class="callout info"><b>현재 Target</b><br>${esc(job?.title||'직무',ctx)} × ${esc(target.industry||'산업 미정',ctx)}${a.company?.name?` × ${esc(a.company.name,ctx)}`:''}</div>`)}
 
-      <div class="hr"></div><div class="block"><h3>3. Task Evidence Map</h3><p class="help">직무의 대표업무를 하나씩 등록하고 어느 출처에서 확인했는지 연결합니다. 여러 출처에서 반복 확인된 Task는 신뢰도가 높아집니다.</p>
-        <div class="grid3">${txt('taskName','실제 Task','','예: 공정 이상 원인 분석')}${selSource('taskSource','근거 출처',a.sources)}${sel('taskImportance','업무 중요도','',['핵심','중요','보조'])}</div>
-        <div class="grid2" style="margin-top:12px">${area('taskOutput','주요 산출물·결과','','이 Task를 수행하면 무엇이 만들어지거나 개선되는가?')}${area('taskContext','업무맥락·협업대상','','누구와 협업하며 어떤 상황에서 수행하는가?')}</div>
-        <div class="actions"><button class="btn primary" id="addTask">Task 추가</button></div><div id="taskList" style="margin-top:12px"></div>
-      </div>
+      ${block('03','실제 직무자료 등록','AI 답변 자체는 출처가 아닙니다. 실제 공고·공식자료를 등록합니다.',`
+        <div class="grid4">${sel('sourceType','출처 유형','',SOURCE_TYPES)}${txt('sourceName','자료명','','예: 2026 신입 CRM마케팅 공고')}${txt('sourceUrl','URL','','https://...')}${txt('sourceChecked','확인일','',today())}</div>
+        <div class="field" style="margin-top:12px"><label>이 자료에서 확인한 핵심</label><textarea id="sourceNote" placeholder="실제 Task·지원조건·기술·경험 중 확인된 내용만 적으세요."></textarea></div><div class="actions"><button class="btn primary" id="addSource">출처 추가</button></div><div id="sourceList"></div>`)}
 
-      <div class="hr"></div><div class="block"><h3>4. 직무 핵심 구조</h3><div class="grid2">
-        ${area('ksa','KSA',a.ksa,'Knowledge / Skill / Attitude를 구분해 정리')}
-        ${area('kpi','KPI·성과기준',a.kpi,'성과를 무엇으로 판단하는가? 자료에 없으면 확인되지 않음')}
-        ${area('tools','Tool·시스템·방법',a.tools,'예: Excel, SAP, Python, 장비, 분석기법')}
-        ${area('entry','신입 진입경로·선호경험',a.entry,'전공, 프로젝트, 인턴, 자격, 포트폴리오 등')}
-        ${area('workContext','업무환경·협업대상',a.workContext,'현장/사무/고객접점, 주요 협업부서 등')}
-        ${area('variation','기업·산업별 달라질 수 있는 부분',a.variation,'직무명이 같아도 달라지는 Task·Tool·고객·KPI를 기록')}
-      </div></div>
+      ${block('04','AI JD Analyzer','등록한 자료만 근거로 TASK · GATE · PREFERENCE · K/S/B/E · SIGNAL을 정리하게 합니다.',`
+        <textarea id="deepPrompt" rows="20">${esc(buildPrompt(ctx.getState(),target,a),ctx)}</textarea><div class="actions"><button class="btn secondary" id="refreshDeepPrompt">현재 내용 반영</button><button class="btn primary" id="copyDeepPrompt">AI 직무분석 프롬프트 복사</button></div>
+        <div class="grid2" style="margin-top:12px">${area('purpose','이 직무는 왜 필요한가?',a.purpose,'회사에서 어떤 문제를 해결하고 어떤 결과를 만드는가?')}${area('newHireWork','신입은 실제로 무엇을 하나?',a.newHireWork,'자료에서 확인되는 범위에서 쉬운 말로')}${area('gate','GATE · 필수조건',a.gate,'공고에 명시된 필수 지원조건')}${area('preference','PREFERENCE · 우대조건',a.preference,'우대사항을 필수와 구분')}${area('knowledge','KNOWLEDGE',a.knowledge,'필요 지식')}${area('skills','SKILL · TOOL',a.skills,'기술·프로그램·도구')}${area('behaviors','BEHAVIOR',a.behaviors,'행동 수준으로 표현')}${area('experienceRequired','EXPERIENCE',a.experienceRequired,'요구/선호 경험')}${area('signals','SIGNAL',a.signals,'공고에서 반복·강조되는 신호')}${area('unknowns','확인되지 않은 것',a.unknowns,'자료에 없어 추가 확인이 필요한 내용')}</div>`)}
 
-      <div class="hr"></div><div class="block"><h3>5. AI 직무분석 검증 프롬프트</h3><p class="help">등록한 근거만 사용해 구조화하도록 합니다. 자료에 없는 내용은 반드시 ‘확인되지 않음’으로 남깁니다.</p><textarea id="deepPrompt" rows="14">${esc(buildPrompt(job,a),ctx)}</textarea><div class="actions"><button class="btn secondary" id="copyDeepPrompt">프롬프트 복사</button></div></div>
+      ${block('05','TASK → SKILL 등록','실제 업무를 하나씩 정리하고 필요한 기술·행동을 연결합니다.',`
+        <div class="grid3">${txt('taskName','실제 TASK','','예: 고객 구매데이터를 분석한다')}${txt('taskSkill','필요 SKILL','','예: Excel, 분석, 문제정의')}${selSource('taskSource','근거 출처',a.sources)}</div><div class="grid2" style="margin-top:12px">${area('taskOutput','결과·산출물','','이 업무로 무엇이 만들어지거나 개선되는가?')}${area('taskContext','협업·업무맥락','','누구와 어떤 상황에서 수행하는가?')}</div><div class="actions"><button class="btn primary" id="addTask">TASK 추가</button></div><div id="taskList"></div>`)}
 
-      <div class="hr"></div><div class="block"><h3>6. Requirement × My Evidence Matrix</h3><p class="help">직무 요구와 내 경험의 증거를 분리합니다. ‘관련 경험 없음’도 중요한 GAP 정보입니다.</p>
-        <div class="grid4">${txt('reqName','요구사항','','예: 데이터 분석')}${sel('reqType','구분','',REQ_TYPES)}${sel('reqImportance','중요도','',['핵심','중요','보조'])}${sel('reqEvidenceLevel','Evidence 수준','',['A · 직접 증거','B · 관련 증거','C · 간접 증거','없음'])}</div>
-        <div class="grid2" style="margin-top:12px">${area('reqEvidence','나의 Evidence','','내가 실제로 한 행동·성과·과목·프로젝트')}${area('reqGap','현재 GAP','','부족한 경험·지식·도구·자격')}</div>
-        <div class="actions"><button class="btn primary" id="addReq">요구사항 추가</button></div><div id="matrixBox" style="margin-top:14px"></div>
-      </div>
+      ${block('06','TASK → SKILL → MY EVIDENCE','STEP 2에서 확인된 실제 경험만 사용합니다. 없는 경험은 만들어내지 않습니다.',`
+        <div class="grid3">${txt('reqName','직무 요구','','예: 고객 데이터 분석')}${sel('reqType','구분','',REQ_TYPES)}${sel('reqStatus','현재 상태','',GAP_STATUS)}</div><div class="grid2" style="margin-top:12px">${area('reqEvidence','나의 Evidence','','STEP 2의 실제 경험·행동·성과')}${area('reqGap','GAP / 확인할 것','','부족한 지식·도구·경험 또는 추가 확인사항')}</div><div class="actions"><button class="btn primary" id="addReq">비교항목 추가</button></div><div id="matrixBox"></div>`)}
 
-      <div class="hr"></div><div class="block"><h3>7. 직무분석 결론</h3>
-        <div class="grid2">${area('coreDefinition','이 직무의 본질',a.coreDefinition,'직무명을 쓰지 않고, 반복적으로 해결하는 문제와 만들어내는 결과로 정의')}${area('conclusion','나의 결론',a.conclusion,'내 강점 Evidence / 가장 큰 GAP / 더 확인할 점')}</div>
-        <div class="callout ${analysisReady(a)?'good':'warn'}" id="coverageBox">${coverageText(a)}</div>
-        <div class="actions"><button class="btn primary" id="saveDeep">${esc(job.title,ctx)} 분석 저장</button><button class="btn secondary" id="nextStep">STEP 5 Industry & Company →</button></div><div class="status" id="status"></div>
-      </div>`;
+      ${block('07','내가 준비해야 할 것','이미 가진 근거와 앞으로 준비할 것을 분리합니다.',`
+        <div class="grid2">${area('have','이미 가지고 있는 것',a.have,'직무와 연결되는 실제 경험·행동')}${area('verify','더 확인해야 할 것',a.verify,'근무환경·세부업무·기업별 차이 등')}${area('prepare','앞으로 준비할 것',a.prepare,'지식·기술·도구·프로젝트 등')}${area('conclusion','현재 직무분석 결론',a.conclusion,'왜 더 탐색할지 / 무엇이 아직 부족한지')}</div>`)}
 
-    renderSources(a);renderTasks(a);renderMatrix(a);
-    document.getElementById('addSource').addEventListener('click',()=>addSource(job,a));
-    document.getElementById('addTask').addEventListener('click',()=>addTask(job,a));
-    document.getElementById('addReq').addEventListener('click',()=>addRequirement(job,a));
-    document.getElementById('copyDeepPrompt').addEventListener('click',()=>copy(document.getElementById('deepPrompt').value,ctx));
-    document.getElementById('saveDeep').addEventListener('click',()=>save(job,a));
-    document.getElementById('nextStep').addEventListener('click',()=>{save(job,a);ctx.navigate(5)});
+      ${block('08','MY JOB ANALYSIS CARD','STEP 5의 MY JOBFIT REPORT v1에 들어갈 핵심만 확인합니다.',`
+        <div id="analysisCard"></div><div class="actions"><button class="btn primary" id="saveDeep">직무분석 저장</button><button class="btn secondary" id="nextStep">STEP 5 MY JOBFIT REPORT v1 →</button></div><div class="status" id="status"></div>`)}
+    `;
+    renderSources(a);updateTaskSource(a);renderTasks(a);renderMatrix(a);renderCard(target,a);
+    document.getElementById('addSource')?.addEventListener('click',()=>addSource(target,a));
+    document.getElementById('addTask')?.addEventListener('click',()=>addTask(target,a));
+    document.getElementById('addReq')?.addEventListener('click',()=>addRequirement(target,a));
+    document.getElementById('refreshDeepPrompt')?.addEventListener('click',()=>{capture(a);document.getElementById('deepPrompt').value=buildPrompt(ctx.getState(),target,a)});
+    document.getElementById('copyDeepPrompt')?.addEventListener('click',()=>copy(document.getElementById('deepPrompt').value,ctx));
+    document.getElementById('saveDeep')?.addEventListener('click',()=>save(target,a,true));
+    document.getElementById('nextStep')?.addEventListener('click',()=>{save(target,a,false);ctx.navigate(5)});
   }
 
-  function addSource(job,a){const name=v('sourceName'),url=v('sourceUrl');if(!name||!url){ctx.toast('자료명과 URL을 입력하세요.');return;}a.sources=a.sources||[];a.sources.push({id:`src_${Date.now()}`,type:v('sourceType'),name,url,checkedAt:v('sourceChecked'),note:v('sourceNote')});persist(job.id,a);['sourceName','sourceUrl','sourceNote'].forEach(id=>set(id,''));renderSources(a);refresh(a);ctx.toast('근거 출처를 추가했습니다.');}
-  function addTask(job,a){const name=v('taskName');if(!name){ctx.toast('Task를 입력하세요.');return;}a.tasks=a.tasks||[];a.tasks.push({id:`task_${Date.now()}`,name,sourceId:v('taskSource'),importance:v('taskImportance'),output:v('taskOutput'),context:v('taskContext')});persist(job.id,a);['taskName','taskOutput','taskContext'].forEach(id=>set(id,''));renderTasks(a);refresh(a);ctx.toast('Task Evidence를 추가했습니다.');}
-  function addRequirement(job,a){const name=v('reqName');if(!name){ctx.toast('요구사항을 입력하세요.');return;}a.requirements=a.requirements||[];a.requirements.push({id:`req_${Date.now()}`,name,type:v('reqType'),importance:v('reqImportance'),evidenceLevel:v('reqEvidenceLevel'),evidence:v('reqEvidence'),gap:v('reqGap')});persist(job.id,a);['reqName','reqEvidence','reqGap'].forEach(id=>set(id,''));renderMatrix(a);refresh(a);ctx.toast('요구사항을 추가했습니다.');}
-
-  function renderSources(a){const box=document.getElementById('sourceList');if(!box)return;if(!a.sources?.length){box.innerHTML='<div class="placeholder"><b>아직 근거 출처가 없습니다.</b>최소 2개, 가능하면 기업 공식자료/채용공고를 포함하세요.</div>';return;}box.innerHTML=a.sources.map((x,i)=>`<div class="listCard"><div class="listHead"><div><span class="rankTag">Source ${i+1}</span><h3>${esc(x.name,ctx)}</h3><div class="muted small">${esc(x.type||'유형 미입력',ctx)} · 확인 ${esc(x.checkedAt||'미입력',ctx)}</div></div><button class="btn danger smallBtn" data-delsrc="${x.id}">삭제</button></div><p>${esc(x.note||'핵심내용 미입력',ctx)}</p><div class="sourceLine"><a href="${esc(x.url,ctx)}" target="_blank" rel="noopener">원문 열기 ↗</a></div></div>`).join('');box.querySelectorAll('[data-delsrc]').forEach(b=>b.addEventListener('click',()=>{a.sources=a.sources.filter(x=>x.id!==b.dataset.delsrc);a.tasks=(a.tasks||[]).map(t=>t.sourceId===b.dataset.delsrc?{...t,sourceId:''}:t);persist(currentId,a);paint();}));}
-  function renderTasks(a){const box=document.getElementById('taskList');if(!box)return;if(!a.tasks?.length){box.innerHTML='<div class="placeholder"><b>아직 Task Evidence가 없습니다.</b>실제 수행업무를 출처와 함께 등록하세요.</div>';return;}box.innerHTML=a.tasks.map((t,i)=>{const src=a.sources?.find(x=>x.id===t.sourceId);const repeat=countTaskMentions(a,t.name);return `<div class="listCard"><div class="listHead"><div><span class="rankTag">Task ${i+1}</span><h3>${esc(t.name,ctx)}</h3><div class="muted small">${esc(t.importance||'중요도 미입력',ctx)} · ${esc(src?.name||'출처 미연결',ctx)}</div></div><span class="scoreChip">확인 ${repeat}회</span></div><div class="grid2"><div><b>산출물·결과</b><p>${esc(t.output||'—',ctx)}</p></div><div><b>맥락·협업</b><p>${esc(t.context||'—',ctx)}</p></div></div><div class="actions"><button class="btn danger smallBtn" data-deltask="${t.id}">삭제</button></div></div>`}).join('');box.querySelectorAll('[data-deltask]').forEach(b=>b.addEventListener('click',()=>{a.tasks=a.tasks.filter(x=>x.id!==b.dataset.deltask);persist(currentId,a);paint();}));}
-  function renderMatrix(a){const box=document.getElementById('matrixBox');if(!box)return;if(!a.requirements?.length){box.innerHTML='<div class="placeholder"><b>아직 요구사항이 없습니다.</b>공식자료와 채용공고에서 반복되는 요구를 추가하세요.</div>';return;}box.innerHTML=`<div class="matrixWrap"><table class="matrix"><thead><tr><th>요구</th><th>구분</th><th>중요도</th><th>Evidence 수준</th><th>나의 Evidence</th><th>GAP</th><th></th></tr></thead><tbody>${a.requirements.map(r=>`<tr><td><b>${esc(r.name,ctx)}</b></td><td>${esc(r.type,ctx)}</td><td>${esc(r.importance,ctx)}</td><td>${esc(r.evidenceLevel||'미평가',ctx)}</td><td>${esc(r.evidence||'없음',ctx)}</td><td>${esc(r.gap||'—',ctx)}</td><td><button class="btn danger smallBtn" data-delreq="${r.id}">삭제</button></td></tr>`).join('')}</tbody></table></div>`;box.querySelectorAll('[data-delreq]').forEach(b=>b.addEventListener('click',()=>{a.requirements=a.requirements.filter(x=>x.id!==b.dataset.delreq);persist(currentId,a);renderMatrix(a);refresh(a);}));}
-
-  function save(job,a){['ksa','kpi','tools','entry','workContext','variation','coreDefinition','conclusion'].forEach(k=>a[k]=v(k));a.jobTitle=job.title;a.updatedAt=new Date().toISOString();persist(job.id,a);refresh(a);document.getElementById('status').textContent='직무분석을 저장했습니다.';ctx.toast('Job Deep Dive를 저장했습니다.');}
-  function refresh(a){const c=document.getElementById('coverageBox');if(c){c.className=`callout ${analysisReady(a)?'good':'warn'}`;c.textContent=coverageText(a)}const p=document.getElementById('deepPrompt');if(p)p.value=buildPrompt(explorer.candidates.find(x=>x.id===currentId),a);}
-  function persist(id,a){saved.analyses=saved.analyses||{};saved.analyses[id]=a;ctx.saveState({artifacts:{jobDeepDive:saved}})}
+  function addSource(target,a){const name=v('sourceName'),url=v('sourceUrl');if(!name||!url){ctx.toast('자료명과 URL을 입력하세요.');return}a.sources=a.sources||[];a.sources.push({id:`src_${Date.now()}`,type:v('sourceType'),name,url,checkedAt:v('sourceChecked'),note:v('sourceNote')});persist(target,a);['sourceName','sourceUrl','sourceNote'].forEach(id=>set(id,''));renderSources(a);updateTaskSource(a);refresh(target,a);ctx.toast('직무자료를 추가했습니다.');}
+  function addTask(target,a){const name=v('taskName');if(!name){ctx.toast('TASK를 입력하세요.');return}a.tasks=a.tasks||[];a.tasks.push({id:`task_${Date.now()}`,name,skill:v('taskSkill'),sourceId:v('taskSource'),output:v('taskOutput'),context:v('taskContext')});persist(target,a);['taskName','taskSkill','taskOutput','taskContext'].forEach(id=>set(id,''));renderTasks(a);refresh(target,a);ctx.toast('TASK를 추가했습니다.');}
+  function addRequirement(target,a){const name=v('reqName');if(!name){ctx.toast('직무 요구를 입력하세요.');return}a.requirements=a.requirements||[];a.requirements.push({id:`req_${Date.now()}`,name,type:v('reqType'),status:v('reqStatus')||'확인 필요',evidence:v('reqEvidence'),gap:v('reqGap')});persist(target,a);['reqName','reqEvidence','reqGap'].forEach(id=>set(id,''));renderMatrix(a);refresh(target,a);ctx.toast('Evidence 비교항목을 추가했습니다.');}
+  function renderSources(a){const box=document.getElementById('sourceList');if(!box)return;if(!a.sources?.length){box.innerHTML='<div class="placeholder"><b>등록된 실제 자료가 없습니다.</b>기업 공식자료 또는 공공 직무정보를 1개 이상 확인하세요.</div>';return}box.innerHTML=a.sources.map((x,i)=>`<div class="listCard"><div class="listHead"><div><span class="rankTag">Source ${i+1}</span><h3>${esc(x.name,ctx)}</h3><div class="muted small">${esc(x.type||'유형 미입력',ctx)} · 확인 ${esc(x.checkedAt||'미입력',ctx)}</div></div><button class="btn danger smallBtn" data-delsrc="${x.id}">삭제</button></div><p>${esc(x.note||'핵심내용 미입력',ctx)}</p><div class="sourceLine"><a href="${esc(x.url,ctx)}" target="_blank" rel="noopener">원문 열기 ↗</a></div></div>`).join('');box.querySelectorAll('[data-delsrc]').forEach(b=>b.addEventListener('click',()=>{a.sources=a.sources.filter(x=>x.id!==b.dataset.delsrc);a.tasks=(a.tasks||[]).map(t=>t.sourceId===b.dataset.delsrc?{...t,sourceId:''}:t);persist(targets.find(x=>x.id===currentId),a);paint()}));}
+  function updateTaskSource(a){const el=document.getElementById('taskSource');if(!el)return;const current=el.value;el.innerHTML='<option value="">선택</option>'+((a.sources||[]).map(x=>`<option value="${x.id}">${x.name}</option>`).join(''));if((a.sources||[]).some(x=>x.id===current))el.value=current;}
+  function renderTasks(a){const box=document.getElementById('taskList');if(!box)return;if(!a.tasks?.length){box.innerHTML='<div class="placeholder"><b>아직 TASK가 없습니다.</b>실제 직무자료에서 확인된 업무를 등록하세요.</div>';return}box.innerHTML=a.tasks.map((t,i)=>{const src=a.sources?.find(x=>x.id===t.sourceId);return `<div class="listCard"><div class="listHead"><div><span class="rankTag">TASK ${i+1}</span><h3>${esc(t.name,ctx)}</h3><div class="muted small">SKILL: ${esc(t.skill||'미입력',ctx)} · ${esc(src?.name||'출처 미연결',ctx)}</div></div><button class="btn danger smallBtn" data-deltask="${t.id}">삭제</button></div><div class="grid2"><div><b>결과·산출물</b><p>${esc(t.output||'—',ctx)}</p></div><div><b>업무맥락·협업</b><p>${esc(t.context||'—',ctx)}</p></div></div></div>`}).join('');box.querySelectorAll('[data-deltask]').forEach(b=>b.addEventListener('click',()=>{a.tasks=a.tasks.filter(x=>x.id!==b.dataset.deltask);persist(targets.find(x=>x.id===currentId),a);refresh(targets.find(x=>x.id===currentId),a)}));}
+  function renderMatrix(a){const box=document.getElementById('matrixBox');if(!box)return;if(!a.requirements?.length){box.innerHTML='<div class="callout info">직무 요구와 내 Evidence를 연결하면 Fit & Gap이 만들어집니다.</div>';return}box.innerHTML=`<div class="matrixWrap"><table class="matrix"><thead><tr><th>직무 요구</th><th>구분</th><th>나의 Evidence</th><th>상태</th><th>GAP</th><th></th></tr></thead><tbody>${a.requirements.map(r=>`<tr><td><b>${esc(r.name,ctx)}</b></td><td>${esc(r.type||'—',ctx)}</td><td>${esc(r.evidence||'없음',ctx)}</td><td><span class="stateTag state-${stateClass(r.status)}">${esc(r.status||'확인 필요',ctx)}</span></td><td>${esc(r.gap||'—',ctx)}</td><td><button class="btn danger smallBtn" data-delreq="${r.id}">삭제</button></td></tr>`).join('')}</tbody></table></div>`;box.querySelectorAll('[data-delreq]').forEach(b=>b.addEventListener('click',()=>{a.requirements=a.requirements.filter(x=>x.id!==b.dataset.delreq);persist(targets.find(x=>x.id===currentId),a);renderMatrix(a);refresh(targets.find(x=>x.id===currentId),a)}));}
+  function renderCard(target,a){const box=document.getElementById('analysisCard');if(!box)return;box.innerHTML=`<div class="analysisCard"><div class="kicker">TARGET</div><h3>${esc(target.job?.title||'직무',ctx)} × ${esc(target.industry||'산업 미정',ctx)}${a.company?.name?` × ${esc(a.company.name,ctx)}`:''}</h3><p><b>한 줄 직무설명</b><br>${esc(a.purpose||'직무 목적을 입력하세요.',ctx)}</p><p><b>주요 TASK</b><br>${esc((a.tasks||[]).slice(0,5).map(x=>x.name).join(' · ')||'TASK를 등록하세요.',ctx)}</p><div class="grid2"><div><b>내가 가진 Evidence</b><p>${esc((a.requirements||[]).filter(x=>x.status==='근거 있음'||x.status==='일부 근거 있음').map(x=>x.evidence).filter(Boolean).slice(0,4).join(' · ')||a.have||'—',ctx)}</p></div><div><b>준비·확인할 것</b><p>${esc((a.requirements||[]).filter(x=>x.status==='준비 필요'||x.status==='확인 필요').map(x=>x.name).slice(0,5).join(' · ')||a.prepare||'—',ctx)}</p></div></div></div>`}
+  function capture(a){a.company={name:v('companyName'),source:v('companySource'),url:v('companyUrl')};['purpose','newHireWork','gate','preference','knowledge','skills','behaviors','experienceRequired','signals','unknowns','have','verify','prepare','conclusion'].forEach(k=>a[k]=v(k));a.version=VERSION;a.updatedAt=new Date().toISOString();}
+  function save(target,a,show){capture(a);persist(target,a,true);refresh(target,a);if(show){const st=document.getElementById('status');if(st)st.textContent='직무분석을 저장했습니다.';ctx.toast('Job Analysis를 저장했습니다.')}}
+  function persist(target,a,syncContext=false){saved.targetAnalyses[target.id]=a;saved.analyses[target.job.id]={...a,jobTitle:target.job.title,industry:target.industry,targetId:target.id};const patch={jobDeepDive:saved};if(syncContext)patch.industryCompany=syncIndustryCompany(ctx.getState(),target,a);ctx.saveState({artifacts:patch})}
+  function refresh(target,a){renderCard(target,a);const p=document.getElementById('deepPrompt');if(p)p.value=buildPrompt(ctx.getState(),target,a)}
   function v(id){return document.getElementById(id)?.value?.trim()||''}function set(id,val){const el=document.getElementById(id);if(el)el.value=val}
 }
 
-function defaultAnalysis(job){return {jobTitle:job.title,sources:[],tasks:[],ksa:'',kpi:'',tools:'',entry:'',workContext:'',variation:'',requirements:[],coreDefinition:'',conclusion:''}}
-function analysisReady(a){return (a.sources?.length||0)>=2&&(a.tasks?.length||0)>=3&&(a.requirements?.length||0)>=3}
-function coverageText(a){const s=a.sources?.length||0,t=a.tasks?.length||0,r=a.requirements?.length||0;return analysisReady(a)?`분석 근거가 기본 기준을 충족했습니다. 출처 ${s}개 · Task ${t}개 · 요구사항 ${r}개. 이제 산업·기업별 차이를 확인하세요.`:`분석 보강 필요: 출처 ${s}/2+ · Task ${t}/3+ · 요구사항 ${r}/3+. 수량보다 실제 근거와 출처 연결이 우선입니다.`}
-function sourceQualityLabel(s=[]){const official=s.filter(x=>['기업 공식 직무소개','기업 공식 채용공고','NCS','고용24 직업정보','공공기관·정부자료'].includes(x.type)).length;return s.length>=2&&official>=1?'근거 교차확인':'근거 보강'}
-function countTaskMentions(a,name){const key=normalize(name);const notes=(a.sources||[]).filter(s=>normalize(s.note).includes(key)).length;return Math.max(1,notes)}
-function normalize(x=''){return String(x).replace(/\s+/g,'').toLowerCase()}
-function buildPrompt(job,a){const sources=(a.sources||[]).map((x,i)=>`[S${i+1}] ${x.type} | ${x.name} | ${x.url}\n메모: ${x.note||''}`).join('\n\n');const tasks=(a.tasks||[]).map((t,i)=>`${i+1}. ${t.name} | ${t.importance||''} | ${t.output||''}`).join('\n');return `너는 직무분석 리서처다. 아래에 등록된 근거 외의 사실은 추가하지 마라. 자료에 없으면 반드시 '자료에서 확인되지 않음'이라고 표시해라.\n\n[분석 직무]\n${job?.title||''}\n\n[등록 출처]\n${sources||'없음'}\n\n[내가 확인한 Task]\n${tasks||'없음'}\n\n[기존 메모]\nKSA: ${a.ksa||''}\nKPI: ${a.kpi||''}\nTool: ${a.tools||''}\n진입경로: ${a.entry||''}\n업무환경: ${a.workContext||''}\n\n다음 순서로 정리해줘.\n1. 여러 출처에서 공통으로 확인되는 핵심 Task\n2. 특정 기업·산업에서만 나타나는 Task\n3. Knowledge / Skill / Attitude\n4. Tool·시스템·방법\n5. KPI 또는 성과기준\n6. 신입에게 요구되는 경험·자격·교육\n7. 자료 간 불일치 또는 직무명은 같지만 내용이 다른 부분\n8. 추가로 확인해야 할 정보\n\n각 주장 끝에 [S1], [S2]처럼 근거 출처를 붙여라. 추측·일반론·가상의 수치는 금지한다.`}
-function selSource(id,label,sources=[]){return `<div class="field"><label>${label}</label><select id="${id}"><option value="">선택</option>${sources.map(x=>`<option value="${x.id}">${x.name}</option>`).join('')}</select></div>`}
+function getTargets(explorer){const combos=Array.isArray(explorer.targetCombos)&&explorer.targetCombos.length?explorer.targetCombos:(explorer.targets||[]).map((jobId,i)=>({id:`target_${jobId}_${i+1}`,jobId,industry:'산업 미정',priority:i+1}));return combos.map(c=>({...c,job:explorer.candidates?.find(x=>x.id===c.jobId)})).filter(x=>x.job)}
+function defaultAnalysis(target,legacy={}){return {...legacy,targetId:target.id,jobTitle:target.job?.title||'',industry:target.industry||'',company:legacy.company||{name:'',source:'',url:''},sources:legacy.sources||[],tasks:legacy.tasks||[],requirements:legacy.requirements||[],purpose:legacy.purpose||legacy.coreDefinition||'',newHireWork:legacy.newHireWork||'',gate:legacy.gate||'',preference:legacy.preference||'',knowledge:legacy.knowledge||legacy.ksa||'',skills:legacy.skills||legacy.tools||'',behaviors:legacy.behaviors||'',experienceRequired:legacy.experienceRequired||legacy.entry||'',signals:legacy.signals||'',unknowns:legacy.unknowns||'',have:legacy.have||'',verify:legacy.verify||'',prepare:legacy.prepare||'',conclusion:legacy.conclusion||''}}
+function syncIndustryCompany(state,target,a){const old=structuredClone(state.artifacts?.industryCompany||{industries:[],targetIndustries:[],companies:[],targetCompanies:[],notes:''});let industry=(old.industries||[]).find(x=>x.jobId===target.job.id&&x.name===target.industry);if(!industry){industry={id:`ind_${target.job.id}_${slug(target.industry)}`,name:target.industry,jobId:target.job.id,sourceType:'STEP 3 탐색',source:'',url:'',generatedBy:'step3-v3'};old.industries=[...(old.industries||[]),industry]}if(!(old.targetIndustries||[]).includes(industry.id))old.targetIndustries=[...(old.targetIndustries||[]),industry.id];if(a.company?.name){let company=(old.companies||[]).find(x=>x.targetRef===target.id)||{id:`co_${slug(target.id)}`};company={...company,name:a.company.name,type:company.type||'',industryId:industry.id,jobId:target.job.id,industry:target.industry,job:target.job.title,source:a.company.source||a.sources?.[0]?.name||'',url:a.company.url||a.sources?.[0]?.url||'',checkedAt:today(),hiringEvidence:a.sources?.some(x=>x.type==='기업 공식 채용공고')?'현재/최근 채용공고 확인':a.sources?.some(x=>x.type==='기업 공식 직무소개'||x.type==='기업 공식 직무기술서')?'공식 직무소개 확인':'아직 미확인',jobSource:a.sources?.find(x=>x.type==='기업 공식 채용공고')?.name||'',jobUrl:a.sources?.find(x=>x.type==='기업 공식 채용공고')?.url||'',business:'',direction:'',role:a.purpose||'',signals:a.signals||'',why:'',unknown:a.unknowns||'',targetRef:target.id,generatedBy:'step4-v3'};old.companies=[...(old.companies||[]).filter(x=>x.id!==company.id),company];if(!(old.targetCompanies||[]).includes(company.id))old.targetCompanies=[...(old.targetCompanies||[]),company.id]}return old}
+function buildPrompt(s,target,a){const ex=(s.assessments?.experienceCompetency?.experiences||[]).filter(x=>x?.factChecked).slice(0,5).map((x,i)=>`${i+1}. ${x.title||'경험'}\n- 행동: ${x.action||'미입력'}\n- 결과: ${x.result||'미입력'}\n- 역량: ${(x.competencies||[]).join(', ')||'미입력'}`).join('\n');const sources=(a.sources||[]).map((x,i)=>`[S${i+1}] ${x.type} | ${x.name} | ${x.url}\n확인 메모: ${x.note||''}`).join('\n\n');return `너는 대학생의 직무분석을 돕는 리서처다. 목표는 학생에게 직무를 추천하는 것이 아니라, 선택한 직무를 실제 자료로 이해하고 학생의 기존 경험 Evidence와 비교하는 것이다.\n\n[TARGET]\n산업: ${target.industry||'미정'}\n기업: ${a.company?.name||'미정'}\n직무: ${target.job?.title||''}\n\n[등록한 실제 자료]\n${sources||'아직 등록된 자료 없음'}\n\n[학생의 STEP 2 경험]\n${ex||'확인된 경험 없음'}\n\n[자료 사용 규칙]\n1. 기업 공식 채용공고 > 기업 공식 직무소개/직무기술서 > NCS > 고용24 순으로 우선한다.\n2. 내가 제공하지 않은 URL, 수치, 기업 사실을 만들어내지 않는다.\n3. 자료에 없는 내용은 '확인 필요'로 표시한다.\n4. 필수조건(GATE)과 우대조건(PREFERENCE)을 분리한다.\n5. 행동역량은 성격형용사보다 실제 행동으로 표현한다.\n6. 특정 산업의 일반론을 해당 기업 사실처럼 쓰지 않는다.\n7. 학생이 하지 않은 경험·역량을 만들어내지 않는다.\n8. 적합도 %, 합격확률, 추천점수를 만들지 않는다.\n\n[출력 순서]\n1. 이 직무/팀이 회사에서 왜 필요한가 - 2문장 이내\n2. 신입이 실제 수행할 가능성이 높은 TASK 최대 5개 - 각 TASK 끝에 [S1]처럼 출처 표시\n3. GATE · 필수조건\n4. PREFERENCE · 우대조건\n5. KNOWLEDGE / SKILL·TOOL / BEHAVIOR / EXPERIENCE\n6. SIGNAL - 공고에서 반복되거나 특별히 강조되는 요구\n7. 쉬운 설명: 어떤 문제를 해결하는가 / 누구와 일하는가 / 어떤 결과물을 만드는가\n8. TASK → 필요한 SKILL → 학생의 기존 EVIDENCE → 상태(근거 있음/일부 근거 있음/확인 필요/준비 필요) 표\n9. 학생이 추가로 확인하거나 준비해야 할 것\n\n학생 EVIDENCE는 위 STEP 2 경험에서만 가져오고, 연결할 근거가 없으면 '없음'이라고 적어라.`}
+function block(n,title,desc,body){return `<div class="hr"></div><div class="block"><div class="moduleHead"><span>${n}</span><div><h3>${title}</h3><p>${desc}</p></div></div>${body}</div>`}
 function txt(id,label,value,ph){return `<div class="field"><label>${label}</label><input class="input" id="${id}" value="${value||''}" placeholder="${ph||''}"></div>`}
 function area(id,label,value,ph){return `<div class="field"><label>${label}</label><textarea id="${id}" placeholder="${ph||''}">${value||''}</textarea></div>`}
 function sel(id,label,value,opts){return `<div class="field"><label>${label}</label><select id="${id}"><option value="">선택</option>${opts.map(o=>`<option ${o===value?'selected':''}>${o}</option>`).join('')}</select></div>`}
-function today(){return new Date().toISOString().slice(0,10)}function esc(x,ctx){return ctx.escapeHtml(x==null?'':x)}async function copy(t,ctx){try{await navigator.clipboard.writeText(t);ctx.toast('프롬프트를 복사했습니다.')}catch{ctx.toast('복사하지 못했습니다.')}}
+function selSource(id,label,sources=[]){return `<div class="field"><label>${label}</label><select id="${id}"><option value="">선택</option>${sources.map(x=>`<option value="${x.id}">${x.name}</option>`).join('')}</select></div>`}
+function stateClass(x=''){return x.includes('근거 있음')&&!x.includes('일부')?'good':x.includes('일부')?'partial':x.includes('준비')?'prepare':'verify'}
+function slug(x=''){return String(x).trim().replace(/[^0-9A-Za-z가-힣]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'item'}
+function today(){return new Date().toISOString().slice(0,10)}function esc(x,ctx){return ctx.escapeHtml(String(x??''))}async function copy(t,ctx){try{await navigator.clipboard.writeText(t);ctx.toast('AI 직무분석 프롬프트를 복사했습니다.')}catch{ctx.toast('복사하지 못했습니다.')}}
+function styleBlock(){return `<style>
+.jobDeepV3 .moduleHead{display:flex;gap:11px;align-items:flex-start}.jobDeepV3 .moduleHead>span{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:#eef3ff;color:#3152c9;font-weight:950;flex:0 0 auto}.jobDeepV3 .moduleHead h3{margin:2px 0 3px}.jobDeepV3 .moduleHead p{margin:0;color:#667085;font-size:12px;line-height:1.5}.analysisCard{border:1px solid #dbe4ff;border-radius:18px;background:linear-gradient(135deg,#f8faff,#fff);padding:18px}.analysisCard h3{font-size:20px;margin:6px 0 14px}.stateTag{display:inline-flex;padding:5px 8px;border-radius:999px;font-weight:900;font-size:11px}.state-good{background:#ecfdf7;color:#087a63}.state-partial{background:#eef3ff;color:#3152c9}.state-prepare{background:#fff8e6;color:#9a6700}.state-verify{background:#f2f4f7;color:#667085}
+</style>`}
