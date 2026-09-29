@@ -57,6 +57,7 @@ jobs:
           set -e
           node --check flexlab/app.js
           node --check flexlab/tests/energy-flow.mjs
+          node --check flexlab/tests/persona-differentiation.mjs
           node --check v2/bootstrap.js
           node --check v2/storageContinuity.js
           node --check v2/operationalSync.js
@@ -91,6 +92,7 @@ jobs:
           set -e
           test -f index.html
           test -f flexlab/tests/energy-flow.mjs
+          test -f flexlab/tests/persona-differentiation.mjs
           test -f v2/index.html
           test -f v2/styles.css
           test -f v2/guided.css
@@ -198,6 +200,10 @@ jobs:
         env:
           FLEXLAB_TEST_URL: http://127.0.0.1:8765/flexlab/
         run: node flexlab/tests/energy-flow.mjs
+      - name: Run FLEX three-major differentiation
+        env:
+          FLEXLAB_TEST_URL: http://127.0.0.1:8765/flexlab/
+        run: node flexlab/tests/persona-differentiation.mjs
       - name: Run v2 regression suite
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
