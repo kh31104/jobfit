@@ -885,7 +885,7 @@ function selectedJob(){
 function selectedCuratedJob(){return selectedJob();}
 
 function curatedRoleReady(id=state.sampleJobId){
-  if(id==="custom")return filled(state.customJob?.company)&&filled(state.customJob?.role);
+  if(id==="custom")return filled(state.customJob?.company)&&filled(state.customJob?.role)&&filled(state.customJob?.facts);
   const lib=CURATED_ROLE_LIBRARIES[id];
   if(!lib)return true;
   if(!Object.keys(lib.groups||{}).length)return false;
@@ -940,8 +940,15 @@ function jobAnalysisPrompt(){
     "출처 링크: "+(j.sourceUrl||"미입력"),
     "",
     custom
-      ?"내가 입력한 내용과 링크에서 확인되는 정보만 사실 근거로 사용해 직무분석을 해줘."
+      ?"내가 붙여넣은 '담당업무·직무기술서 핵심내용'을 1차 사실 근거로 사용해. 공고 URL을 열 수 있다면 원문과 대조하고, 열 수 없다면 붙여넣은 내용만 근거로 분석해. 직무명만 보고 일반적인 업무를 사실처럼 추가하지 마."
       :"위에 제공된 '"+(j.selectedRole||j.role)+"' 직무만 분석해줘. 같은 기업의 다른 직무는 섞지 마.",
+    custom?"[직접입력 분석 절차]":"",
+    custom?"1. 붙여넣은 담당업무를 서로 겹치지 않는 3~5개 업무축으로 먼저 묶는다.":"",
+    custom?"2. 각 업무축에서 고객/이해관계자, 반복 과업, 해결과제, 해결방법을 연결한다.":"",
+    custom?"3. 공고에 직접 적힌 내용은 [공고근거], 직무 특성에서 도출한 내용은 [추론], 판단할 수 없는 내용은 [추가 확인 필요]로 표시한다.":"",
+    custom?"4. 지원자격·우대사항은 직무 수행내용과 구분하며, 우대사항을 필수조건이나 실제 업무로 바꾸지 않는다.":"",
+    custom?"5. 필요역량은 반드시 앞에서 정리한 과업 또는 해결과제와 연결한다. '소통·책임감·문제해결' 같은 범용어만 단독으로 쓰지 않는다.":"",
+    custom?"6. 경력개발은 공고의 업무·우대사항을 기준으로 '지금 준비 → 신입 초기 → 전문성 확장' 순서로 제시하며 회사 내부 직급·연차·승진경로는 만들지 않는다.":"",
     isKea?"한국에너지공단은 모집직무가 채용을 위한 구분이고 입사 후 순환근무가 원칙이라는 점을 별도로 표시해줘. 현재 직무분석은 내가 선택한 모집직무의 공식 NCS 직무기술서만 기준으로 해줘.":"",
     isKea?"[선택 직무 세부분석 지침] "+keaGuide.analysis:"",
     isHd?"HD현대일렉트릭은 공식 공고에서 직무소개·우대사항·근무지만 확인된다. 필요지식·기술·태도를 추가할 때는 반드시 [직무특성상 추론]으로 표시하고 공식 공고에 적힌 것처럼 쓰지 마.":"",
@@ -951,7 +958,7 @@ function jobAnalysisPrompt(){
     isHd?"[경력개발 지침] "+hdGuide.career:"",
     "확인되지 않은 내용은 사실처럼 만들지 말고 [추론] 또는 [추가 확인 필요]라고 표시해줘.",
     "",
-    "아래 6개 제목을 정확히 그대로 사용하고 각 제목 아래에 '• ' bullet 2~4개로 답해줘.",
+    "아래 6개 제목을 정확히 그대로 사용하고 각 제목 아래에 '• ' bullet 2~4개로 답해줘. 제목에 번호·굵게표시·이모지를 붙이지 말고, 표 형식으로 바꾸지 마.",
     "고객·KPI:",
     "• 실제 업무의 고객/이해관계자를 먼저 쓰고, KPI는 공식 자료에 없으면 [추론]으로 업무 품질·정확성·일정·성과 관점만 제시",
     "주요 과업:",
@@ -989,24 +996,31 @@ function jobAnalysisPrompt(){
 
 function parseJobTableResult(raw){
   const map=[
-    ["customerKpi",/^(?:#+\s*)?(?:고객\s*[·/&]\s*KPI|고객\s*및\s*KPI|고객|KPI)\s*[:：]?/i],
-    ["tasks",/^(?:#+\s*)?(?:주요\s*과업|과업|주요\s*업무)\s*[:：]?/i],
-    ["challenge",/^(?:#+\s*)?(?:주요\s*해결과제|해결과제|과제)\s*[:：]?/i],
-    ["method",/^(?:#+\s*)?(?:해결방법|해결\s*방법|방법)\s*[:：]?/i],
-    ["competencies",/^(?:#+\s*)?(?:필요역량|필요\s*역량|역량)\s*[:：]?/i],
-    ["careerPlan",/^(?:#+\s*)?(?:경력개발|경력\s*개발|경력계획)\s*[:：]?/i]
+    ["customerKpi",/^(?:고객\s*[·/&]\s*KPI|고객\s*및\s*KPI|고객|KPI)\s*[:：]?/i],
+    ["tasks",/^(?:주요\s*과업|과업|주요\s*업무)\s*[:：]?/i],
+    ["challenge",/^(?:주요\s*해결과제|해결과제|과제)\s*[:：]?/i],
+    ["method",/^(?:해결방법|해결\s*방법|방법)\s*[:：]?/i],
+    ["competencies",/^(?:필요역량|필요\s*역량|역량)\s*[:：]?/i],
+    ["careerPlan",/^(?:경력개발|경력\s*개발|경력계획)\s*[:：]?/i]
   ];
   const out={};let current="";
   for(const original of String(raw||"").split(/\r?\n/)){
     const line=original.trim();if(!line)continue;
-    const hit=map.find(([,re])=>re.test(line));
+    const normalized=line
+      .replace(/^(?:[-*•]\s*)/,"")
+      .replace(/^(?:#{1,6}\s*)/,"")
+      .replace(/^(?:\d+\s*[.)]\s*)/,"")
+      .replace(/\*\*/g,"")
+      .replace(/__/g,"")
+      .trim();
+    const hit=map.find(([,re])=>re.test(normalized));
     if(hit){
       current=hit[0];
-      const rest=line.replace(hit[1],"").trim();
+      const rest=normalized.replace(hit[1],"").trim().replace(/^[-*•]\s*/,"");
       if(rest)out[current]=rest;
       continue;
     }
-    if(current)out[current]=(out[current]?out[current]+"\n":"")+line.replace(/^[-*•]\s*/,"");
+    if(current)out[current]=(out[current]?out[current]+"\n":"")+line.replace(/^[-*•]\s*/,"").replace(/^\*\*(.*?)\*\*$/,"$1");
   }
   return out;
 }
@@ -1088,14 +1102,15 @@ function customJobFields(){
   const j=state.customJob||emptyCustomJob();
   const active=state.sampleJobId==="custom";
   return '<div class="customJobBox customAlways" id="customJobEntry">'+
-    '<div class="customEntryHead"><div><span>방법 3</span><h3>내가 찾은 기업 · 직무 · 공고정보 직접 입력</h3><p>기업명과 분석할 직무를 입력한 뒤 ③ AI 직무분석으로 이어갑니다.</p></div><button class="btn '+(active?"primary":"secondary")+'" id="useCustomJobBtn">'+(active?"③ AI 직무분석 열기":"② 입력 완료 → ③ AI 직무분석 열기")+'</button></div>'+
+    '<div class="customEntryHead"><div><span>방법 3</span><h3>내가 찾은 기업 · 직무 · 공고정보 직접 입력</h3><p>기업명·직무와 공고의 담당업무를 입력한 뒤 ③ AI 직무분석으로 이어갑니다.</p></div><button class="btn '+(active?"primary":"secondary")+'" id="useCustomJobBtn">'+(active?"③ AI 직무분석 열기":"② 입력 완료 → ③ AI 직무분석 열기")+'</button></div>'+
+    '<div class="callout good"><b>정확한 분석에 필요한 최소 자료</b> 기업명 + 직무 + 공고에 적힌 담당업무가 필요합니다. 공고 URL과 지원자격·우대사항까지 넣으면 분석 근거가 더 선명해집니다.</div>'+
     '<div class="grid2">'+
       '<div class="field"><label>기업명</label><input class="input" data-customjob="company" value="'+h(j.company)+'" placeholder="예: 한화솔루션" /></div>'+
       '<div class="field"><label>직무·분야</label><input class="input" data-customjob="role" value="'+h(j.role)+'" placeholder="예: 생산기술 / 전기설비 / 안전환경" /></div>'+
       '<div class="field"><label>공고명 <span class="hint">(선택)</span></label><input class="input" data-customjob="title" value="'+h(j.title)+'" placeholder="예: 2026 하반기 생산기술 신입" /></div>'+
       '<div class="field"><label>공고 URL <span class="hint">(선택)</span></label><input class="input" data-customjob="sourceUrl" value="'+h(j.sourceUrl)+'" placeholder="https://..." /></div>'+
     '</div>'+
-    '<div class="field"><label>담당업무·직무기술서 핵심내용</label><textarea class="input" data-customjob="facts" placeholder="담당업무 또는 직무기술서 내용을 붙여넣으세요.">'+h(j.facts)+'</textarea></div>'+
+    '<div class="field"><label>공고의 담당업무·직무소개 <span class="hint">(필수)</span></label><textarea class="input" data-customjob="facts" placeholder="채용공고의 담당업무·직무소개를 그대로 붙여넣으세요. 여러 항목이면 줄바꿈해서 입력하세요.">'+h(j.facts)+'</textarea></div>'+
     '<details class="optionBox"><summary>지원자격·우대사항·모집기간도 입력하기 · 선택</summary><div class="optionBody"><div class="grid2">'+
       '<div class="field"><label>필수·지원자격</label><textarea class="input" data-customjob="required" placeholder="전공, 학력, 어학, 자격증 등">'+h(j.required)+'</textarea></div>'+
       '<div class="field"><label>우대사항</label><textarea class="input" data-customjob="preferred" placeholder="자격증, 경험, 기술 등">'+h(j.preferred)+'</textarea></div>'+
@@ -1751,6 +1766,10 @@ function selectCuratedRole(id,role){
 function useCustomJob(){
   if(!filled(state.customJob?.company)||!filled(state.customJob?.role)){
     toast("기업명과 직무·분야를 먼저 입력해 주세요.");
+    return;
+  }
+  if(!filled(state.customJob?.facts)){
+    toast("정확한 분석을 위해 공고의 담당업무·직무소개를 붙여넣어 주세요.");
     return;
   }
   selectAnalysisMethod("custom");
