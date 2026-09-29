@@ -101,7 +101,7 @@ function isStepComplete(i,s){
     case 2:return !!d.experienceCompetency?.experiences?.some?.(x=>x?.factChecked&&String(x?.action||'').trim());
     case 3:return !!a.jobExplorer?.targets?.length;
     case 4:return !!Object.keys(a.jobDeepDive?.analyses||{}).length;
-    case 5:return !!(a.industryCompany?.targetIndustries?.length&&a.industryCompany?.targetCompanies?.length);
+    case 5:return !!a.jobfitReportV1?.generatedAt;
     case 6:return !!a.careerFit?.selectedId;
     case 7:return !!(a.jdAnalyzer?.selectedId&&a.jdAnalyzer?.postings?.length);
     case 8:return !!a.careerAssets?.assets?.length;
