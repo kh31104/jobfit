@@ -953,6 +953,8 @@ function refreshStep5Derived(){
     const note=document.querySelector('[data-req="'+i+'"][data-reqkey="note"]');
     if(note&&note.value!==r.note)note.value=r.note||"";
   });
+  const assets=document.getElementById("derivedGapAssetsPreview");
+  if(assets)assets.textContent=derivedGapAssets()||"아직 입력된 스펙·충족 근거가 없습니다.";
   syncPromptPreview("gap",gapPrompt,"gapPromptPreview");
 }
 
@@ -1604,7 +1606,7 @@ function step5(){
       field("ai.gapResult","AI GAP 분석 결과 <span class=\"hint\">(선택)</span>","AI의 GAP 분석 결과를 붙여넣으세요.")+
     '</div>'+
     '<div class="divider"></div><div class="block"><h3>④ 최종 GAP과 3개월 행동</h3>'+
-      '<div class="selectedEvidence"><span>현재 확인된 근거</span><b>'+h(derivedGapAssets()||"아직 입력된 스펙·충족 근거가 없습니다.")+'</b></div>'+
+      '<div class="selectedEvidence"><span>현재 확인된 근거</span><b id="derivedGapAssetsPreview">'+h(derivedGapAssets()||"아직 입력된 스펙·충족 근거가 없습니다.")+'</b></div>'+
       '<div class="grid2">'+
         field("fit.gaps","우선 보완할 GAP","AI 결과를 보고 최대 3개만 남기세요.")+
         field("fit.actions","3개월 행동계획","무엇을 언제까지 어떤 결과물로 만들 것인가?")+
@@ -1996,7 +1998,7 @@ function bind(){
           if(note)note.value=state.requirements[i].note;
         }
       }
-      if(document.getElementById("gapPromptPreview"))syncPromptPreview("gap",gapPrompt,"gapPromptPreview");
+      refreshStep5Derived();
       save();
     };
     e.oninput=handler;e.onchange=handler;
