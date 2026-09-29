@@ -43,6 +43,7 @@ try{
   assert(await page.locator('.curatedJob').count()===3,'STEP3 must offer KEA, HD Electric and custom methods');
   assert((await page.locator('.curatedJob').nth(0).innerText()).includes('한국에너지공단'),'Public sample must be Korea Energy Agency');
   assert((await page.locator('.curatedJob').nth(1).innerText()).includes('HD현대일렉트릭'),'Private sample must be HD Hyundai Electric');
+  assert((await page.locator('.curatedJob').nth(0).locator('a').getAttribute('href'))==='https://kea.recruitlab.co.kr/app/recruitment-announcement/view/1020','KEA card must open the requested RecruitLab announcement');
 
   // Method 3 stays hidden until selected.
   assert(await page.locator('[data-customjob="company"]').count()===0,'Custom inputs must stay hidden before Method 3 selection');
@@ -92,6 +93,8 @@ try{
   // HD Hyundai Electric: choose among official 2026 new-hire roles.
   await page.locator('[data-analysis-method="hdelectric-2026-h2"]').click();
   await page.waitForSelector('[data-curated-group="hdelectric-2026-h2"]');
+  const hdLockedText=(await page.locator('#stepRoot').innerText())||'';
+  for(const heading of ['③ AI에게 선택한 직무만 분석시키기','④ 직무분석 테이블 완성','⑤ 완성된 직무분석표'])assert(hdLockedText.includes(heading),'HD Electric must show the full ②→⑤ path before role selection: '+heading);
   const groups=await page.locator('[data-curated-group="hdelectric-2026-h2"] option').allTextContents();
   assert(groups.some(x=>x.includes('설계·품질')),'HD Electric must include design/quality practice group');
   assert(groups.some(x=>x.includes('디지털·경영지원')),'HD Electric must include digital/management-support practice group');
@@ -113,11 +116,34 @@ try{
   assert(hdPrompt.includes('전기·기계 등 이공계열'),'HD Electric prompt must include official role preference');
   assert(hdPrompt.includes('[직무특성상 추론]'),'HD Electric prompt must distinguish inferred knowledge/skills');
   assert(hdPrompt.includes('TOEIC Speaking 120점'),'HD Electric prompt must include common application criteria');
+  assert(hdPrompt.includes('품질지표 수립·관리(실패비용·불량률) → 품질시스템 인증'),'Quality prompt must include its own role-analysis axis');
+
+  const hdRoleChecks=[
+    ['설계·품질','전기설계','전력기기 상세 전기설계·개발 → 도면 일정·완성도 관리','설계도면 제도 및 표준 관리'],
+    ['설계·품질','구조설계','주요 제품 상세 구조설계·개발 → 도면 일정·완성도 관리','상세 구조설계 및 개발'],
+    ['설계·품질','품질경영','품질지표 수립·관리(실패비용·불량률) → 품질시스템 인증','부적합사항(NCR)'],
+    ['디지털·경영지원','ICT/DT','SAP/ERP 운영·유지보수 → Legacy 시스템 개선·IT/DT 기술기획','CAD/PLM 시스템 개발·운영'],
+    ['디지털·경영지원','HR','채용·평가·승진·보상 등 HR 제도운영 → 조직문화 개선·임직원 교육','복지제도 기획 및 운영'],
+    ['영업·기술전략','영업','전력기기 제품 영업 → 영업전략 수립·프로젝트 진행','가격협상·대리점 영업관리'],
+    ['영업·기술전략','기술경영','전사 기술·제품 개발전략 → PRM/TRM 기획','특허·IP 전략·분석·권리화']
+  ];
+  for(const [group,role,guideNeedle,officialNeedle] of hdRoleChecks){
+    await page.locator('[data-curated-group="hdelectric-2026-h2"]').selectOption(group);
+    await page.waitForSelector('[data-curated-role="hdelectric-2026-h2"]');
+    await page.locator('[data-curated-role="hdelectric-2026-h2"]').selectOption(role);
+    await page.waitForSelector('#jobPromptPreview');
+    const prompt=await page.locator('#jobPromptPreview').inputValue();
+    assert(prompt.includes(guideNeedle),`HD Electric ${role} prompt must include its own analysis axis`);
+    assert(prompt.includes(officialNeedle),`HD Electric ${role} prompt must retain official job-description evidence`);
+    assert(prompt.includes('[직무특성상 추론]'),`HD Electric ${role} prompt must label inferred K/S/B`);
+  }
 
   // Method 3 must reveal its input screen automatically.
   await page.locator('[data-analysis-method="custom"]').click();
   await page.waitForSelector('[data-customjob="company"]',{state:'visible'});
   assert(await page.locator('#customJobEntry').isVisible(),'Method 3 selection must reveal the direct-input screen');
+  const customLockedText=(await page.locator('#stepRoot').innerText())||'';
+  for(const heading of ['② 내 전공 확인 → 이 기업에서 분석할 직무 입력','③ AI에게 선택한 직무만 분석시키기','④ 직무분석 테이블 완성','⑤ 완성된 직무분석표'])assert(customLockedText.includes(heading),'Custom method must show the full ②→⑤ path: '+heading);
   await page.locator('[data-customjob="company"]').fill('직접입력 에너지기업');
   await page.locator('[data-customjob="role"]').fill('생산기술');
   await page.locator('[data-customjob="facts"]').fill('생산 데이터 분석과 설비 개선');
