@@ -1614,34 +1614,24 @@ function step5(){
 }
 
 function portfolio(){
-  const t=state.target, st=state.student, jt=state.jobTable, f=state.fit, star=state.star;
+  const st=state.student, jt=state.jobTable, f=state.fit, star=state.star;
   const j=selectedCuratedJob();
   const req=state.requirements.filter(r=>filled(r.condition));
   const exps=state.experiences.filter(e=>filled(e.title)||filled(e.summary));
-  const a=["MY JOB ANALYSIS PORTFOLIO","",
-    "1. TARGET",
-    "산업: "+(t.industry||"-"),
-    "희망 직무: "+(t.job||"-"),
+  const a=["MY JOB PORTFOLIO","",
+    "1. TARGET JOB",
+    "기업: "+(j?.company||state.target.company||"-"),
+    "직무: "+(j?.role||state.target.job||"-"),
     "전공: "+(st.major||"-"),
-    "처음 생각한 직무 이미지: "+(t.initialView||"-"),"",
-    "2. SEARCH EXPERIENCE",
-    "직접 찾아본 기업: "+(state.step2Search.company||"-"),
-    "직접 찾아본 공고·직무: "+(state.step2Search.title||"-"),
-    "검색 메모: "+(state.step2Search.memo||"-"),"",
-    "3. SELECTED JOB POSTING",
-    "기업: "+(j?.company||"-"),
-    "공고: "+(j?.title||"-"),
-    "분야: "+(j?.role||"-"),
-    "출처: "+(j?.sourceUrl||"-"),"",
-    "4. JOB ANALYSIS TABLE",
-    "고객·KPI: "+(jt.customerKpi||"-"),
+    "공고·출처: "+(j?.sourceUrl||"-"),"",
+    "2. JOB ANALYSIS",
+    "고객·성과기준: "+(jt.customerKpi||"-"),
     "주요 과업: "+(jt.tasks||"-"),
     "주요 해결과제: "+(jt.challenge||"-"),
     "해결방법: "+(jt.method||"-"),
-    "필요역량: "+(jt.competencies||"-"),
-    "경력개발: "+(jt.careerPlan||"-"),"",
-    "5. MAJOR & EXPERIENCE EVIDENCE",
-    "전공에서 찾은 근거: "+(st.majorEvidence||"-")
+    "필요역량: "+(jt.competencies||"-"),"",
+    "3. MY EVIDENCE",
+    "전공 근거: "+(st.majorEvidence||"-")
   ];
   if(exps.length)exps.forEach((e,i)=>a.push("경험 "+(i+1)+": "+(e.title||"-")+" / "+(e.summary||"-")));
   else a.push("경험: -");
@@ -1649,27 +1639,21 @@ function portfolio(){
     "대표 경험 행동: "+(star.actionWhat||"-"),
     "대표 경험 결과: "+(star.result||"-"),
     "대표 경험 증거: "+(star.evidence||"-"),"",
-    "6. COMPETENCY LANGUAGE",
+    "4. MY COMPETENCY",
     state.ai.keywordResult||"AI 역량분석 결과 미입력","",
-    "7. MY SPEC",
+    "5. SPEC & GAP",
     "자격증: "+(st.certificates||"-"),
     "어학: "+(st.language||"-"),
-    "도구·기술: "+(st.tools||"-"),"",
-    "8. REQUIREMENTS & GAP"
+    "도구·기술: "+(st.tools||"-")
   );
-  if(req.length)req.forEach((r,i)=>a.push((i+1)+". "+r.condition+" / "+(r.status||"미판정")+" / 내 근거: "+(r.note||"-")));
-  else a.push("조건 비교: -");
+  if(req.length)req.forEach((r,i)=>a.push(
+    "조건 "+(i+1)+": "+r.condition+" / "+(r.status||"미판정")+" / 내 근거: "+(r.note||"-")
+  ));
+  else a.push("공고조건 비교: -");
   a.push(
     "현재 확인된 근거: "+(derivedGapAssets()||"-"),
     "우선 보완 GAP: "+(f.gaps||"-"),
-    "3개월 행동계획: "+(f.actions||"-"),"",
-    "[AI GAP 분석 메모]",
-    state.ai.gapResult||"-","",
-    "9. APPLICATION MATERIALS",
-    "[AI 자기소개서 소재정리]",
-    state.ai.selfIntroResult||"-","",
-    "[AI 실무면접 예상질문]",
-    state.ai.interviewResult||"-"
+    "3개월 행동계획: "+(f.actions||"-")
   );
   return a.join("\n");
 }
@@ -1816,8 +1800,8 @@ function interviewPrompt(){
 }
 
 function step6(){
-  return '<section class="card stepCard printTarget"><div class="sectionHead noPrint"><div><div class="kicker">STEP 06</div><h2>My Job Portfolio</h2><p>직무분석, 전공·경험, 역량 키워드, 스펙, GAP을 한 파일로 모으고 실제 지원 준비로 연결합니다.</p></div><span class="badge">Portfolio</span></div>'+
-    '<div class="block noPrint"><h3>① 내 직무분석 결과 확인</h3><p class="help">아래 내용은 STEP 1~5 입력값으로 자동 생성됩니다. 빠진 내용이 있으면 이전 STEP에서 수정합니다.</p></div>'+
+  return '<section class="card stepCard printTarget"><div class="sectionHead noPrint"><div><div class="kicker">STEP 06</div><h2>My Job Portfolio</h2><p>지원에 실제로 사용할 직무분석·경험근거·역량·GAP만 한 파일로 정리합니다.</p></div><span class="badge">Portfolio</span></div>'+
+    '<div class="block noPrint"><h3>① 핵심 Portfolio 확인</h3><p class="help">검색과정·초기 생각처럼 최종 지원에 직접 쓰지 않는 기록은 제외했습니다. 아래 5개 영역만 Word/PDF로 저장됩니다.</p></div>'+
     '<div class="preview">'+h(portfolio())+'</div>'+
     '<div class="divider noPrint"></div><div class="block noPrint"><h3>② 내 AI로 자기소개서 준비</h3><p class="help">선택한 기업·직무와 내 전공·경험·GAP이 반영됩니다. 한국에너지공단 선택 시 실제 자기소개서 문항과 블라인드 기준도 함께 들어갑니다.</p>'+
       '<textarea class="promptBox promptEditor shortPrompt" id="selfIntroPromptPreview" data-prompt-key="selfIntro">'+h(promptValue("selfIntro",selfIntroPrompt()))+'</textarea>'+
