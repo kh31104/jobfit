@@ -2012,10 +2012,39 @@ function syncSelectedPosting(){
   };
 }
 
+function step2CuratedMatch(){
+  const x=state.step2Search||{};
+  const company=String(x.company||"").replace(/\s/g,"").toLowerCase();
+  const target=String(state.target.job||"").trim();
+  for(const job of CURATED_JOBS){
+    const jobName=String(job.company||"").replace(/\s/g,"").toLowerCase();
+    if(!company||!(company.includes(jobName)||jobName.includes(company)))continue;
+    const lib=CURATED_ROLE_LIBRARIES[job.id];
+    for(const [groupName,group] of Object.entries(lib?.groups||{})){
+      const role=Object.keys(group.roles||{}).find(r=>r===target||target.includes(r)||r.includes(target));
+      if(role)return {id:job.id,group:groupName,role};
+    }
+    return {id:job.id,group:"",role:""};
+  }
+  return null;
+}
+
 function useStep2JobInStep3(){
   const x=state.step2Search||{};
   if(!filled(x.company)||!filled(x.title)){toast("STEP 2에서 찾은 기업과 공고명을 먼저 입력해 주세요.");return;}
   snapshotActiveCase();
+  const matched=step2CuratedMatch();
+  if(matched){
+    state.sampleJobId=matched.id;
+    state.curatedSelection??=emptyCuratedSelection();
+    state.curatedSelection[matched.id]={group:matched.group||"",role:matched.role||""};
+    restoreAnalysisCase(roleCaseKey(matched.id));
+    syncSelectedPosting();
+    state.currentStep=3;
+    save();render();
+    toast(matched.role?"찾은 공고와 같은 기업·직무를 STEP 3에서 자동 선택했습니다.":"찾은 기업을 STEP 3에서 열었습니다. 세부직무만 선택해 주세요.");
+    return;
+  }
   state.customJob={
     ...emptyCustomJob(),
     ...(state.customJob||{}),
