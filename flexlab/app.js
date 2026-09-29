@@ -692,7 +692,10 @@ function step2(){
       field("step2Search.title","찾은 직무·공고","예: 기술직 신입 / 현재 관련 공고 없음",false)+
       '<div class="field span2"><label>공고 주소 <span class="hint">(선택)</span></label><input class="input" data-path="step2Search.sourceUrl" value="'+h(state.step2Search.sourceUrl||"")+'" placeholder="https://..." /></div>'+
       field("step2Search.memo","검색 메모 <span class=\"hint\">(선택)</span>","어떤 검색어를 썼는지, 왜 적절한 공고를 찾기 어려웠는지 간단히 적어도 됩니다.")+
-    '</div></div>'+step2SearchPromptBox()+
+    '</div>'+
+      '<div class="actions compactActions"><button class="btn primary" id="useStep2SearchBtn">이 공고로 STEP 3 직무분석하기</button></div>'+
+      '<p class="help">기업명·공고명·직무·URL은 STEP 3으로 자동 가져갑니다. 정확한 분석을 위해 담당업무·직무소개 원문만 STEP 3에서 확인해 붙여넣으면 됩니다.</p>'+
+    '</div>'+step2SearchPromptBox()+
     '<div class="callout info"><b>공고가 없어도 수업은 계속됩니다.</b> STEP 3에서는 수업용 예시로 한국에너지공단과 HD현대일렉트릭의 2026년 신입 채용을 제공합니다.</div>');
 }
 
@@ -1009,7 +1012,7 @@ function jobAnalysisPrompt(){
     isHd?"[경력개발 지침] "+hdGuide.career:"",
     "확인되지 않은 내용은 사실처럼 만들지 말고 [추론] 또는 [추가 확인 필요]라고 표시해줘.",
     "",
-    "아래 6개 제목을 정확히 그대로 사용하고 각 제목 아래에 '• ' bullet 2~4개로 답해줘. 제목에 번호·굵게표시·이모지를 붙이지 말고, 표 형식으로 바꾸지 마.",
+    "아래 5개 핵심 제목을 정확히 그대로 사용하고 각 제목 아래에 '• ' bullet 2~4개로 답해줘. 제목에 번호·굵게표시·이모지를 붙이지 말고, 표 형식으로 바꾸지 마.",
     "고객·KPI:",
     "• 실제 업무의 고객/이해관계자를 먼저 쓰고, KPI는 공식 자료에 없으면 [추론]으로 업무 품질·정확성·일정·성과 관점만 제시",
     "주요 과업:",
@@ -1026,12 +1029,11 @@ function jobAnalysisPrompt(){
     "필요역량:",
     "• Knowledge / Skill / Behavior를 구분하고 각 역량 옆에 [공식] 또는 [추론] 표시",
     isKea?"• Knowledge는 공식 '필요지식', Skill은 공식 '필요기술', Behavior는 공식 '직무수행태도'에서 우선 추출하고 직업공통능력은 별도 bullet로 표시한다.":"",
-    "경력개발:",
-    isKea
-      ?"• 전공시험 범위("+((rd.exam)||"공고 확인")+")와 직무기술자격을 반영해 '지금 준비 → 첫 직무 → 확장 분야'를 현실적으로 제시"
-      :isHd
-        ?"• 위 [경력개발 지침]과 선택 직무 우대사항("+((rd.preferred)||"공고 확인")+")을 함께 사용해 '지금 준비 → 신입 초기 → 전문성 확장'을 제시"
-        :"• 현재 준비 → 신입 초기 → 전문성 확장 순서로 제시",
+    "",
+    "선택 보충:",
+    "• 경력개발 방향을 공고·직무자료에서 충분히 설명할 수 있을 때만 마지막에 '경력개발:' 제목을 추가해 1~2개 bullet로 제시해줘. 근거가 약하면 생략해.",
+    isKea?"• 제시할 경우 전공시험 범위("+((rd.exam)||"공고 확인")+")와 직무기술자격을 근거로 사용해.":"",
+    isHd?"• 제시할 경우 선택 직무 우대사항("+((rd.preferred)||"공고 확인")+")과 [경력개발 지침]을 근거로 사용해.":"",
     "",
     "추가 분석 규칙:",
     "- 내 전공 '"+(state.student.major||"미입력")+"'과 이 직무의 연결점을 '직접 연결 / 보완 필요 / 전공무관' 중 하나로 설명한다.",
@@ -1153,7 +1155,9 @@ function curatedRoleSelector(id){
 function customJobFields(){
   const j=state.customJob||emptyCustomJob();
   const ready=filled(j.company)&&filled(j.role)&&filled(j.facts);
+  const fromStep2=filled(state.step2Search?.company)&&j.company===state.step2Search.company&&j.title===state.step2Search.title;
   return '<div class="customJobBox customAlways" id="customJobEntry">'+
+    (fromStep2?'<div class="callout good"><b>STEP 2 공고를 가져왔습니다.</b> 기업명·공고명·직무·URL은 자동 입력했습니다. 아래 담당업무·직무소개만 공고 원문에서 붙여넣으세요.</div>':"")+
     '<div class="customEntryHead"><div><span>방법 3</span><h3>내가 찾은 기업 · 직무 · 공고정보 직접 입력</h3><p>기업명·직무와 공고의 담당업무를 입력한 뒤 ③ AI 직무분석으로 이어갑니다.</p></div><button class="btn '+(ready?"primary":"secondary")+'" id="useCustomJobBtn">'+(ready?"③ AI 직무분석 열기":"② 입력 완료 → ③ AI 직무분석 열기")+'</button></div>'+
     '<div class="callout good"><b>정확한 분석에 필요한 최소 자료</b> 기업명 + 직무 + 공고에 적힌 담당업무가 필요합니다. 공고 URL과 지원자격·우대사항까지 넣으면 분석 근거가 더 선명해집니다.</div>'+
     '<div class="grid2">'+
@@ -1177,8 +1181,10 @@ function jobTableFields(){
     '<div class="jobTableItem"><span>03</span>'+field("jobTable.challenge","주요 해결과제","업무에서 해결해야 하는 문제는 무엇인가?")+'</div>'+
     '<div class="jobTableItem"><span>04</span>'+field("jobTable.method","해결방법","어떤 방법·절차·도구로 해결하는가?")+'</div>'+
     '<div class="jobTableItem"><span>05</span>'+field("jobTable.competencies","필요역량","필요한 지식·기술·행동은 무엇인가?")+'</div>'+
-    '<div class="jobTableItem"><span>06</span>'+field("jobTable.careerPlan","경력개발","이 직무에서 경험을 쌓으면 어떤 방향으로 전문성이 넓어지는가?")+'</div>'+
-  '</div>';
+  '</div>'+
+  '<details class="optionBox"><summary>경력개발 방향 보기 · 선택</summary><div class="optionBody">'+
+    field("jobTable.careerPlan","경력개발","공고와 직무자료에서 근거가 있을 때만 정리합니다.")+
+  '</div></details>';
 }
 
 function jobTablePreview(){
@@ -1187,10 +1193,10 @@ function jobTablePreview(){
     ["과업","jobTable.tasks",state.jobTable.tasks],
     ["주요 해결과제","jobTable.challenge",state.jobTable.challenge],
     ["해결방법","jobTable.method",state.jobTable.method],
-    ["필요역량","jobTable.competencies",state.jobTable.competencies],
-    ["경력계획","jobTable.careerPlan",state.jobTable.careerPlan]
+    ["필요역량","jobTable.competencies",state.jobTable.competencies]
   ];
-  return '<div class="tableWrap jobAnalysisPreview"><table><thead><tr>'+cells.map(x=>'<th>'+x[0]+'</th>').join("")+'</tr></thead><tbody><tr>'+cells.map(x=>'<td data-preview="'+x[1]+'">'+h(x[2]||"-")+'</td>').join("")+'</tr></tbody></table></div>';
+  return '<div class="tableWrap jobAnalysisPreview"><table><thead><tr>'+cells.map(x=>'<th>'+x[0]+'</th>').join("")+'</tr></thead><tbody><tr>'+cells.map(x=>'<td data-preview="'+x[1]+'">'+h(x[2]||"-")+'</td>').join("")+'</tr></tbody></table></div>'+
+    (filled(state.jobTable.careerPlan)?'<div class="callout info"><b>선택 · 경력개발 방향</b><br>'+h(state.jobTable.careerPlan).replace(/\n/g,"<br>")+'</div>':"");
 }
 
 function step3(){
@@ -1216,7 +1222,7 @@ function step3(){
   const lockedFlow = state.sampleJobId&&!ready
     ? '<div class="divider"></div>'+
       '<div class="block"><h3>③ AI에게 선택한 직무만 분석시키기</h3><div class="callout info"><b>②를 먼저 완료하세요.</b> '+(isCustom?"기업명·직무·공고의 담당업무를 입력한 뒤 “② 입력 완료 → ③ AI 직무분석 열기”를 누르면":"직무군과 세부직무를 하나 선택하면")+' 이 영역이 바로 열립니다.</div></div>'+
-      '<div class="block"><h3>④ 직무분석 테이블 완성</h3><p class="help">③에서 받은 AI 답변을 붙여넣거나 직접 입력해 6개 항목을 완성합니다.</p></div>'+
+      '<div class="block"><h3>④ 직무분석 테이블 완성</h3><p class="help">③에서 받은 AI 답변을 붙여넣거나 직접 입력해 5개 핵심 항목을 완성합니다.</p></div>'+
       '<div class="block"><h3>⑤ 완성된 직무분석표</h3><p class="help">④에서 입력한 내용을 한 표로 확인합니다.</p></div>'
     : "";
   const analysisArea = j&&ready
@@ -1224,8 +1230,8 @@ function step3(){
       '<div class="block"><h3>③ AI에게 선택한 직무만 분석시키기</h3><p class="help">현재 선택한 기업·세부직무와 내 전공만 들어갑니다. 같은 기업의 다른 직무는 프롬프트에 섞지 않습니다.</p>'+
         '<textarea class="promptBox promptEditor shortPrompt" id="jobPromptPreview" data-prompt-key="job">'+h(promptValue("job",jobAnalysisPrompt()))+'</textarea>'+
         '<div class="actions compactActions"><button class="btn ghost" id="refreshJobPromptBtn">현재 선택 반영</button><button class="btn secondary" id="copyReviewedJobPromptBtn">내 직무분석 프롬프트 복사</button></div>'+
-        '<div class="field aiPaste"><label>AI 답변 붙여넣기 <span class="hint">(선택)</span></label><textarea class="input" data-path="jobTable.aiResult" id="jobTableAiResult" placeholder="AI 답변을 붙여넣으면 아래 6칸으로 나눌 수 있습니다.">'+h(state.jobTable.aiResult||"")+'</textarea></div>'+
-        '<div class="actions compactActions"><button class="btn secondary" id="applyJobTableAiBtn">AI 답변을 6칸에 반영</button></div>'+
+        '<div class="field aiPaste"><label>AI 답변 붙여넣기 <span class="hint">(선택)</span></label><textarea class="input" data-path="jobTable.aiResult" id="jobTableAiResult" placeholder="AI 답변을 붙여넣으면 아래 5개 핵심칸으로 나눌 수 있습니다.">'+h(state.jobTable.aiResult||"")+'</textarea></div>'+
+        '<div class="actions compactActions"><button class="btn secondary" id="applyJobTableAiBtn">AI 답변을 5개 핵심칸에 반영</button></div>'+
       '</div>'+
       '<div class="divider"></div><div class="block"><h3>④ 직무분석 테이블 완성</h3><p class="help">이 표는 현재 선택한 세부직무의 작업공간에 따로 저장됩니다.</p>'+jobTableFields()+'</div>'+
       '<div class="block"><h3>⑤ 완성된 직무분석표</h3><p class="help">모바일에서는 좌우로 밀어서 전체 표를 확인합니다.</p>'+jobTablePreview()+'</div>'+
@@ -2037,14 +2043,15 @@ function applyJobTableAi(){
   const raw=document.getElementById("jobTableAiResult")?.value||state.jobTable.aiResult||"";
   if(!filled(raw)){toast("먼저 AI 답변을 붙여넣어 주세요.");return;}
   const parsed=parseJobTableResult(raw);
-  const keys=["customerKpi","tasks","challenge","method","competencies","careerPlan"];
-  const count=keys.filter(k=>filled(parsed[k])).length;
-  if(!count){toast("6개 제목을 찾지 못했습니다. 직접 입력해 주세요.");return;}
+  const coreKeys=["customerKpi","tasks","challenge","method","competencies"];
+  const keys=[...coreKeys,"careerPlan"];
+  const coreCount=coreKeys.filter(k=>filled(parsed[k])).length;
+  if(!coreCount){toast("5개 핵심 제목을 찾지 못했습니다. 직접 입력해 주세요.");return;}
   keys.forEach(k=>{if(filled(parsed[k]))state.jobTable[k]=parsed[k];});
   state.jobTable.aiResult=raw;
   state.postings[0].tasks=state.jobTable.tasks;
   state.competency.top5=state.jobTable.competencies;
-  save();render();toast("AI 답변에서 "+count+"개 항목을 직무분석표에 반영했습니다.");
+  save();render();toast("AI 답변에서 핵심 "+coreCount+"개 항목"+(filled(parsed.careerPlan)?" + 경력개발":"")+"을 반영했습니다.");
 }
 
 function bind(){
