@@ -26,6 +26,7 @@ const emptyAnalysisCase=()=>({
   fit:emptyFit(),
   promptDrafts:{job:"",keyword:"",gap:"",selfIntro:"",interview:""},
   keywordResult:"",
+  keywordSummary:"",
   gapResult:"",
   selfIntroResult:"",
   interviewResult:""
@@ -387,6 +388,7 @@ function normalizeAnalysisCase(c={}){
     fit:{...emptyFit(),...(c.fit||{})},
     promptDrafts:{...b.promptDrafts,...(c.promptDrafts||{})},
     keywordResult:c.keywordResult||"",
+    keywordSummary:c.keywordSummary||"",
     gapResult:c.gapResult||"",
     selfIntroResult:c.selfIntroResult||"",
     interviewResult:c.interviewResult||""
@@ -426,7 +428,7 @@ const defaults=()=>({
   matchRows:[0,1,2].map(emptyMatch),
   fit:emptyFit(),
   promptDrafts:{search:"",job:"",keyword:"",gap:"",selfIntro:"",interview:""},
-  ai:{keywordResult:"",gapResult:"",selfIntroResult:"",interviewResult:""}
+  ai:{keywordResult:"",keywordSummary:"",gapResult:"",selfIntroResult:"",interviewResult:""}
 });
 
 let state=load(), activePosting=0;
@@ -484,6 +486,7 @@ function load(){
         requirements:[0,1,2].map(i=>({condition:"",status:"",note:"",...(x.requirements?.[i]||{})})),
         fit:{...emptyFit(),...(x.fit||{})},
         keywordResult:x.ai?.keywordResult||"",
+        keywordSummary:x.ai?.keywordSummary||"",
         gapResult:x.ai?.gapResult||""
       };
     }
@@ -532,6 +535,7 @@ function snapshotActiveCase(){
       interview:state.promptDrafts?.interview||""
     },
     keywordResult:state.ai?.keywordResult||"",
+    keywordSummary:state.ai?.keywordSummary||"",
     gapResult:state.ai?.gapResult||"",
     selfIntroResult:state.ai?.selfIntroResult||"",
     interviewResult:state.ai?.interviewResult||""
@@ -554,6 +558,7 @@ function restoreAnalysisCase(id=roleCaseKey()){
   state.ai={
     ...(state.ai||{}),
     keywordResult:c.keywordResult||"",
+    keywordSummary:c.keywordSummary||"",
     gapResult:c.gapResult||"",
     selfIntroResult:c.selfIntroResult||"",
     interviewResult:c.interviewResult||""
