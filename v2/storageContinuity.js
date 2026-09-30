@@ -92,7 +92,7 @@ function currentCourse(){return (new URLSearchParams(location.search).get('cours
 function mountStatus(){
   if(!INJE_CODES.has(currentCourse()))return;
   const root=document.getElementById('stepRoot');if(!root)return;
-  const kicker=root.querySelector('.kicker');if(!kicker||!kicker.textContent.includes('STEP 0'))return;
+  const kicker=root.querySelector('.kicker');if(!kicker||!/^STEP\s*[01]\b/i.test(kicker.textContent.trim()))return;
   const existing=root.querySelector('#jobfitContinuityStatus');
   const state=parseState(localStorage.getItem(STORAGE_KEY))||{};
   const found=hasLearningData(state),code=String(state.profile?.anonCode||'');
