@@ -4,11 +4,11 @@ export async function render(ctx){
   const s=ctx.getState(),root=document.getElementById('stepRoot');
   const report=buildReport(s,ctx);
   root.innerHTML=`<section class="card jobfitReportStage">${styleBlock()}
-    <div class="sectionHead"><div><div class="kicker">STEP 5</div><h2>MY JOBFIT REPORT v1</h2><p>STEP 1~5의 핵심만 3페이지로 정리합니다. 전체 입력 원문은 Jobfit 저장데이터와 백업파일에 남습니다.</p></div><span class="badge">중간 결과물</span></div>
+    <div class="sectionHead"><div><div class="kicker">STEP 5</div><h2>MY JOBFIT REPORT v1</h2><p>STEP 1~5에서 완료한 핵심 결과를 3페이지로 정리합니다. 전체 입력 원문은 Jobfit 저장데이터와 백업파일에 남습니다.</p></div><span class="badge">중간 결과물</span></div>
     <div class="progress"><span style="width:43%"></span></div>
     <div class="callout info"><b>학생이 다시 읽을 수 있는 분량으로 줄였습니다.</b><br>검사 전체 문항, AI 대화 전체, STAR 원문 전체, JD 원문은 PDF에 넣지 않습니다. Career DNA → Experience Evidence → Job Exploration → Job Analysis → GAP만 남깁니다.</div>
 
-    <div class="block"><div class="moduleHead"><span>01</span><div><h3>보고서 준비상태</h3><p>누락된 단계가 있어도 현재까지 입력된 내용으로 보고서를 만들 수 있습니다.</p></div></div>${readinessHtml(s,ctx)}</div>
+    <div class="block"><div class="moduleHead"><span>01</span><div><h3>보고서 준비상태</h3><p>직무분석 5개 항목과 GAP 입력상태를 확인한 뒤 현재 저장된 결과로 보고서를 만듭니다.</p></div></div>${readinessHtml(s,ctx)}</div>
     <div class="hr"></div><div class="block"><div class="moduleHead"><span>02</span><div><h3>3페이지 미리보기</h3><p>학생에게 전달되는 PDF 형태입니다.</p></div></div>
       <div class="actions noReportPrint"><button class="btn primary" id="refreshReport">현재 내용으로 갱신</button><button class="btn secondary" id="printReport">PDF 저장 화면</button><button class="btn outline" id="backupReport">Jobfit 데이터 백업</button></div>
       <div id="jobfitReportPrint" class="reportPreview">${reportHtml(report,ctx)}</div>
@@ -29,7 +29,8 @@ function buildReport(s,ctx){
   const best3=exp.best3||{},repKey=exp.representativeKey||'',repSeed=repKey&&best3[repKey]?best3[repKey]:null;
   const best=(repSeed?.title?experiences.find(x=>x?.title===repSeed.title):null)||experiences[0]||repSeed||{};
   const explorer=s.artifacts?.jobExplorer||{},targets=getTargets(explorer),deep=s.artifacts?.jobDeepDive||{},targetAnalyses=deep.targetAnalyses||{};
-  const primary=targets[0],analysis=primary?(targetAnalyses[primary.id]||deep.analyses?.[primary.jobId]||{}):{};
+  const completedTarget=targets.find(t=>{const a=targetAnalyses[t.id]||deep.analyses?.[t.jobId]||{};const jt=a.jobTable||{};return [jt.customerKpi,jt.tasks,jt.challenge,jt.method,jt.competencies].some(v=>String(v||'').trim())||String(a.have||'').trim()||String(a.prepare||'').trim();});
+  const primary=completedTarget||targets[0],analysis=primary?(targetAnalyses[primary.id]||deep.analyses?.[primary.jobId]||{}):{};
   const values=[...new Set(profile.valueClues||((dna.balance?.answers||[]).filter(Boolean).map(x=>x.value)))].slice(0,3);
   const anchor=(profile.careerAnchorTop||dna.careerAnchor?.ranking||[]).slice(0,3).map(x=>({name:x.name||x.code||'',score:Number.isFinite(Number(x.score))?Number(x.score):null})).filter(x=>x.name);
   const selfStrengths=(profile.selfStrengths||dna.selfStrengths||[]).slice(0,5);
