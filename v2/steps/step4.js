@@ -1,7 +1,14 @@
 const SOURCE_TYPES=['기업 공식 채용공고','기업 공식 직무소개','기업 공식 직무기술서','NCS','고용24 직업정보','공공기관·정부자료','산업협회·전문기관','기타 신뢰자료'];
 const REQ_TYPES=['Gate · 필수조건','Preference · 우대조건','Knowledge','Skill','Behavior','Experience','Tool·System','기타'];
 const GAP_STATUS=['근거 있음','일부 근거 있음','확인 필요','준비 필요'];
-const VERSION='job-analysis-inje-v4';
+const VERSION='job-analysis-inje-v5';
+const JOB_SITES=[
+  {group:'민간기업',name:'사람인',url:'https://www.saramin.co.kr/',desc:'민간기업 신입 공고'},
+  {group:'민간기업',name:'잡코리아',url:'https://www.jobkorea.co.kr/',desc:'대기업·공채'},
+  {group:'민간기업',name:'고용24',url:'https://www.work24.go.kr/',desc:'정부 통합 채용정보'},
+  {group:'공공기관',name:'잡알리오',url:'https://job.alio.go.kr/',desc:'국가 공공기관'},
+  {group:'공공기관',name:'클린아이 잡플러스',url:'https://job.cleaneye.go.kr/',desc:'지방공공기관'}
+];
 
 export async function render(ctx){
   const s=ctx.getState(),explorer=s.artifacts?.jobExplorer||{candidates:[],targets:[]},targets=getTargets(explorer);
@@ -26,11 +33,23 @@ export async function render(ctx){
         <div class="pillRow">${targets.map((t,i)=>`<button class="btn outline smallBtn targetPick ${t.id===target.id?'activePick':''}" data-id="${esc(t.id,ctx)}">${i+1}. ${esc(t.job?.title||'직무',ctx)} × ${esc(t.industry||'산업 미정',ctx)}</button>`).join('')}</div>
         <div class="callout good" style="margin-top:10px"><b>현재 Target</b><br>${esc(job?.title||'직무',ctx)} × ${esc(target.industry||'산업 미정',ctx)}</div>`)}
 
-      ${block('02','Find JD','기업 공식 채용공고를 우선으로 실제 JD를 찾고 등록합니다.',`
-        <div class="grid2">${txt('companyName','기업명',a.company?.name||'','예: ○○전자')}${txt('companyUrl','기업 공식페이지',a.company?.url||'','https://...')}</div>
-        <div class="grid4" style="margin-top:12px">${sel('sourceType','자료 유형','',SOURCE_TYPES)}${txt('sourceName','JD·자료명','','예: 2026 신입 생산기술')}${txt('sourceUrl','원문 URL','','https://...')}${txt('sourceChecked','확인일','',today())}</div>
-        <div class="field" style="margin-top:10px"><label>원문에서 확인한 핵심</label><textarea id="sourceNote" placeholder="주요 업무·지원조건·우대사항 등 원문에서 확인한 내용만 간단히 적으세요."></textarea></div>
-        <div class="actions"><button class="btn primary" id="addSource">JD·자료 추가</button></div><div id="sourceList"></div>`)}
+      ${block('02','Find JD','먼저 관심 직무의 최근 채용공고를 직접 찾아봅니다. 공고가 없거나 마감되어 있어도 괜찮습니다.',`
+        <h4 style="margin:14px 0 8px">① 실제 공고 한번 찾아보기</h4>
+        <p class="help">아래 채용사이트를 새 창으로 열어 <b>${esc(job?.title||'관심 직무',ctx)} × ${esc(target.industry||'산업 미정',ctx)}</b> 공고를 찾아보세요.</p>
+        <div class="siteSection"><b>민간기업</b><div class="jdSiteGrid">${renderJobSites('민간기업')}</div></div>
+        <div class="siteSection"><b>공공기관</b><div class="jdSiteGrid">${renderJobSites('공공기관')}</div></div>
+
+        <details class="subDetails" style="margin-top:12px"><summary>AI에게 현재 공고 찾아달라고 하기 · 선택</summary>
+          <div class="callout info" style="margin-top:10px"><b>검색 가능한 AI에서 사용하세요.</b><br>현재 모집 공고를 확인하지 못하면 최근 6개월 공고까지 찾고, 확인하지 못한 링크를 만들어내지 않도록 지시합니다.</div>
+          <textarea id="jdSearchPrompt" rows="16">${esc(buildSearchPrompt(ctx.getState(),target),ctx)}</textarea>
+          <div class="actions"><button class="btn primary" id="copyJdSearchPrompt">채용공고 검색 프롬프트 복사</button></div>
+        </details>
+
+        <h4 style="margin:18px 0 8px">② 찾은 공고 기록</h4>
+        <div class="grid2">${txt('companyName','찾은 기업',a.company?.name||'','예: 관심 기업명 / 찾지 못함')}${txt('companyUrl','기업 공식페이지',a.company?.url||'','https://...')}</div>
+        <div class="grid4" style="margin-top:12px">${sel('sourceType','자료 유형','',SOURCE_TYPES)}${txt('sourceName','찾은 직무·공고','','예: 브랜드 마케팅 신입 / 현재 관련 공고 없음')}${txt('sourceUrl','공고 주소','','https://...')}${txt('sourceChecked','확인일','',today())}</div>
+        <div class="field" style="margin-top:10px"><label>담당업무·직무소개 <span class="muted">(가능하면 붙여넣기)</span></label><textarea id="sourceNote" placeholder="공고의 담당업무·직무소개·지원조건·우대사항을 그대로 붙여넣거나 핵심만 기록하세요."></textarea></div>
+        <div class="actions"><button class="btn primary" id="addSource">이 JD 추가</button></div><div id="sourceList"></div>`)}
 
       ${block('03','Choose JD','분석에 사용할 실제 공고 하나를 선택합니다.',`
         <div class="field"><label>분석할 JD</label><select id="chosenSource"></select></div>
@@ -52,6 +71,7 @@ export async function render(ctx){
   function bind(target,a){
     document.querySelectorAll('.targetPick').forEach(b=>b.addEventListener('click',()=>{currentId=b.dataset.id;paint()}));
     document.getElementById('addSource')?.addEventListener('click',()=>addSource(target,a));
+    document.getElementById('copyJdSearchPrompt')?.addEventListener('click',()=>copy(document.getElementById('jdSearchPrompt')?.value||buildSearchPrompt(ctx.getState(),target),ctx));
     document.getElementById('chosenSource')?.addEventListener('change',e=>{a.selectedSourceId=e.target.value;persist(target,a);renderChosen(a);refreshPrompt(target,a)});
     document.getElementById('refreshDeepPrompt')?.addEventListener('click',()=>refreshPrompt(target,a));
     document.getElementById('copyDeepPrompt')?.addEventListener('click',()=>copy(document.getElementById('deepPrompt').value,ctx));
