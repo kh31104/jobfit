@@ -15,7 +15,7 @@ async function run(name,viewport){
     await page.goto(base,{waitUntil:'networkidle',timeout:60000});
     assert(new URL(page.url()).searchParams.get('course')==='INJE2026','course=INJE2026 was not preserved');
     assert(new URL(page.url()).searchParams.get('measures')==='true','INJE2026 STEP0 PRE must stay enabled');
-    assert(await page.locator('.stepBtn').count()===14,'Student navigation must contain 14 steps');
+    assert(await page.locator('.stepBtn').count()===12,'Student navigation must contain 12 steps after duplicate JD/Asset removal');
 
     await page.waitForSelector('#preMeasureSave',{timeout:30000});
     const step0=(await page.locator('#stepRoot').textContent())||'';
@@ -75,13 +75,44 @@ async function run(name,viewport){
 
     await page.locator('.stepBtn[data-step="3"]').click();await page.waitForSelector('#jobPrompt');
     const week6=(await page.locator('#stepRoot').textContent())||'';
-    for(const text of ['강점·경험역량을 직무 후보로 연결하기','나의 직무탐색 근거 확인','AI 직무탐색 프롬프트','직무 후보 Pool','Target Job 1·2·3 직접 선택'])assert(week6.includes(text),`Missing deployed Week6 STEP3 module: ${text}`);
+    const step3Expected=['나의 직무탐색 근거 확인','직장에서 해보고 싶은 일','관심 산업·분야','직무 후보 찾기','Target Job 선택'];
+    const step3Actual=(await page.locator('.jobExplorerV3 > .block > .moduleHead h3').allTextContents()).map(x=>x.replace(/\s+/g,' ').trim());
+    assert(step3Actual.length===5,`Deployed STEP3 must contain exactly 5 modules, found ${step3Actual.length}: ${step3Actual.join(' | ')}`);
+    step3Expected.forEach((title,i)=>assert(step3Actual[i]===title,`Deployed STEP3 order mismatch at ${i+1}: expected ${title}, got ${step3Actual[i]||'missing'}`));
+    assert(week6.includes('내가 탐색할 직무 찾기'),'Simplified STEP3 heading missing');
+    assert(!week6.includes('내가 이 직무를 어떻게 생각하는가'),'Deleted STEP3 rating/reflection module returned');
     const jobPrompt=await page.locator('#jobPrompt').inputValue();
-    assert(jobPrompt.includes('[3주차 Career DNA]'),'Week6 prompt missing Career DNA bridge');
-    assert(jobPrompt.includes('[4주차 Experience Map]'),'Week6 prompt missing Experience Map bridge');
-    assert(jobPrompt.includes('Task·KSA·KPI'),'Week6 prompt missing Task/KSA/KPI validation');
-    assert(!jobPrompt.includes('RIASEC'),'Legacy RIASEC dependency remains in Week6 prompt');
-    if(viewport.width<=480){const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);assert(overflow<=2,`Week6 STEP3 mobile horizontal overflow detected: ${overflow}px`)}
+    assert(jobPrompt.includes('[STEP 1 Career DNA · 보조근거]'),'STEP3 prompt missing Career DNA bridge');
+    assert(jobPrompt.includes('[STEP 2 경험 근거 · 우선근거]'),'STEP3 prompt missing STEP2 Evidence bridge');
+    assert(jobPrompt.includes('후보는 4~5개만 제안'),'STEP3 prompt must limit job candidates');
+    assert(jobPrompt.includes('특정 산업, 특히 에너지 산업을 기본값으로 두지 않는다'),'STEP3 prompt lost industry-neutral guard');
+    assert(jobPrompt.includes('실제 Task·요구기술·기업조건은 STEP 4에서 공식자료로 확인'),'STEP3→4 validation boundary missing');
+    assert(!jobPrompt.includes('적합도 %'),'STEP3 prompt must not generate fit percentages');
+    if(viewport.width<=480){const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);assert(overflow<=2,`STEP3 mobile horizontal overflow detected: ${overflow}px`)}
+
+    // Student flow: choose a Target Job, then confirm that STEP 4 is the compact FLEX-style JD flow.
+    await page.evaluate(()=>{
+      const key='jobfit:v2:learner',s=JSON.parse(localStorage.getItem(key));
+      s.activeStep=4;s.artifacts=s.artifacts||{};
+      s.artifacts.jobExplorer={
+        ...(s.artifacts.jobExplorer||{}),
+        candidates:[{id:'job_live_1',title:'생산기술',family:'생산·품질',summary:'생산공정을 안정적으로 운영하고 개선하는 직무'}],
+        targets:['job_live_1'],
+        targetCombos:[{id:'target_live_1',jobId:'job_live_1',industry:'자동차·모빌리티',priority:1}],
+        targetReason:'공정 문제를 분석하고 개선하는 일을 더 알아보고 싶다.'
+      };
+      localStorage.setItem(key,JSON.stringify(s));
+    });
+    await page.reload({waitUntil:'networkidle',timeout:60000});await page.waitForSelector('#companyName');
+    const step4Body=(await page.locator('#stepRoot').textContent())||'';
+    const step4Expected=['Target Job','Find JD','Choose JD','GAP Match'];
+    const step4Actual=(await page.locator('.jobAnalysisInje > #analysisRoot > .block > .moduleHead h3').allTextContents()).map(x=>x.replace(/\s+/g,' ').trim());
+    assert(step4Actual.length===4,`Deployed STEP4 must contain exactly 4 modules, found ${step4Actual.length}: ${step4Actual.join(' | ')}`);
+    step4Expected.forEach((title,i)=>assert(step4Actual[i]===title,`Deployed STEP4 order mismatch at ${i+1}: expected ${title}, got ${step4Actual[i]||'missing'}`));
+    assert(step4Body.includes('생산기술 × 자동차·모빌리티'),'STEP3 Target Job did not carry into STEP4');
+    assert(!step4Body.includes('My Evidence'),'STEP4 must not expose the removed duplicate My Evidence step');
+    assert(step4Body.includes('STEP 2의 경험근거는 자동으로 불러오고'),'STEP4 should explain that prior evidence is reused automatically');
+    if(viewport.width<=480){const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);assert(overflow<=2,`STEP4 mobile horizontal overflow detected: ${overflow}px`)}
 
     if(errors.length)throw new Error(errors.join('\n'));console.log(`PASS ${name}`);
   }catch(error){failed=true;console.error(`FAIL ${name}\n${error.stack||error}`)}finally{await context.close()}
