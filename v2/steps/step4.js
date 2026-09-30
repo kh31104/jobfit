@@ -110,7 +110,7 @@ export async function render(ctx){
     document.getElementById('applyJobAi')?.addEventListener('click',()=>applyJobAnalysis(target,a));
     ['jobCustomerKpi','jobTasks','jobChallenge','jobMethod','jobCompetencies','jobCareerPlan'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{captureJobTable(a);persist(target,a);renderJobTablePreview(a);refreshGapControls(target,a)}));
     ['specCertificates','specLanguage','specTools','specPortfolio'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{captureSpec(a);persist(target,a);refreshGapControls(target,a)}));
-    document.getElementById('chosenSource')?.addEventListener('change',e=>{a.selectedSourceId=e.target.value;persist(target,a);renderChosen(a);refreshPrompt(target,a)});
+    document.getElementById('chosenSource')?.addEventListener('change',e=>{a.selectedSourceId=e.target.value;const chosen=(a.sources||[]).find(x=>x.id===a.selectedSourceId);if(chosen?.companyName)a.company={name:chosen.companyName,url:chosen.companyUrl||'',source:'기업 공식자료'};persist(target,a);renderChosen(a);const jp=document.getElementById('jobAiPrompt');if(jp)jp.value=buildJobAnalysisPrompt(ctx.getState(),target,a);refreshPrompt(target,a)});
     document.getElementById('refreshDeepPrompt')?.addEventListener('click',()=>refreshPrompt(target,a));
     document.getElementById('copyDeepPrompt')?.addEventListener('click',()=>{captureJobTable(a);captureSpec(a);if(!jobTableReady(a)){ctx.toast('직무분석표의 핵심 5개 항목을 먼저 확인하세요.');return}if(!specReady(a)){ctx.toast("자격증·어학·도구/기술을 먼저 확인하세요. 없으면 ‘없음’이라고 입력하세요.");return}refreshPrompt(target,a);copy(document.getElementById('deepPrompt').value,ctx)});
     document.getElementById('importDeepAi')?.addEventListener('click',()=>importDeepAi(target,a));
@@ -124,7 +124,7 @@ export async function render(ctx){
     if(a.sources.length>=3){ctx.toast('찾은 공고는 최대 3개까지 기록할 수 있습니다. 기존 공고를 삭제한 뒤 추가하세요.');return}
     a.company={name:v('companyName'),url:v('companyUrl'),source:'기업 공식자료'};
     const id='src_'+Date.now();
-    a.sources.push({id,type:v('sourceType')||'기업 공식 채용공고',name,url,checkedAt:v('sourceChecked')||today(),note:v('sourceNote')});
+    a.sources.push({id,companyName:v('companyName'),companyUrl:v('companyUrl'),type:v('sourceType')||'기업 공식 채용공고',name,url,checkedAt:v('sourceChecked')||today(),note:v('sourceNote')});
     if(!a.selectedSourceId)a.selectedSourceId=id;
     persist(target,a);['sourceName','sourceUrl','sourceNote'].forEach(x=>set(x,''));paint();ctx.toast('JD·자료를 추가했습니다.');
   }
@@ -169,11 +169,11 @@ export async function render(ctx){
   function renderSources(target,a){
     const box=document.getElementById('sourceList');if(!box)return;
     if(!a.sources?.length){box.innerHTML='<div class="placeholder"><b>아직 JD가 없습니다.</b>기업 공식 채용공고를 우선 등록하세요.</div>';updateChosenSelect(a);return}
-    box.innerHTML=a.sources.map((x,i)=>`<div class="listCard"><div class="listHead"><div><span class="rankTag">JD ${i+1}</span><h3>${esc(x.name,ctx)}</h3><div class="muted small">${esc(x.type,ctx)} · ${esc(x.checkedAt||'',ctx)}</div></div><button class="btn danger smallBtn" data-delsrc="${x.id}">삭제</button></div><p>${esc(x.note||'핵심내용 미입력',ctx)}</p><a href="${esc(x.url,ctx)}" target="_blank" rel="noopener">원문 열기 ↗</a></div>`).join('');
+    box.innerHTML=a.sources.map((x,i)=>`<div class="listCard"><div class="listHead"><div><span class="rankTag">JD ${i+1}</span><h3>${esc((x.companyName?x.companyName+' · ':'')+x.name,ctx)}</h3><div class="muted small">${esc(x.type,ctx)} · ${esc(x.checkedAt||'',ctx)}</div></div><button class="btn danger smallBtn" data-delsrc="${x.id}">삭제</button></div><p>${esc(x.note||'핵심내용 미입력',ctx)}</p><a href="${esc(x.url,ctx)}" target="_blank" rel="noopener">원문 열기 ↗</a></div>`).join('');
     box.querySelectorAll('[data-delsrc]').forEach(b=>b.addEventListener('click',()=>{a.sources=a.sources.filter(x=>x.id!==b.dataset.delsrc);if(a.selectedSourceId===b.dataset.delsrc)a.selectedSourceId=a.sources[0]?.id||'';persist(target,a);paint()}));updateChosenSelect(a);
   }
-  function updateChosenSelect(a){const el=document.getElementById('chosenSource');if(!el)return;el.innerHTML='<option value="">JD 선택</option>'+((a.sources||[]).map(x=>`<option value="${x.id}" ${a.selectedSourceId===x.id?'selected':''}>${esc(x.name,ctx)}</option>`).join(''))}
-  function renderChosen(a){updateChosenSelect(a);const box=document.getElementById('chosenPreview');if(!box)return;const x=(a.sources||[]).find(s=>s.id===a.selectedSourceId);box.innerHTML=x?`<b>${esc(x.name,ctx)}</b><br>${esc(x.note||'원문 핵심내용을 확인하세요.',ctx)}`:'분석할 JD를 선택하세요.'}
+  function updateChosenSelect(a){const el=document.getElementById('chosenSource');if(!el)return;el.innerHTML='<option value="">JD 선택</option>'+((a.sources||[]).map(x=>`<option value="${x.id}" ${a.selectedSourceId===x.id?'selected':''}>${esc((x.companyName?x.companyName+' · ':'')+x.name,ctx)}</option>`).join(''))}
+  function renderChosen(a){updateChosenSelect(a);const box=document.getElementById('chosenPreview');if(!box)return;const x=(a.sources||[]).find(s=>s.id===a.selectedSourceId);box.innerHTML=x?`<b>${esc((x.companyName?x.companyName+' · ':'')+x.name,ctx)}</b><br>${esc(x.note||'원문 핵심내용을 확인하세요.',ctx)}`:'분석할 JD를 선택하세요.'}
   function renderGap(a){
     const box=document.getElementById('gapSummary');if(!box)return;
     const gaps=(a.requirements||[]).filter(r=>r.gap||r.status==='준비 필요').slice(0,3).map(r=>r.gap||r.name);
@@ -195,7 +195,7 @@ function syncDownstream(state,target,a){
   const requirements=(a.requirements||[]).filter(r=>!String(r.type).startsWith('Gate')).map((r,i)=>({id:'jdreq_'+i+'_'+slug(r.name),text:r.name,type:normalizeReqType(r.type),level:requirementLevel(r),explicitness:'공고에 명시',sourceQuote:'',evidenceQuestion:'STEP 2 Evidence와 연결 확인'}));
   const gates=lines(a.gate).map((x,i)=>({id:'gate_'+i,text:x,type:'기타',status:'확인 필요',sourceQuote:''}));
   const jdOld=structuredClone(state.artifacts?.jdAnalyzer||{postings:[],selectedId:''});
-  const posting={id:postingId,company:a.company?.name||'기업 미정',jobTitle:target.job?.title||'',rawPosting:selected?.note||'',source:selected?.url||'',postingUrl:selected?.url||'',requirements,gates,gateReviewed:!!a.gate,createdAt:new Date().toISOString()};
+  const posting={id:postingId,company:selected?.companyName||a.company?.name||'기업 미정',jobTitle:target.job?.title||'',rawPosting:selected?.note||'',source:selected?.url||'',postingUrl:selected?.url||'',requirements,gates,gateReviewed:!!a.gate,createdAt:new Date().toISOString()};
   jdOld.postings=[...(jdOld.postings||[]).filter(x=>x.id!==postingId),posting];jdOld.selectedId=postingId;
   const experiences=(state.assessments?.experienceCompetency?.experiences||[]).filter(x=>x?.factChecked);
   const assets=(a.requirements||[]).filter(r=>r.name).map((r,i)=>{const ex=findExperience(r.evidence,experiences),level=evidenceLevel(r.status),req=requirements.find(q=>q.text===r.name);return{id:'asset_step4_'+i+'_'+slug(r.name),postingId,experienceId:ex?.id||'',experienceTitle:ex?.title||'',requirementId:req?.id||'',requirement:r.name,requirementType:r.type,requirementLevel:req?.level||'',evidenceQuestion:'',proof:ex?.action||r.evidence||'',fact:r.evidence||ex?.evidence||'',gap:r.gap||'',jobLink:r.name,evidenceLevel:level,strength:level,useFor:'여러 곳',factCheck:ex?.factChecked?'검증완료':'추가확인 필요',sourceExperienceFactChecked:!!ex?.factChecked,createdAt:new Date().toISOString()}});
@@ -251,7 +251,7 @@ function buildJobAnalysisPrompt(s,target,a){
   return `너는 대학생이 실제 채용공고를 바탕으로 직무를 이해하도록 돕는 직무분석가다.
 
 [선택 직무]
-기업: ${a.company?.name||'미정'}
+기업: ${selected.companyName||a.company?.name||'미정'}
 산업: ${target.industry||'미정'}
 직무: ${target.job?.title||''}
 공고명: ${selected.name||''}
@@ -335,7 +335,7 @@ function buildPrompt(s,target,a){
   return `너는 대학생의 실제 채용공고 요구조건과 학생이 직접 입력한 스펙·경험을 비교하는 GAP 분석가다.
 
 [선택 JD]
-기업: ${a.company?.name||'미정'}
+기업: ${selected.companyName||a.company?.name||'미정'}
 직무: ${target.job?.title||''}
 산업: ${target.industry||'미정'}
 공고: ${selected.name||''}
@@ -388,7 +388,7 @@ ${ex||'확인된 경험 없음'}
 핵심 GAP이 1~2개뿐이면 억지로 3개를 채우지 마라.
 ‘확인 필요’와 ‘GAP’을 반드시 구분해라.`;
 }
-function syncIndustryCompany(state,target,a){const old=structuredClone(state.artifacts?.industryCompany||{industries:[],targetIndustries:[],companies:[],targetCompanies:[],notes:''});let ind=(old.industries||[]).find(x=>x.jobId===target.job.id&&x.name===target.industry);if(!ind){ind={id:'ind_'+target.job.id+'_'+slug(target.industry),name:target.industry,jobId:target.job.id,generatedBy:'step4-inje'};old.industries=[...(old.industries||[]),ind]}if(!(old.targetIndustries||[]).includes(ind.id))old.targetIndustries=[...(old.targetIndustries||[]),ind.id];if(a.company?.name){const id='co_'+slug(target.id),selected=(a.sources||[]).find(x=>x.id===a.selectedSourceId);const company={id,name:a.company.name,industryId:ind.id,jobId:target.job.id,industry:target.industry,job:target.job.title,source:selected?.name||'',url:a.company.url||selected?.url||'',jobUrl:selected?.url||'',hiringEvidence:selected?'JD 확인':'미확인',role:a.purpose||'',targetRef:target.id,generatedBy:'step4-inje'};old.companies=[...(old.companies||[]).filter(x=>x.id!==id),company];if(!(old.targetCompanies||[]).includes(id))old.targetCompanies=[...(old.targetCompanies||[]),id]}return old}
+function syncIndustryCompany(state,target,a){const old=structuredClone(state.artifacts?.industryCompany||{industries:[],targetIndustries:[],companies:[],targetCompanies:[],notes:''});let ind=(old.industries||[]).find(x=>x.jobId===target.job.id&&x.name===target.industry);if(!ind){ind={id:'ind_'+target.job.id+'_'+slug(target.industry),name:target.industry,jobId:target.job.id,generatedBy:'step4-inje'};old.industries=[...(old.industries||[]),ind]}if(!(old.targetIndustries||[]).includes(ind.id))old.targetIndustries=[...(old.targetIndustries||[]),ind.id];const selected=(a.sources||[]).find(x=>x.id===a.selectedSourceId);const selectedCompany=selected?.companyName||a.company?.name||'';if(selectedCompany){const id='co_'+slug(target.id),company={id,name:selectedCompany,industryId:ind.id,jobId:target.job.id,industry:target.industry,job:target.job.title,source:selected?.name||'',url:selected?.companyUrl||a.company?.url||selected?.url||'',jobUrl:selected?.url||'',hiringEvidence:selected?'JD 확인':'미확인',role:a.purpose||'',targetRef:target.id,generatedBy:'step4-inje'};old.companies=[...(old.companies||[]).filter(x=>x.id!==id),company];if(!(old.targetCompanies||[]).includes(id))old.targetCompanies=[...(old.targetCompanies||[]),id]}return old}
 function findExperience(evidence,items){const t=String(evidence||'');return items.find(x=>t.includes(x.title||'')||String(x.action||'').split(/\s+/).filter(w=>w.length>2).some(w=>t.includes(w)))||null}
 function evidenceLevel(status){if(status==='근거 있음')return 'A · 직접 증거';if(status==='일부 근거 있음')return 'B · 관련 증거';if(status==='확인 필요')return 'C · 간접 증거';return '없음'}
 function requirementLevel(r){return String(r.type).startsWith('Preference')?'우대':['준비 필요','확인 필요'].includes(r.status)?'필수':'업무핵심'}
