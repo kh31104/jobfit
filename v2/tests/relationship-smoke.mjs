@@ -80,7 +80,8 @@ await run('STEP 3 imports AI job candidates without retyping',async page=>{
   await page.reload({waitUntil:'networkidle'});
   await page.waitForSelector('#jobAiImport');
   const body=(await page.locator('#stepRoot').textContent())||'';
-  assert(body.includes('내 경험에서 확인된 행동'),'STEP 3 verified-action label missing');
+  assert(body.includes('나의 직무탐색 근거 확인'),'STEP 3 exploration-evidence module missing');
+  assert(body.includes('시험 결과를 비교해 오류 원인을 확인했다'),'STEP 2 verified action was not carried into STEP 3');
   const ai={
     candidates:[
       {title:'생산기술',family:'생산·공정·설비',summary:'생산공정 문제를 확인하고 개선한다.',evidence:'캡스톤에서 시험 결과를 비교해 오류 원인을 확인했다.',why:'문제 원인 해결 활동에 관심',industries:['자동차·모빌리티','반도체·전자'],unknowns:'실제 공정업무와 요구기술 확인'},
