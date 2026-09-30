@@ -17,6 +17,7 @@ export async function render(ctx){
   data.targetCombos=Array.isArray(data.targetCombos)?data.targetCombos:legacyCombos(data);
   const root=document.getElementById('stepRoot');
   const actions=confirmedActions(experienceMap);
+  let editingCandidateId='';
 
   root.innerHTML=`<section class="card jobExplorerV3">
     ${styleBlock()}
@@ -47,15 +48,15 @@ export async function render(ctx){
     ${block('04','직무 후보 찾기','내 경험과 관심을 근거로 4~5개 정도만 탐색합니다.',`
       <textarea id="jobPrompt" rows="16">${esc(buildPrompt(s,data,experienceMap),ctx)}</textarea>
       <div class="actions"><button class="btn secondary" id="refreshPrompt">현재 선택 반영</button><button class="btn primary" id="copyPrompt">AI 직무탐색 프롬프트 복사</button></div>
-      <div class="callout info" style="margin-top:12px"><b>AI 결과는 한 번에 불러옵니다.</b><br>답변 마지막의 JSON 블록을 붙여넣으면 후보카드가 자동 생성됩니다.</div>
-      <textarea id="jobAiImport" rows="7" placeholder="AI 답변의 JSON 블록을 붙여넣으세요."></textarea>
+      <div class="callout info" style="margin-top:12px"><b>표나 JSON은 사용하지 않습니다.</b><br>AI가 만든 개조식 텍스트 전체를 복사해 아래 칸에 붙여넣으면 후보카드가 자동 생성됩니다.</div>
+      <textarea id="jobAiImport" rows="10" placeholder="[후보 1]부터 마지막 후보까지 AI 결과 전체를 그대로 붙여넣으세요."></textarea>
       <div class="actions"><button class="btn secondary" id="importJobAi">AI 후보 한 번에 불러오기</button></div>
       <div class="status" id="candidateStatus"></div>
       <div id="candidateList"></div>
-      <details class="subDetails" style="margin-top:12px"><summary>직무 후보를 직접 추가할래요</summary>
+      <details class="subDetails" id="candidateManualEditor" style="margin-top:12px"><summary>직무 후보를 직접 추가·수정할래요</summary>
         <div class="grid2" style="margin-top:10px">${txt('jobTitle','직무명','','예: CRM 마케팅')}${sel('jobFamily','직무군','',JOB_FAMILIES)}${txt('jobIndustries','가능 산업','','예: 유통·물류, 금융')}${txt('jobSummary','어떤 일인가요?','','1~2문장으로 간단히')}</div>
         <div class="grid2" style="margin-top:12px">${area('jobWhy','관심 근거','','내가 선택한 업무활동과 무엇이 연결되는가?')}${area('jobEvidence','경험·행동 근거','','STEP 2의 어떤 경험과 연결되는가?')}${area('jobUnknown','STEP 4에서 확인할 것','','실제 세부업무, 요구기술, 근무환경 등')}${area('jobSource','참고자료','','선택사항')}</div>
-        <div class="actions"><button class="btn primary" id="addCandidate">직무 후보 추가</button></div>
+        <div class="actions"><button class="btn primary" id="addCandidate">직무 후보 추가</button><button class="btn outline hidden" id="cancelCandidateEdit">수정 취소</button></div>
       </details>`)}
 
     ${block('05','Target Job 선택','STEP 4에서 실제 JD로 확인할 직무를 1~3개 선택합니다.',`
@@ -72,6 +73,7 @@ export async function render(ctx){
   document.getElementById('copyPrompt')?.addEventListener('click',()=>copy(document.getElementById('jobPrompt').value,ctx));
   document.getElementById('importJobAi')?.addEventListener('click',importJobAi);
   document.getElementById('addCandidate')?.addEventListener('click',addCandidate);
+  document.getElementById('cancelCandidateEdit')?.addEventListener('click',clearCandidateEditor);
   document.getElementById('saveTargets')?.addEventListener('click',saveTargets);
   document.getElementById('nextStep')?.addEventListener('click',()=>{saveTargets();ctx.navigate(4)});
 
