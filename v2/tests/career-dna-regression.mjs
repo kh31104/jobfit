@@ -30,13 +30,15 @@ function moduleHead(page,title){return page.locator('.careerDnaStandard .moduleH
 async function expandModule(page,title){const head=moduleHead(page,title);if((await head.getAttribute('aria-expanded'))!=='true')await head.click()}
 async function completeAnchor(page){await expandModule(page,'Career Anchor');for(let i=0;i<40;i++){const value=(i%6)+1;await page.locator(`[data-anchor-item="${i}"][value="${value}"]`).check()}for(const n of [1,2,3])await page.locator(`[data-bonus-item][value="${n}"]`).check()}
 
-await run('STEP 0-13 all load with classroom PRE enabled',async page=>{
+await run('INJE visible STEP sequence all loads with classroom PRE enabled',async page=>{
   await page.goto(`${base}?course=INJE2026&measures=true`,{waitUntil:'networkidle'});
   assert(new URL(page.url()).searchParams.get('measures')==='true','INJE2026 must keep STEP0 PRE enabled');
   assert(await page.locator('#preMeasureSave').count()===1,'STEP0 PRE panel must render');
-  for(let i=0;i<=13;i++){
+  const injeSteps=[0,1,2,3,4,5,6,9,10,11,12,13];
+  assert(await page.locator('.stepBtn').count()===injeSteps.length,'INJE must show 12 steps after duplicate JD/Evidence steps are absorbed');
+  for(const i of injeSteps){
     await page.locator(`.stepBtn[data-step="${i}"]`).click();await page.waitForTimeout(70);
-    const body=(await page.locator('#stepRoot').textContent())||'';assert(!body.includes('화면을 불러오지 못했습니다'),`STEP ${i} failed to render`);
+    const body=(await page.locator('#stepRoot').textContent())||'';assert(!body.includes('화면을 불러오지 못했습니다'),`INJE internal STEP ${i} failed to render`);
   }
 });
 
