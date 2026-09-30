@@ -31,33 +31,55 @@ async function fillStep4(page,{withEvidence=true}={}){
   await page.locator('#sourceUrl').fill('https://example.com/job1');
   await page.locator('#sourceNote').fill('2027년 2월 졸업예정자. 생산공정 데이터 분석 및 개선. 생산공정 기본지식 우대.');
   await page.locator('#addSource').click();
-  const ai={
-    purpose:'생산공정의 문제를 확인하고 안정적으로 생산되도록 개선한다.',
-    gate:'2027년 2월 졸업예정자',
-    preference:'제조 프로젝트 경험',
-    knowledge:'생산공정 기본지식',
-    skills:'데이터 분석, 문제해결',
-    behaviors:'문제를 확인하고 관련부서와 조정한다.',
-    experienceRequired:'공정 또는 설비 관련 프로젝트',
-    signals:'공정개선, 협업',
-    tasks:[{name:'생산공정 이상 원인을 분석한다',skill:'데이터 분석 · 문제해결',output:'개선안',context:'생산·품질부서 협업'}],
-    requirements:[
-      {name:'공정 데이터 분석',type:'Skill',evidence:withEvidence?'캡스톤 프로젝트에서 측정조건을 나눠 비교했다':'없음',status:withEvidence?'근거 있음':'준비 필요',gap:withEvidence?'':'직접 데이터 분석 근거 필요'},
-      {name:'생산공정 기본지식',type:'Knowledge',evidence:'없음',status:'준비 필요',gap:'기초학습 필요'}
-    ],
-    have:withEvidence?'문제 원인 분석 경험':'없음',
-    prepare:'생산공정 기본지식'
-  };
-  await page.locator('#deepAiImport').fill(JSON.stringify(ai));
+  const jobAnalysis=[
+    '[고객·성과기준]',
+    '• 생산·품질부서 / 공정 안정성과 개선 결과',
+    '[주요 과업]',
+    '• 생산공정 데이터를 확인하고 이상 원인을 분석한다',
+    '[주요 해결과제]',
+    '• 공정 이상 원인을 좁히고 재발을 줄인다',
+    '[해결방법]',
+    '• 측정값 비교와 원인분석으로 개선안을 확인한다',
+    '[필요역량]',
+    '• 생산공정 기초지식 · 데이터 분석 · 문제해결',
+    '[경력개발]',
+    '• 공정 데이터 분석 → 공정개선 전문성 확대'
+  ].join('\n');
+  await page.locator('#jobAiImport').fill(jobAnalysis);
+  await page.locator('#applyJobAi').click();
+  await page.locator('#specCertificates').fill('없음');
+  await page.locator('#specLanguage').fill('없음');
+  await page.locator('#specTools').fill(withEvidence?'Excel':'없음');
+  const gap=withEvidence?[
+    '[내가 가진 것]',
+    '• 공정 데이터 분석 → 캡스톤 프로젝트에서 측정조건을 나눠 비교함',
+    '[확인 필요]',
+    '• 생산공정 기본지식의 실제 수준',
+    '[핵심 GAP]',
+    '• GAP 1: 생산공정 기본지식 보강',
+    '[3개월 행동]',
+    '• 생산공정 기본지식 → 공정 데이터 미니 프로젝트 1개 완성'
+  ].join('\n'):[
+    '[내가 가진 것]',
+    '• 현재 직접 연결되는 스펙 근거는 확인되지 않음',
+    '[확인 필요]',
+    '• 추가 프로젝트 경험 여부',
+    '[핵심 GAP]',
+    '• GAP 1: 공정 데이터 분석 직접 근거 부족',
+    '• GAP 2: 생산공정 기본지식 보강',
+    '[3개월 행동]',
+    '• 공정 데이터 분석 → 공정 데이터 미니 프로젝트 1개 완성'
+  ].join('\n');
+  await page.locator('#deepAiImport').fill(gap);
   await page.locator('#importDeepAi').click();
   await page.locator('#saveDeep').click();
 }
 
-await run('STEP 4 keeps Application Gate separate and moves JD Analyzer functions into GAP Match',async page=>{
+await run('STEP 5 separates JD analysis, My Spec, and GAP Match',async page=>{
   const s=state(4);await seed(page,s);await fillStep4(page,{withEvidence:true});
   const body=(await page.locator('#stepRoot').textContent())||'';
-  for(const t of ['Target Job','Find JD','Choose JD','GAP Match'])assert(body.includes(t),`STEP 4 missing ${t}`);
-  assert(!body.includes('My Evidence'),'STEP 4 must not ask the student to re-enter My Evidence');
+  for(const t of ['Target Job','Find JD','Choose JD','선택 직무 AI 분석','직무분석 테이블 완성','완성된 직무분석표','My Spec','GAP Match'])assert(body.includes(t),`STEP 5 missing ${t}`);
+  assert(!body.includes('My Evidence'),'STEP 5 must reuse STEP 2 experience evidence rather than re-enter it');
   assert(await page.locator('.jdSiteLink').count()===5,'STEP4 Find JD must expose five real recruitment-site links');
   const sites=(await page.locator('.jdSiteGrid').allTextContents()).join(' ');
   for(const name of ['사람인','잡코리아','고용24','잡알리오','클린아이 잡플러스'])assert(sites.includes(name),`STEP4 recruitment site missing: ${name}`);
@@ -66,21 +88,22 @@ await run('STEP 4 keeps Application Gate separate and moves JD Analyzer function
   assert(searchPrompt.includes('첫 줄부터 [공고 1]로 시작'),'STEP4 AI search prompt must use copy-friendly plain text');
   assert(searchPrompt.includes('표, JSON, 코드블록을 사용하지 않는다'),'STEP4 AI search prompt must forbid non-copy-friendly formats');
   const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
+  const a=stored.artifacts.jobDeepDive.targetAnalyses.target_job1_auto;
+  assert(a?.jobTable?.tasks?.includes('생산공정 데이터'),'STEP 5 job-analysis table was not saved');
+  assert(a?.studentSpec?.certificates==='없음'&&a?.studentSpec?.tools==='Excel','STEP 5 My Spec was not saved');
+  assert(a?.have?.includes('캡스톤'),'STEP 5 concise GAP result did not preserve student evidence');
   const p=stored.artifacts.jdAnalyzer.postings.find(x=>x.jobTitle==='생산기술');
-  assert(p,'STEP 4 did not create JD bridge');
-  assert(p.gates.length===1&&p.gates[0].text.includes('졸업예정자'),'Application Gate was not stored separately');
-  assert(p.requirements.some(x=>x.text==='공정 데이터 분석'),'JD Requirement was not stored separately');
-  assert(!p.requirements.some(x=>x.text.includes('졸업예정자')),'Gate leaked into JD Requirements');
+  assert(p&&p.company==='가상모빌리티','STEP 5 did not create the selected-JD bridge');
 });
 
 await run('STEP 4 shows a real preparation gap when STEP 2 has no matching evidence',async page=>{
   const s=state(4);await seed(page,s);await fillStep4(page,{withEvidence:false});
   const gap=(await page.locator('#gapSummary').textContent())||'';
-  assert(gap.includes('준비 필요'),'Student cannot see the preparation gap');
-  assert(gap.includes('공정 데이터 분석'),'Missing requirement is not visible in GAP Match');
+  assert(gap.includes('공정 데이터 분석 직접 근거 부족'),'Student cannot see the confirmed preparation gap');
+  assert(gap.includes('생산공정 기본지식'),'Second confirmed GAP is not visible');
   const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
-  const asset=stored.artifacts.careerAssets.assets.find(x=>x.requirement==='공정 데이터 분석');
-  assert(asset?.evidenceLevel==='없음','No-evidence requirement must remain unavailable for application writing');
+  const a=stored.artifacts.jobDeepDive.targetAnalyses.target_job1_auto;
+  assert(a.requirements.length===2&&a.requirements.every(x=>x.status==='준비 필요'),'Confirmed GAP items must be stored as preparation needs');
 });
 
 await run('New STEP 8 Resume Lab keeps unverified STEP 5 evidence as draft',async page=>{
