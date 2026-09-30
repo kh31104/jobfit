@@ -20,47 +20,52 @@ export async function render(ctx){
 
   root.innerHTML=`<section class="card jobExplorerV3">
     ${styleBlock()}
-    <div class="sectionHead"><div><div class="kicker">STEP 3 · JOB EXPLORATION</div><h2>어떤 일을, 어느 산업에서 탐색해볼까?</h2><p>STEP 1·2에서 확인한 나의 경험과 관심을 바탕으로 <b>행동 → 업무활동 → 직무 → 산업</b> 순서로 탐색합니다.</p></div><span class="badge">직무탐색</span></div>
+    <div class="sectionHead"><div><div class="kicker">STEP 3 · JOB EXPLORATION</div><h2>내가 탐색할 직무 찾기</h2><p>STEP 1·2에서 확인한 나를 다시 입력하지 않고, <b>하고 싶은 일 → 산업 → 직무 후보 → Target Job</b>만 빠르게 정합니다.</p></div><span class="badge">직무탐색</span></div>
     <div class="progress"><span style="width:29%"></span></div>
-    <div class="callout info"><b>직무를 결정하는 단계가 아닙니다.</b><br>더 알아볼 직무를 찾고, STEP 4에서 실제 기업·채용정보로 확인할 Target을 2~3개 선택합니다.</div>
+    <div class="callout info"><b>여기서는 직무를 확정하지 않습니다.</b><br>STEP 4에서 실제 채용공고를 보고 확인할 Target Job만 1~3개 고릅니다.</div>
 
-    ${block('01','지금까지 확인한 나','새로 검사하지 않고 STEP 1·2 결과를 불러옵니다.',`
-      <div class="grid3"><div class="miniCard"><b>Career DNA</b><span>${esc(summaryCareer(dna,s.artifacts?.careerDNAProfile),ctx)}</span></div><div class="miniCard"><b>Best Experience</b><span>${esc(experienceMap.slice(0,3).map(x=>x.title||'경험').join(' · ')||'STEP 2 경험을 먼저 정리하세요.',ctx)}</span></div><div class="miniCard"><b>확인된 역량</b><span>${esc(summaryCompetencies(exp,experienceMap),ctx)}</span></div></div>
-      <div class="actions"><button class="btn primary" id="confirmSelf">맞아요, 다음</button><button class="btn outline" id="backStep2">경험 수정하러 가기</button></div>`)}
+    ${block('01','나의 직무탐색 근거 확인','STEP 1·2 결과를 자동으로 불러옵니다. 다시 작성하지 않습니다.',`
+      <div class="grid3">
+        <div class="miniCard"><b>Career DNA</b><span>${esc(summaryCareer(dna,s.artifacts?.careerDNAProfile),ctx)}</span></div>
+        <div class="miniCard"><b>Best Experience</b><span>${esc(experienceMap.slice(0,3).map(x=>x.title||'경험').join(' · ')||'STEP 2 경험을 먼저 정리하세요.',ctx)}</span></div>
+        <div class="miniCard"><b>확인된 역량</b><span>${esc(summaryCompetencies(exp,experienceMap),ctx)}</span></div>
+      </div>
+      <div class="evidenceGrid" style="margin-top:10px">${actions.length?actions.map(x=>`<div class="actionEvidence">${esc(x,ctx)}</div>`).join(''):'<div class="placeholder"><b>확인된 행동이 아직 없습니다.</b>STEP 2에서 행동과 Evidence를 정리하면 자동 연결됩니다.</div>'}</div>
+      <div class="actions"><button class="btn primary" id="confirmSelf">확인했어요, 다음</button><button class="btn outline" id="backStep2">STEP 2 수정</button></div>`)}
 
-    ${block('02','내 경험에서 확인된 행동','STEP 2에서 사실확인된 행동과 Evidence를 그대로 불러옵니다.',`
-      <div class="evidenceGrid">${actions.length?actions.map(x=>`<div class="actionEvidence">${esc(x,ctx)}</div>`).join(''):'<div class="placeholder"><b>확인된 행동이 아직 없습니다.</b>STEP 2에서 행동과 Evidence를 정리하면 여기에 자동으로 연결됩니다.</div>'}</div>`)}
-
-    ${block('03','실제 직장에서 해보고 싶은 일','잘했던 일과 앞으로 하고 싶은 일은 다를 수 있습니다. 3~5개를 골라보세요.',`
+    ${block('02','직장에서 해보고 싶은 일','앞으로 실제로 해보고 싶은 업무를 3~5개 고릅니다.',`
       <div class="choiceTiles">${WORK_ACTIVITIES.map(x=>choice('activity',x,data.desiredActivities.includes(x),ctx)).join('')}</div>
-      <div class="status" id="activityStatus"></div>`)}
+      <div class="status" id="activityStatus"></div>
+      <details class="subDetails" style="margin-top:12px"><summary>목록에 없는 관심 업무가 있어요</summary>
+        <div class="inlineAdd" style="margin-top:10px"><input class="input" id="newInterestInput" placeholder="예: 고객 인터뷰, UX 리서치, 공정 자동화"><button class="btn secondary" id="addInterest">+ 추가</button></div>
+        <div id="interestList" class="pillRow" style="margin-top:10px"></div>
+      </details>`)}
 
-    ${block('04','아직 해보지 않았지만 관심 있는 일','과거 경험만으로 미래 가능성을 제한하지 않습니다.',`
-      <div class="inlineAdd"><input class="input" id="newInterestInput" placeholder="예: 고객 인터뷰, UX 리서치, 공정 자동화"><button class="btn secondary" id="addInterest">+ 추가</button></div><div id="interestList" class="pillRow" style="margin-top:10px"></div>`)}
-
-    ${block('05','관심 산업 탐색','산업은 고정하지 않습니다. 아직 모르겠다면 ‘아직 잘 모르겠어요’를 선택해도 됩니다.',`
+    ${block('03','관심 산업·분야','최대 3개까지 고르거나, 아직 모르겠다면 그대로 진행합니다.',`
       <div class="choiceTiles">${INDUSTRIES.map(x=>choice('industry',x,data.industryInterests.includes(x),ctx)).join('')}${choice('industry','아직 잘 모르겠어요',data.industryInterests.includes('아직 잘 모르겠어요'),ctx)}</div>`)}
 
-    ${block('06','직무 × 산업 탐색','같은 직무도 산업이 달라지면 고객·Task·Tool이 달라질 수 있습니다.',`
-      <div class="callout good"><b>예시</b><br>데이터분석 × 금융 = 고객·거래·리스크 데이터 / 데이터분석 × 제조 = 생산·품질·공정 데이터<br>생산기술 × 자동차 = 생산라인·공정 개선 / 생산기술 × 식품 = 생산공정·설비·품질조건 관리</div>
-      <textarea id="jobPrompt" rows="18">${esc(buildPrompt(s,data,experienceMap),ctx)}</textarea><div class="actions"><button class="btn secondary" id="refreshPrompt">현재 선택 반영</button><button class="btn primary" id="copyPrompt">AI 직무탐색 프롬프트 복사</button></div>
-      <div class="callout info" style="margin-top:12px"><b>AI 결과를 다시 칸마다 옮길 필요가 없습니다.</b><br>AI 답변의 마지막 JSON 블록을 아래에 붙여넣으면 직무 후보 카드로 자동 불러옵니다.</div>
-      <textarea id="jobAiImport" rows="8" placeholder="AI 답변의 JSON 블록을 붙여넣으세요."></textarea><div class="actions"><button class="btn secondary" id="importJobAi">AI 후보 한 번에 불러오기</button></div>`)}
+    ${block('04','직무 후보 찾기','내 경험과 관심을 근거로 4~5개 정도만 탐색합니다.',`
+      <textarea id="jobPrompt" rows="16">${esc(buildPrompt(s,data,experienceMap),ctx)}</textarea>
+      <div class="actions"><button class="btn secondary" id="refreshPrompt">현재 선택 반영</button><button class="btn primary" id="copyPrompt">AI 직무탐색 프롬프트 복사</button></div>
+      <div class="callout info" style="margin-top:12px"><b>AI 결과는 한 번에 불러옵니다.</b><br>답변 마지막의 JSON 블록을 붙여넣으면 후보카드가 자동 생성됩니다.</div>
+      <textarea id="jobAiImport" rows="7" placeholder="AI 답변의 JSON 블록을 붙여넣으세요."></textarea>
+      <div class="actions"><button class="btn secondary" id="importJobAi">AI 후보 한 번에 불러오기</button></div>
+      <div class="status" id="candidateStatus"></div>
+      <div id="candidateList"></div>
+      <details class="subDetails" style="margin-top:12px"><summary>직무 후보를 직접 추가할래요</summary>
+        <div class="grid2" style="margin-top:10px">${txt('jobTitle','직무명','','예: CRM 마케팅')}${sel('jobFamily','직무군','',JOB_FAMILIES)}${txt('jobIndustries','가능 산업','','예: 유통·물류, 금융')}${txt('jobSummary','어떤 일인가요?','','1~2문장으로 간단히')}</div>
+        <div class="grid2" style="margin-top:12px">${area('jobWhy','관심 근거','','내가 선택한 업무활동과 무엇이 연결되는가?')}${area('jobEvidence','경험·행동 근거','','STEP 2의 어떤 경험과 연결되는가?')}${area('jobUnknown','STEP 4에서 확인할 것','','실제 세부업무, 요구기술, 근무환경 등')}${area('jobSource','참고자료','','선택사항')}</div>
+        <div class="actions"><button class="btn primary" id="addCandidate">직무 후보 추가</button></div>
+      </details>`)}
 
-    ${block('07','탐색 직무 후보','AI 결과를 그대로 확정하지 말고, 후보가 나온 근거와 아직 확인하지 않은 것을 함께 남깁니다. 최대 5개를 권장합니다.',`
-      <div class="grid2">${txt('jobTitle','직무명','','예: CRM 마케팅')}${sel('jobFamily','직무군','',JOB_FAMILIES)}${txt('jobIndustries','가능 산업','','예: 유통·물류, 금융, IT·플랫폼')}${txt('jobSummary','어떤 일인가요?','','1~2문장으로 간단히')}</div>
-      <div class="grid2" style="margin-top:12px">${area('jobWhy','관심 근거','','내가 선택한 업무활동과 무엇이 연결되는가?')}${area('jobEvidence','경험·행동 근거','','STEP 2의 어떤 경험·행동과 연결되는가?')}${area('jobUnknown','아직 확인할 것','','실제 세부업무, 요구기술, 근무환경 등')}${area('jobSource','참고한 자료','','선택사항 · NCS/고용24/기업 직무소개 등')}</div>
-      <div class="actions"><button class="btn primary" id="addCandidate">직무 후보 추가</button></div><div class="status" id="candidateStatus"></div><div id="candidateList"></div>`)}
-
-    ${block('08','직무 후보 비교','점수로 순위를 정하지 않습니다. 경험근거·관심활동·산업맥락·확인할 점을 나란히 봅니다.',`<div id="compareBox"></div>`)}
-
-    ${block('09','STEP 4에서 확인할 Target','직무 × 산업 조합을 2개, 필요하면 예비 1개까지 선택합니다.',`
-      <div id="targetEditor"></div><div class="field" style="margin-top:12px"><label>왜 이 조합을 더 알아보고 싶나요?</label><textarea id="targetReason" placeholder="내 경험·관심과 연결되는 이유를 직접 적어보세요.">${esc(data.targetReason||data.notes||'',ctx)}</textarea></div>
-      <div class="actions"><button class="btn primary" id="saveTargets">Target 저장</button><button class="btn secondary" id="nextStep">STEP 4 실제 직무 확인 →</button></div><div class="status" id="targetStatus"></div>`)}
+    ${block('05','Target Job 선택','STEP 4에서 실제 JD로 확인할 직무를 1~3개 선택합니다.',`
+      <div id="targetEditor"></div>
+      <div class="field" style="margin-top:12px"><label>왜 이 직무를 더 알아보고 싶나요?</label><textarea id="targetReason" placeholder="내 경험이나 관심과 연결되는 이유를 짧게 적어보세요.">${esc(data.targetReason||data.notes||'',ctx)}</textarea></div>
+      <div class="actions"><button class="btn primary" id="saveTargets">Target Job 저장</button><button class="btn secondary" id="nextStep">STEP 4 실제 JD 확인 →</button></div>
+      <div class="status" id="targetStatus"></div>`)}
   </section>`;
-
   renderInterests();renderCandidates();renderCompare();renderTargets();bindChoices();
-  document.getElementById('confirmSelf')?.addEventListener('click',()=>openBlock(2));
+  document.getElementById('confirmSelf')?.addEventListener('click',()=>openBlock(1));
   document.getElementById('backStep2')?.addEventListener('click',()=>ctx.navigate(2));
   document.getElementById('addInterest')?.addEventListener('click',addInterest);
   document.getElementById('refreshPrompt')?.addEventListener('click',refreshPrompt);
@@ -109,8 +114,8 @@ export async function render(ctx){
   function industryOptions(jobId,current){const job=data.candidates.find(x=>x.id===jobId),all=[...(job?.industries||[]),...data.industryInterests.filter(x=>x!=='아직 잘 모르겠어요')];const vals=[...new Set(all.filter(Boolean))];if(!vals.length)vals.push('산업 미정');return `<option value="">산업 선택</option>`+vals.map(x=>`<option value="${esc(x,ctx)}" ${current===x?'selected':''}>${esc(x,ctx)}</option>`).join('')}
   function saveTargets(){
     const combos=[0,1,2].map(i=>({jobId:document.querySelector(`[data-target-job="${i}"]`)?.value||'',industry:document.querySelector(`[data-target-industry="${i}"]`)?.value||'',priority:i+1})).filter(x=>x.jobId&&x.industry);
-    if(combos.length<2){status('targetStatus','직무 × 산업 Target을 2개 이상 선택하세요.');return false}
-    data.targetCombos=combos.map((x,i)=>({...x,id:`target_${x.jobId}_${slug(x.industry)}_${i+1}`}));data.targets=[...new Set(combos.map(x=>x.jobId))];data.targetReason=v('targetReason');data.notes=data.targetReason;persist(true);status('targetStatus',`Target ${combos.length}개를 저장했습니다.`);return true;
+    if(combos.length<1){status('targetStatus','STEP 4에서 확인할 Target Job을 1개 이상 선택하세요.');return false}
+    data.targetCombos=combos.map((x,i)=>({...x,id:`target_${x.jobId}_${slug(x.industry)}_${i+1}`}));data.targets=[...new Set(combos.map(x=>x.jobId))];data.targetReason=v('targetReason');data.notes=data.targetReason;persist(true);status('targetStatus',`Target Job ${combos.length}개를 저장했습니다.`);return true;
   }
   function persist(syncContext){data.version=VERSION;data.updatedAt=new Date().toISOString();const patch={jobExplorer:data};if(syncContext)patch.industryCompany=buildIndustryCompany(ctx.getState(),data);ctx.saveState({artifacts:patch});}
   function refreshPrompt(){persist(false);const el=document.getElementById('jobPrompt');if(el)el.value=buildPrompt(ctx.getState(),data,experienceMap)}
