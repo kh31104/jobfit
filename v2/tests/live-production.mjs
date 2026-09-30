@@ -87,7 +87,7 @@ async function run(name,viewport){
     assert(jobPrompt.includes('후보는 4~5개만 제안'),'STEP3 prompt must limit job candidates');
     assert(jobPrompt.includes('특정 산업, 특히 에너지 산업을 기본값으로 두지 않는다'),'STEP3 prompt lost industry-neutral guard');
     assert(jobPrompt.includes('실제 Task·요구기술·기업조건은 STEP 4에서 공식자료로 확인'),'STEP3→4 validation boundary missing');
-    assert(!jobPrompt.includes('적합도 %'),'STEP3 prompt must not generate fit percentages');
+    assert(jobPrompt.includes('적합도 %, 추천순위, 취업성공확률을 만들지 않는다.'),'STEP3 prompt lost no-fit-percentage guard');
     if(viewport.width<=480){const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);assert(overflow<=2,`STEP3 mobile horizontal overflow detected: ${overflow}px`)}
 
     // Student flow: choose a Target Job, then confirm that STEP 4 is the compact FLEX-style JD flow.
