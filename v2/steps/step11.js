@@ -1,9 +1,10 @@
 export async function render(ctx){
+  const displayStep=ctx.displayStep??11;
   const s=ctx.getState(),jd=s.artifacts?.jdAnalyzer||{postings:[],selectedId:''},posting=jd.postings?.find(x=>x.id===jd.selectedId)||jd.postings?.[0],resume=s.artifacts?.resumeLab||{items:[]},cover=s.artifacts?.coverLetterLab||{questions:[]},allAssets=s.artifacts?.careerAssets?.assets||[],assets=allAssets.filter(a=>(a.evidenceLevel||legacyLevel(a.strength))!=='없음'),saved=s.artifacts?.interviewLab||{questions:[],practiceNotes:''},data=structuredClone(saved),root=document.getElementById('stepRoot');
   data.questions=data.questions||[];
 
   root.innerHTML=`<section class="card">
-    <div class="sectionHead"><div><div class="kicker">STEP 11</div><h2>Interview Lab</h2><p>지원서에 기록한 동일한 Evidence를 말로 검증하고, JD의 핵심 질문에 일관되게 답합니다.</p></div><span class="badge">11–12주차</span></div><div class="progress"><span style="width:86%"></span></div>
+    <div class="sectionHead"><div><div class="kicker">STEP ${displayStep}</div><h2>Interview Lab</h2><p>지원서에 기록한 동일한 Evidence를 말로 검증하고, JD의 핵심 질문에 일관되게 답합니다.</p></div><span class="badge">11–12주차</span></div><div class="progress"><span style="width:86%"></span></div>
     ${posting?`<div class="callout info"><b>Target</b><br>${esc(posting.company,ctx)} · ${esc(posting.jobTitle,ctx)}</div>`:''}
 
     <div class="block"><h3>1. Interview Risk Dashboard</h3><div id="riskDashboard">${riskDashboard(posting,resume,cover,data,ctx)}</div></div>
@@ -13,7 +14,7 @@ export async function render(ctx){
       <div class="grid2" style="margin-top:12px">${area('answerOutline','내 답변 구조','','결론 → 상황 → 내가 한 Action → Reasoning → Result/Evidence → 직무연결')}${area('followUps','예상 꼬리질문','','본인행동·판단이유·수치·결과를 검증할 후속질문')}${area('practice','연습 피드백','','결론 선명도 / Evidence / JD 연결 / 길이를 기준으로 기록')}${area('improve','다음 수정','','다음 연습에서 바꿀 한 가지')}</div><div class="grid2" style="margin-top:12px">${sel('answerConfidence','현재 답변 준비도','',['낮음','보통','높음'])}${sel('factCheck','사실검증','',['검증완료','추가확인 필요'])}</div><div class="actions"><button class="btn primary" id="addQuestion">질문 저장</button></div><div class="status" id="status"></div></div>
 
     <div class="block"><div id="questionList"></div></div>
-    <div class="hr"></div><div class="block"><h3>4. 실전연습 메모</h3><textarea id="practiceNotes" rows="8" placeholder="반복해서 막힌 질문, 말이 길어진 부분, 추가로 필요한 Evidence">${esc(data.practiceNotes||'',ctx)}</textarea><div class="actions"><button class="btn primary" id="saveAll">Interview Lab 저장</button><button class="btn secondary" id="nextStep">STEP 12 Human-First Check →</button></div></div>
+    <div class="hr"></div><div class="block"><h3>4. 실전연습 메모</h3><textarea id="practiceNotes" rows="8" placeholder="반복해서 막힌 질문, 말이 길어진 부분, 추가로 필요한 Evidence">${esc(data.practiceNotes||'',ctx)}</textarea><div class="actions"><button class="btn primary" id="saveAll">Interview Lab 저장</button><button class="btn secondary" id="nextStep">STEP ${displayStep+1} Human-First Check →</button></div></div>
   </section>`;
 
   renderAll();['assetId','sourceType'].forEach(id=>document.getElementById(id).addEventListener('change',renderAnswerEvidence));document.getElementById('copyPrompt').addEventListener('click',()=>copy(document.getElementById('interviewPrompt').value,ctx));document.getElementById('addQuestion').addEventListener('click',addQuestion);document.getElementById('saveAll').addEventListener('click',saveAll);document.getElementById('nextStep').addEventListener('click',()=>{saveAll();ctx.navigate(12)});
