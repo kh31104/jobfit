@@ -104,9 +104,31 @@ export async function render(ctx){
   function makeStartPrompt(){return `너는 대학생 취업·진로 코치다. 아래 정보는 내가 직접 입력한 현재 상태다. 이 정보 밖의 경험이나 성향을 지어내지 마라.\n\n[현재 상태]\n- 희망직무 결정 정도: ${v('jobDecision')||'미입력'}\n- 희망산업 결정 정도: ${v('industryDecision')||'미입력'}\n- 취업준비 단계: ${v('prepStage')||'미입력'}\n- 인턴·현장실습 경험: ${v('internship')||'미입력'}\n- 실제 입사지원 경험: ${v('priorApplication')||'미입력'}\n- 생성형 AI 사용빈도: ${v('aiFrequency')||'미입력'}\n- 취업준비 AI 사용경험: ${v('aiCareerUse')||'미입력'}\n\n지금부터 내 진로·취업 시작점을 확인하기 위해 한 번에 하나씩 질문해 줘. 질문은 최대 4개만 하고, 매 질문은 학생이 구체적인 사실을 답할 수 있도록 짧고 쉽게 작성해라. 답이 막연하면 언제·어디서·무엇을·어떻게 했는지 한 번만 추가 확인하라. 내가 답하지 않은 내용은 추측하지 마라. 반드시 ① 관심 있는 일이나 직무와 그 이유, ② 직접 해본 경험과 맡은 행동, ③ 가장 막막한 부분, ④ 이번 학기에 얻고 싶은 변화를 확인해라.\n\n질문이 끝나면 내가 말한 사실만 사용해 아래 제목과 순서를 정확히 지켜 정리해 줘. 각 항목은 1~2문장으로 작성하고 근거 없는 성격·역량·직무 적합성은 단정하지 마라.\n1. 현재 Career Starting Point\n2. 지금 활용 가능한 자산\n3. 가장 먼저 보완할 GAP\n4. 이번 주 내가 직접 실행할 행동\n\n4번은 이번 주 안에 실행 여부를 확인할 수 있는 구체적인 행동 1개로 작성해라. 문장은 과장하지 말고 대학생인 내가 실제로 말할 법한 표현으로 써 줘.`}
 
   function parseCheckinResult(raw){
-    const clean=String(raw||'').replace(/\r/g,'').trim();
-    const pick=(n,next)=>{const pattern=new RegExp(`(?:^|\\n)\\s*(?:\\*\\*)?${n}\\.?\\s*[^\\n]*(?:\\*\\*)?\\s*[:：-]?\\s*([\\s\\S]*?)(?=\\n\\s*(?:\\*\\*)?${next}\\.?\\s|$)`,'i'),m=clean.match(pattern);return m?m[1].replace(/^[:：-]\s*/,'').trim():''};
-    return {statement:pick(1,2),assets:pick(2,3),gap:pick(3,4),action:pick(4,5)};
+    const clean=String(raw||'').replace(/\r/g,'').replace(/\*\*/g,'').replace(/^\s*#{1,6}\s*/gm,'').trim();
+    const rules=[
+      ['statement',/^\s*(?:(?:1[.)]?|①)\s*)?(?:현재\s*)?(?:Career\s*Starting\s*Point|출발점|지금의\s*나|현재\s*상태)\s*[:：-]?\s*(.*)$/i],
+      ['assets',/^\s*(?:(?:2[.)]?|②)\s*)?(?:지금\s*)?(?:활용\s*가능한\s*자산|활용할\s*수\s*있는\s*자산|나의\s*자산)\s*[:：-]?\s*(.*)$/i],
+      ['gap',/^\s*(?:(?:3[.)]?|③)\s*)?(?:가장\s*)?(?:먼저\s*)?(?:보완할\s*GAP|보완할\s*점|막막한\s*부분|우선\s*보완사항)\s*[:：-]?\s*(.*)$/i],
+      ['action',/^\s*(?:(?:4[.)]?|④)\s*)?(?:이번\s*주\s*)?(?:내가\s*직접\s*)?(?:실행할\s*행동|실행행동|할\s*일|다음\s*행동)\s*[:：-]?\s*(.*)$/i]
+    ];
+    const buckets={statement:[],assets:[],gap:[],action:[]};let current='';
+    for(const rawLine of clean.split('\n')){
+      const line=rawLine.trim();if(!line)continue;
+      const hit=rules.map(([key,rx])=>[key,line.match(rx)]).find(([,m])=>m);
+      if(hit){current=hit[0];if(hit[1][1]?.trim())buckets[current].push(hit[1][1].trim());continue}
+      if(current)buckets[current].push(line.replace(/^[•·\-*]\s*/,'').trim());
+    }
+    const compact=arr=>arr.filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
+    const result={statement:compact(buckets.statement),assets:compact(buckets.assets),gap:compact(buckets.gap),action:compact(buckets.action)};
+    if(result.statement||result.action)return result;
+    const fallback=clean.split(/\n(?=\s*(?:[1-4][.)]?|[①-④])\s*)/).map(x=>x.trim()).filter(Boolean);
+    fallback.forEach(part=>{
+      if(/^(?:1[.)]?|①)/.test(part))result.statement=compact([part.replace(/^(?:1[.)]?|①)\s*[^\n:：-]*[:：-]?\s*/,'')]);
+      if(/^(?:2[.)]?|②)/.test(part))result.assets=compact([part.replace(/^(?:2[.)]?|②)\s*[^\n:：-]*[:：-]?\s*/,'')]);
+      if(/^(?:3[.)]?|③)/.test(part))result.gap=compact([part.replace(/^(?:3[.)]?|③)\s*[^\n:：-]*[:：-]?\s*/,'')]);
+      if(/^(?:4[.)]?|④)/.test(part))result.action=compact([part.replace(/^(?:4[.)]?|④)\s*[^\n:：-]*[:：-]?\s*/,'')]);
+    });
+    return result;
   }
 
   function save(show=true){

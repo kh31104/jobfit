@@ -1,7 +1,14 @@
 const SOURCE_TYPES=['기업 공식 채용공고','기업 공식 직무소개','기업 공식 직무기술서','NCS','고용24 직업정보','공공기관·정부자료','산업협회·전문기관','기타 신뢰자료'];
 const REQ_TYPES=['Gate · 필수조건','Preference · 우대조건','Knowledge','Skill','Behavior','Experience','Tool·System','기타'];
 const GAP_STATUS=['근거 있음','일부 근거 있음','확인 필요','준비 필요'];
-const VERSION='job-analysis-inje-v4';
+const VERSION='job-analysis-inje-v5';
+const JOB_SITES=[
+  {group:'민간기업',name:'사람인',url:'https://www.saramin.co.kr/',desc:'민간기업 신입 공고'},
+  {group:'민간기업',name:'잡코리아',url:'https://www.jobkorea.co.kr/',desc:'대기업·공채'},
+  {group:'민간기업',name:'고용24',url:'https://www.work24.go.kr/',desc:'정부 통합 채용정보'},
+  {group:'공공기관',name:'잡알리오',url:'https://job.alio.go.kr/',desc:'국가 공공기관'},
+  {group:'공공기관',name:'클린아이 잡플러스',url:'https://job.cleaneye.go.kr/',desc:'지방공공기관'}
+];
 
 export async function render(ctx){
   const s=ctx.getState(),explorer=s.artifacts?.jobExplorer||{candidates:[],targets:[]},targets=getTargets(explorer);
@@ -26,11 +33,23 @@ export async function render(ctx){
         <div class="pillRow">${targets.map((t,i)=>`<button class="btn outline smallBtn targetPick ${t.id===target.id?'activePick':''}" data-id="${esc(t.id,ctx)}">${i+1}. ${esc(t.job?.title||'직무',ctx)} × ${esc(t.industry||'산업 미정',ctx)}</button>`).join('')}</div>
         <div class="callout good" style="margin-top:10px"><b>현재 Target</b><br>${esc(job?.title||'직무',ctx)} × ${esc(target.industry||'산업 미정',ctx)}</div>`)}
 
-      ${block('02','Find JD','기업 공식 채용공고를 우선으로 실제 JD를 찾고 등록합니다.',`
-        <div class="grid2">${txt('companyName','기업명',a.company?.name||'','예: ○○전자')}${txt('companyUrl','기업 공식페이지',a.company?.url||'','https://...')}</div>
-        <div class="grid4" style="margin-top:12px">${sel('sourceType','자료 유형','',SOURCE_TYPES)}${txt('sourceName','JD·자료명','','예: 2026 신입 생산기술')}${txt('sourceUrl','원문 URL','','https://...')}${txt('sourceChecked','확인일','',today())}</div>
-        <div class="field" style="margin-top:10px"><label>원문에서 확인한 핵심</label><textarea id="sourceNote" placeholder="주요 업무·지원조건·우대사항 등 원문에서 확인한 내용만 간단히 적으세요."></textarea></div>
-        <div class="actions"><button class="btn primary" id="addSource">JD·자료 추가</button></div><div id="sourceList"></div>`)}
+      ${block('02','Find JD','먼저 관심 직무의 최근 채용공고를 직접 찾아봅니다. 공고가 없거나 마감되어 있어도 괜찮습니다.',`
+        <h4 style="margin:14px 0 8px">① 실제 공고 한번 찾아보기</h4>
+        <p class="help">아래 채용사이트를 새 창으로 열어 <b>${esc(job?.title||'관심 직무',ctx)} × ${esc(target.industry||'산업 미정',ctx)}</b> 공고를 찾아보세요.</p>
+        <div class="siteSection"><b>민간기업</b><div class="jdSiteGrid">${renderJobSites('민간기업')}</div></div>
+        <div class="siteSection"><b>공공기관</b><div class="jdSiteGrid">${renderJobSites('공공기관')}</div></div>
+
+        <details class="subDetails" style="margin-top:12px"><summary>AI에게 현재 공고 찾아달라고 하기 · 선택</summary>
+          <div class="callout info" style="margin-top:10px"><b>검색 가능한 AI에서 사용하세요.</b><br>현재 모집 공고를 확인하지 못하면 최근 6개월 공고까지 찾고, 확인하지 못한 링크를 만들어내지 않도록 지시합니다.</div>
+          <textarea id="jdSearchPrompt" rows="16">${esc(buildSearchPrompt(ctx.getState(),target),ctx)}</textarea>
+          <div class="actions"><button class="btn primary" id="copyJdSearchPrompt">채용공고 검색 프롬프트 복사</button></div>
+        </details>
+
+        <h4 style="margin:18px 0 8px">② 찾은 공고 기록</h4>
+        <div class="grid2">${txt('companyName','찾은 기업',a.company?.name||'','예: 관심 기업명 / 찾지 못함')}${txt('companyUrl','기업 공식페이지',a.company?.url||'','https://...')}</div>
+        <div class="grid4" style="margin-top:12px">${sel('sourceType','자료 유형','',SOURCE_TYPES)}${txt('sourceName','찾은 직무·공고','','예: 브랜드 마케팅 신입 / 현재 관련 공고 없음')}${txt('sourceUrl','공고 주소','','https://...')}${txt('sourceChecked','확인일','',today())}</div>
+        <div class="field" style="margin-top:10px"><label>담당업무·직무소개 <span class="muted">(가능하면 붙여넣기)</span></label><textarea id="sourceNote" placeholder="공고의 담당업무·직무소개·지원조건·우대사항을 그대로 붙여넣거나 핵심만 기록하세요."></textarea></div>
+        <div class="actions"><button class="btn primary" id="addSource">이 JD 추가</button></div><div id="sourceList"></div>`)}
 
       ${block('03','Choose JD','분석에 사용할 실제 공고 하나를 선택합니다.',`
         <div class="field"><label>분석할 JD</label><select id="chosenSource"></select></div>
@@ -52,6 +71,7 @@ export async function render(ctx){
   function bind(target,a){
     document.querySelectorAll('.targetPick').forEach(b=>b.addEventListener('click',()=>{currentId=b.dataset.id;paint()}));
     document.getElementById('addSource')?.addEventListener('click',()=>addSource(target,a));
+    document.getElementById('copyJdSearchPrompt')?.addEventListener('click',()=>copy(document.getElementById('jdSearchPrompt')?.value||buildSearchPrompt(ctx.getState(),target),ctx));
     document.getElementById('chosenSource')?.addEventListener('change',e=>{a.selectedSourceId=e.target.value;persist(target,a);renderChosen(a);refreshPrompt(target,a)});
     document.getElementById('refreshDeepPrompt')?.addEventListener('click',()=>refreshPrompt(target,a));
     document.getElementById('copyDeepPrompt')?.addEventListener('click',()=>copy(document.getElementById('deepPrompt').value,ctx));
@@ -111,6 +131,45 @@ function syncDownstream(state,target,a){
 }
 function getTargets(explorer){const combos=Array.isArray(explorer.targetCombos)&&explorer.targetCombos.length?explorer.targetCombos:(explorer.targets||[]).map((jobId,i)=>({id:'target_'+jobId+'_'+(i+1),jobId,industry:'산업 미정',priority:i+1}));return combos.map(c=>({...c,job:explorer.candidates?.find(x=>x.id===c.jobId)})).filter(x=>x.job)}
 function defaultAnalysis(target,legacy={}){return {...legacy,targetId:target.id,jobTitle:target.job?.title||'',industry:target.industry||'',company:legacy.company||{name:'',url:'',source:''},sources:legacy.sources||[],selectedSourceId:legacy.selectedSourceId||legacy.sources?.[0]?.id||'',tasks:legacy.tasks||[],requirements:legacy.requirements||[],purpose:legacy.purpose||'',newHireWork:legacy.newHireWork||'',gate:legacy.gate||'',preference:legacy.preference||'',knowledge:legacy.knowledge||'',skills:legacy.skills||'',behaviors:legacy.behaviors||'',experienceRequired:legacy.experienceRequired||'',signals:legacy.signals||'',unknowns:legacy.unknowns||'',have:legacy.have||'',verify:legacy.verify||'',prepare:legacy.prepare||'',conclusion:legacy.conclusion||''}}
+function renderJobSites(group){return JOB_SITES.filter(x=>x.group===group).map(x=>`<a class="jdSiteLink" href="${x.url}" target="_blank" rel="noopener"><b>${x.name}</b><span>${x.desc}</span></a>`).join('')}
+function buildSearchPrompt(s,target){
+  const major=s.profile?.major||'전공 미입력',job=target.job?.title||'관심 직무',industry=target.industry||'산업 미정';
+  return `나는 ${major} 전공 대학생이고, ${industry} 산업의 ${job} 직무를 탐색하고 있어.
+
+웹 검색이 가능하면 현재 기준으로 실제 채용공고를 찾아줘.
+
+[검색 순서]
+1. 기업 공식 채용페이지의 현재 모집 중인 신입·채용연계형 인턴 공고
+2. 사람인·잡코리아·고용24의 현재 공고
+3. 공공기관이면 잡알리오·클린아이 잡플러스도 확인
+4. 현재 공고가 없다면 최근 6개월 이내의 신입 공고
+
+[중요 규칙]
+- 확인되지 않은 공고를 만들어내지 않는다.
+- 오래된 공고를 현재 모집 중이라고 표현하지 않는다.
+- 공고 원문 URL을 직접 확인할 수 있을 때만 URL을 적는다.
+- 출처와 모집상태가 불확실하면 '확인 필요'라고 적는다.
+- ${job}와 이름만 비슷하고 실제 업무가 다른 공고는 제외한다.
+- 내 전공만으로 적합하다고 판단하지 않는다.
+- 표, JSON, 코드블록을 사용하지 않는다.
+
+[출력 형식]
+[공고 1]
+• 기업명:
+• 공고명:
+• 직무:
+• 산업:
+• 모집상태: 모집 중 / 마감 / 확인 필요
+• 모집기간:
+• 원문 URL:
+• 담당업무 핵심:
+• 필수조건:
+• 우대사항:
+• ${job} 탐색에 참고할 이유:
+• 확인 시점: ${today()}
+
+같은 형식으로 최대 5개만 작성해줘.
+현재 확인 가능한 공고가 하나도 없으면 '현재 확인 가능한 공고를 찾지 못함'이라고 명확히 말하고, 최근 공고만 별도로 구분해줘.`}
 function buildPrompt(s,target,a){const ex=(s.assessments?.experienceCompetency?.experiences||[]).filter(x=>x?.factChecked).slice(0,6).map((x,i)=>`${i+1}. ${x.title||'경험'} | 행동: ${x.action||'미입력'} | 결과: ${x.result||'미입력'} | Evidence: ${x.evidence||'미입력'}`).join('\n'),selected=(a.sources||[]).find(x=>x.id===a.selectedSourceId),support=(a.sources||[]).map((x,i)=>`[S${i+1}] ${x.type} | ${x.name} | ${x.url}\n${x.note||''}`).join('\n\n');return `너는 대학생의 실제 채용공고 분석을 돕는 조력자다. 추천이나 합격가능성 판단이 아니라 JD와 학생의 기존 Evidence를 비교한다.
 
 [TARGET]
@@ -156,4 +215,4 @@ function stateClass(x=''){return x==='근거 있음'?'good':x==='일부 근거 �
 function slug(x=''){return String(x||'').trim().replace(/[^0-9A-Za-z가-힣]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'item'}
 function today(){return new Date().toISOString().slice(0,10)}function esc(x,ctx){return ctx.escapeHtml(String(x??''))}
 async function copy(t,ctx){try{await navigator.clipboard.writeText(t);ctx.toast('프롬프트를 복사했습니다.')}catch{ctx.toast('복사하지 못했습니다.')}}
-function styleBlock(){return `<style>.jobAnalysisInje .moduleHead{display:flex;gap:11px;align-items:flex-start}.jobAnalysisInje .moduleHead>span{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:#eef3ff;color:#3152c9;font-weight:950;flex:0 0 auto}.jobAnalysisInje .moduleHead h3{margin:2px 0 3px}.jobAnalysisInje .moduleHead p{margin:0;color:#667085;font-size:12px;line-height:1.5}.activePick{background:#eef3ff!important;color:#3152c9!important}.stateTag{display:inline-flex;padding:5px 8px;border-radius:999px;font-weight:900;font-size:11px}.state-good{background:#ecfdf7;color:#087a63}.state-partial{background:#eef3ff;color:#3152c9}.state-prepare{background:#fff8e6;color:#9a6700}.state-verify{background:#f2f4f7;color:#667085}</style>`}
+function styleBlock(){return `<style>.jobAnalysisInje .siteSection{margin-top:14px}.jobAnalysisInje .jdSiteGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}.jobAnalysisInje .jdSiteLink{display:flex;flex-direction:column;gap:3px;padding:13px 14px;border:1px solid #dfe5f2;border-radius:14px;background:#fff;text-decoration:none;color:#1d2939}.jobAnalysisInje .jdSiteLink:hover{border-color:#8fa5ff;background:#f7f8ff}.jobAnalysisInje .jdSiteLink span{font-size:11px;color:#667085}@media(max-width:700px){.jobAnalysisInje .jdSiteGrid{grid-template-columns:1fr 1fr}}@media(max-width:460px){.jobAnalysisInje .jdSiteGrid{grid-template-columns:1fr}}.jobAnalysisInje .moduleHead{display:flex;gap:11px;align-items:flex-start}.jobAnalysisInje .moduleHead>span{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:#eef3ff;color:#3152c9;font-weight:950;flex:0 0 auto}.jobAnalysisInje .moduleHead h3{margin:2px 0 3px}.jobAnalysisInje .moduleHead p{margin:0;color:#667085;font-size:12px;line-height:1.5}.activePick{background:#eef3ff!important;color:#3152c9!important}.stateTag{display:inline-flex;padding:5px 8px;border-radius:999px;font-weight:900;font-size:11px}.state-good{background:#ecfdf7;color:#087a63}.state-partial{background:#eef3ff;color:#3152c9}.state-prepare{background:#fff8e6;color:#9a6700}.state-verify{background:#f2f4f7;color:#667085}</style>`}

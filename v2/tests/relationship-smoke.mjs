@@ -45,6 +45,31 @@ await run('INJE navigation removes duplicate STEP 7–8 and renumbers applicatio
   assert((await page.locator('#stepRoot .kicker').first().textContent()).includes('STEP 7'),'Resume Lab kicker was not renumbered');
 });
 
+await run('STEP 0 Career Check-in auto summary accepts student-facing heading variants',async page=>{
+  const state=structuredClone(baseState);state.activeStep=0;
+  await page.goto(base,{waitUntil:'networkidle'});
+  await page.evaluate(s=>localStorage.setItem('jobfit:v2:learner',JSON.stringify(s)),state);
+  await page.reload({waitUntil:'networkidle'});
+  await page.waitForSelector('#careerCheckinResult');
+  const result=[
+    '**① 현재 출발점**',
+    '마케팅 안에서도 어떤 직무를 선택할지 탐색 중이다.',
+    '',
+    '**② 지금 활용 가능한 자산**',
+    '마케팅 수업에서 SNS 홍보안을 만든 경험이 있다.',
+    '',
+    '**③ 가장 먼저 보완할 GAP**',
+    '직무별 실제 업무 차이를 더 확인해야 한다.',
+    '',
+    '**④ 이번 주 실행행동**',
+    '브랜드 마케팅 채용공고 2개를 찾아 담당업무를 비교한다.'
+  ].join('\n');
+  await page.locator('#careerCheckinResult').fill(result);
+  await page.locator('#parseCheckinResult').click();
+  assert((await page.locator('#careerStartStatement').inputValue()).includes('마케팅 안에서도'),'STEP 0 starting point was not auto summarized');
+  assert((await page.locator('#careerStartAction').inputValue()).includes('채용공고 2개'),'STEP 0 action was not auto summarized');
+});
+
 await run('STEP 3 stores Job × Industry targets and does not default to energy',async page=>{
   await page.goto(base,{waitUntil:'networkidle'});
   await page.evaluate(s=>localStorage.setItem('jobfit:v2:learner',JSON.stringify(s)),baseState);
@@ -69,7 +94,7 @@ await run('STEP 3 stores Job × Industry targets and does not default to energy'
   assert(stored.artifacts.industryCompany.targetIndustries.length===2,'Industry compatibility bridge was not generated');
 });
 
-await run('STEP 3 imports AI job candidates without retyping',async page=>{
+await run('STEP 3 imports copy-friendly bullet candidates and allows editing',async page=>{
   const state=structuredClone(baseState);
   state.activeStep=3;
   state.artifacts.jobExplorer.candidates=[];
@@ -79,22 +104,46 @@ await run('STEP 3 imports AI job candidates without retyping',async page=>{
   await page.evaluate(s=>localStorage.setItem('jobfit:v2:learner',JSON.stringify(s)),state);
   await page.reload({waitUntil:'networkidle'});
   await page.waitForSelector('#jobAiImport');
-  const body=(await page.locator('#stepRoot').textContent())||'';
-  assert(body.includes('나의 직무탐색 근거 확인'),'STEP 3 exploration-evidence module missing');
-  assert(body.includes('시험 결과를 비교해 오류 원인을 확인했다'),'STEP 2 verified action was not carried into STEP 3');
-  const ai={
-    candidates:[
-      {title:'생산기술',family:'생산·공정·설비',summary:'생산공정 문제를 확인하고 개선한다.',evidence:'캡스톤에서 시험 결과를 비교해 오류 원인을 확인했다.',why:'문제 원인 해결 활동에 관심',industries:['자동차·모빌리티','반도체·전자'],unknowns:'실제 공정업무와 요구기술 확인'},
-      {title:'기계설계',family:'R&D·연구',summary:'제품 구조를 설계하고 검증한다.',evidence:'캡스톤 설계조건 수정 경험',why:'제품·공정 설계 활동에 관심',industries:['기계·산업재','자동차·모빌리티'],unknowns:'설계도구와 기업별 업무 확인'}
-    ]
-  };
-  await page.locator('#jobAiImport').fill(JSON.stringify(ai));
+  const prompt=await page.locator('#jobPrompt').inputValue();
+  assert(prompt.includes('표를 만들지 않는다.'),'STEP 3 prompt must forbid tables');
+  assert(prompt.includes('JSON, 코드블록, 중괄호 { }를 절대 출력하지 않는다.'),'STEP 3 prompt must forbid JSON');
+  assert(prompt.includes('[후보 1]'),'STEP 3 prompt missing copy-friendly candidate format');
+
+  const ai=[
+    '[후보 1]',
+    '직무명: 브랜드/콘텐츠 마케터',
+    '직무군: 마케팅·브랜드',
+    '어떤 일: 소비자 반응과 트렌드를 분석해 브랜드 콘텐츠와 홍보 방향을 기획한다.',
+    '경험·행동 근거: SNS 홍보안 프로젝트에서 반응이 좋은 게시물 특징을 비교했다.',
+    '관심 근거: 마케팅과 브랜드 관련 일에 관심이 있다.',
+    '가능 산업: 유통·물류, IT·플랫폼',
+    'STEP 4에서 확인할 것: 실제 요구 포트폴리오와 디지털 마케팅 도구',
+    '',
+    '[후보 2]',
+    '직무명: CRM 마케팅',
+    '직무군: 마케팅·브랜드',
+    '어떤 일: 고객 데이터를 바탕으로 고객군별 메시지와 캠페인을 기획한다.',
+    '경험·행동 근거: 자료를 기준별로 비교하고 정리한 경험',
+    '관심 근거: 사람들의 반응을 분석하는 일에 관심',
+    '가능 산업: 유통·물류, 금융',
+    'STEP 4에서 확인할 것: SQL·CRM 도구 요구수준'
+  ].join('\n');
+  await page.locator('#jobAiImport').fill(ai);
   await page.locator('#importJobAi').click();
-  const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
-  assert(stored.artifacts.jobExplorer.candidates.length===2,'AI candidate import count mismatch');
-  assert(stored.artifacts.jobExplorer.candidates[0].title==='생산기술','AI candidate title not imported');
-  assert(stored.artifacts.jobExplorer.candidates[0].industries.includes('자동차·모빌리티'),'AI candidate industries not imported');
-  assert(!stored.artifacts.jobExplorer.candidates.some(x=>(x.industries||[]).includes('에너지')),'AI candidate import unexpectedly defaulted to energy');
+  let stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
+  assert(stored.artifacts.jobExplorer.candidates.length===2,'Bullet candidate import count mismatch');
+  assert(stored.artifacts.jobExplorer.candidates[0].title==='브랜드/콘텐츠 마케터','Bullet candidate title not imported');
+  assert(stored.artifacts.jobExplorer.candidates[0].industries.includes('유통·물류'),'Bullet candidate industries not imported');
+
+  await page.locator('[data-edit]').first().click();
+  assert((await page.locator('#jobTitle').inputValue())==='브랜드/콘텐츠 마케터','Edit did not load candidate into form');
+  await page.locator('#jobTitle').fill('브랜드 마케터');
+  await page.locator('#jobSummary').fill('브랜드 전략과 캠페인을 기획하고 고객 반응을 확인한다.');
+  await page.locator('#addCandidate').click();
+  stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
+  assert(stored.artifacts.jobExplorer.candidates[0].title==='브랜드 마케터','Edited candidate title was not saved');
+  assert(stored.artifacts.jobExplorer.candidates[0].summary.includes('브랜드 전략'),'Edited candidate summary was not saved');
+  assert(stored.artifacts.jobExplorer.candidates.length===2,'Editing must not create a duplicate candidate');
 });
 
 await run('STEP 4 stores chosen JD, GAP Match, and downstream bridges',async page=>{
@@ -111,6 +160,14 @@ await run('STEP 4 stores chosen JD, GAP Match, and downstream bridges',async pag
   await page.evaluate(s=>localStorage.setItem('jobfit:v2:learner',JSON.stringify(s)),state);
   await page.reload({waitUntil:'networkidle'});
   await page.waitForSelector('#companyName');
+  assert(await page.locator('.jdSiteLink').count()===5,'STEP 4 Find JD must show five recruitment-site links');
+  const siteText=(await page.locator('.jdSiteGrid').allTextContents()).join(' ');
+  for(const name of ['사람인','잡코리아','고용24','잡알리오','클린아이 잡플러스'])assert(siteText.includes(name),`STEP 4 recruitment site missing: ${name}`);
+  const searchPrompt=await page.locator('#jdSearchPrompt').inputValue();
+  assert(searchPrompt.includes('생산기술'),'JD search prompt missing Target Job');
+  assert(searchPrompt.includes('자동차·모빌리티'),'JD search prompt missing Target industry');
+  assert(searchPrompt.includes('현재 모집 중'),'JD search prompt missing current-posting priority');
+  assert(searchPrompt.includes('최근 6개월'),'JD search prompt missing recent-posting fallback');
 
   await page.locator('#companyName').fill('가상모빌리티');
   await page.locator('#companyUrl').fill('https://example.com/company');
