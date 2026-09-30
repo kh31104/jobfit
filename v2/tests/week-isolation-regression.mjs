@@ -17,7 +17,9 @@ async function run(name,viewport){
     await page.goto(`${base}?course=INJE2026&measures=true`,{waitUntil:'networkidle'});
     assert(new URL(page.url()).searchParams.get('course')==='INJE2026','Course URL parameter changed');
     assert(new URL(page.url()).searchParams.get('measures')==='true','INJE2026 must keep STEP0 PRE enabled');
-    assert(await page.locator('.stepBtn').count()===14,'STEP navigation must contain 14 steps');
+    const injeSteps=[0,1,2,3,4,5,6,9,10,11,12,13];
+    assert(await page.locator('.stepBtn').count()===injeSteps.length,'INJE STEP navigation must contain 12 visible steps after duplicate JD/Evidence steps are absorbed');
+    assert(await page.locator('.stepBtn[data-step="7"]').count()===0&&await page.locator('.stepBtn[data-step="8"]').count()===0,'Legacy STEP 7·8 must be hidden in INJE full mode');
     const hero=(await page.locator('.hero').textContent())||'';assert(hero.includes('일부 구조화 결과는 수업 운영용 중앙 서버에도 저장됩니다.'),'Operational central storage notice missing');
 
     await page.waitForSelector('#preMeasureSave');
@@ -32,7 +34,7 @@ async function run(name,viewport){
     assert(await page.locator('[data-measure="pre-kcaas"]').count()===12,'STEP0 K-CAAS PRE must expose 12 items');
 
     await page.locator('#makeCodeBtn').click();const code=(await page.locator('#anonCode').textContent()||'').trim();assert(/^JF26-[A-Z2-9]{6}$/.test(code),'Anonymous code creation changed');
-    for(let step=0;step<=13;step++){
+    for(const step of injeSteps){
       await page.locator(`.stepBtn[data-step="${step}"]`).click();await page.waitForTimeout(70);
       const heading=((await page.locator('#stepRoot h2').first().textContent())||'').trim();assert(heading.length>0,`STEP ${step} heading missing`);
       const body=(await page.locator('#stepRoot').textContent())||'';assert(!body.includes('화면을 불러오지 못했습니다'),`STEP ${step} render failed`);assert(new URL(page.url()).searchParams.get('course')==='INJE2026',`Course URL parameter lost at STEP ${step}`);
