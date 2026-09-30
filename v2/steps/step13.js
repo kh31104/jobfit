@@ -8,7 +8,7 @@ export async function render(ctx){
   const root=document.getElementById('stepRoot');
 
   root.innerHTML=`<section class="card portfolioStage">
-    <div class="sectionHead"><div><div class="kicker">STEP 13</div><h2>AI Job Portfolio</h2><p>한 학기 동안 검증한 Career Evidence를 실제 지원 가능한 Job Application Package로 조립합니다.</p></div><span class="badge">14주차 · Workshop</span></div>
+    <div class="sectionHead"><div><div class="kicker">STEP ${displayStep}</div><h2>AI Job Portfolio</h2><p>한 학기 동안 검증한 Career Evidence를 실제 지원 가능한 Job Application Package로 조립합니다.</p></div><span class="badge">14주차 · Workshop</span></div>
     <div class="progress"><span style="width:100%"></span></div>
     <div class="callout good"><b>14주차의 역할</b><br>새로운 내용을 만들어 채우는 시간이 아닙니다. Jobfit에 누적된 결과 중 <b>검증된 자료를 선택·편집·최종확인</b>합니다.</div>
 
