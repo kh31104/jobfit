@@ -627,25 +627,59 @@ function bulletOutputRules(){
   ];
 }
 
+function koreaToday(){
+  const parts=new Intl.DateTimeFormat("en-US",{
+    timeZone:"Asia/Seoul",year:"numeric",month:"2-digit",day:"2-digit"
+  }).formatToParts(new Date());
+  const getPart=type=>parts.find(x=>x.type===type)?.value||"";
+  return [getPart("year"),getPart("month"),getPart("day")].join(".");
+}
+
 function energySearchPrompt(){
   const industry=state.target.industry||"관심 산업";
+  const job=state.target.job||"관심 직무";
+  const major=state.student.major||"전공 미입력";
+  const today=koreaToday();
   return [
-    "나는 "+(state.student.major||"전공 미입력")+" 전공 대학생이고, "+industry+" 산업의 "+(state.target.job||"관심 직무")+"를 탐색하고 있어.",
+    "확인 기준일: "+today+" (대한민국 표준시, KST)",
+    "반드시 위 기준일 현재의 모집상태를 확인해서 답해줘.",
     "",
-    "지금 채용 중인 공고가 적을 수 있으니 다음 순서로 찾아줘.",
-    "1. 현재 모집 중인 "+industry+" 산업의 신입·채용연계형 인턴 공고",
-    "2. 공공기관과 민간기업을 모두 확인",
-    "3. 현재 공고가 없다면 최근 6개월 이내 신입 공고",
+    "나는 "+major+" 전공 대학생이고, "+industry+" 산업의 "+job+"를 탐색하고 있어.",
+    "",
+    "[검색 순서]",
+    "1. 기업 공식 채용페이지의 현재 모집 중인 신입·채용연계형 인턴 공고",
+    "2. 사람인·잡코리아·고용24의 현재 공고",
+    "3. 공공기관이면 잡알리오·클린아이 잡플러스도 확인",
+    "4. 현재 모집 중인 적합 공고가 없다면 최근 6개월 이내의 신입 공고",
+    "",
+    "[모집상태 판정]",
+    "- 현재 모집 중: 확인 기준일이 실제 접수기간 안에 있는 공고",
+    "- 마감: 확인 기준일 전에 접수가 끝난 공고",
+    "- 최근 6개월 참고공고: 현재 모집 중인 적합 공고가 없을 때만 제시하는 최근 6개월 이내 마감 공고",
+    "- 접수기간을 확인할 수 없으면 '확인 필요'로 표시하고 현재 모집 중이라고 단정하지 않는다.",
+    "",
+    "[직무 적합성]",
+    "- 공고명이 비슷하다는 이유만으로 포함하지 말고 실제 담당업무가 "+job+"와 연결되는지 확인한다.",
+    "- 내 전공 '"+major+"'만으로 적합하다고 판단하지 않는다.",
+    "- 담당업무·필수조건·우대조건을 함께 보고 직무 관련성을 판단한다.",
     "",
     "각 공고마다 아래 항목만 정리해줘.",
     "[기업명]",
+    "• 모집상태: 현재 모집 중 / 마감 / 최근 6개월 참고공고 / 확인 필요 중 하나",
     "• 공고명:",
     "• 직무:",
     "• 모집기간:",
-    "• 공식/공공기관 출처:",
+    "• 출처: 기업 공식 / 사람인 / 잡코리아 / 고용24 / 잡알리오 / 클린아이 잡플러스 중 해당 출처",
+    "• 공고 원문 URL:",
+    "• "+job+"와 연결되는 실제 담당업무:",
     "• 내 전공·관심직무와 연결되는 이유: 한 줄",
     "",
-    "확인되지 않은 공고나 오래된 공고를 현재 채용 중이라고 표현하지 마.",
+    "[중요 규칙]",
+    "- 확인되지 않은 공고를 만들어내지 않는다.",
+    "- 오래된 공고를 현재 모집 중이라고 표현하지 않는다.",
+    "- 공고 원문 URL을 직접 확인할 수 있을 때만 URL을 적는다.",
+    "- 출처와 모집상태가 불확실하면 '확인 필요'라고 적는다.",
+    "- "+job+"와 이름만 비슷하고 실제 업무가 다른 공고는 제외한다.",
     ...bulletOutputRules()
   ].join("\n");
 }
@@ -666,9 +700,10 @@ function jobSite(name,url,desc){
 }
 
 function step2SearchPromptBox(){
+  const searchPrompt=energySearchPrompt();
   return '<details class="optionBox"><summary>AI에게 현재 공고 찾아달라고 하기 · 선택</summary><div class="optionBody">'+
-    '<p class="help">STEP 1의 직무와 전공을 넣어 만든 검색 프롬프트입니다.</p>'+
-    '<textarea class="promptBox promptEditor" id="searchPromptPreview" data-prompt-key="search">'+h(promptValue("search",energySearchPrompt()))+'</textarea>'+
+    '<p class="help">STEP 1의 전공·산업·직무와 오늘 날짜(KST)를 넣어 자동 생성합니다. 다시 접속하거나 날짜가 바뀌면 기준일도 새로 계산됩니다.</p>'+
+    '<textarea class="promptBox promptEditor" id="searchPromptPreview" data-prompt-key="search">'+h(searchPrompt)+'</textarea>'+
     '<div class="actions compactActions"><button class="btn secondary" id="copySearchPromptBtn">내 검색 프롬프트 복사</button></div></div></details>';
 }
 
