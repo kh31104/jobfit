@@ -58,7 +58,7 @@ if(isInjeClass){
   };
   const rewriteResearchNotice=()=>{
     const root=document.getElementById('stepRoot');if(!root)return;
-    const kicker=root.querySelector('.kicker');if(!kicker||!kicker.textContent.includes('STEP 0'))return;
+    const kicker=root.querySelector('.kicker');if(!kicker||!/^STEP\s*[01]\b/i.test(kicker.textContent.trim()))return;
     root.querySelectorAll('.callout.info').forEach(box=>{
       if(box.dataset.noResearchNotice)return;
       if(box.textContent.includes('연구 활용')||box.textContent.includes('중앙 연구')){
