@@ -11,7 +11,7 @@ export async function render(ctx){
   root.innerHTML=`<section class="card jobAnalysisInje">${styleBlock()}
     <div class="sectionHead"><div><div class="kicker">STEP 4 · JOB ANALYSIS</div><h2>실제 채용공고로 직무 확인하기</h2><p>STEP 3에서 고른 Target Job을 실제 JD로 확인하고, <b>공고 요구 ↔ STEP 2 Evidence ↔ GAP</b>만 남깁니다.</p></div><span class="badge">직무분석</span></div>
     <div class="progress"><span style="width:36%"></span></div>
-    <div class="callout info"><b>STEP 2 경험은 다시 쓰지 않습니다.</b><br>My Evidence는 자동으로 불러오고, 학생은 실제 JD와 GAP만 확인합니다.</div>
+    <div class="callout info"><b>STEP 2 경험은 다시 쓰지 않습니다.</b><br>STEP 2의 경험근거는 자동으로 불러오고, 학생은 실제 JD와 GAP만 확인합니다.</div>
     <div id="analysisRoot"></div>
   </section>`;
   if(!targets.length){document.getElementById('analysisRoot').innerHTML='<div class="callout warn"><b>Target Job이 없습니다.</b><br>STEP 3에서 먼저 Target Job을 선택하세요.</div>';return}
@@ -36,7 +36,7 @@ export async function render(ctx){
         <div class="field"><label>분석할 JD</label><select id="chosenSource"></select></div>
         <div id="chosenPreview" class="callout info" style="margin-top:10px"></div>`)}
 
-      ${block('04','GAP Match','JD의 Gate·Requirement를 STEP 2 Evidence와 비교합니다. My Evidence를 다시 입력하지 않습니다.',`
+      ${block('04','GAP Match','JD의 Gate·Requirement를 STEP 2 Evidence와 비교합니다. 경험을 다시 입력하지 않습니다.',`
         <textarea id="deepPrompt" rows="18">${esc(buildPrompt(ctx.getState(),target,a),ctx)}</textarea>
         <div class="actions"><button class="btn secondary" id="refreshDeepPrompt">현재 JD 반영</button><button class="btn primary" id="copyDeepPrompt">AI GAP 분석 프롬프트 복사</button></div>
         <div class="callout info" style="margin-top:12px"><b>AI 결과 한 번에 불러오기</b><br>마지막 JSON 블록을 붙여넣으면 TASK·Gate·Requirement·GAP이 자동 분리됩니다.</div>
@@ -129,7 +129,7 @@ ${ex||'확인된 경험 없음'}
 1. 선택 JD를 최우선 근거로 사용한다.
 2. 공고에 없는 조건·경험·수치를 만들지 않는다.
 3. Gate(지원자격)와 Requirement(업무·K/S/B/E)를 분리한다.
-4. My Evidence를 새로 질문하지 말고 위 STEP 2 경험에서만 연결한다.
+4. 경험근거를 새로 질문하지 말고 위 STEP 2 경험에서만 연결한다.
 5. 연결 근거가 없으면 '없음'으로 두고 준비 필요로 표시한다.
 6. 적합도 %, 추천점수, 합격확률은 만들지 않는다.
 
