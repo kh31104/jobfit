@@ -131,6 +131,45 @@ function syncDownstream(state,target,a){
 }
 function getTargets(explorer){const combos=Array.isArray(explorer.targetCombos)&&explorer.targetCombos.length?explorer.targetCombos:(explorer.targets||[]).map((jobId,i)=>({id:'target_'+jobId+'_'+(i+1),jobId,industry:'산업 미정',priority:i+1}));return combos.map(c=>({...c,job:explorer.candidates?.find(x=>x.id===c.jobId)})).filter(x=>x.job)}
 function defaultAnalysis(target,legacy={}){return {...legacy,targetId:target.id,jobTitle:target.job?.title||'',industry:target.industry||'',company:legacy.company||{name:'',url:'',source:''},sources:legacy.sources||[],selectedSourceId:legacy.selectedSourceId||legacy.sources?.[0]?.id||'',tasks:legacy.tasks||[],requirements:legacy.requirements||[],purpose:legacy.purpose||'',newHireWork:legacy.newHireWork||'',gate:legacy.gate||'',preference:legacy.preference||'',knowledge:legacy.knowledge||'',skills:legacy.skills||'',behaviors:legacy.behaviors||'',experienceRequired:legacy.experienceRequired||'',signals:legacy.signals||'',unknowns:legacy.unknowns||'',have:legacy.have||'',verify:legacy.verify||'',prepare:legacy.prepare||'',conclusion:legacy.conclusion||''}}
+function renderJobSites(group){return JOB_SITES.filter(x=>x.group===group).map(x=>`<a class="jdSiteLink" href="${x.url}" target="_blank" rel="noopener"><b>${x.name}</b><span>${x.desc}</span></a>`).join('')}
+function buildSearchPrompt(s,target){
+  const major=s.profile?.major||'전공 미입력',job=target.job?.title||'관심 직무',industry=target.industry||'산업 미정';
+  return `나는 ${major} 전공 대학생이고, ${industry} 산업의 ${job} 직무를 탐색하고 있어.
+
+웹 검색이 가능하면 현재 기준으로 실제 채용공고를 찾아줘.
+
+[검색 순서]
+1. 기업 공식 채용페이지의 현재 모집 중인 신입·채용연계형 인턴 공고
+2. 사람인·잡코리아·고용24의 현재 공고
+3. 공공기관이면 잡알리오·클린아이 잡플러스도 확인
+4. 현재 공고가 없다면 최근 6개월 이내의 신입 공고
+
+[중요 규칙]
+- 확인되지 않은 공고를 만들어내지 않는다.
+- 오래된 공고를 현재 모집 중이라고 표현하지 않는다.
+- 공고 원문 URL을 직접 확인할 수 있을 때만 URL을 적는다.
+- 출처와 모집상태가 불확실하면 '확인 필요'라고 적는다.
+- ${job}와 이름만 비슷하고 실제 업무가 다른 공고는 제외한다.
+- 내 전공만으로 적합하다고 판단하지 않는다.
+- 표, JSON, 코드블록을 사용하지 않는다.
+
+[출력 형식]
+[공고 1]
+• 기업명:
+• 공고명:
+• 직무:
+• 산업:
+• 모집상태: 모집 중 / 마감 / 확인 필요
+• 모집기간:
+• 원문 URL:
+• 담당업무 핵심:
+• 필수조건:
+• 우대사항:
+• ${job} 탐색에 참고할 이유:
+• 확인 시점: ${today()}
+
+같은 형식으로 최대 5개만 작성해줘.
+현재 확인 가능한 공고가 하나도 없으면 '현재 확인 가능한 공고를 찾지 못함'이라고 명확히 말하고, 최근 공고만 별도로 구분해줘.`}
 function buildPrompt(s,target,a){const ex=(s.assessments?.experienceCompetency?.experiences||[]).filter(x=>x?.factChecked).slice(0,6).map((x,i)=>`${i+1}. ${x.title||'경험'} | 행동: ${x.action||'미입력'} | 결과: ${x.result||'미입력'} | Evidence: ${x.evidence||'미입력'}`).join('\n'),selected=(a.sources||[]).find(x=>x.id===a.selectedSourceId),support=(a.sources||[]).map((x,i)=>`[S${i+1}] ${x.type} | ${x.name} | ${x.url}\n${x.note||''}`).join('\n\n');return `너는 대학생의 실제 채용공고 분석을 돕는 조력자다. 추천이나 합격가능성 판단이 아니라 JD와 학생의 기존 Evidence를 비교한다.
 
 [TARGET]
@@ -176,4 +215,4 @@ function stateClass(x=''){return x==='근거 있음'?'good':x==='일부 근거 �
 function slug(x=''){return String(x||'').trim().replace(/[^0-9A-Za-z가-힣]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'item'}
 function today(){return new Date().toISOString().slice(0,10)}function esc(x,ctx){return ctx.escapeHtml(String(x??''))}
 async function copy(t,ctx){try{await navigator.clipboard.writeText(t);ctx.toast('프롬프트를 복사했습니다.')}catch{ctx.toast('복사하지 못했습니다.')}}
-function styleBlock(){return `<style>.jobAnalysisInje .moduleHead{display:flex;gap:11px;align-items:flex-start}.jobAnalysisInje .moduleHead>span{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:#eef3ff;color:#3152c9;font-weight:950;flex:0 0 auto}.jobAnalysisInje .moduleHead h3{margin:2px 0 3px}.jobAnalysisInje .moduleHead p{margin:0;color:#667085;font-size:12px;line-height:1.5}.activePick{background:#eef3ff!important;color:#3152c9!important}.stateTag{display:inline-flex;padding:5px 8px;border-radius:999px;font-weight:900;font-size:11px}.state-good{background:#ecfdf7;color:#087a63}.state-partial{background:#eef3ff;color:#3152c9}.state-prepare{background:#fff8e6;color:#9a6700}.state-verify{background:#f2f4f7;color:#667085}</style>`}
+function styleBlock(){return `<style>.jobAnalysisInje .siteSection{margin-top:14px}.jobAnalysisInje .jdSiteGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}.jobAnalysisInje .jdSiteLink{display:flex;flex-direction:column;gap:3px;padding:13px 14px;border:1px solid #dfe5f2;border-radius:14px;background:#fff;text-decoration:none;color:#1d2939}.jobAnalysisInje .jdSiteLink:hover{border-color:#8fa5ff;background:#f7f8ff}.jobAnalysisInje .jdSiteLink span{font-size:11px;color:#667085}.jobAnalysisInje .moduleHead{display:flex;gap:11px;align-items:flex-start}.jobAnalysisInje .moduleHead>span{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:#eef3ff;color:#3152c9;font-weight:950;flex:0 0 auto}.jobAnalysisInje .moduleHead h3{margin:2px 0 3px}.jobAnalysisInje .moduleHead p{margin:0;color:#667085;font-size:12px;line-height:1.5}.activePick{background:#eef3ff!important;color:#3152c9!important}.stateTag{display:inline-flex;padding:5px 8px;border-radius:999px;font-weight:900;font-size:11px}.state-good{background:#ecfdf7;color:#087a63}.state-partial{background:#eef3ff;color:#3152c9}.state-prepare{background:#fff8e6;color:#9a6700}.state-verify{background:#f2f4f7;color:#667085}</style>`}
