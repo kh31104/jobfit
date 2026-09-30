@@ -41,8 +41,8 @@ await run('INJE navigation removes duplicate STEP 7–8 and renumbers applicatio
   await page.locator('.stepBtn[data-step="7"]').click();
   await page.waitForSelector('#stepRoot .kicker');
   const text=(await page.locator('#stepRoot').textContent())||'';
-  assert(text.includes('Resume Lab'),'New STEP 7 should load Resume Lab');
-  assert((await page.locator('#stepRoot .kicker').first().textContent()).includes('STEP 7'),'Resume Lab kicker was not renumbered');
+  assert(text.includes('Resume Lab'),'New STEP 8 should load Resume Lab');
+  assert((await page.locator('#stepRoot .kicker').first().textContent()).includes('STEP 8'),'Resume Lab kicker was not renumbered');
 });
 
 await run('STEP 0 Career Check-in auto summary accepts student-facing heading variants',async page=>{
