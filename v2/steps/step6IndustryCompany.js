@@ -5,7 +5,10 @@ const HIRING_EVIDENCE=['현재 채용공고 확인','최근 채용공고 확인'
 export async function render(ctx){
   const s=ctx.getState(),jobs=getTargetJobs(s),saved=s.artifacts?.industryCompany||{industries:[],targetIndustries:[],companies:[],targetCompanies:[],notes:''};
   const root=document.getElementById('stepRoot');let data=structuredClone(saved);
-  data.industries=data.industries||[];data.companies=data.companies||[];data.targetIndustries=data.targetIndustries||[];data.targetCompanies=data.targetCompanies||[];
+  data.industries=(data.industries||[]).filter(x=>x?.generatedBy!=='step4-inje');
+  data.companies=(data.companies||[]).filter(x=>x?.generatedBy!=='step4-inje');
+  data.targetIndustries=(data.targetIndustries||[]).filter(id=>data.industries.some(x=>x.id===id));
+  data.targetCompanies=(data.targetCompanies||[]).filter(id=>data.companies.some(x=>x.id===id));
 
   const defaultAccordion=(data.targetCompanies||[]).length?5:(data.targetIndustries||[]).length?4:1;
   root.innerHTML=`<section class="card industryCompanyInje" data-accordion-default="${defaultAccordion}">
@@ -72,7 +75,7 @@ export async function render(ctx){
     box.innerHTML=`<div class="matrixWrap"><table class="matrix"><thead><tr><th>기업</th><th>Business · Customer</th><th>Strategy</th><th>Job Link</th><th>Hiring Signal</th><th>확인 필요</th></tr></thead><tbody>${arr.map(x=>`<tr><td><b>${esc(x.name,ctx)}</b></td><td>${esc(x.business||'—',ctx)}</td><td>${esc(x.direction||'—',ctx)}</td><td>${esc(x.role||'—',ctx)}</td><td>${esc(x.signals||'—',ctx)}</td><td>${esc(x.unknown||'—',ctx)}</td></tr>`).join('')}</tbody></table></div>`;
   }
   function renderCompanyGuard(){const box=document.getElementById('companyGuard'),arr=currentCompanyTargets().map(id=>data.companies.find(x=>x.id===id)).filter(Boolean);if(!arr.length){box.innerHTML='<div class="callout info">Target Company를 선택하면 근거상태를 점검합니다.</div>';return;}const weak=arr.filter(x=>['직무 존재만 확인','아직 미확인',''].includes(x.hiringEvidence)||!x.url);const orphan=arr.filter(x=>!data.targetIndustries.includes(x.industryId));if(orphan.length)box.innerHTML=`<div class="callout warn"><b>조합 확인 필요</b><br>${orphan.map(x=>esc(x.name,ctx)).join(', ')}은 현재 Target Industry에 포함되지 않습니다.</div>`;else if(weak.length)box.innerHTML=`<div class="callout warn"><b>채용근거 보강 필요</b><br>${weak.map(x=>esc(x.name,ctx)).join(', ')}은 실제 채용공고 또는 공식 직무자료를 더 확인하세요.</div>`;else box.innerHTML='<div class="callout good"><b>기본 연결 확인</b><br>선택한 기업이 Target Industry·Target Job과 연결되고 채용/직무 근거도 기록되어 있습니다.</div>';}
-  function saveSelections(){data.targetIndustries=currentIndustryTargets();data.targetCompanies=currentCompanyTargets();persist();}
+  function saveSelections(){data.targetIndustries=currentIndustryTargets();data.targetCompanies=currentCompanyTargets();const cp=document.getElementById('companyPrompt');if(cp)cp.value=buildCompanyPrompt(ctx.getState(),data);persist();}
   function saveAll(){saveSelections();data.notes=v('notes');persist();renderCompanyGuard();status('STEP 7 산업·기업분석 결과를 저장했습니다.');}
   function currentIndustryTargets(){return [...document.querySelectorAll('[data-itarget]:checked')].map(x=>x.dataset.itarget)}function currentCompanyTargets(){return [...document.querySelectorAll('[data-ctarget]:checked')].map(x=>x.dataset.ctarget)}
   function persist(){ctx.saveState({artifacts:{industryCompany:data}})}function v(id){return document.getElementById(id)?.value?.trim()||''}function clear(ids){ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value=''})}function status(t){document.getElementById('status').textContent=t;ctx.toast(t)}
