@@ -49,7 +49,7 @@ try{
   const step2Text=(await page.locator('#stepRoot').textContent())||'';
   assert(!step2Text.includes('경험 분석 전 강점행동 9문항'),'STEP2 legacy strength-measure copy remains');
 
-  await page.locator('.stepBtn[data-step="13"]').click();
+  await page.locator('.stepBtn[data-step="11"]').click();
   await page.waitForSelector('#postMeasureSave');
   const postS=page.locator('[data-measure="post-sudco"]');
   assert(await postS.count()===9,'POST SUDCO count must be 9');
