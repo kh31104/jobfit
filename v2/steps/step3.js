@@ -153,13 +153,70 @@ function legacyCombos(data){return (data.targets||[]).map((id,i)=>({id:`legacy_$
 function confirmedActions(map){const out=[];for(const x of map||[]){const a=String(x.action||'').trim();if(a&&!out.includes(a))out.push(a);for(const ce of x.competencyEvidence||[]){const e=String(ce?.evidence||'').trim();if(e&&!out.includes(e))out.push(e)}if(out.length>=6)break}return out.slice(0,6)}
 function summaryCareer(dna,profile){const h=profile?.hypothesis?.text||dna.hypothesis?.text||'',values=profile?.valueClues||[];return [h,values.length?`가치: ${values.slice(0,3).join(', ')}`:''].filter(Boolean).join(' / ')||'STEP 1 결과를 확인하세요.'}
 function summaryCompetencies(exp,map){const src=map.length?map:(exp.experiences||[]).filter(x=>x?.factChecked),comps=[...new Set(src.flatMap(x=>x.competencies||[]))];return comps.slice(0,8).join(', ')||'STEP 2에서 경험기반 역량을 확인하세요.'}
-function buildPrompt(s,data,map){const evidence=(map||[]).slice(0,5).map((x,i)=>`${i+1}. ${x.title||'경험'}\n- 행동: ${x.action||'미입력'}\n- 결과: ${x.result||'미입력'}\n- 역량: ${(x.competencies||[]).join(', ')||'미입력'}`).join('\n'),dna=s.assessments?.careerDNA||{},profile=s.artifacts?.careerDNAProfile||{},values=[...new Set(profile.valueClues||((dna.balance?.answers||[]).filter(Boolean).map(x=>x.value)))].slice(0,5),anchors=(profile.careerAnchorTop||dna.careerAnchor?.ranking||[]).slice(0,3).map(x=>x.name||x.code).filter(Boolean),via=(profile.viaTop5||dna.viaTop5||[]).slice(0,5),hypothesis=profile.hypothesis?.text||dna.hypothesis?.text||'';return `당신은 대학생의 직무탐색을 돕는 조력자다. 최종 직무를 대신 결정하지 말고, 학생의 실제 경험과 관심 업무를 근거로 탐색할 직무 후보를 만들어라.\n\n[STEP 1 Career DNA · 보조근거]\n중요 가치: ${values.join(', ')||'입력 없음'}\nCareer Anchor TOP: ${anchors.join(', ')||'입력 없음'}\nVIA TOP: ${via.join(', ')||'입력 없음'}\nCareer DNA 가설: ${hypothesis||'입력 없음'}\n※ 위 자기이해 결과는 후보를 넓히는 보조근거이며, 직무를 확정하는 단독 근거로 사용하지 않는다.\n\n[학생이 해보고 싶은 업무]\n${(data.desiredActivities||[]).join(', ')||'아직 선택하지 않음'}\n\n[경험은 없지만 관심 있는 업무]\n${(data.newInterests||[]).join(', ')||'없음'}\n\n[관심 산업]\n${(data.industryInterests||[]).join(', ')||'미정'}\n\n[STEP 2 경험 근거 · 우선근거]\n${evidence||'확인된 경험 없음'}\n\n[규칙]\n1. Holland/RIASEC 유형을 임의로 추정하지 않는다.\n2. Career Anchor·VIA·전공·성격 하나만으로 직무를 정하지 않는다.\n3. 실제 경험·행동 Evidence와 학생이 선택한 업무활동을 가장 우선한다.\n4. 후보는 4~5개만 제안하되 업무 성격이 서로 겹치지 않게 한다.\n5. 각 후보마다 '어떤 일인가 / 경험·행동 근거 / 관심 근거 / 가능한 산업 / 아직 확인할 것'을 구분한다.\n6. 같은 직무가 산업별로 어떻게 달라지는지 예를 들어 설명한다.\n7. 특정 산업, 특히 에너지 산업을 기본값으로 두지 않는다. 학생의 관심 산업이 미정이면 여러 산업 예시를 제안한다.\n8. 적합도 %, 추천순위, 취업성공확률을 만들지 않는다.\n9. 학생이 하지 않은 경험이나 역량을 만들어내지 않는다.\n10. 실제 Task·요구기술·기업조건은 STEP 4에서 공식자료로 확인해야 한다고 표시한다.\n\n[출력]\n1. 먼저 표로 제시한다. 열: 직무 후보 | 직무군 | 어떤 일인가 | 연결되는 경험·행동 | 관심 근거 | 가능한 산업 2~4개 | STEP 4에서 확인할 것\n2. 표 다음에는 아래 형식의 유효한 JSON 코드블록을 반드시 함께 출력한다. 키 이름을 바꾸거나 추가하지 않는다.\n{\"candidates\":[{\"title\":\"직무명\",\"family\":\"직무군\",\"summary\":\"1~2문장 설명\",\"evidence\":\"STEP 2 경험·행동 근거\",\"why\":\"학생 관심 근거\",\"industries\":[\"산업1\",\"산업2\"],\"unknowns\":\"STEP 4에서 확인할 것\"}]}\n3. 마지막에 학생이 비교할 질문 2개만 제시하라.`}
+function buildPrompt(s,data,map){const evidence=(map||[]).slice(0,5).map((x,i)=>`${i+1}. ${x.title||'경험'}\n- 행동: ${x.action||'미입력'}\n- 결과: ${x.result||'미입력'}\n- 역량: ${(x.competencies||[]).join(', ')||'미입력'}`).join('\n'),dna=s.assessments?.careerDNA||{},profile=s.artifacts?.careerDNAProfile||{},values=[...new Set(profile.valueClues||((dna.balance?.answers||[]).filter(Boolean).map(x=>x.value)))].slice(0,5),anchors=(profile.careerAnchorTop||dna.careerAnchor?.ranking||[]).slice(0,3).map(x=>x.name||x.code).filter(Boolean),via=(profile.viaTop5||dna.viaTop5||[]).slice(0,5),hypothesis=profile.hypothesis?.text||dna.hypothesis?.text||'';return `당신은 대학생의 직무탐색을 돕는 조력자다. 최종 직무를 대신 결정하지 말고, 학생의 실제 경험과 관심 업무를 근거로 탐색할 직무 후보를 만들어라.
+
+[STEP 1 Career DNA · 보조근거]
+중요 가치: ${values.join(', ')||'입력 없음'}
+Career Anchor TOP: ${anchors.join(', ')||'입력 없음'}
+VIA TOP: ${via.join(', ')||'입력 없음'}
+Career DNA 가설: ${hypothesis||'입력 없음'}
+※ 위 자기이해 결과는 후보를 넓히는 보조근거이며, 직무를 확정하는 단독 근거로 사용하지 않는다.
+
+[학생이 해보고 싶은 업무]
+${(data.desiredActivities||[]).join(', ')||'아직 선택하지 않음'}
+
+[경험은 없지만 관심 있는 업무]
+${(data.newInterests||[]).join(', ')||'없음'}
+
+[관심 산업]
+${(data.industryInterests||[]).join(', ')||'미정'}
+
+[STEP 2 경험 근거 · 우선근거]
+${evidence||'확인된 경험 없음'}
+
+[규칙]
+1. Holland/RIASEC 유형을 임의로 추정하지 않는다.
+2. Career Anchor·VIA·전공·성격 하나만으로 직무를 정하지 않는다.
+3. 실제 경험·행동 Evidence와 학생이 선택한 업무활동을 가장 우선한다.
+4. 후보는 4~5개만 제안하되 업무 성격이 서로 겹치지 않게 한다.
+5. 특정 산업, 특히 에너지 산업을 기본값으로 두지 않는다.
+6. 적합도 %, 추천순위, 취업성공확률을 만들지 않는다.
+7. 학생이 하지 않은 경험이나 역량을 만들어내지 않는다.
+8. 실제 Task·요구기술·기업조건은 STEP 4에서 공식자료로 확인해야 한다고 표시한다.
+
+[출력 형식 · 반드시 지킬 것]
+- 표를 만들지 않는다.
+- JSON, 코드블록, 중괄호 { }를 절대 출력하지 않는다.
+- 아래 형식을 그대로 반복하는 일반 텍스트 개조식으로만 작성한다.
+- 각 항목은 복사·붙여넣기 쉽도록 한 줄 중심으로 작성한다.
+- 후보는 4~5개까지만 작성한다.
+
+[후보 1]
+직무명: 직무명
+직무군: 직무군
+어떤 일: 1~2문장
+경험·행동 근거: STEP 2의 실제 경험·행동
+관심 근거: 학생이 선택한 관심업무와 연결 이유
+가능 산업: 산업1, 산업2
+STEP 4에서 확인할 것: 실제 업무·요구기술·근무환경 중 확인할 것
+
+[후보 2]
+같은 형식으로 계속 작성
+
+마지막 후보 뒤에는 추가 설명, 표, JSON, 비교질문을 붙이지 않는다.`}
 function block(n,title,desc,body){return `<div class="hr"></div><div class="block"><div class="moduleHead"><span>${n}</span><div><h3>${title}</h3><p>${desc}</p></div></div>${body}</div>`}
 function choice(type,label,on,ctx){return `<label class="choiceTile"><input type="checkbox" data-choice="${type}" value="${esc(label,ctx)}" ${on?'checked':''}><span>${esc(label,ctx)}</span></label>`}
 function txt(id,label,value,ph){return `<div class="field"><label>${label}</label><input class="input" id="${id}" value="${value||''}" placeholder="${ph||''}"></div>`}
 function area(id,label,value,ph){return `<div class="field"><label>${label}</label><textarea id="${id}" placeholder="${ph||''}">${value||''}</textarea></div>`}
 function sel(id,label,value,opts){return `<div class="field"><label>${label}</label><select id="${id}"><option value="">선택</option>${opts.map(o=>`<option ${o===value?'selected':''}>${o}</option>`).join('')}</select></div>`}
-function parseJsonBlock(raw=''){const text=String(raw).trim(),fenced=text.match(/```(?:json)?\s*([\s\S]*?)```/i),source=(fenced?.[1]||text).trim();try{return JSON.parse(source)}catch{}const s=source.indexOf('{'),e=source.lastIndexOf('}');if(s>=0&&e>s){try{return JSON.parse(source.slice(s,e+1))}catch{}}const a=source.indexOf('['),b=source.lastIndexOf(']');if(a>=0&&b>a){try{return JSON.parse(source.slice(a,b+1))}catch{}}return null}
+function parseCandidateOutput(raw=''){
+  const text=String(raw||'').replace(/\r/g,'').replace(/\*\*/g,'').replace(/```(?:json|text)?/gi,'').replace(/```/g,'').trim();
+  const legacy=(()=>{try{const x=JSON.parse(text);return Array.isArray(x)?x:(Array.isArray(x?.candidates)?x.candidates:[])}catch{return []}})();
+  if(legacy.length)return legacy.map(x=>({title:x.title||x.job||'',family:x.family||'',summary:x.summary||x.description||'',evidence:x.evidence||x.experienceEvidence||'',why:x.why||x.interestEvidence||'',industries:Array.isArray(x.industries)?x.industries.join(', '):(x.industries||''),unknowns:x.unknowns||''}));
+  const blocks=text.split(/(?=^\s*\[?후보\s*\d+\]?\s*$)/gmi).map(x=>x.trim()).filter(x=>/^(?:\[?후보\s*\d+\]?)/i.test(x));
+  const keyMap=[['title',/^\s*(?:[-•·]\s*)?직무명\s*[:：]\s*(.*)$/i],['family',/^\s*(?:[-•·]\s*)?직무군\s*[:：]\s*(.*)$/i],['summary',/^\s*(?:[-•·]\s*)?어떤\s*일(?:인가)?\s*[:：]\s*(.*)$/i],['evidence',/^\s*(?:[-•·]\s*)?경험[·ㆍ\s]*행동\s*근거\s*[:：]\s*(.*)$/i],['why',/^\s*(?:[-•·]\s*)?관심\s*근거\s*[:：]\s*(.*)$/i],['industries',/^\s*(?:[-•·]\s*)?가능\s*산업\s*[:：]\s*(.*)$/i],['unknowns',/^\s*(?:[-•·]\s*)?(?:STEP\s*4에서\s*)?확인할\s*것\s*[:：]\s*(.*)$/i]];
+  return blocks.map(block=>{const out={title:'',family:'',summary:'',evidence:'',why:'',industries:'',unknowns:''};let current='';for(const rawLine of block.split('\n').slice(1)){const line=rawLine.trim();if(!line)continue;const hit=keyMap.map(([k,rx])=>[k,line.match(rx)]).find(([,m])=>m);if(hit){current=hit[0];out[current]=hit[1][1].trim();continue}if(current)out[current]+=(out[current]?' ':'')+line.replace(/^[•·\-*]\s*/,'').trim()}return out}).filter(x=>x.title);
+}
 function splitList(v){return [...new Set(String(v||'').split(/[,/|]/).map(x=>x.trim()).filter(Boolean))]}
 function slug(x=''){return String(x).trim().replace(/[^0-9A-Za-z가-힣]+/g,'-').replace(/^-|-$/g,'').slice(0,30)||'undecided'}
 function esc(x,ctx){return ctx.escapeHtml(String(x??''))}
