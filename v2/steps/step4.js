@@ -1,7 +1,7 @@
 const SOURCE_TYPES=['기업 공식 채용공고','기업 공식 직무소개','기업 공식 직무기술서','NCS','고용24 직업정보','공공기관·정부자료','산업협회·전문기관','기타 신뢰자료'];
 const REQ_TYPES=['Gate · 필수조건','Preference · 우대조건','Knowledge','Skill','Behavior','Experience','Tool·System','기타'];
 const GAP_STATUS=['근거 있음','일부 근거 있음','확인 필요','준비 필요'];
-const VERSION='job-analysis-inje-v5';
+const VERSION='job-analysis-inje-v6';
 const JOB_SITES=[
   {group:'민간기업',name:'사람인',url:'https://www.saramin.co.kr/',desc:'민간기업 신입 공고'},
   {group:'민간기업',name:'잡코리아',url:'https://www.jobkorea.co.kr/',desc:'대기업·공채'},
@@ -39,13 +39,14 @@ export async function render(ctx){
         <div class="siteSection"><b>민간기업</b><div class="jdSiteGrid">${renderJobSites('민간기업')}</div></div>
         <div class="siteSection"><b>공공기관</b><div class="jdSiteGrid">${renderJobSites('공공기관')}</div></div>
 
-        <details class="subDetails" style="margin-top:12px"><summary>AI에게 현재 공고 찾아달라고 하기 · 선택</summary>
-          <div class="callout info" style="margin-top:10px"><b>검색 가능한 AI에서 사용하세요.</b><br>현재 모집 공고를 확인하지 못하면 최근 6개월 공고까지 찾고, 확인하지 못한 링크를 만들어내지 않도록 지시합니다.</div>
+        <div class="aiSearchBox" style="margin-top:16px">
+          <h4 style="margin:0 0 8px">② AI에게 현재 공고 찾아달라고 하기</h4>
+          <div class="callout info"><b>검색 기능이 있는 AI에서 사용하세요.</b><br>프롬프트를 복사해 붙여넣으면 현재 모집 중인 공고를 우선 찾고, 없으면 최근 6개월 공고까지 확인하도록 합니다. 확인되지 않은 링크는 만들지 않게 설정했습니다.</div>
           <textarea id="jdSearchPrompt" rows="16">${esc(buildSearchPrompt(ctx.getState(),target),ctx)}</textarea>
-          <div class="actions"><button class="btn primary" id="copyJdSearchPrompt">채용공고 검색 프롬프트 복사</button></div>
-        </details>
+          <div class="actions"><button class="btn primary" id="copyJdSearchPrompt">AI 공고검색 프롬프트 복사</button></div>
+        </div>
 
-        <h4 style="margin:18px 0 8px">② 찾은 공고 기록</h4>
+        <h4 style="margin:18px 0 8px">③ 찾은 공고 기록</h4>
         <div class="grid2">${txt('companyName','찾은 기업',a.company?.name||'','예: 관심 기업명 / 찾지 못함')}${txt('companyUrl','기업 공식페이지',a.company?.url||'','https://...')}</div>
         <div class="grid4" style="margin-top:12px">${sel('sourceType','자료 유형','',SOURCE_TYPES)}${txt('sourceName','찾은 직무·공고','','예: 브랜드 마케팅 신입 / 현재 관련 공고 없음')}${txt('sourceUrl','공고 주소','','https://...')}${txt('sourceChecked','확인일','',today())}</div>
         <div class="field" style="margin-top:10px"><label>담당업무·직무소개 <span class="muted">(가능하면 붙여넣기)</span></label><textarea id="sourceNote" placeholder="공고의 담당업무·직무소개·지원조건·우대사항을 그대로 붙여넣거나 핵심만 기록하세요."></textarea></div>
@@ -152,8 +153,10 @@ function buildSearchPrompt(s,target){
 - ${job}와 이름만 비슷하고 실제 업무가 다른 공고는 제외한다.
 - 내 전공만으로 적합하다고 판단하지 않는다.
 - 표, JSON, 코드블록을 사용하지 않는다.
+- 답변 앞에 설명을 붙이지 말고 첫 줄부터 [공고 1]로 시작한다.
+- 현재 모집 중인지 직접 확인할 수 없으면 반드시 '확인 필요'라고 적는다.
 
-[출력 형식]
+[출력 형식 · 일반 텍스트 개조식]
 [공고 1]
 • 기업명:
 • 공고명:
@@ -215,4 +218,4 @@ function stateClass(x=''){return x==='근거 있음'?'good':x==='일부 근거 �
 function slug(x=''){return String(x||'').trim().replace(/[^0-9A-Za-z가-힣]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'item'}
 function today(){return new Date().toISOString().slice(0,10)}function esc(x,ctx){return ctx.escapeHtml(String(x??''))}
 async function copy(t,ctx){try{await navigator.clipboard.writeText(t);ctx.toast('프롬프트를 복사했습니다.')}catch{ctx.toast('복사하지 못했습니다.')}}
-function styleBlock(){return `<style>.jobAnalysisInje .siteSection{margin-top:14px}.jobAnalysisInje .jdSiteGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}.jobAnalysisInje .jdSiteLink{display:flex;flex-direction:column;gap:3px;padding:13px 14px;border:1px solid #dfe5f2;border-radius:14px;background:#fff;text-decoration:none;color:#1d2939}.jobAnalysisInje .jdSiteLink:hover{border-color:#8fa5ff;background:#f7f8ff}.jobAnalysisInje .jdSiteLink span{font-size:11px;color:#667085}@media(max-width:700px){.jobAnalysisInje .jdSiteGrid{grid-template-columns:1fr 1fr}}@media(max-width:460px){.jobAnalysisInje .jdSiteGrid{grid-template-columns:1fr}}.jobAnalysisInje .moduleHead{display:flex;gap:11px;align-items:flex-start}.jobAnalysisInje .moduleHead>span{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:#eef3ff;color:#3152c9;font-weight:950;flex:0 0 auto}.jobAnalysisInje .moduleHead h3{margin:2px 0 3px}.jobAnalysisInje .moduleHead p{margin:0;color:#667085;font-size:12px;line-height:1.5}.activePick{background:#eef3ff!important;color:#3152c9!important}.stateTag{display:inline-flex;padding:5px 8px;border-radius:999px;font-weight:900;font-size:11px}.state-good{background:#ecfdf7;color:#087a63}.state-partial{background:#eef3ff;color:#3152c9}.state-prepare{background:#fff8e6;color:#9a6700}.state-verify{background:#f2f4f7;color:#667085}</style>`}
+function styleBlock(){return `<style>.jobAnalysisInje .siteSection{margin-top:14px}.jobAnalysisInje .jdSiteGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}.jobAnalysisInje .jdSiteLink{display:flex;flex-direction:column;gap:3px;padding:13px 14px;border:1px solid #dfe5f2;border-radius:14px;background:#fff;text-decoration:none;color:#1d2939}.jobAnalysisInje .jdSiteLink:hover{border-color:#8fa5ff;background:#f7f8ff}.jobAnalysisInje .jdSiteLink span{font-size:11px;color:#667085}.jobAnalysisInje .aiSearchBox{border:1px solid #dfe5f2;border-radius:16px;padding:14px;background:#fbfcff}@media(max-width:700px){.jobAnalysisInje .jdSiteGrid{grid-template-columns:1fr 1fr}}@media(max-width:460px){.jobAnalysisInje .jdSiteGrid{grid-template-columns:1fr}}.jobAnalysisInje .moduleHead{display:flex;gap:11px;align-items:flex-start}.jobAnalysisInje .moduleHead>span{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:#eef3ff;color:#3152c9;font-weight:950;flex:0 0 auto}.jobAnalysisInje .moduleHead h3{margin:2px 0 3px}.jobAnalysisInje .moduleHead p{margin:0;color:#667085;font-size:12px;line-height:1.5}.activePick{background:#eef3ff!important;color:#3152c9!important}.stateTag{display:inline-flex;padding:5px 8px;border-radius:999px;font-weight:900;font-size:11px}.state-good{background:#ecfdf7;color:#087a63}.state-partial{background:#eef3ff;color:#3152c9}.state-prepare{background:#fff8e6;color:#9a6700}.state-verify{background:#f2f4f7;color:#667085}</style>`}
