@@ -216,6 +216,17 @@ await run('Week6 Job Explorer bridges current Career DNA and Experience Map',asy
   assert(prompt.includes('실제 Task·요구기술·기업조건은 STEP 4에서 공식자료로 확인'),'STEP 4 verification bridge missing');
   assert(prompt.includes('적합도 %, 추천순위, 취업성공확률을 만들지 않는다.'),'No-fit-score rule missing');
   assert(prompt.includes('Holland/RIASEC 유형을 임의로 추정하지 않는다.'),'No-fabricated-RIASEC rule missing');
+  assert(prompt.includes('첫 줄부터 [후보 1]로 시작'),'STEP3 prompt must start directly with candidate text');
+  assert(prompt.includes('JSON 금지'),'STEP3 prompt must explicitly forbid JSON');
+  assert(prompt.includes('마크다운 표'),'STEP3 prompt must explicitly forbid markdown tables');
+  await openFor(page,'#jobAiImport');
+  await page.locator('#jobAiImport').fill('[후보 1]\n직무명: 브랜드 마케터\n직무군: 마케팅·브랜드\n어떤 일: 고객과 시장 데이터를 바탕으로 브랜드 활동을 기획한다.\n경험·행동 근거: 리뷰 데이터를 기준별로 분류했다.\n관심 근거: 자료·데이터 분석하기를 선택했다.\n가능 산업: 유통·물류, IT·플랫폼\nSTEP 4에서 확인할 것: 실제 담당업무와 요구도구');
+  await page.locator('#importJobAi').click();
+  assert(await page.locator('#candidateList [data-edit]').count()===1,'Imported STEP3 candidate must expose an edit button');
+  assert(await page.locator('#candidateList [data-del]').count()===1,'Imported STEP3 candidate must keep a delete button');
+  await page.locator('#candidateList [data-edit]').click();
+  assert((await page.locator('#addCandidate').textContent()).includes('수정 저장'),'STEP3 candidate edit flow did not open');
+  assert(await page.locator('#jobTitle').inputValue()==='브랜드 마케터','STEP3 candidate values did not load into editor');
 });
 
 await browser.close();if(failed)process.exit(1);
