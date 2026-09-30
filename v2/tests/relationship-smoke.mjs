@@ -429,8 +429,9 @@ await run('Marketing student STEP 1-6 outputs flow into MY JOBFIT REPORT',async 
   assert(await page.locator('.reportPage').count()===3,'Marketing report must remain three pages');
 });
 
-await run('STEP 6 accepts linked combination and rejects mismatched relation',async page=>{
+await run('BASE Career Fit Map accepts linked combination and rejects mismatched relation',async page=>{
   const state=structuredClone(baseState);
+  state.profile.courseCode='';
   state.activeStep=6;
   state.artifacts.jobExplorer.targets=['job1','job2'];
   state.artifacts.industryCompany={industries:[{id:'ind1',name:'자동차·모빌리티',jobId:'job1',source:'공식 산업자료',url:'https://example.com/ind',business:'자동차 제조',jobLink:'공정 개선'}],targetIndustries:['ind1'],companies:[{id:'co1',name:'가상모빌리티',type:'대기업',industryId:'ind1',jobId:'job1',industry:'자동차·모빌리티',job:'생산기술',source:'사업보고서',url:'https://example.com/co',hiringEvidence:'현재 채용공고 확인',jobUrl:'https://example.com/jd',business:'자동차 제조',role:'공정 안정화'}],targetCompanies:['co1'],notes:''};
