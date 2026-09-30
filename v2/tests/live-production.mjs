@@ -16,6 +16,11 @@ async function run(name,viewport){
     assert(new URL(page.url()).searchParams.get('course')==='INJE2026','course=INJE2026 was not preserved');
     assert(new URL(page.url()).searchParams.get('measures')==='true','INJE2026 STEP0 PRE must stay enabled');
     assert(await page.locator('.stepBtn').count()===12,'Student navigation must contain 12 steps after duplicate JD/Asset removal');
+    const navText=(await page.locator('#stepNav').textContent())||'';
+    assert(!navText.includes('주차'),'Student navigation must not show week labels');
+    const navItems=(await page.locator('.stepBtn').allTextContents()).map(x=>x.replace(/\s+/g,' ').trim());
+    assert(navItems[0].includes('STEP 1 · Career Start'),'Student navigation must start at STEP 1');
+    assert(navItems[11].includes('STEP 12 · AI Job Portfolio'),'Student navigation must be sequential through STEP 12');
 
     await page.waitForSelector('#preMeasureSave',{timeout:30000});
     const step0=(await page.locator('#stepRoot').textContent())||'';
