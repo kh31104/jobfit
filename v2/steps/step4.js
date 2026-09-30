@@ -129,15 +129,43 @@ export async function render(ctx){
     persist(target,a);['sourceName','sourceUrl','sourceNote'].forEach(x=>set(x,''));paint();ctx.toast('JD·자료를 추가했습니다.');
   }
 
-  function importDeepAi(target,a){
-    const raw=v('deepAiImport');if(!raw){ctx.toast('AI 분석결과를 먼저 붙여넣어 주세요.');return}
-    const x=parseJsonBlock(raw);if(!x||typeof x!=='object'||Array.isArray(x)){ctx.toast('JSON 블록을 읽지 못했습니다.');return}
-    for(const k of ['purpose','newHireWork','gate','preference','knowledge','skills','behaviors','experienceRequired','signals','unknowns','have','verify','prepare','conclusion'])if(x[k]!==undefined)a[k]=String(x[k]??'').trim();
-    if(Array.isArray(x.tasks))a.tasks=x.tasks.slice(0,5).map((t,i)=>({id:'task_ai_'+Date.now()+'_'+i,name:String(t.name||'').trim(),skill:String(t.skill||'').trim(),output:String(t.output||'').trim(),context:String(t.context||'').trim()})).filter(x=>x.name);
-    if(Array.isArray(x.requirements))a.requirements=x.requirements.slice(0,10).map((r,i)=>({id:'req_ai_'+Date.now()+'_'+i,name:String(r.name||'').trim(),type:REQ_TYPES.includes(String(r.type||''))?String(r.type):'기타',status:GAP_STATUS.includes(String(r.status||''))?String(r.status):'확인 필요',evidence:String(r.evidence||'').trim(),gap:String(r.gap||'').trim()})).filter(x=>x.name);
-    persist(target,a,true);paint();ctx.toast('GAP 분석을 불러왔습니다. 원문과 STEP 2 경험을 확인해 주세요.');
+  function applyJobAnalysis(target,a){
+    const raw=v('jobAiImport');
+    if(!raw){ctx.toast('AI 직무분석 답변을 먼저 붙여넣어 주세요.');return}
+    const x=parseJobAnalysisBullet(raw);
+    if(!x.customerKpi&&!x.tasks&&!x.challenge&&!x.method&&!x.competencies){ctx.toast('직무분석 5개 항목을 읽지 못했습니다. AI 답변의 제목 형식을 확인해 주세요.');return}
+    a.jobTable={...(a.jobTable||{}),...x,aiResult:raw};
+    persist(target,a);paint();ctx.toast('AI 답변을 직무분석표에 반영했습니다. 5개 항목을 확인하세요.');
   }
 
+  function captureJobTable(a){
+    a.jobTable={...(a.jobTable||{}),customerKpi:v('jobCustomerKpi')||a.jobTable?.customerKpi||'',tasks:v('jobTasks')||a.jobTable?.tasks||'',challenge:v('jobChallenge')||a.jobTable?.challenge||'',method:v('jobMethod')||a.jobTable?.method||'',competencies:v('jobCompetencies')||a.jobTable?.competencies||'',careerPlan:v('jobCareerPlan')||a.jobTable?.careerPlan||''};
+  }
+  function captureSpec(a){
+    a.studentSpec={...(a.studentSpec||{}),certificates:v('specCertificates'),language:v('specLanguage'),tools:v('specTools'),portfolio:v('specPortfolio')};
+  }
+  function renderJobTablePreview(a){
+    const box=document.getElementById('jobAnalysisPreview');if(box)box.innerHTML=jobTablePreviewHtml(a,ctx);
+  }
+  function refreshGapControls(target,a){
+    const ready=specReady(a)&&jobTableReady(a);
+    const info=document.getElementById('specReady');
+    if(info){info.className='callout '+(specReady(a)?'good':'warn');info.innerHTML=specReady(a)?'<b>GAP 분석 준비 완료</b><br>입력한 스펙과 STEP 2 경험만 사용합니다.':'<b>GAP 분석 전 확인 필요</b><br>자격증·어학·도구/기술을 모두 입력하세요. 해당 사항이 없으면 ‘없음’이라고 적으세요.'}
+    const copyBtn=document.getElementById('copyDeepPrompt'),importBtn=document.getElementById('importDeepAi');if(copyBtn)copyBtn.disabled=!ready;if(importBtn)importBtn.disabled=!ready;
+    const p=document.getElementById('deepPrompt');if(p)p.value=buildPrompt(ctx.getState(),target,a);
+  }
+
+  function importDeepAi(target,a){
+    captureJobTable(a);captureSpec(a);
+    if(!jobTableReady(a)){ctx.toast('직무분석표의 핵심 5개 항목을 먼저 확인하세요.');return}
+    if(!specReady(a)){ctx.toast("내 스펙을 먼저 확인하세요. 빈칸은 ‘없음’이 아니라 미확인입니다.");return}
+    const raw=v('deepAiImport');if(!raw){ctx.toast('AI GAP 분석 결과를 먼저 붙여넣어 주세요.');return}
+    const x=parseGapBullet(raw);
+    if(!x.have&&!x.verify&&!x.gaps.length&&!x.actions.length){ctx.toast('개조식 GAP 결과를 읽지 못했습니다. [내가 가진 것] 등 제목 형식을 확인해 주세요.');return}
+    a.have=x.have;a.verify=x.verify;a.prepare=x.actions.join(' / ');a.conclusion=x.gaps.length?'핵심 GAP '+x.gaps.length+'개 확인':'추가 확인 필요';
+    a.requirements=x.gaps.slice(0,3).map((g,i)=>({id:'gap_ai_'+Date.now()+'_'+i,name:g,type:'기타',status:'준비 필요',evidence:'',gap:g}));
+    persist(target,a,true);paint();ctx.toast('GAP 결과를 반영했습니다. 입력한 스펙과 STEP 2 경험 기준으로 확인하세요.');
+  }
   function renderSources(target,a){
     const box=document.getElementById('sourceList');if(!box)return;
     if(!a.sources?.length){box.innerHTML='<div class="placeholder"><b>아직 JD가 없습니다.</b>기업 공식 채용공고를 우선 등록하세요.</div>';updateChosenSelect(a);return}
