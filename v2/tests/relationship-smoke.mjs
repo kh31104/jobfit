@@ -37,12 +37,90 @@ await run('INJE navigation removes duplicate STEP 7–8 and renumbers applicatio
   assert(labels.length===12,'INJE should have 12 visible steps including STEP 0–11');
   assert(!labels.some(x=>x.includes('JD Analyzer')),'Duplicate JD Analyzer step should be removed from INJE');
   assert(!labels.some(x=>x.includes('Career Asset Match')),'Duplicate Career Asset Match step should be removed from INJE');
+  assert(labels.some(x=>x.includes('Industry & Company Analysis')),'STEP 7 Industry & Company Analysis missing');
+  assert(!labels.some(x=>x.includes('Career Fit Map')),'INJE STEP 7 must not show Career Fit Map');
   assert(labels.some(x=>x.includes('Resume Lab')),'Resume Lab missing after renumbering');
   await page.locator('.stepBtn[data-step="7"]').click();
   await page.waitForSelector('#stepRoot .kicker');
   const text=(await page.locator('#stepRoot').textContent())||'';
   assert(text.includes('Resume Lab'),'New STEP 8 should load Resume Lab');
   assert((await page.locator('#stepRoot .kicker').first().textContent()).includes('STEP 8'),'Resume Lab kicker was not renumbered');
+});
+
+await run('INJE STEP 7 analyzes industry and up to three companies from STEP 5 target',async page=>{
+  const state=structuredClone(baseState);
+  state.activeStep=6;
+  state.artifacts.jobExplorer.targets=['job1'];
+  state.artifacts.jobExplorer.targetCombos=[{id:'target_job1_auto',jobId:'job1',industry:'자동차·모빌리티',priority:1}];
+  state.artifacts.jobDeepDive={targetAnalyses:{target_job1_auto:{
+    selectedSourceId:'src1',
+    sources:[{id:'src1',companyName:'가상모빌리티A',name:'생산기술 신입공고',url:'https://example.com/jd',note:'공정 데이터 분석 및 개선'}],
+    jobTable:{tasks:'공정 데이터 확인 · 이상 원인 분석',competencies:'생산공정 지식 · 데이터 분석 · 문제해결'}
+  }},analyses:{}};
+  state.artifacts.industryCompany={
+    industries:[{id:'ind_seed',name:'자동차·모빌리티',jobId:'job1',generatedBy:'step4-inje'}],
+    targetIndustries:['ind_seed'],
+    companies:[{id:'co_seed',name:'가상모빌리티A',industryId:'ind_seed',jobId:'job1',generatedBy:'step4-inje'}],
+    targetCompanies:['co_seed'],notes:''
+  };
+
+  await page.goto(base,{waitUntil:'networkidle'});
+  await page.evaluate(s=>localStorage.setItem('jobfit:v2:learner',JSON.stringify(s)),state);
+  await page.reload({waitUntil:'networkidle'});
+  await page.waitForSelector('#industryPrompt');
+
+  const body=(await page.locator('#stepRoot').textContent())||'';
+  for(const expected of ['내가 지원할 산업과 기업 이해하기','01. My Target 확인','02. Industry Scan','03. Industry × Job','04. Find Company','05. Company Analysis','06. My Target Company','생산기술 신입공고','공정 데이터 확인'])assert(body.includes(expected),'STEP 7 missing: '+expected);
+  assert((await page.locator('#industryName').inputValue())==='자동차·모빌리티','Target industry should prefill from STEP 5 target');
+  assert((await page.locator('#companyName').inputValue())==='','STEP 5 JD company must remain reference only, not a completed STEP 7 company analysis');
+  assert(await page.locator('[data-ctarget]').count()===0,'STEP 5 generated company must not count as STEP 7 analyzed company');
+  const ip=await page.locator('#industryPrompt').inputValue();
+  assert(ip.includes('생산기술')&&ip.includes('자동차·모빌리티'),'Industry prompt must use target job and industry');
+
+  await page.locator('#industryJobId').selectOption('job1');
+  await page.locator('#industrySourceType').selectOption({label:'정부·공공기관'});
+  await page.locator('#industrySource').fill('산업동향 공식자료');
+  await page.locator('#industryUrl').fill('https://example.com/industry');
+  await page.locator('#industryBusiness').fill('완성차와 부품을 생산·판매하고 개인·기업 고객에게 이동수단을 제공한다.');
+  await page.locator('#industryChange').fill('전동화와 스마트팩토리 확대');
+  await page.locator('#industryJobLink').fill('공정 데이터 기반 품질·생산성 개선 역량이 중요해진다.');
+  await page.locator('#addIndustry').click();
+  await page.locator('[data-itarget]').last().check();
+
+  const addCompany=async(name,n)=>{
+    await page.locator('#companyName').fill(name);
+    await page.locator('#companyType').selectOption({label:'대기업'});
+    await page.locator('#companyIndustryId').selectOption({index:1});
+    await page.locator('#companyJobId').selectOption('job1');
+    await page.locator('#companySource').fill('공식 사업보고서');
+    await page.locator('#companyUrl').fill('https://example.com/company'+n);
+    await page.locator('#companyHiringEvidence').selectOption({label:'현재 채용공고 확인'});
+    await page.locator('#companyJobSource').fill('생산기술 신입공고');
+    await page.locator('#companyJobUrl').fill('https://example.com/job'+n);
+    await page.locator('#companyBusiness').fill('자동차 제조 · 국내외 고객');
+    await page.locator('#companyDirection').fill('전동화 생산라인 확대');
+    await page.locator('#companyRole').fill('생산기술이 공정 안정성과 생산성 개선에 기여');
+    await page.locator('#companySignals').fill('공정지식 · 데이터 분석 · 문제해결');
+    await page.locator('#addCompany').click();
+  };
+  await addCompany('기업A',1);
+  await addCompany('기업B',2);
+  await addCompany('기업C',3);
+  let stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
+  assert(stored.artifacts.industryCompany.companies.length===3,'STEP 7 must store three companies');
+
+  await page.locator('#companyName').fill('기업D');
+  await page.locator('#addCompany').click();
+  stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
+  assert(stored.artifacts.industryCompany.companies.length===3,'STEP 7 must block a fourth company');
+
+  const targets=page.locator('[data-ctarget]');
+  for(let i=0;i<3;i++)await targets.nth(i).check();
+  await page.locator('#saveAll').click();
+  stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
+  assert(stored.artifacts.industryCompany.targetCompanies.length===3,'STEP 7 must save up to three target companies');
+  const compare=(await page.locator('#companyCompare').textContent())||'';
+  for(const expected of ['기업A','기업B','기업C','Business · Customer','Hiring Signal'])assert(compare.includes(expected),'Company comparison missing: '+expected);
 });
 
 await run('STEP 0 Career Check-in auto summary accepts student-facing heading variants',async page=>{
@@ -351,8 +429,9 @@ await run('Marketing student STEP 1-6 outputs flow into MY JOBFIT REPORT',async 
   assert(await page.locator('.reportPage').count()===3,'Marketing report must remain three pages');
 });
 
-await run('STEP 6 accepts linked combination and rejects mismatched relation',async page=>{
+await run('BASE Career Fit Map accepts linked combination and rejects mismatched relation',async page=>{
   const state=structuredClone(baseState);
+  state.profile.courseCode='';
   state.activeStep=6;
   state.artifacts.jobExplorer.targets=['job1','job2'];
   state.artifacts.industryCompany={industries:[{id:'ind1',name:'자동차·모빌리티',jobId:'job1',source:'공식 산업자료',url:'https://example.com/ind',business:'자동차 제조',jobLink:'공정 개선'}],targetIndustries:['ind1'],companies:[{id:'co1',name:'가상모빌리티',type:'대기업',industryId:'ind1',jobId:'job1',industry:'자동차·모빌리티',job:'생산기술',source:'사업보고서',url:'https://example.com/co',hiringEvidence:'현재 채용공고 확인',jobUrl:'https://example.com/jd',business:'자동차 제조',role:'공정 안정화'}],targetCompanies:['co1'],notes:''};
