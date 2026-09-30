@@ -115,10 +115,10 @@ async function run(name,viewport){
     });
     await page.reload({waitUntil:'networkidle',timeout:60000});await page.waitForSelector('#companyName');
     const step4Body=(await page.locator('#stepRoot').textContent())||'';
-    const step4Expected=['Target Job','Find JD','Choose JD','GAP Match'];
+    const step4Expected=['Target Job','Find JD','Choose JD','선택 직무 AI 분석','직무분석 테이블 완성','완성된 직무분석표','My Spec','GAP Match'];
     const step4Actual=(await page.locator('.jobAnalysisInje > #analysisRoot > .block > .moduleHead h3').allTextContents()).map(x=>x.replace(/\s+/g,' ').trim());
-    assert(step4Actual.length===4,`Deployed STEP4 must contain exactly 4 modules, found ${step4Actual.length}: ${step4Actual.join(' | ')}`);
-    step4Expected.forEach((title,i)=>assert(step4Actual[i]===title,`Deployed STEP4 order mismatch at ${i+1}: expected ${title}, got ${step4Actual[i]||'missing'}`));
+    assert(step4Actual.length===8,`Deployed STEP5 must contain exactly 8 modules, found ${step4Actual.length}: ${step4Actual.join(' | ')}`);
+    step4Expected.forEach((title,i)=>assert(step4Actual[i]===title,`Deployed STEP5 order mismatch at ${i+1}: expected ${title}, got ${step4Actual[i]||'missing'}`));
     assert(step4Body.includes('생산기술 × 자동차·모빌리티'),'STEP3 Target Job did not carry into STEP4');
     assert(!step4Body.includes('My Evidence'),'STEP4 must not expose the removed duplicate My Evidence step');
     assert(step4Body.includes('STEP 2의 경험근거는 자동으로 불러오고'),'STEP4 should explain that prior evidence is reused automatically');
@@ -129,6 +129,12 @@ async function run(name,viewport){
     const jdSearchPrompt=await page.locator('#jdSearchPrompt').inputValue();
     assert(jdSearchPrompt.includes('생산기술')&&jdSearchPrompt.includes('자동차·모빌리티'),'STEP4 JD search prompt lost current target context');
     assert(jdSearchPrompt.includes('첫 줄부터 [공고 1]로 시작'),'STEP4 JD search prompt must start with plain-text posting output');
+    assert(jdSearchPrompt.includes('확인 기준일:')&&jdSearchPrompt.includes('대한민국 표준시, KST'),'STEP5 JD search prompt must use the current KST date');
+    assert(jdSearchPrompt.includes('최대 3개'),'STEP5 Find JD must limit search output to three postings');
+    assert(await page.locator('#jobAiPrompt').isVisible(),'STEP5 selected-job analysis prompt must be visible');
+    assert(await page.locator('#jobCustomerKpi').count()===1&&await page.locator('#jobCompetencies').count()===1,'STEP5 five-field job-analysis editor must be present');
+    assert(await page.locator('#specCertificates').count()===1&&await page.locator('#specLanguage').count()===1&&await page.locator('#specTools').count()===1,'STEP5 My Spec inputs must be present');
+    assert(await page.locator('#copyDeepPrompt').isDisabled(),'STEP5 GAP analysis must stay locked before the job table and My Spec are complete');
     if(viewport.width<=480){const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);assert(overflow<=2,`STEP4 mobile horizontal overflow detected: ${overflow}px`)}
 
     if(errors.length)throw new Error(errors.join('\n'));console.log(`PASS ${name}`);
