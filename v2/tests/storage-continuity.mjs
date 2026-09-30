@@ -59,6 +59,13 @@ async function runMissingBrowser(){
     assert(text.includes('브라우저 데이터가 삭제되거나 다른 기기를 사용할 때'),'Same-browser storage limitation guidance missing');
     assert(await page.locator('#importBtn').count()===1,'Global backup import control missing');
     assert(await page.locator('#existingAnonCodeWrap').count()===1,'Existing anonymous-code restore guidance missing');
+    for(const id of ['careerStartStatement','careerStartAssets','careerStartGap','careerStartAction'])assert(await page.locator('#'+id).count()===1,`STEP0 summary field missing: ${id}`);
+    await page.locator('#careerCheckinResult').fill('✅ 1. 현재 출발점: 마케팅 직무를 탐색 중이다.\n🔹 2. 지금 활용 가능한 자산: 리뷰 데이터를 분류해 본 경험이 있다.\n3) 우선 GAP: 실제 채용공고 요구조건을 아직 확인하지 못했다.\n④ 이번 주 실행 행동 - 관심 직무 공고 3개를 찾아 공통 업무를 적는다.');
+    await page.locator('#parseCheckinResult').click();
+    assert((await page.locator('#careerStartStatement').inputValue()).includes('마케팅 직무'),'STEP0 statement auto-summary failed');
+    assert((await page.locator('#careerStartAssets').inputValue()).includes('리뷰 데이터'),'STEP0 assets auto-summary failed');
+    assert((await page.locator('#careerStartGap').inputValue()).includes('채용공고'),'STEP0 GAP auto-summary failed');
+    assert((await page.locator('#careerStartAction').inputValue()).includes('공고 3개'),'STEP0 action auto-summary failed');
     console.log('PASS missing-browser recovery guidance');
   }catch(e){failed=true;console.error(`FAIL missing-browser guidance\n${e.stack||e}`)}finally{await context.close()}
 }
