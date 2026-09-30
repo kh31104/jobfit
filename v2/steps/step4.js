@@ -174,10 +174,15 @@ export async function render(ctx){
   }
   function updateChosenSelect(a){const el=document.getElementById('chosenSource');if(!el)return;el.innerHTML='<option value="">JD 선택</option>'+((a.sources||[]).map(x=>`<option value="${x.id}" ${a.selectedSourceId===x.id?'selected':''}>${esc(x.name,ctx)}</option>`).join(''))}
   function renderChosen(a){updateChosenSelect(a);const box=document.getElementById('chosenPreview');if(!box)return;const x=(a.sources||[]).find(s=>s.id===a.selectedSourceId);box.innerHTML=x?`<b>${esc(x.name,ctx)}</b><br>${esc(x.note||'원문 핵심내용을 확인하세요.',ctx)}`:'분석할 JD를 선택하세요.'}
-  function renderGap(a){const box=document.getElementById('gapSummary');if(!box)return;const reqs=a.requirements||[],tasks=a.tasks||[];if(!reqs.length&&!tasks.length){box.innerHTML='<div class="callout info">Choose JD 후 AI GAP 분석을 실행하면 결과가 여기에 정리됩니다.</div>';return}box.innerHTML=`
-    <div class="grid2"><div class="miniCard"><b>GATE · 필수조건</b><span>${esc(a.gate||'확인 필요',ctx)}</span></div><div class="miniCard"><b>PREFERENCE · 우대조건</b><span>${esc(a.preference||'확인 필요',ctx)}</span></div></div>
-    <div class="matrixWrap" style="margin-top:12px"><table class="matrix"><thead><tr><th>JD 요구</th><th>구분</th><th>STEP 2 Evidence</th><th>상태</th><th>GAP</th></tr></thead><tbody>${reqs.map(r=>`<tr><td><b>${esc(r.name,ctx)}</b></td><td>${esc(r.type,ctx)}</td><td>${esc(r.evidence||'없음',ctx)}</td><td><span class="stateTag state-${stateClass(r.status)}">${esc(r.status,ctx)}</span></td><td>${esc(r.gap||'—',ctx)}</td></tr>`).join('')}</tbody></table></div>
-    <div class="grid2" style="margin-top:12px"><div class="miniCard"><b>이미 가진 근거</b><span>${esc(a.have||reqs.filter(x=>['근거 있음','일부 근거 있음'].includes(x.status)).map(x=>x.evidence).filter(Boolean).join(' · ')||'—',ctx)}</span></div><div class="miniCard"><b>다음 준비</b><span>${esc(a.prepare||reqs.filter(x=>['확인 필요','준비 필요'].includes(x.status)).map(x=>x.name).join(' · ')||'—',ctx)}</span></div></div>`}
+  function renderGap(a){
+    const box=document.getElementById('gapSummary');if(!box)return;
+    const gaps=(a.requirements||[]).filter(r=>r.gap||r.status==='준비 필요').slice(0,3).map(r=>r.gap||r.name);
+    if(!a.have&&!a.verify&&!gaps.length&&!a.prepare){box.innerHTML='<div class="callout info">My Spec 입력 후 AI GAP 분석을 실행하면 핵심만 여기에 정리됩니다.</div>';return}
+    box.innerHTML=`
+      <div class="grid2"><div class="miniCard"><b>① 내가 가진 것</b><span>${esc(a.have||'확인된 근거 없음',ctx)}</span></div><div class="miniCard"><b>② 확인 필요</b><span>${esc(a.verify||'없음',ctx)}</span></div></div>
+      <div class="miniCard" style="margin-top:12px"><b>③ 핵심 GAP · 최대 3개</b><span>${esc(gaps.length?gaps.map((x,i)=>(i+1)+'. '+x).join(' / '):'확인된 GAP 없음',ctx)}</span></div>
+      <div class="miniCard" style="margin-top:12px"><b>④ 3개월 행동</b><span>${esc(a.prepare||'아직 입력되지 않음',ctx)}</span></div>`;
+  }
   function capture(a){a.company={name:v('companyName')||a.company?.name||'',url:v('companyUrl')||a.company?.url||'',source:'기업 공식자료'};a.version=VERSION;a.updatedAt=new Date().toISOString();}
   function persist(target,a,sync=false){saved.targetAnalyses[target.id]=a;saved.analyses[target.job.id]={...a,jobTitle:target.job.title,industry:target.industry,targetId:target.id};const patch={jobDeepDive:saved};if(sync)Object.assign(patch,syncDownstream(ctx.getState(),target,a));ctx.saveState({artifacts:patch})}
   function refreshPrompt(target,a){capture(a);persist(target,a);const p=document.getElementById('deepPrompt');if(p)p.value=buildPrompt(ctx.getState(),target,a)}
