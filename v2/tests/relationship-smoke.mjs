@@ -57,7 +57,12 @@ await run('INJE STEP 7 analyzes industry and up to three companies from STEP 5 t
     sources:[{id:'src1',companyName:'가상모빌리티A',name:'생산기술 신입공고',url:'https://example.com/jd',note:'공정 데이터 분석 및 개선'}],
     jobTable:{tasks:'공정 데이터 확인 · 이상 원인 분석',competencies:'생산공정 지식 · 데이터 분석 · 문제해결'}
   }},analyses:{}};
-  state.artifacts.industryCompany={industries:[],targetIndustries:[],companies:[],targetCompanies:[],notes:''};
+  state.artifacts.industryCompany={
+    industries:[{id:'ind_seed',name:'자동차·모빌리티',jobId:'job1',generatedBy:'step4-inje'}],
+    targetIndustries:['ind_seed'],
+    companies:[{id:'co_seed',name:'가상모빌리티A',industryId:'ind_seed',jobId:'job1',generatedBy:'step4-inje'}],
+    targetCompanies:['co_seed'],notes:''
+  };
 
   await page.goto(base,{waitUntil:'networkidle'});
   await page.evaluate(s=>localStorage.setItem('jobfit:v2:learner',JSON.stringify(s)),state);
@@ -67,6 +72,8 @@ await run('INJE STEP 7 analyzes industry and up to three companies from STEP 5 t
   const body=(await page.locator('#stepRoot').textContent())||'';
   for(const expected of ['내가 지원할 산업과 기업 이해하기','01. My Target 확인','02. Industry Scan','03. Industry × Job','04. Find Company','05. Company Analysis','06. My Target Company','생산기술 신입공고','공정 데이터 확인'])assert(body.includes(expected),'STEP 7 missing: '+expected);
   assert((await page.locator('#industryName').inputValue())==='자동차·모빌리티','Target industry should prefill from STEP 5 target');
+  assert((await page.locator('#companyName').inputValue())==='','STEP 5 JD company must remain reference only, not a completed STEP 7 company analysis');
+  assert(await page.locator('[data-ctarget]').count()===0,'STEP 5 generated company must not count as STEP 7 analyzed company');
   const ip=await page.locator('#industryPrompt').inputValue();
   assert(ip.includes('생산기술')&&ip.includes('자동차·모빌리티'),'Industry prompt must use target job and industry');
 
