@@ -30,11 +30,11 @@ function moduleHead(page,title){return page.locator('.careerDnaStandard .moduleH
 async function expandModule(page,title){const head=moduleHead(page,title);if((await head.getAttribute('aria-expanded'))!=='true')await head.click()}
 async function completeAnchor(page){await expandModule(page,'Career Anchor');for(let i=0;i<40;i++){const value=(i%6)+1;await page.locator(`[data-anchor-item="${i}"][value="${value}"]`).check()}for(const n of [1,2,3])await page.locator(`[data-bonus-item][value="${n}"]`).check()}
 
-await run('STEP 0-13 all load with classroom PRE enabled',async page=>{
+await run('STEP 0-11 all load with classroom PRE enabled',async page=>{
   await page.goto(`${base}?course=INJE2026&measures=true`,{waitUntil:'networkidle'});
   assert(new URL(page.url()).searchParams.get('measures')==='true','INJE2026 must keep STEP0 PRE enabled');
   assert(await page.locator('#preMeasureSave').count()===1,'STEP0 PRE panel must render');
-  for(let i=0;i<=13;i++){
+  for(let i=0;i<=11;i++){
     await page.locator(`.stepBtn[data-step="${i}"]`).click();await page.waitForTimeout(70);
     const body=(await page.locator('#stepRoot').textContent())||'';assert(!body.includes('화면을 불러오지 못했습니다'),`STEP ${i} failed to render`);
   }

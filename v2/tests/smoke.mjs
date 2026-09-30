@@ -38,14 +38,14 @@ await run('Instructor can force L assessment',async page=>{
   await page.goto(`${base}?course=INJE2026&interest=L`,{waitUntil:'networkidle'});await page.locator('.stepBtn[data-step="1"]').click();await page.waitForSelector('h2');const selected=page.locator('.choiceCard.on');assert((await selected.textContent()).includes('고용24 L형'),'L assessment not forced');assert((await page.locator('body').textContent()).includes('L형 성격 5요인'),'L personality fields missing');
 });
 
-await run('All STEP 0–13 modules load without page errors',async page=>{
-  await page.goto(base,{waitUntil:'networkidle'});for(let i=0;i<=13;i++){await page.locator(`.stepBtn[data-step="${i}"]`).click();await page.waitForTimeout(100);const heading=(await page.locator('#stepRoot h2').first().textContent())||'';assert(heading.trim().length>0,`STEP ${i} has no heading`);const body=(await page.locator('#stepRoot').textContent())||'';assert(!body.includes('화면을 불러오지 못했습니다'),`STEP ${i} failed to load`);}
+await run('All INJE STEP 0–11 modules load without page errors',async page=>{
+  await page.goto(base,{waitUntil:'networkidle'});for(let i=0;i<=11;i++){await page.locator(`.stepBtn[data-step="${i}"]`).click();await page.waitForTimeout(100);const heading=(await page.locator('#stepRoot h2').first().textContent())||'';assert(heading.trim().length>0,`STEP ${i} has no heading`);const body=(await page.locator('#stepRoot').textContent())||'';assert(!body.includes('화면을 불러오지 못했습니다'),`STEP ${i} failed to load`);}
 });
 
 await run('Seeded semester data assembles into final Job Portfolio',async page=>{
   await page.goto(base,{waitUntil:'networkidle'});
   const seeded={
-    version:2.2,activeStep:13,mode:'full',profile:{anonCode:'JF26-TEST99',courseCode:'INJE2026',age:'22',grade:'4학년',major:'산업공학과',majorGroup:'공학계열'},baseline:{jobDecision:'명확히 정함',industryDecision:'거의 정함',prepStage:'지원서 준비'},research:{consent:false,measurements:{pre:{},post:{}}},
+    version:2.2,activeStep:11,mode:'full',profile:{anonCode:'JF26-TEST99',courseCode:'INJE2026',age:'22',grade:'4학년',major:'산업공학과',majorGroup:'공학계열'},baseline:{jobDecision:'명확히 정함',industryDecision:'거의 정함',prepStage:'지원서 준비'},research:{consent:false,measurements:{pre:{},post:{}}},
     assessments:{careerDNA:{interest:{type:'S',riasecRaw:{R:30,I:42,A:25,S:32,E:29,C:37},riasecStandard:{R:48,I:63,A:42,S:51,E:47,C:58}},workValues:{성취:5,'일과 삶의 균형':4,자기개발:5}},experienceCompetency:{experiences:[{id:'exp1',title:'센서 데이터 캡스톤',rawVoice:'센서 오차가 커서 조건을 나눠 다시 확인했습니다.',action:'측정조건을 분리해 비교했다',result:'오차 원인을 확인했다',evidence:'측정기록',competencies:['문제해결','데이터분석'],factChecked:true}]}},
     artifacts:{
       careerDNAProfile:{riasecTop:[{code:'I',score:63},{code:'C',score:58}],valueTop:[{name:'성취',score:5}]},
@@ -64,7 +64,7 @@ await run('Seeded semester data assembles into final Job Portfolio',async page=>
   await page.evaluate(state=>localStorage.setItem('jobfit:v2:learner',JSON.stringify(state)),seeded);await page.reload({waitUntil:'networkidle'});await page.waitForSelector('#portfolioPrint');const text=(await page.locator('#portfolioPrint').textContent())||'';for(const expected of ['가상에너지','생산기술','배터리','센서 데이터 캡스톤','조건별 센서 측정값','오차 원인을 어떻게 확인했나요?','현장실습 경험','공정 데이터 프로젝트 1건 완성'])assert(text.includes(expected),`Portfolio missing seeded value: ${expected}`);await page.emulateMedia({media:'print'});assert(await page.locator('#portfolioPrint').isVisible(),'Portfolio is not visible in print media');assert((await page.locator('.topbar').evaluate(el=>getComputedStyle(el).display))==='none','Topbar should be hidden for print');
 });
 
-await run('Mobile layout loads core navigation',async page=>{await page.goto(`${base}?course=INJE2026`,{waitUntil:'networkidle'});assert(await page.locator('.stepBtn').count()===14,'Mobile navigation does not contain 14 steps');assert(await page.locator('#makeCodeBtn').isVisible(),'Anonymous code button not visible on mobile');},{viewport:{width:390,height:844}});
+await run('Mobile layout loads core navigation',async page=>{await page.goto(`${base}?course=INJE2026`,{waitUntil:'networkidle'});assert(await page.locator('.stepBtn').count()===12,'Mobile INJE navigation does not contain 12 steps');assert(await page.locator('#makeCodeBtn').isVisible(),'Anonymous code button not visible on mobile');},{viewport:{width:390,height:844}});
 
 await run('Instructor dashboard whitelists research-only files',async page=>{
   await page.goto(instructorBase,{waitUntil:'networkidle'});
