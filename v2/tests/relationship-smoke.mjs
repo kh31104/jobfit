@@ -165,20 +165,24 @@ await run('STEP 5 stores up to three JDs and keeps the selected company relation
   const searchPrompt=await page.locator('#jdSearchPrompt').inputValue();
   for(const expected of ['생산기술','자동차·모빌리티','확인 기준일:','현재 모집 중','최근 6개월','최대 3개'])assert(searchPrompt.includes(expected),'JD search prompt missing: '+expected);
 
-  const add=async(company,name,url)=>{
-    await page.locator('#companyName').fill(company);
-    await page.locator('#companyUrl').fill('https://example.com/'+company);
-    await page.locator('#sourceType').selectOption({label:'기업 공식 채용공고'});
-    await page.locator('#sourceName').fill(name);
-    await page.locator('#sourceUrl').fill(url);
-    await page.locator('#sourceNote').fill('생산공정 데이터 분석 및 개선 업무 / 생산공정 기본지식 우대');
-    await page.locator('#addSource').click();
+  assert((await page.locator('#companyName1').inputValue())===''&&(await page.locator('#companyName2').inputValue())==='','JD 2 and JD 3 company fields must start independently blank');
+  const add=async(i,company,name,url)=>{
+    const s=i===0?'':String(i);
+    await page.locator('#companyName'+s).fill(company);
+    await page.locator('#companyUrl'+s).fill('https://example.com/'+company);
+    await page.locator('#sourceType'+s).selectOption({label:'기업 공식 채용공고'});
+    await page.locator('#sourceName'+s).fill(name);
+    await page.locator('#sourceUrl'+s).fill(url);
+    await page.locator('#sourceNote'+s).fill('생산공정 데이터 분석 및 개선 업무 / 생산공정 기본지식 우대');
+    await page.locator(i===0?'#addSource':'#saveSource'+s).click();
   };
-  await add('가상모빌리티A','생산기술 신입공고 A','https://example.com/job1');
-  await add('가상모빌리티B','생산기술 신입공고 B','https://example.com/job2');
-  await add('가상모빌리티C','생산기술 신입공고 C','https://example.com/job3');
+  await add(0,'가상모빌리티A','생산기술 신입공고 A','https://example.com/job1');
+  await add(1,'가상모빌리티B','생산기술 신입공고 B','https://example.com/job2');
+  await add(2,'가상모빌리티C','생산기술 신입공고 C','https://example.com/job3');
   assert(await page.locator('#sourceList .listCard').count()===3,'Find JD must store exactly three postings');
-  assert(await page.locator('#addSource').isDisabled(),'Fourth JD must be blocked after three postings');
+  assert((await page.locator('#companyName').inputValue())==='가상모빌리티A','JD 1 company was overwritten');
+  assert((await page.locator('#companyName1').inputValue())==='가상모빌리티B','JD 2 company was not stored independently');
+  assert((await page.locator('#companyName2').inputValue())==='가상모빌리티C','JD 3 company was not stored independently');
   await page.locator('#chosenSource').selectOption({index:1});
 
   const jobAnalysis=[
