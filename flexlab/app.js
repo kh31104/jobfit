@@ -699,8 +699,21 @@ function jobSite(name,url,desc){
   return '<a class="jobSite" href="'+url+'" target="_blank" rel="noopener"><b>'+name+'</b><span>'+desc+'</span></a>';
 }
 
+function searchPromptValue(){
+  const generated=energySearchPrompt();
+  const draft=state.promptDrafts?.search;
+  if(!filled(draft))return generated;
+  const genLines=generated.split("\n");
+  let value=String(draft);
+  if(/^확인 기준일:.*$/m.test(value))value=value.replace(/^확인 기준일:.*$/m,genLines[0]);
+  else value=genLines[0]+"\n"+genLines[1]+"\n\n"+value;
+  const identity=genLines.find(x=>x.startsWith("나는 "))||"";
+  if(/^나는 .* 전공 대학생이고, .* 산업의 .*를 탐색하고 있어\.$/m.test(value))value=value.replace(/^나는 .* 전공 대학생이고, .* 산업의 .*를 탐색하고 있어\.$/m,identity);
+  return value;
+}
+
 function step2SearchPromptBox(){
-  const searchPrompt=energySearchPrompt();
+  const searchPrompt=searchPromptValue();
   return '<details class="optionBox"><summary>AI에게 현재 공고 찾아달라고 하기 · 선택</summary><div class="optionBody">'+
     '<p class="help">STEP 1의 전공·산업·직무와 오늘 날짜(KST)를 넣어 자동 생성합니다. 다시 접속하거나 날짜가 바뀌면 기준일도 새로 계산됩니다.</p>'+
     '<textarea class="promptBox promptEditor" id="searchPromptPreview" data-prompt-key="search">'+h(searchPrompt)+'</textarea>'+
