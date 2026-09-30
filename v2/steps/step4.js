@@ -46,11 +46,12 @@ export async function render(ctx){
           <div class="actions"><button class="btn primary" id="copyJdSearchPrompt">AI 공고검색 프롬프트 복사</button></div>
         </div>
 
-        <h4 style="margin:18px 0 8px">③ 찾은 공고 기록</h4>
+        <h4 style="margin:18px 0 8px">③ 찾은 공고 기록 · 최대 3개</h4>
+        <p class="help">비교해 볼 공고를 최대 3개까지 기록할 수 있습니다. 등록 후 Choose JD에서 실제 분석에 사용할 공고 1개를 선택하세요.</p>
         <div class="grid2">${txt('companyName','찾은 기업',a.company?.name||'','예: 관심 기업명 / 찾지 못함')}${txt('companyUrl','기업 공식페이지',a.company?.url||'','https://...')}</div>
         <div class="grid4" style="margin-top:12px">${sel('sourceType','자료 유형','',SOURCE_TYPES)}${txt('sourceName','찾은 직무·공고','','예: 브랜드 마케팅 신입 / 현재 관련 공고 없음')}${txt('sourceUrl','공고 주소','','https://...')}${txt('sourceChecked','확인일','',today())}</div>
         <div class="field" style="margin-top:10px"><label>담당업무·직무소개 <span class="muted">(가능하면 붙여넣기)</span></label><textarea id="sourceNote" placeholder="공고의 담당업무·직무소개·지원조건·우대사항을 그대로 붙여넣거나 핵심만 기록하세요."></textarea></div>
-        <div class="actions"><button class="btn primary" id="addSource">이 JD 추가</button></div><div id="sourceList"></div>`)}
+        <div class="actions"><button class="btn primary" id="addSource" ${(a.sources||[]).length>=3?'disabled':''}>이 JD 추가 (${Math.min((a.sources||[]).length,3)}/3)</button></div><div id="sourceList"></div>`)}
 
       ${block('03','Choose JD','분석에 사용할 실제 공고 하나를 선택합니다.',`
         <div class="field"><label>분석할 JD</label><select id="chosenSource"></select></div>
@@ -83,8 +84,10 @@ export async function render(ctx){
 
   function addSource(target,a){
     const name=v('sourceName'),url=v('sourceUrl');if(!name||!url){ctx.toast('자료명과 원문 URL을 입력하세요.');return}
+    a.sources=a.sources||[];
+    if(a.sources.length>=3){ctx.toast('찾은 공고는 최대 3개까지 기록할 수 있습니다. 기존 공고를 삭제한 뒤 추가하세요.');return}
     a.company={name:v('companyName'),url:v('companyUrl'),source:'기업 공식자료'};
-    a.sources=a.sources||[];const id='src_'+Date.now();
+    const id='src_'+Date.now();
     a.sources.push({id,type:v('sourceType')||'기업 공식 채용공고',name,url,checkedAt:v('sourceChecked')||today(),note:v('sourceNote')});
     if(!a.selectedSourceId)a.selectedSourceId=id;
     persist(target,a);['sourceName','sourceUrl','sourceNote'].forEach(x=>set(x,''));paint();ctx.toast('JD·자료를 추가했습니다.');
@@ -171,7 +174,7 @@ function buildSearchPrompt(s,target){
 • ${job} 탐색에 참고할 이유:
 • 확인 시점: ${today()}
 
-같은 형식으로 최대 5개만 작성해줘.
+같은 형식으로 최대 3개만 작성해줘.
 현재 확인 가능한 공고가 하나도 없으면 '현재 확인 가능한 공고를 찾지 못함'이라고 명확히 말하고, 최근 공고만 별도로 구분해줘.`}
 function buildPrompt(s,target,a){const ex=(s.assessments?.experienceCompetency?.experiences||[]).filter(x=>x?.factChecked).slice(0,6).map((x,i)=>`${i+1}. ${x.title||'경험'} | 행동: ${x.action||'미입력'} | 결과: ${x.result||'미입력'} | Evidence: ${x.evidence||'미입력'}`).join('\n'),selected=(a.sources||[]).find(x=>x.id===a.selectedSourceId),support=(a.sources||[]).map((x,i)=>`[S${i+1}] ${x.type} | ${x.name} | ${x.url}\n${x.note||''}`).join('\n\n');return `너는 대학생의 실제 채용공고 분석을 돕는 조력자다. 추천이나 합격가능성 판단이 아니라 JD와 학생의 기존 Evidence를 비교한다.
 
@@ -216,6 +219,6 @@ function sel(id,label,value,opts){return `<div class="field"><label>${label}</la
 function parseJsonBlock(raw=''){const text=String(raw).trim(),fenced=text.match(/```(?:json)?\s*([\s\S]*?)```/i),source=(fenced?.[1]||text).trim();try{return JSON.parse(source)}catch{}const s=source.indexOf('{'),e=source.lastIndexOf('}');if(s>=0&&e>s){try{return JSON.parse(source.slice(s,e+1))}catch{}}return null}
 function stateClass(x=''){return x==='근거 있음'?'good':x==='일부 근거 있음'?'partial':x==='준비 필요'?'prepare':'verify'}
 function slug(x=''){return String(x||'').trim().replace(/[^0-9A-Za-z가-힣]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'item'}
-function today(){return new Date().toISOString().slice(0,10)}function esc(x,ctx){return ctx.escapeHtml(String(x??''))}
+function today(){const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()),g=t=>p.find(x=>x.type===t)?.value||'';return [g('year'),g('month'),g('day')].join('-')}function esc(x,ctx){return ctx.escapeHtml(String(x??''))}
 async function copy(t,ctx){try{await navigator.clipboard.writeText(t);ctx.toast('프롬프트를 복사했습니다.')}catch{ctx.toast('복사하지 못했습니다.')}}
 function styleBlock(){return `<style>.jobAnalysisInje .siteSection{margin-top:14px}.jobAnalysisInje .jdSiteGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}.jobAnalysisInje .jdSiteLink{display:flex;flex-direction:column;gap:3px;padding:13px 14px;border:1px solid #dfe5f2;border-radius:14px;background:#fff;text-decoration:none;color:#1d2939}.jobAnalysisInje .jdSiteLink:hover{border-color:#8fa5ff;background:#f7f8ff}.jobAnalysisInje .jdSiteLink span{font-size:11px;color:#667085}.jobAnalysisInje .aiSearchBox{border:1px solid #dfe5f2;border-radius:16px;padding:14px;background:#fbfcff}@media(max-width:700px){.jobAnalysisInje .jdSiteGrid{grid-template-columns:1fr 1fr}}@media(max-width:460px){.jobAnalysisInje .jdSiteGrid{grid-template-columns:1fr}}.jobAnalysisInje .moduleHead{display:flex;gap:11px;align-items:flex-start}.jobAnalysisInje .moduleHead>span{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:#eef3ff;color:#3152c9;font-weight:950;flex:0 0 auto}.jobAnalysisInje .moduleHead h3{margin:2px 0 3px}.jobAnalysisInje .moduleHead p{margin:0;color:#667085;font-size:12px;line-height:1.5}.activePick{background:#eef3ff!important;color:#3152c9!important}.stateTag{display:inline-flex;padding:5px 8px;border-radius:999px;font-weight:900;font-size:11px}.state-good{background:#ecfdf7;color:#087a63}.state-partial{background:#eef3ff;color:#3152c9}.state-prepare{background:#fff8e6;color:#9a6700}.state-verify{background:#f2f4f7;color:#667085}</style>`}
