@@ -197,8 +197,7 @@ function recommendedAccordionIndex(a){
   if(!jobTableReady(a)&&!hasJobTable)return 3;
   if(!jobTableReady(a))return 4;
   if(!specReady(a))return 6;
-  const hasGap=String(a.have||'').trim()||String(a.verify||'').trim()||String(a.prepare||'').trim()||(a.requirements||[]).some(r=>String(r.gap||'').trim());
-  return hasGap?7:7;
+  return 7;
 }
 function syncDownstream(state,target,a){
   const selected=(a.sources||[]).find(x=>x.id===a.selectedSourceId)||(a.sources||[])[0];
