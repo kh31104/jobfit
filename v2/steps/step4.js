@@ -105,12 +105,17 @@ export async function render(ctx){
     document.querySelectorAll('.targetPick').forEach(b=>b.addEventListener('click',()=>{currentId=b.dataset.id;paint()}));
     document.getElementById('addSource')?.addEventListener('click',()=>addSource(target,a));
     document.getElementById('copyJdSearchPrompt')?.addEventListener('click',()=>copy(document.getElementById('jdSearchPrompt')?.value||buildSearchPrompt(ctx.getState(),target),ctx));
+    document.getElementById('refreshJobAiPrompt')?.addEventListener('click',()=>{captureJobTable(a);persist(target,a);const p=document.getElementById('jobAiPrompt');if(p)p.value=buildJobAnalysisPrompt(ctx.getState(),target,a)});
+    document.getElementById('copyJobAiPrompt')?.addEventListener('click',()=>copy(document.getElementById('jobAiPrompt')?.value||buildJobAnalysisPrompt(ctx.getState(),target,a),ctx));
+    document.getElementById('applyJobAi')?.addEventListener('click',()=>applyJobAnalysis(target,a));
+    ['jobCustomerKpi','jobTasks','jobChallenge','jobMethod','jobCompetencies','jobCareerPlan'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{captureJobTable(a);persist(target,a);renderJobTablePreview(a);refreshGapControls(target,a)}));
+    ['specCertificates','specLanguage','specTools','specPortfolio'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{captureSpec(a);persist(target,a);refreshGapControls(target,a)}));
     document.getElementById('chosenSource')?.addEventListener('change',e=>{a.selectedSourceId=e.target.value;persist(target,a);renderChosen(a);refreshPrompt(target,a)});
     document.getElementById('refreshDeepPrompt')?.addEventListener('click',()=>refreshPrompt(target,a));
-    document.getElementById('copyDeepPrompt')?.addEventListener('click',()=>copy(document.getElementById('deepPrompt').value,ctx));
+    document.getElementById('copyDeepPrompt')?.addEventListener('click',()=>{captureJobTable(a);captureSpec(a);if(!jobTableReady(a)){ctx.toast('직무분석표의 핵심 5개 항목을 먼저 확인하세요.');return}if(!specReady(a)){ctx.toast("자격증·어학·도구/기술을 먼저 확인하세요. 없으면 ‘없음’이라고 입력하세요.");return}refreshPrompt(target,a);copy(document.getElementById('deepPrompt').value,ctx)});
     document.getElementById('importDeepAi')?.addEventListener('click',()=>importDeepAi(target,a));
-    document.getElementById('saveDeep')?.addEventListener('click',()=>{capture(a);persist(target,a,true);renderGap(a);ctx.toast('GAP Match를 저장했습니다.')});
-    document.getElementById('nextStep')?.addEventListener('click',()=>{capture(a);persist(target,a,true);ctx.navigate(5)});
+    document.getElementById('saveDeep')?.addEventListener('click',()=>{capture(a);captureJobTable(a);captureSpec(a);persist(target,a,true);renderGap(a);ctx.toast('GAP Match를 저장했습니다.')});
+    document.getElementById('nextStep')?.addEventListener('click',()=>{capture(a);captureJobTable(a);captureSpec(a);persist(target,a,true);ctx.navigate(5)});
   }
 
   function addSource(target,a){
