@@ -245,37 +245,149 @@ function buildSearchPrompt(s,target){
 
 같은 형식으로 최대 3개만 작성해줘.
 현재 확인 가능한 공고가 하나도 없으면 '현재 확인 가능한 공고를 찾지 못함'이라고 명확히 말하고, 최근 공고만 별도로 구분해줘.`}
-function buildPrompt(s,target,a){const ex=(s.assessments?.experienceCompetency?.experiences||[]).filter(x=>x?.factChecked).slice(0,6).map((x,i)=>`${i+1}. ${x.title||'경험'} | 행동: ${x.action||'미입력'} | 결과: ${x.result||'미입력'} | Evidence: ${x.evidence||'미입력'}`).join('\n'),selected=(a.sources||[]).find(x=>x.id===a.selectedSourceId),support=(a.sources||[]).map((x,i)=>`[S${i+1}] ${x.type} | ${x.name} | ${x.url}\n${x.note||''}`).join('\n\n');return `너는 대학생의 실제 채용공고 분석을 돕는 조력자다. 추천이나 합격가능성 판단이 아니라 JD와 학생의 기존 Evidence를 비교한다.
+function buildJobAnalysisPrompt(s,target,a){
+  const selected=(a.sources||[]).find(x=>x.id===a.selectedSourceId);
+  if(!selected)return '먼저 Choose JD에서 분석할 실제 채용공고를 1개 선택하세요.';
+  return `너는 대학생이 실제 채용공고를 바탕으로 직무를 이해하도록 돕는 직무분석가다.
 
-[TARGET]
+[선택 직무]
+기업: ${a.company?.name||'미정'}
+산업: ${target.industry||'미정'}
+직무: ${target.job?.title||''}
+공고명: ${selected.name||''}
+공고 URL: ${selected.url||''}
+
+[공고에 적힌 담당업무·직무소개·지원조건]
+${selected.note||'미입력'}
+
+[분석 규칙]
+- 이 단계에서는 학생의 스펙·경험과 비교하지 않는다.
+- 선택한 JD에 적힌 내용과 일반적인 직무지식을 구분한다.
+- 공고에 없는 구체적 수치·자격·업무를 사실처럼 만들지 않는다.
+- 신입이 실제로 이해할 수 있는 표현으로 쓴다.
+- JSON, 표, 코드블록을 사용하지 않는다.
+- 설명을 길게 붙이지 말고 아래 5개 항목 중심으로 개조식으로 답한다.
+- 경력개발은 근거가 부족하면 생략하거나 '확인 필요'라고 쓴다.
+
+[출력 형식]
+[고객·성과기준]
+• 이 직무가 누구를 위해 일하고 무엇으로 성과를 확인하는지 1~2줄
+
+[주요 과업]
+• 신입이 실제로 반복 수행하는 일 3~5개
+
+[주요 해결과제]
+• 업무에서 해결해야 하는 핵심 문제 2~3개
+
+[해결방법]
+• 실제 사용하는 방법·절차·도구를 2~4개
+
+[필요역량]
+• 지식·기술·행동을 합쳐 핵심 3~5개
+
+[경력개발]
+• 신입 초기 → 숙련 후 확장 방향 1줄`;
+}
+
+function jobTablePreviewHtml(a,ctx){
+  const jt=a.jobTable||{};
+  const cells=[['고객(KPI)',jt.customerKpi],['주요 과업',jt.tasks],['주요 해결과제',jt.challenge],['해결방법',jt.method],['필요역량',jt.competencies]];
+  return `<div class="matrixWrap"><table class="matrix"><thead><tr>${cells.map(x=>'<th>'+esc(x[0],ctx)+'</th>').join('')}</tr></thead><tbody><tr>${cells.map(x=>'<td>'+esc(x[1]||'-',ctx)+'</td>').join('')}</tr></tbody></table></div>${jt.careerPlan?'<div class="callout info" style="margin-top:10px"><b>경력개발</b><br>'+esc(jt.careerPlan,ctx)+'</div>':''}`;
+}
+
+function cleanBulletBlock(x=''){return String(x||'').split(/\r?\n/).map(v=>v.trim().replace(/^[-*•]\s*/,'' )).filter(Boolean).join(' / ')}
+function sectionText(text,heading,next=[]){
+  const start=text.indexOf('['+heading+']');if(start<0)return '';
+  const bodyStart=start+heading.length+2;let end=text.length;
+  for(const h of next){const i=text.indexOf('['+h+']',bodyStart);if(i>=0&&i<end)end=i}
+  return text.slice(bodyStart,end).trim();
+}
+function parseJobAnalysisBullet(raw=''){
+  const text=String(raw||'').replace(/```[a-z]*|```/gi,'').trim();
+  return {
+    customerKpi:cleanBulletBlock(sectionText(text,'고객·성과기준',['주요 과업','주요 해결과제','해결방법','필요역량','경력개발'])),
+    tasks:cleanBulletBlock(sectionText(text,'주요 과업',['주요 해결과제','해결방법','필요역량','경력개발'])),
+    challenge:cleanBulletBlock(sectionText(text,'주요 해결과제',['해결방법','필요역량','경력개발'])),
+    method:cleanBulletBlock(sectionText(text,'해결방법',['필요역량','경력개발'])),
+    competencies:cleanBulletBlock(sectionText(text,'필요역량',['경력개발'])),
+    careerPlan:cleanBulletBlock(sectionText(text,'경력개발',[]))
+  };
+}
+function jobTableReady(a){const x=a?.jobTable||{};return [x.customerKpi,x.tasks,x.challenge,x.method,x.competencies].every(v=>String(v||'').trim())}
+function specReady(a){const x=a?.studentSpec||{};return [x.certificates,x.language,x.tools].every(v=>String(v||'').trim())}
+
+function parseGapBullet(raw=''){
+  const text=String(raw||'').replace(/```[a-z]*|```/gi,'').trim();
+  const have=cleanBulletBlock(sectionText(text,'내가 가진 것',['확인 필요','핵심 GAP','3개월 행동']));
+  const verify=cleanBulletBlock(sectionText(text,'확인 필요',['핵심 GAP','3개월 행동']));
+  const gaps=String(sectionText(text,'핵심 GAP',['3개월 행동'])||'').split(/\r?\n/).map(v=>v.trim().replace(/^[-*•]\s*/,'' ).replace(/^GAP\s*\d+\s*:\s*/i,'')).filter(Boolean).slice(0,3);
+  const actions=String(sectionText(text,'3개월 행동',[])||'').split(/\r?\n/).map(v=>v.trim().replace(/^[-*•]\s*/,'' )).filter(Boolean).slice(0,3);
+  return {have,verify,gaps,actions};
+}
+
+function buildPrompt(s,target,a){
+  const selected=(a.sources||[]).find(x=>x.id===a.selectedSourceId);
+  const jt=a.jobTable||{},spec=a.studentSpec||{};
+  const ex=(s.assessments?.experienceCompetency?.experiences||[]).filter(x=>x?.factChecked).slice(0,6).map((x,i)=>`${i+1}. ${x.title||'경험'} | 행동: ${x.action||'미입력'} | 결과: ${x.result||'미입력'} | Evidence: ${x.evidence||'미입력'}`).join('\n');
+  if(!selected)return '먼저 Choose JD에서 분석할 실제 채용공고를 1개 선택하세요.';
+  if(!jobTableReady(a))return '먼저 직무분석 테이블의 핵심 5개 항목을 완성하세요.';
+  if(!specReady(a))return "먼저 My Spec에서 자격증·어학·도구/기술을 확인하세요. 해당 사항이 없으면 ‘없음’이라고 입력하세요. 빈칸 상태에서는 GAP을 분석하지 않습니다.";
+  return `너는 대학생의 실제 채용공고 요구조건과 학생이 직접 입력한 스펙·경험을 비교하는 GAP 분석가다.
+
+[선택 JD]
+기업: ${a.company?.name||'미정'}
 직무: ${target.job?.title||''}
 산업: ${target.industry||'미정'}
-기업: ${a.company?.name||'미정'}
-선택 JD: ${selected?.name||'미선택'}
+공고: ${selected.name||''}
+공고 핵심내용: ${selected.note||'미입력'}
 
-[실제 자료]
-${support||'등록 자료 없음'}
+[완성된 직무분석]
+• 고객·성과기준: ${jt.customerKpi}
+• 주요 과업: ${jt.tasks}
+• 주요 해결과제: ${jt.challenge}
+• 해결방법: ${jt.method}
+• 필요역량: ${jt.competencies}
+${jt.careerPlan?'• 경력개발: '+jt.careerPlan:''}
 
-[STEP 2에서 이미 사실확인된 경험]
+[학생이 직접 입력한 My Spec]
+• 전공: ${s.profile?.major||'미입력'}
+• 자격증: ${spec.certificates}
+• 어학: ${spec.language}
+• 도구·기술: ${spec.tools}
+• 추가 포트폴리오·프로젝트: ${spec.portfolio||'미입력'}
+
+[STEP 2에서 사실확인된 경험]
 ${ex||'확인된 경험 없음'}
 
-[규칙]
-1. 선택 JD를 최우선 근거로 사용한다.
-2. 공고에 없는 조건·경험·수치를 만들지 않는다.
-3. Gate(지원자격)와 Requirement(업무·K/S/B/E)를 분리한다.
-4. 경험근거를 새로 질문하지 말고 위 STEP 2 경험에서만 연결한다.
-5. 연결 근거가 없으면 '없음'으로 두고 준비 필요로 표시한다.
-6. 적합도 %, 추천점수, 합격확률은 만들지 않는다.
+[판정 규칙]
+- 학생이 직접 입력한 스펙과 STEP 2에서 사실확인된 경험만 학생 근거로 사용한다.
+- 빈칸이나 확인되지 않은 항목을 ‘없음’, ‘준비 필요’, ‘GAP’으로 단정하지 않는다.
+- 학생이 ‘없음’이라고 직접 입력한 경우에만 없는 것으로 본다.
+- 공고의 필수조건과 우대조건을 구분한다.
+- 공고에 없는 조건을 추가하지 않는다.
+- 합격 가능성·적합도 점수·확률은 만들지 않는다.
+- JSON, 표, 코드블록을 사용하지 않는다.
+- 긴 설명 없이 아래 4개 영역만 개조식으로 쓴다.
+- 각 영역은 최대 3개까지만 쓴다.
 
-[출력]
-- 실제 TASK 최대 5개
-- Gate · 필수조건
-- Preference · 우대조건
-- Requirement별 STEP 2 Evidence와 GAP
-- 앞으로 확인·준비할 것
-마지막에 아래 JSON만 유효한 코드블록으로 함께 출력한다.
-{"purpose":"직무 목적","newHireWork":"신입 주요업무","gate":"필수조건","preference":"우대조건","knowledge":"필요지식","skills":"기술·도구","behaviors":"행동","experienceRequired":"요구경험","signals":"강조신호","unknowns":"추가확인","tasks":[{"name":"TASK","skill":"필요 SKILL","output":"결과물","context":"업무맥락"}],"requirements":[{"name":"JD 요구","type":"Skill","evidence":"STEP 2 실제 Evidence 또는 없음","status":"근거 있음","gap":"남는 GAP"}],"have":"이미 가진 근거","verify":"더 확인할 것","prepare":"준비할 것","conclusion":"현재 결론"}
-status는 근거 있음/일부 근거 있음/확인 필요/준비 필요 중 하나만 사용한다.`}
+[출력 형식]
+[내가 가진 것]
+• JD 요구 → 내 실제 근거
+
+[확인 필요]
+• 학생 입력만으로 아직 판단할 수 없는 항목
+
+[핵심 GAP]
+• GAP 1: 실제로 부족하다고 확인된 것
+• GAP 2:
+• GAP 3:
+
+[3개월 행동]
+• GAP → 3개월 안에 만들 수 있는 구체적 결과물
+
+핵심 GAP이 1~2개뿐이면 억지로 3개를 채우지 마라.
+‘확인 필요’와 ‘GAP’을 반드시 구분해라.`;
+}
 function syncIndustryCompany(state,target,a){const old=structuredClone(state.artifacts?.industryCompany||{industries:[],targetIndustries:[],companies:[],targetCompanies:[],notes:''});let ind=(old.industries||[]).find(x=>x.jobId===target.job.id&&x.name===target.industry);if(!ind){ind={id:'ind_'+target.job.id+'_'+slug(target.industry),name:target.industry,jobId:target.job.id,generatedBy:'step4-inje'};old.industries=[...(old.industries||[]),ind]}if(!(old.targetIndustries||[]).includes(ind.id))old.targetIndustries=[...(old.targetIndustries||[]),ind.id];if(a.company?.name){const id='co_'+slug(target.id),selected=(a.sources||[]).find(x=>x.id===a.selectedSourceId);const company={id,name:a.company.name,industryId:ind.id,jobId:target.job.id,industry:target.industry,job:target.job.title,source:selected?.name||'',url:a.company.url||selected?.url||'',jobUrl:selected?.url||'',hiringEvidence:selected?'JD 확인':'미확인',role:a.purpose||'',targetRef:target.id,generatedBy:'step4-inje'};old.companies=[...(old.companies||[]).filter(x=>x.id!==id),company];if(!(old.targetCompanies||[]).includes(id))old.targetCompanies=[...(old.targetCompanies||[]),id]}return old}
 function findExperience(evidence,items){const t=String(evidence||'');return items.find(x=>t.includes(x.title||'')||String(x.action||'').split(/\s+/).filter(w=>w.length>2).some(w=>t.includes(w)))||null}
 function evidenceLevel(status){if(status==='근거 있음')return 'A · 직접 증거';if(status==='일부 근거 있음')return 'B · 관련 증거';if(status==='확인 필요')return 'C · 간접 증거';return '없음'}
