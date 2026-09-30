@@ -286,6 +286,67 @@ await run('STEP 6 renders a three-page MY JOBFIT REPORT v1 from STEP 5 outputs',
   await page.emulateMedia({media:'print'});
   assert(await page.locator('.reportPage').first().isVisible(),'Report is not visible in print media');
 });
+await run('Marketing student STEP 1-6 outputs flow into MY JOBFIT REPORT',async page=>{
+  const state=structuredClone(baseState);state.activeStep=4;
+  state.profile.major='경영학과';
+  state.assessments.careerDNA.selfStrengths=['분석력','기획력','책임감'];
+  state.assessments.careerDNA.hypothesis={text:'소비자 반응을 분석해 콘텐츠 방향을 정하는 일에 관심이 있다.'};
+  state.assessments.experienceCompetency.experiences=[{id:'expM1',title:'의류 리뷰 데이터 분석',action:'생성형 AI를 활용해 고객 리뷰를 핏·소재·가격대·디자인 기준으로 분류하고 구글 시트에 정리했다',result:'20~30대 고객이 선호하는 조건을 비교했다',evidence:'구글 시트 분석표',competencies:['분석','정보구조화'],factChecked:true}];
+  state.artifacts.experienceMap=structuredClone(state.assessments.experienceCompetency.experiences);
+  state.artifacts.jobExplorer={
+    candidates:[{id:'job1',title:'브랜드/콘텐츠 마케터',family:'마케팅·브랜드',industries:['뷰티·소비재'],summary:'소비자와 콘텐츠 트렌드를 분석해 브랜드 콘텐츠와 캠페인을 기획한다.',why:'고객 리뷰 분석 경험과 연결',evidence:'의류 리뷰 데이터 분석',unknowns:'콘텐츠 직접 제작과 성과분석 수준'}],
+    targets:['job1'],targetCombos:[{id:'target_job1_marketing',jobId:'job1',industry:'뷰티·소비재',priority:1}],
+    desiredActivities:['소비자 반응 분석하기','콘텐츠 기획하기'],newInterests:[],industryInterests:['뷰티·소비재']
+  };
+  state.artifacts.jobDeepDive={targetAnalyses:{},analyses:{}};
+
+  await page.goto(base,{waitUntil:'networkidle'});
+  await page.evaluate(s=>localStorage.setItem('jobfit:v2:learner',JSON.stringify(s)),state);
+  await page.reload({waitUntil:'networkidle'});
+  await page.waitForSelector('#companyName');
+  assert((await page.locator('.jobAnalysisInje').getAttribute('data-accordion-default'))==='1','Fresh STEP 5 should recommend Find JD first');
+
+  await page.locator('#companyName').fill('가상뷰티');
+  await page.locator('#companyUrl').fill('https://example.com/beauty');
+  await page.locator('#sourceType').selectOption({label:'기업 공식 채용공고'});
+  await page.locator('#sourceName').fill('글로벌 브랜드/콘텐츠 마케터 신입');
+  await page.locator('#sourceUrl').fill('https://example.com/beauty-marketing');
+  await page.locator('#sourceNote').fill('글로벌 소비자와 콘텐츠 트렌드 분석, 제품 USP 도출, 틱톡·인스타그램 숏폼 기획, 인플루언서 협업, 콘텐츠 성과 분석. 영어 콘텐츠 독해 우대.');
+  await page.locator('#addSource').click();
+
+  await page.locator('#jobAiImport').fill([
+    '[고객·성과기준]','• 글로벌 소비자 / 콘텐츠 반응과 캠페인 성과',
+    '[주요 과업]','• 시장·콘텐츠 트렌드 분석 · USP 도출 · 숏폼 기획 · 인플루언서 협업 · 성과 확인',
+    '[주요 해결과제]','• 제품 강점을 타깃 고객이 반응하는 콘텐츠로 바꾸기',
+    '[해결방법]','• 경쟁사·콘텐츠 비교 · 숏폼 제작 · 지표 확인',
+    '[필요역량]','• 고객분석 · 콘텐츠 기획 · SNS 이해 · 성과분석 · 협업'
+  ].join('\n'));
+  await page.locator('#applyJobAi').click();
+
+  await page.locator('#specCertificates').fill('없음');
+  await page.locator('#specLanguage').fill('TOEIC 850');
+  await page.locator('#specTools').fill('Excel, Google Sheets, Canva');
+  await page.locator('#specPortfolio').fill('의류 리뷰 데이터 분석표');
+  const gapPrompt=await page.locator('#deepPrompt').inputValue();
+  assert(gapPrompt.includes('TOEIC 850')&&gapPrompt.includes('Google Sheets'),'Marketing GAP prompt must use entered student specs');
+  assert(gapPrompt.includes('의류 리뷰 데이터 분석'),'Marketing GAP prompt must reuse fact-checked STEP 2 evidence');
+
+  await page.locator('#deepAiImport').fill([
+    '[내가 가진 것]','• 고객·시장 분석 → 의류 리뷰를 기준별로 분류하고 선호조건을 비교한 경험',
+    '[확인 필요]','• 실제 SNS 채널 운영과 인플루언서 협업 경험 여부',
+    '[핵심 GAP]','• GAP 1: 숏폼 콘텐츠 직접 기획·제작 포트폴리오 부족','• GAP 2: 발행 콘텐츠 성과지표 분석 경험 부족',
+    '[3개월 행동]','• 숏폼 콘텐츠 3개 제작 → 조회·반응 지표 기록','• 브랜드 1개를 정해 경쟁사·USP·콘텐츠 성과 분석 포트폴리오 완성'
+  ].join('\n'));
+  await page.locator('#importDeepAi').click();
+  await page.locator('#saveDeep').click();
+  await page.locator('#nextStep').click();
+  await page.waitForSelector('#jobfitReportPrint');
+
+  const text=(await page.locator('#jobfitReportPrint').textContent())||'';
+  for(const expected of ['브랜드/콘텐츠 마케터','가상뷰티','글로벌 브랜드/콘텐츠 마케터 신입','고객(KPI)','주요 과업','주요 해결과제','해결방법','필요역량','TOEIC 850','Excel, Google Sheets, Canva','숏폼 콘텐츠 직접 기획·제작 포트폴리오 부족','3개월 행동'])assert(text.includes(expected),'Marketing report missing: '+expected);
+  assert(await page.locator('.reportPage').count()===3,'Marketing report must remain three pages');
+});
+
 await run('STEP 6 accepts linked combination and rejects mismatched relation',async page=>{
   const state=structuredClone(baseState);
   state.activeStep=6;

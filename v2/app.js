@@ -175,7 +175,8 @@ function installStepAccordion(root,step){
     if(mode==='all'){all.forEach(b=>setOpen(b,true));return}
     if(mode==='none'){all.forEach(b=>setOpen(b,false));return}
     if(all.some(b=>b.classList.contains('jobfitAccordionOpen')))return;
-    const idx=mode!==null&&/^\d+$/.test(mode)?Number(mode):0;
+    const defaultIdx=/^\d+$/.test(section.dataset.accordionDefault||'')?Number(section.dataset.accordionDefault):0;
+    const idx=mode!==null&&/^\d+$/.test(mode)?Number(mode):defaultIdx;
     setOpen(all[Math.min(idx,all.length-1)],true);
   };
   window.JobfitStepAccordion={openBlock:block=>{prepare();const target=triggerFor(block)?block:groups().find(g=>g.followers.includes(block))?.block;if(target)openOnly(target)},refresh:prepare};
