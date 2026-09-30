@@ -102,7 +102,7 @@ export async function render(ctx){
 
   function bind(target,a){
     document.querySelectorAll('.targetPick').forEach(b=>b.addEventListener('click',()=>{currentId=b.dataset.id;paint()}));
-    [0,1,2].forEach(i=>document.getElementById('saveSource'+i)?.addEventListener('click',()=>saveSourceSlot(target,a,i)));
+    [0,1,2].forEach(i=>document.getElementById(i===0?'addSource':'saveSource'+i)?.addEventListener('click',()=>saveSourceSlot(target,a,i)));
     document.getElementById('copyJdSearchPrompt')?.addEventListener('click',()=>copy(document.getElementById('jdSearchPrompt')?.value||buildSearchPrompt(ctx.getState(),target),ctx));
     document.getElementById('refreshJobAiPrompt')?.addEventListener('click',()=>{captureJobTable(a);persist(target,a);const p=document.getElementById('jobAiPrompt');if(p)p.value=buildJobAnalysisPrompt(ctx.getState(),target,a)});
     document.getElementById('copyJobAiPrompt')?.addEventListener('click',()=>copy(document.getElementById('jobAiPrompt')?.value||buildJobAnalysisPrompt(ctx.getState(),target,a),ctx));
@@ -118,7 +118,7 @@ export async function render(ctx){
   }
 
   function saveSourceSlot(target,a,i){
-    const s=String(i),name=v('sourceName'+s),url=v('sourceUrl'+s);
+    const s=i===0?'':String(i),name=v('sourceName'+s),url=v('sourceUrl'+s);
     if(!name||!url){ctx.toast('공고 '+(i+1)+'의 공고명과 원문 URL을 입력하세요.');return}
     a.sources=a.sources||[];
     const current=a.sources.find(x=>x&&x.slot===i)||a.sources[i]||null;
@@ -405,7 +405,7 @@ function normalizeReqType(t=''){if(t.includes('Knowledge'))return 'Knowledge';if
 function lines(x=''){return String(x).split(/\n|·|;/).map(x=>x.trim()).filter(Boolean)}
 function renderJdRecordEditors(a,ctx){
   return '<div class="jdRecordGrid">'+[0,1,2].map(i=>{
-    const x=(a.sources||[]).find(v=>v&&v.slot===i)||(a.sources||[])[i]||{},s=String(i),n=i+1;
+    const x=(a.sources||[]).find(v=>v&&v.slot===i)||(a.sources||[])[i]||{},s=i===0?'':String(i),n=i+1;
     const title=x.name?esc((x.companyName?x.companyName+' · ':'')+x.name,ctx):'새 공고 입력';
     return '<div class="jdRecordCard">'+
       '<div class="jdRecordHead"><span class="rankTag">공고 '+n+'</span><b>'+title+'</b></div>'+
@@ -414,7 +414,7 @@ function renderJdRecordEditors(a,ctx){
       '<div class="field" style="margin-top:10px"><label>공고명·직무</label><input class="input" id="sourceName'+s+'" value="'+esc(x.name||'',ctx)+'" placeholder="예: 브랜드/콘텐츠 마케터 신입"></div>'+
       '<div class="field" style="margin-top:10px"><label>공고 원문 URL</label><input class="input" id="sourceUrl'+s+'" value="'+esc(x.url||'',ctx)+'" placeholder="https://..."></div>'+
       '<div class="field" style="margin-top:10px"><label>담당업무·지원조건·우대사항</label><textarea id="sourceNote'+s+'" placeholder="공고 원문에서 핵심 내용을 붙여넣으세요.">'+esc(x.note||'',ctx)+'</textarea></div>'+
-      '<div class="actions"><button class="btn primary" id="saveSource'+s+'">공고 '+n+' 저장</button></div>'+
+      '<div class="actions"><button class="btn primary" id="'+(i===0?'addSource':'saveSource'+s)+'">공고 '+n+' 저장</button></div>'+
     '</div>';
   }).join('')+'</div>';
 }
