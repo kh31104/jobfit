@@ -27,6 +27,7 @@ export async function render(ctx){
   function paint(){
     const target=targets.find(x=>x.id===currentId)||targets[0],job=target.job,legacy=saved.analyses?.[job?.id]||{};
     const a=structuredClone(saved.targetAnalyses?.[target.id]||defaultAnalysis(target,legacy));
+    const section=document.querySelector('.jobAnalysisInje');if(section)section.dataset.accordionDefault=String(recommendedAccordionIndex(a));
     const box=document.getElementById('analysisRoot');
     box.innerHTML=`
       ${block('01','Target Job','STEP 3에서 선택한 직무를 확인합니다. 새로 고르지 않습니다.',`
@@ -189,6 +190,16 @@ export async function render(ctx){
   function v(id){return document.getElementById(id)?.value?.trim()||''}function set(id,x){const el=document.getElementById(id);if(el)el.value=x}
 }
 
+function recommendedAccordionIndex(a){
+  const sources=a?.sources||[],jt=a?.jobTable||{},hasJobTable=[jt.customerKpi,jt.tasks,jt.challenge,jt.method,jt.competencies].some(v=>String(v||'').trim());
+  if(!sources.length)return 1;
+  if(!a.selectedSourceId)return 2;
+  if(!jobTableReady(a)&&!hasJobTable)return 3;
+  if(!jobTableReady(a))return 4;
+  if(!specReady(a))return 6;
+  const hasGap=String(a.have||'').trim()||String(a.verify||'').trim()||String(a.prepare||'').trim()||(a.requirements||[]).some(r=>String(r.gap||'').trim());
+  return hasGap?7:7;
+}
 function syncDownstream(state,target,a){
   const selected=(a.sources||[]).find(x=>x.id===a.selectedSourceId)||(a.sources||[])[0];
   const postingId='jd_step4_'+slug(target.id);
