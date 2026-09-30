@@ -98,19 +98,43 @@ export async function render(ctx){
   function renderInterests(){const box=document.getElementById('interestList');if(!box)return;box.innerHTML=data.newInterests.length?data.newInterests.map((x,i)=>`<span class="pill interestPill">${esc(x,ctx)} <button data-del-interest="${i}" aria-label="삭제">×</button></span>`).join(''):'<span class="muted small">추가한 관심 활동이 없습니다.</span>';box.querySelectorAll('[data-del-interest]').forEach(b=>b.addEventListener('click',()=>{data.newInterests.splice(Number(b.dataset.delInterest),1);persist(false);renderInterests();refreshPrompt();}));}
   function importJobAi(){
     const raw=v('jobAiImport');if(!raw){status('candidateStatus','AI 결과를 먼저 붙여넣어 주세요.');return}
-    const parsed=parseJsonBlock(raw),rows=Array.isArray(parsed)?parsed:(Array.isArray(parsed?.candidates)?parsed.candidates:[]);
-    if(!rows.length){status('candidateStatus','후보 JSON을 읽지 못했습니다. 프롬프트의 JSON 형식 그대로 붙여넣어 주세요.');return}
-    const now=Date.now(),normalized=rows.slice(0,5).map((x,i)=>({id:'job_ai_'+now+'_'+i,title:String(x.title||x.job||'').trim(),family:String(x.family||'').trim(),industries:Array.isArray(x.industries)?x.industries.map(v=>String(v).trim()).filter(Boolean):splitList(x.industries||''),summary:String(x.summary||x.description||'').trim(),why:String(x.why||x.interestEvidence||'').trim(),evidence:String(x.evidence||x.experienceEvidence||'').trim(),unknowns:String(x.unknowns||'').trim(),source:'AI 탐색결과 · STEP 4에서 공식자료 확인 필요',createdAt:new Date().toISOString()})).filter(x=>x.title);
+    const rows=parseCandidateOutput(raw);
+    if(!rows.length){status('candidateStatus','직무 후보 형식을 읽지 못했습니다. [후보 1]부터 시작하는 개조식 결과 전체를 붙여넣어 주세요.');return}
+    const now=Date.now(),normalized=rows.slice(0,5).map((x,i)=>({id:'job_ai_'+now+'_'+i,title:String(x.title||'').trim(),family:String(x.family||'').trim(),industries:splitList(x.industries||''),summary:String(x.summary||'').trim(),why:String(x.why||'').trim(),evidence:String(x.evidence||'').trim(),unknowns:String(x.unknowns||'').trim(),source:'AI 탐색결과 · STEP 4에서 공식자료 확인 필요',createdAt:new Date().toISOString()})).filter(x=>x.title);
     if(!normalized.length){status('candidateStatus','직무명이 있는 후보를 찾지 못했습니다.');return}
-    data.candidates=normalized;data.targets=[];data.targetCombos=[];persist(false);renderCandidates();renderCompare();renderTargets();status('candidateStatus','AI 후보 '+normalized.length+'개를 불러왔습니다. 내용을 확인한 뒤 Target을 선택하세요.');
+    data.candidates=normalized;data.targets=[];data.targetCombos=[];clearCandidateEditor();persist(false);renderCandidates();renderCompare();renderTargets();status('candidateStatus','AI 후보 '+normalized.length+'개를 불러왔습니다. 각 후보는 수정할 수 있습니다.');
   }
   function addCandidate(){
-    const title=v('jobTitle');if(!title){status('candidateStatus','직무명을 입력하세요.');return}if(data.candidates.length>=5){status('candidateStatus','직무 후보는 5개까지 비교하는 것을 권장합니다. 기존 후보를 정리한 뒤 추가하세요.');return}
-    const industries=splitList(v('jobIndustries'));
-    data.candidates.push({id:`job_${Date.now()}`,title,family:v('jobFamily'),industries,summary:v('jobSummary'),why:v('jobWhy'),evidence:v('jobEvidence'),unknowns:v('jobUnknown'),source:v('jobSource'),createdAt:new Date().toISOString()});
-    ['jobTitle','jobIndustries','jobSummary','jobWhy','jobEvidence','jobUnknown','jobSource'].forEach(id=>set(id,''));set('jobFamily','');persist(false);renderCandidates();renderCompare();renderTargets();status('candidateStatus','직무 후보를 추가했습니다.');
+    const title=v('jobTitle');if(!title){status('candidateStatus','직무명을 입력하세요.');return}
+    if(!editingCandidateId&&data.candidates.length>=5){status('candidateStatus','직무 후보는 5개까지 비교하는 것을 권장합니다. 기존 후보를 정리한 뒤 추가하세요.');return}
+    const candidate={title,family:v('jobFamily'),industries:splitList(v('jobIndustries')),summary:v('jobSummary'),why:v('jobWhy'),evidence:v('jobEvidence'),unknowns:v('jobUnknown'),source:v('jobSource')};
+    if(editingCandidateId){
+      const i=data.candidates.findIndex(x=>x.id===editingCandidateId);
+      if(i>=0)data.candidates[i]={...data.candidates[i],...candidate,updatedAt:new Date().toISOString()};
+    }else data.candidates.push({id:`job_${Date.now()}`,...candidate,createdAt:new Date().toISOString()});
+    const edited=!!editingCandidateId;clearCandidateEditor();persist(false);renderCandidates();renderCompare();renderTargets();status('candidateStatus',edited?'직무 후보를 수정했습니다.':'직무 후보를 추가했습니다.');
   }
-  function renderCandidates(){const box=document.getElementById('candidateList');if(!box)return;if(!data.candidates.length){box.innerHTML='<div class="placeholder"><b>아직 직무 후보가 없습니다.</b>AI 프롬프트로 탐색한 뒤 4~5개 후보를 추가해 비교하세요.</div>';return}box.innerHTML=data.candidates.map((j,i)=>`<div class="listCard"><div class="listHead"><div><span class="rankTag">후보 ${i+1}</span><h3>${esc(j.title,ctx)}</h3><div class="muted small">${esc(j.family||'직무군 미입력',ctx)} · ${(j.industries||[]).map(x=>esc(x,ctx)).join(' / ')||'산업 미정'}</div></div><button class="btn danger smallBtn" data-del="${j.id}">삭제</button></div><p><b>어떤 일?</b> ${esc(j.summary||'—',ctx)}</p><div class="grid2"><div><b>관심 근거</b><p>${esc(j.why||'—',ctx)}</p></div><div><b>경험·행동 근거</b><p>${esc(j.evidence||'—',ctx)}</p></div></div><div class="callout info"><b>아직 확인할 것</b><br>${esc(j.unknowns||'실제 Task·요구기술·근무환경 확인 필요',ctx)}</div></div>`).join('');box.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{data.candidates=data.candidates.filter(x=>x.id!==b.dataset.del);data.targets=data.targets.filter(x=>x!==b.dataset.del);data.targetCombos=data.targetCombos.filter(x=>x.jobId!==b.dataset.del);persist(false);renderCandidates();renderCompare();renderTargets();}));}
+  function editCandidate(id){
+    const j=data.candidates.find(x=>x.id===id);if(!j)return;editingCandidateId=id;
+    set('jobTitle',j.title||'');set('jobFamily',j.family||'');set('jobIndustries',(j.industries||[]).join(', '));set('jobSummary',j.summary||'');set('jobWhy',j.why||'');set('jobEvidence',j.evidence||'');set('jobUnknown',j.unknowns||'');set('jobSource',j.source||'');
+    const details=document.getElementById('candidateManualEditor');if(details)details.open=true;
+    const saveBtn=document.getElementById('addCandidate');if(saveBtn)saveBtn.textContent='수정 저장';
+    const cancel=document.getElementById('cancelCandidateEdit');if(cancel)cancel.classList.remove('hidden');
+    details?.scrollIntoView?.({behavior:'smooth',block:'center'});
+    status('candidateStatus','선택한 직무 후보를 수정한 뒤 ‘수정 저장’을 누르세요.');
+  }
+  function clearCandidateEditor(){
+    editingCandidateId='';['jobTitle','jobIndustries','jobSummary','jobWhy','jobEvidence','jobUnknown','jobSource'].forEach(id=>set(id,''));set('jobFamily','');
+    const saveBtn=document.getElementById('addCandidate');if(saveBtn)saveBtn.textContent='직무 후보 추가';
+    const cancel=document.getElementById('cancelCandidateEdit');if(cancel)cancel.classList.add('hidden');
+  }
+  function renderCandidates(){
+    const box=document.getElementById('candidateList');if(!box)return;
+    if(!data.candidates.length){box.innerHTML='<div class="placeholder"><b>아직 직무 후보가 없습니다.</b>AI 프롬프트로 탐색한 뒤 4~5개 후보를 불러오세요.</div>';return}
+    box.innerHTML=data.candidates.map((j,i)=>`<div class="listCard"><div class="listHead"><div><span class="rankTag">후보 ${i+1}</span><h3>${esc(j.title,ctx)}</h3><div class="muted small">${esc(j.family||'직무군 미입력',ctx)} · ${(j.industries||[]).map(x=>esc(x,ctx)).join(' / ')||'산업 미정'}</div></div><div class="actions compactActions"><button class="btn secondary smallBtn" data-edit="${j.id}">수정</button><button class="btn danger smallBtn" data-del="${j.id}">삭제</button></div></div><p><b>어떤 일?</b> ${esc(j.summary||'—',ctx)}</p><div class="grid2"><div><b>관심 근거</b><p>${esc(j.why||'—',ctx)}</p></div><div><b>경험·행동 근거</b><p>${esc(j.evidence||'—',ctx)}</p></div></div><div class="callout info"><b>아직 확인할 것</b><br>${esc(j.unknowns||'실제 Task·요구기술·근무환경 확인 필요',ctx)}</div></div>`).join('');
+    box.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>editCandidate(b.dataset.edit)));
+    box.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{if(editingCandidateId===b.dataset.del)clearCandidateEditor();data.candidates=data.candidates.filter(x=>x.id!==b.dataset.del);data.targets=data.targets.filter(x=>x!==b.dataset.del);data.targetCombos=data.targetCombos.filter(x=>x.jobId!==b.dataset.del);persist(false);renderCandidates();renderCompare();renderTargets();}));
+  }
   function renderCompare(){const box=document.getElementById('compareBox');if(!box)return;if(!data.candidates.length){box.innerHTML='<div class="callout info">후보를 추가하면 비교표가 만들어집니다.</div>';return}box.innerHTML=`<div class="matrixWrap"><table class="matrix"><thead><tr><th>직무</th><th>경험·행동 근거</th><th>관심 근거</th><th>가능 산업</th><th>더 확인할 것</th></tr></thead><tbody>${data.candidates.map(j=>`<tr><td><b>${esc(j.title,ctx)}</b></td><td>${esc(j.evidence||'—',ctx)}</td><td>${esc(j.why||'—',ctx)}</td><td>${esc((j.industries||[]).join(', ')||'미정',ctx)}</td><td>${esc(j.unknowns||'—',ctx)}</td></tr>`).join('')}</tbody></table></div>`;}
   function renderTargets(){const box=document.getElementById('targetEditor');if(!box)return;if(!data.candidates.length){box.innerHTML='<div class="callout warn">직무 후보를 먼저 추가하세요.</div>';return}const combos=[0,1,2].map(i=>data.targetCombos[i]||{});box.innerHTML=combos.map((combo,i)=>`<div class="targetRow"><div><b>${i<2?`${i+1}순위 Target`:'예비 Target'}</b><span>${i<2?'필수 선택':'선택사항'}</span></div><select data-target-job="${i}"><option value="">직무 선택</option>${data.candidates.map(j=>`<option value="${j.id}" ${combo.jobId===j.id?'selected':''}>${esc(j.title,ctx)}</option>`).join('')}</select><select data-target-industry="${i}">${industryOptions(combo.jobId,combo.industry)}</select></div>`).join('');box.querySelectorAll('[data-target-job]').forEach(selEl=>selEl.addEventListener('change',()=>{const i=Number(selEl.dataset.targetJob),ind=box.querySelector(`[data-target-industry="${i}"]`);if(ind)ind.innerHTML=industryOptions(selEl.value,'');}));}
   function industryOptions(jobId,current){const job=data.candidates.find(x=>x.id===jobId),all=[...(job?.industries||[]),...data.industryInterests.filter(x=>x!=='아직 잘 모르겠어요')];const vals=[...new Set(all.filter(Boolean))];if(!vals.length)vals.push('산업 미정');return `<option value="">산업 선택</option>`+vals.map(x=>`<option value="${esc(x,ctx)}" ${current===x?'selected':''}>${esc(x,ctx)}</option>`).join('')}
