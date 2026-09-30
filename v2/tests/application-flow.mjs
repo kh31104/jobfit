@@ -83,14 +83,14 @@ await run('STEP 4 shows a real preparation gap when STEP 2 has no matching evide
   assert(asset?.evidenceLevel==='없음','No-evidence requirement must remain unavailable for application writing');
 });
 
-await run('New STEP 7 Resume Lab keeps unverified STEP 4 evidence as draft',async page=>{
+await run('New STEP 8 Resume Lab keeps unverified STEP 5 evidence as draft',async page=>{
   const s=state(7);
   s.artifacts.jdAnalyzer={postings:[{id:'jd1',company:'가상모빌리티',jobTitle:'생산기술',rawPosting:'공정 데이터 분석 및 개선',gates:[],gateReviewed:true,requirements:[{id:'r1',text:'공정 데이터 분석',type:'Skill',level:'필수'}]}],selectedId:'jd1'};
   s.artifacts.careerAssets={assets:[{id:'a1',postingId:'jd1',experienceId:'exp1',experienceTitle:'캡스톤 프로젝트',requirementId:'r1',requirement:'공정 데이터 분석',requirementLevel:'필수',evidenceLevel:'B · 관련 증거',proof:'조건별 비교',fact:'측정기록',factCheck:'추가확인 필요',sourceExperienceFactChecked:true}]};
   await seed(page,s);
   const heading=(await page.locator('#stepRoot').textContent())||'';
-  assert(heading.includes('Resume Lab'),'Logical STEP 7 did not load Resume Lab');
-  assert((await page.locator('#stepRoot .kicker').first().textContent()).includes('STEP 7'),'Resume Lab still shows the old STEP number');
+  assert(heading.includes('Resume Lab'),'Logical STEP 8 did not load Resume Lab');
+  assert((await page.locator('#stepRoot .kicker').first().textContent()).includes('STEP 8'),'Resume Lab still shows the old STEP number');
   await page.locator('#assetId').selectOption('a1');
   const ctx=(await page.locator('#assetContext').textContent())||'';
   assert(ctx.includes('현재는 초안용'),'Unverified asset was not marked draft-only');
