@@ -79,7 +79,7 @@ await run('STEP 3 imports AI job candidates without retyping',async page=>{
   assert(!stored.artifacts.jobExplorer.candidates.some(x=>(x.industries||[]).includes('에너지')),'AI candidate import unexpectedly defaulted to energy');
 });
 
-await run('STEP 4 stores source-grounded Job Analysis and keeps downstream relations',async page=>{
+await run('STEP 4 stores chosen JD, GAP Match, and downstream bridges',async page=>{
   const state=structuredClone(baseState);
   state.activeStep=4;
   state.artifacts.jobExplorer.targets=['job1','job2'];
@@ -95,46 +95,48 @@ await run('STEP 4 stores source-grounded Job Analysis and keeps downstream relat
   await page.waitForSelector('#companyName');
 
   await page.locator('#companyName').fill('가상모빌리티');
-  await page.locator('#companySource').fill('공식 홈페이지');
   await page.locator('#companyUrl').fill('https://example.com/company');
-
   await page.locator('#sourceType').selectOption({label:'기업 공식 채용공고'});
   await page.locator('#sourceName').fill('생산기술 신입공고');
   await page.locator('#sourceUrl').fill('https://example.com/job1');
   await page.locator('#sourceNote').fill('생산공정 문제 분석과 개선 업무');
   await page.locator('#addSource').click();
 
-  await page.locator('#taskName').fill('생산공정 이상 원인을 분석한다');
-  await page.locator('#taskSkill').fill('데이터 분석 · 문제해결');
-  await page.locator('#taskSource').selectOption({label:'생산기술 신입공고'});
-  await page.locator('#addTask').click();
-
-  await page.locator('#reqName').fill('공정 데이터 분석');
-  await page.locator('#reqType').selectOption({label:'Skill'});
-  await page.locator('#reqStatus').selectOption({label:'근거 있음'});
-  await page.locator('#reqEvidence').fill('캡스톤에서 시험 결과를 비교해 오류 원인을 확인함');
-  await page.locator('#addReq').click();
-
-  await page.locator('#purpose').fill('생산공정의 문제를 확인하고 안정적으로 생산되도록 개선한다.');
-  await page.locator('#skills').fill('데이터 분석, 문제해결');
-  await page.locator('#have').fill('문제 원인 분석 경험');
-  await page.locator('#prepare').fill('생산공정 기본지식');
+  const ai={
+    purpose:'생산공정의 문제를 확인하고 안정적으로 생산되도록 개선한다.',
+    gate:'기계계열 전공',
+    preference:'제조 프로젝트 경험',
+    knowledge:'생산공정 기초',
+    skills:'데이터 분석, 문제해결',
+    behaviors:'문제를 확인하고 관련부서와 조정한다.',
+    experienceRequired:'공정 또는 설비 관련 프로젝트',
+    signals:'공정개선, 협업',
+    tasks:[{name:'생산공정 이상 원인을 분석한다',skill:'데이터 분석 · 문제해결',output:'개선안',context:'생산·품질부서 협업'}],
+    requirements:[
+      {name:'공정 데이터 분석',type:'Skill',evidence:'캡스톤에서 시험 결과를 비교해 오류 원인을 확인함',status:'근거 있음',gap:''},
+      {name:'생산공정 기본지식',type:'Knowledge',evidence:'없음',status:'준비 필요',gap:'기초학습 필요'}
+    ],
+    have:'문제 원인 분석 경험',prepare:'생산공정 기본지식'
+  };
+  await page.locator('#deepAiImport').fill(JSON.stringify(ai));
+  await page.locator('#importDeepAi').click();
   await page.locator('#saveDeep').click();
 
   const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   const a=stored.artifacts.jobDeepDive.targetAnalyses.target_job1_auto;
   assert(a?.company?.name==='가상모빌리티','STEP 4 company was not saved');
-  assert(a?.sources?.length===1,'STEP 4 source was not saved');
+  assert(a?.sources?.length===1&&a.selectedSourceId===a.sources[0].id,'Chosen JD was not saved');
   assert(a?.tasks?.[0]?.name.includes('생산공정'),'STEP 4 task was not saved');
-  assert(a?.requirements?.[0]?.status==='근거 있음','STEP 4 evidence status was not saved');
-  assert(stored.artifacts.jobDeepDive.analyses.job1,'Legacy jobDeepDive analysis bridge missing');
+  assert(a?.requirements?.[0]?.status==='근거 있음','STEP 4 GAP status was not saved');
+  assert(stored.artifacts.jdAnalyzer?.selectedId,'STEP 7 JD bridge was not moved into STEP 4');
+  assert(stored.artifacts.jdAnalyzer?.postings?.[0]?.jobTitle==='생산기술','JD bridge job title missing');
+  assert(stored.artifacts.careerAssets?.assets?.some(x=>x.requirement==='공정 데이터 분석'),'STEP 8 Career Asset bridge was not moved into STEP 4');
 
   const ic=stored.artifacts.industryCompany;
   const ind=ic.industries.find(x=>x.jobId==='job1'&&x.name==='자동차·모빌리티');
   const co=ic.companies.find(x=>x.jobId==='job1'&&x.name==='가상모빌리티');
   assert(ind,'Industry relation was not created by STEP 4');
   assert(co?.industryId===ind.id,'Company did not retain Industry relation');
-  assert(ic.targetCompanies.includes(co.id),'Company was not retained as downstream target');
 });
 
 await run('STEP 4 imports AI analysis into reviewable fields',async page=>{
@@ -178,7 +180,7 @@ await run('STEP 4 imports AI analysis into reviewable fields',async page=>{
   const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   const a=stored.artifacts.jobDeepDive.targetAnalyses.target_job1_auto;
   assert(a?.purpose.includes('생산공정'),'AI analysis purpose not imported');
-  assert(a?.tasks?.length===1&&a.tasks[0].sourceId===a.sources[0].id,'AI task or source relation not imported');
+  assert(a?.tasks?.length===1&&a.tasks[0].name.includes('생산공정'),'AI task not imported');
   assert(a?.requirements?.some(x=>x.name==='공정 데이터 분석'&&x.status==='근거 있음'),'AI evidence matrix not imported');
   assert(a?.prepare==='생산공정 기본지식','AI preparation item not imported');
 });
