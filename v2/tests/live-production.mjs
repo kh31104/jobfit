@@ -28,6 +28,7 @@ async function run(name,viewport){
     assert(await page.locator('[data-measure="pre-work24"]').count()===14,'Deployed Work24 PRE must expose 14 score inputs');
     assert(await page.locator('[data-measure="pre-kcaas"]').count()===12,'Deployed K-CAAS PRE must expose 12 items');
     assert(((await page.locator('#heroMeta').textContent())||'').includes('PRE/POST 측정'),'Deployed PRE/POST status label missing');
+    for(const id of ['careerStartStatement','careerStartAssets','careerStartGap','careerStartAction'])assert(await page.locator('#'+id).count()===1,`Deployed STEP0 summary field missing: ${id}`);
 
     await page.locator('.stepBtn[data-step="1"]').click();await page.waitForSelector('#makePrompt',{state:'attached'});await page.waitForSelector('[data-anchor-item]',{state:'attached'});await waitCareerUx(page);
     const body=(await page.locator('#stepRoot').textContent())||'';
@@ -88,8 +89,9 @@ async function run(name,viewport){
     assert(jobPrompt.includes('특정 산업, 특히 에너지 산업을 기본값으로 두지 않는다'),'STEP3 prompt lost industry-neutral guard');
     assert(jobPrompt.includes('실제 Task·요구기술·기업조건은 STEP 4에서 공식자료로 확인'),'STEP3→4 validation boundary missing');
     assert(jobPrompt.includes('적합도 %, 추천순위, 취업성공확률을 만들지 않는다.'),'STEP3 prompt lost no-fit-percentage guard');
-    assert(jobPrompt.includes('표를 만들지 않는다.'),'STEP3 prompt must forbid table output');
-    assert(jobPrompt.includes('JSON, 코드블록, 중괄호 { }를 절대 출력하지 않는다.'),'STEP3 prompt must forbid JSON output');
+    assert(jobPrompt.includes('표 금지.'),'STEP3 prompt must forbid table output');
+    assert(jobPrompt.includes('JSON 금지.'),'STEP3 prompt must forbid JSON output');
+    assert(jobPrompt.includes('첫 줄부터 [후보 1]로 시작'),'STEP3 prompt must start directly with copy-friendly candidate text');
     assert(jobPrompt.includes('[후보 1]'),'STEP3 prompt missing copy-friendly bullet format');
     if(viewport.width<=480){const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);assert(overflow<=2,`STEP3 mobile horizontal overflow detected: ${overflow}px`)}
 
@@ -118,8 +120,10 @@ async function run(name,viewport){
     assert(await page.locator('.jdSiteLink').count()===5,'STEP4 Find JD must expose five recruitment-site links');
     const jdSites=(await page.locator('.jdSiteGrid').allTextContents()).join(' ');
     for(const name of ['사람인','잡코리아','고용24','잡알리오','클린아이 잡플러스'])assert(jdSites.includes(name),`STEP4 missing recruitment site: ${name}`);
+    assert(await page.locator('#jdSearchPrompt').isVisible(),'STEP4 AI JD search prompt must be visible without opening another disclosure');
     const jdSearchPrompt=await page.locator('#jdSearchPrompt').inputValue();
     assert(jdSearchPrompt.includes('생산기술')&&jdSearchPrompt.includes('자동차·모빌리티'),'STEP4 JD search prompt lost current target context');
+    assert(jdSearchPrompt.includes('첫 줄부터 [공고 1]로 시작'),'STEP4 JD search prompt must start with plain-text posting output');
     if(viewport.width<=480){const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);assert(overflow<=2,`STEP4 mobile horizontal overflow detected: ${overflow}px`)}
 
     if(errors.length)throw new Error(errors.join('\n'));console.log(`PASS ${name}`);

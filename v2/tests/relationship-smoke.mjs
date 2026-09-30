@@ -105,8 +105,9 @@ await run('STEP 3 imports copy-friendly bullet candidates and allows editing',as
   await page.reload({waitUntil:'networkidle'});
   await page.waitForSelector('#jobAiImport');
   const prompt=await page.locator('#jobPrompt').inputValue();
-  assert(prompt.includes('표를 만들지 않는다.'),'STEP 3 prompt must forbid tables');
-  assert(prompt.includes('JSON, 코드블록, 중괄호 { }를 절대 출력하지 않는다.'),'STEP 3 prompt must forbid JSON');
+  assert(prompt.includes('표 금지.'),'STEP 3 prompt must forbid tables');
+  assert(prompt.includes('JSON 금지.'),'STEP 3 prompt must forbid JSON');
+  assert(prompt.includes('첫 줄부터 [후보 1]로 시작'),'STEP 3 prompt must start with copy-friendly candidate text');
   assert(prompt.includes('[후보 1]'),'STEP 3 prompt missing copy-friendly candidate format');
 
   const ai=[

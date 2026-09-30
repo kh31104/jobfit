@@ -58,6 +58,13 @@ await run('STEP 4 keeps Application Gate separate and moves JD Analyzer function
   const body=(await page.locator('#stepRoot').textContent())||'';
   for(const t of ['Target Job','Find JD','Choose JD','GAP Match'])assert(body.includes(t),`STEP 4 missing ${t}`);
   assert(!body.includes('My Evidence'),'STEP 4 must not ask the student to re-enter My Evidence');
+  assert(await page.locator('.jdSiteLink').count()===5,'STEP4 Find JD must expose five real recruitment-site links');
+  const sites=(await page.locator('.jdSiteGrid').allTextContents()).join(' ');
+  for(const name of ['사람인','잡코리아','고용24','잡알리오','클린아이 잡플러스'])assert(sites.includes(name),`STEP4 recruitment site missing: ${name}`);
+  assert(await page.locator('#jdSearchPrompt').isVisible(),'STEP4 AI job-posting search prompt must be immediately visible');
+  const searchPrompt=await page.locator('#jdSearchPrompt').inputValue();
+  assert(searchPrompt.includes('첫 줄부터 [공고 1]로 시작'),'STEP4 AI search prompt must use copy-friendly plain text');
+  assert(searchPrompt.includes('표, JSON, 코드블록을 사용하지 않는다'),'STEP4 AI search prompt must forbid non-copy-friendly formats');
   const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   const p=stored.artifacts.jdAnalyzer.postings.find(x=>x.jobTitle==='생산기술');
   assert(p,'STEP 4 did not create JD bridge');
