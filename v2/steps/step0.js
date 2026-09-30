@@ -47,7 +47,12 @@ export async function render(ctx){
       <div class="actions"><button class="btn secondary" id="makeStartPrompt">AI 인터뷰 프롬프트 만들기</button><button class="btn outline hidden" id="copyStartPrompt">프롬프트 복사</button></div><div class="promptBox hidden" id="startPromptBox"></div>
       <div class="callout info" style="margin-top:14px"><b>사용방법</b><br>① 프롬프트를 복사해 ChatGPT 등 AI에 붙여넣기 → ② AI의 질문에 최대 4번 답하기 → ③ AI가 마지막에 정리한 결과 전체를 아래 칸에 그대로 붙여넣기 → ④ ‘핵심내용 자동 정리’를 누르기</div>
       <div class="field" style="margin-top:14px"><label>AI가 정리한 최종 결과 붙여넣기</label><textarea id="careerCheckinResult" rows="10" placeholder="AI가 마지막에 제시한 1. 현재 출발점 / 2. 활용 가능한 자산 / 3. 우선 보완할 GAP / 4. 이번 주 실행행동을 여기에 그대로 붙여넣으세요.">${ctx.escapeHtml(start.aiResult||'')}</textarea><div class="actions"><button class="btn secondary smallBtn" type="button" id="parseCheckinResult">핵심내용 자동 정리</button></div><div class="status" id="checkinParseStatus"></div></div>
-      <div class="grid2" style="margin-top:14px"><div class="field"><label>인터뷰 후 ‘지금의 나’ 한 문장</label><p class="help">AI 결과의 ‘1. 현재 Career Starting Point’가 자동으로 들어갑니다. 필요하면 학생이 사실에 맞게 수정합니다.</p><textarea id="careerStartStatement" placeholder="AI 결과를 붙여넣고 ‘핵심내용 자동 정리’를 누르세요.">${ctx.escapeHtml(start.statement||'')}</textarea></div><div class="field"><label>이번 주 내가 직접 할 1가지</label><p class="help">AI 결과의 ‘4. 이번 주 실행행동’이 자동으로 들어갑니다. 실제로 할 수 있는 행동인지 확인합니다.</p><textarea id="careerStartAction" placeholder="AI 결과를 붙여넣고 ‘핵심내용 자동 정리’를 누르세요.">${ctx.escapeHtml(start.nextAction||'')}</textarea></div></div>
+      <div class="grid2" style="margin-top:14px">
+        <div class="field"><label>1. 현재 출발점</label><p class="help">AI가 정리한 현재 상태가 자동으로 들어갑니다. 사실과 다르면 직접 고치세요.</p><textarea id="careerStartStatement" placeholder="AI 결과를 붙여넣고 ‘핵심내용 자동 정리’를 누르세요.">${ctx.escapeHtml(start.statement||'')}</textarea></div>
+        <div class="field"><label>2. 지금 활용 가능한 자산</label><p class="help">이미 해본 경험·준비·도움이 되는 자원을 짧게 정리합니다.</p><textarea id="careerStartAssets" placeholder="예: 수업 프로젝트 경험, 엑셀 기초, 관심 직무 정보 탐색 경험">${ctx.escapeHtml(start.assets||'')}</textarea></div>
+        <div class="field"><label>3. 먼저 보완할 GAP</label><p class="help">지금 가장 막히는 부분 하나를 적습니다.</p><textarea id="careerStartGap" placeholder="예: 희망 직무가 아직 넓고 실제 공고를 본 적이 거의 없음">${ctx.escapeHtml(start.gap||'')}</textarea></div>
+        <div class="field"><label>4. 이번 주 내가 직접 할 1가지</label><p class="help">이번 주 안에 실행 여부를 확인할 수 있는 행동 1개만 남깁니다.</p><textarea id="careerStartAction" placeholder="예: 관심 직무 채용공고 3개를 찾아 공통 업무를 메모하기">${ctx.escapeHtml(start.nextAction||'')}</textarea></div>
+      </div>
     </div>
 
     ${c.researchMeasures?`<div class="stepLabel measureStepLabel">⑥</div>${renderMeasurePanel(ctx,'pre')}`:''}
@@ -84,7 +89,15 @@ export async function render(ctx){
   document.getElementById('copyCodeBtn').addEventListener('click',async()=>{const code=document.getElementById('anonCode').textContent;if(!code.startsWith('JF26-')){ctx.toast('익명코드를 먼저 생성해 주세요.');return}try{await navigator.clipboard.writeText(code);ctx.toast('익명코드를 복사했습니다.')}catch{ctx.toast('코드를 길게 눌러 직접 복사해 주세요.')}});
   document.getElementById('makeStartPrompt').addEventListener('click',()=>{const box=document.getElementById('startPromptBox');box.textContent=makeStartPrompt();box.classList.remove('hidden');document.getElementById('copyStartPrompt').classList.remove('hidden')});
   document.getElementById('copyStartPrompt').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(document.getElementById('startPromptBox').textContent);ctx.toast('AI LAB 00 프롬프트를 복사했습니다.')}catch{ctx.toast('복사가 차단되었습니다. 직접 선택해 복사해 주세요.')}});
-  document.getElementById('parseCheckinResult').addEventListener('click',()=>{const raw=v('careerCheckinResult'),parts=parseCheckinResult(raw),status=document.getElementById('checkinParseStatus');if(!raw){status.textContent='먼저 AI의 최종 결과를 붙여넣으세요.';return}if(parts.statement)document.getElementById('careerStartStatement').value=parts.statement;if(parts.action)document.getElementById('careerStartAction').value=parts.action;status.textContent=parts.statement&&parts.action?'출발점과 실행행동을 자동으로 정리했습니다. 내용이 사실과 맞는지 확인하세요.':'일부 항목을 찾지 못했습니다. 아래 두 칸에 필요한 내용을 직접 복사해 주세요.';ctx.toast('AI 결과를 정리했습니다.');});
+  document.getElementById('parseCheckinResult').addEventListener('click',()=>{
+    const raw=v('careerCheckinResult'),parts=parseCheckinResult(raw),status=document.getElementById('checkinParseStatus');
+    if(!raw){status.textContent='먼저 AI의 최종 결과를 붙여넣으세요.';return}
+    const fields=[['statement','careerStartStatement'],['assets','careerStartAssets'],['gap','careerStartGap'],['action','careerStartAction']];
+    let found=0;
+    fields.forEach(([key,id])=>{if(parts[key]){const el=document.getElementById(id);if(el)el.value=parts[key];found++;}});
+    status.textContent=found===4?'핵심내용 4개를 자동으로 정리했습니다. 사실과 맞는지만 확인하세요.':found?('핵심내용 '+found+'개를 찾았습니다. 비어 있는 칸만 직접 확인해 주세요.'):'항목 제목을 찾지 못했습니다. AI 결과 전체를 다시 붙여넣거나 아래 칸에 직접 입력해 주세요.';
+    ctx.toast(found?'AI 결과를 정리했습니다.':'자동 정리 형식을 확인해 주세요.');
+  });
   document.getElementById('saveStart').addEventListener('click',save);
   document.getElementById('backupNowBtn').addEventListener('click',()=>{save(false);ctx.downloadJSON();renderBackupStatus();});
   document.getElementById('shareBackupBtn').addEventListener('click',async()=>{save(false);await ctx.shareBackup();renderBackupStatus();});
@@ -104,29 +117,36 @@ export async function render(ctx){
   function makeStartPrompt(){return `너는 대학생 취업·진로 코치다. 아래 정보는 내가 직접 입력한 현재 상태다. 이 정보 밖의 경험이나 성향을 지어내지 마라.\n\n[현재 상태]\n- 희망직무 결정 정도: ${v('jobDecision')||'미입력'}\n- 희망산업 결정 정도: ${v('industryDecision')||'미입력'}\n- 취업준비 단계: ${v('prepStage')||'미입력'}\n- 인턴·현장실습 경험: ${v('internship')||'미입력'}\n- 실제 입사지원 경험: ${v('priorApplication')||'미입력'}\n- 생성형 AI 사용빈도: ${v('aiFrequency')||'미입력'}\n- 취업준비 AI 사용경험: ${v('aiCareerUse')||'미입력'}\n\n지금부터 내 진로·취업 시작점을 확인하기 위해 한 번에 하나씩 질문해 줘. 질문은 최대 4개만 하고, 매 질문은 학생이 구체적인 사실을 답할 수 있도록 짧고 쉽게 작성해라. 답이 막연하면 언제·어디서·무엇을·어떻게 했는지 한 번만 추가 확인하라. 내가 답하지 않은 내용은 추측하지 마라. 반드시 ① 관심 있는 일이나 직무와 그 이유, ② 직접 해본 경험과 맡은 행동, ③ 가장 막막한 부분, ④ 이번 학기에 얻고 싶은 변화를 확인해라.\n\n질문이 끝나면 내가 말한 사실만 사용해 아래 제목과 순서를 정확히 지켜 정리해 줘. 각 항목은 1~2문장으로 작성하고 근거 없는 성격·역량·직무 적합성은 단정하지 마라.\n1. 현재 Career Starting Point\n2. 지금 활용 가능한 자산\n3. 가장 먼저 보완할 GAP\n4. 이번 주 내가 직접 실행할 행동\n\n4번은 이번 주 안에 실행 여부를 확인할 수 있는 구체적인 행동 1개로 작성해라. 문장은 과장하지 말고 대학생인 내가 실제로 말할 법한 표현으로 써 줘.`}
 
   function parseCheckinResult(raw){
-    const clean=String(raw||'').replace(/\r/g,'').replace(/\*\*/g,'').replace(/^\s*#{1,6}\s*/gm,'').trim();
+    const clean=String(raw||'')
+      .replace(/\r/g,'')
+      .replace(/\*\*/g,'')
+      .replace(/^\s*#{1,6}\s*/gm,'')
+      .replace(/^\s*>\s?/gm,'')
+      .trim();
+    const normalized=clean.replace(/\s+(?=(?:[1-4][.)]|[①-④])\s*(?:현재|지금|가장|먼저|이번|Career))/g,'\n');
     const rules=[
-      ['statement',/^\s*(?:(?:1[.)]?|①)\s*)?(?:현재\s*)?(?:Career\s*Starting\s*Point|출발점|지금의\s*나|현재\s*상태)\s*[:：-]?\s*(.*)$/i],
-      ['assets',/^\s*(?:(?:2[.)]?|②)\s*)?(?:지금\s*)?(?:활용\s*가능한\s*자산|활용할\s*수\s*있는\s*자산|나의\s*자산)\s*[:：-]?\s*(.*)$/i],
-      ['gap',/^\s*(?:(?:3[.)]?|③)\s*)?(?:가장\s*)?(?:먼저\s*)?(?:보완할\s*GAP|보완할\s*점|막막한\s*부분|우선\s*보완사항)\s*[:：-]?\s*(.*)$/i],
-      ['action',/^\s*(?:(?:4[.)]?|④)\s*)?(?:이번\s*주\s*)?(?:내가\s*직접\s*)?(?:실행할\s*행동|실행행동|할\s*일|다음\s*행동)\s*[:：-]?\s*(.*)$/i]
+      ['statement',/^\s*(?:[✅🔹🔸📌🎯💡🧭]\s*)?(?:(?:1[.)]?|①)\s*)?(?:현재\s*)?(?:Career\s*Starting\s*Point(?:\s*\([^)]*\))?|출발점|현재\s*출발점|지금의\s*나|현재\s*상태)\s*[:：\-–—]?\s*(.*)$/iu],
+      ['assets',/^\s*(?:[✅🔹🔸📌🎯💡🧭]\s*)?(?:(?:2[.)]?|②)\s*)?(?:지금\s*)?(?:활용\s*가능한\s*자산|활용할\s*수\s*있는\s*자산|나의\s*자산|보유\s*자산)\s*[:：\-–—]?\s*(.*)$/iu],
+      ['gap',/^\s*(?:[✅🔹🔸📌🎯💡🧭]\s*)?(?:(?:3[.)]?|③)\s*)?(?:가장\s*)?(?:먼저\s*)?(?:보완할\s*GAP|우선\s*GAP|보완할\s*점|막막한\s*부분|우선\s*보완사항)\s*[:：\-–—]?\s*(.*)$/iu],
+      ['action',/^\s*(?:[✅🔹🔸📌🎯💡🧭]\s*)?(?:(?:4[.)]?|④)\s*)?(?:이번\s*주\s*)?(?:내가\s*직접\s*)?(?:실행할\s*행동|실행\s*행동|실행행동|할\s*일|다음\s*행동)\s*[:：\-–—]?\s*(.*)$/iu]
     ];
     const buckets={statement:[],assets:[],gap:[],action:[]};let current='';
-    for(const rawLine of clean.split('\n')){
-      const line=rawLine.trim();if(!line)continue;
+    for(const rawLine of normalized.split('\n')){
+      const line=rawLine.trim().replace(/^[•·\-*]\s*/,'');if(!line)continue;
       const hit=rules.map(([key,rx])=>[key,line.match(rx)]).find(([,m])=>m);
       if(hit){current=hit[0];if(hit[1][1]?.trim())buckets[current].push(hit[1][1].trim());continue}
-      if(current)buckets[current].push(line.replace(/^[•·\-*]\s*/,'').trim());
+      if(current&&!/^(?:[1-4][.)]?|[①-④])\s/.test(line))buckets[current].push(line.trim());
     }
     const compact=arr=>arr.filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
     const result={statement:compact(buckets.statement),assets:compact(buckets.assets),gap:compact(buckets.gap),action:compact(buckets.action)};
-    if(result.statement||result.action)return result;
-    const fallback=clean.split(/\n(?=\s*(?:[1-4][.)]?|[①-④])\s*)/).map(x=>x.trim()).filter(Boolean);
+    if(Object.values(result).filter(Boolean).length>=2)return result;
+    const fallback=normalized.split(/\n(?=\s*(?:[1-4][.)]?|[①-④])\s*)/).map(x=>x.trim()).filter(Boolean);
     fallback.forEach(part=>{
-      if(/^(?:1[.)]?|①)/.test(part))result.statement=compact([part.replace(/^(?:1[.)]?|①)\s*[^\n:：-]*[:：-]?\s*/,'')]);
-      if(/^(?:2[.)]?|②)/.test(part))result.assets=compact([part.replace(/^(?:2[.)]?|②)\s*[^\n:：-]*[:：-]?\s*/,'')]);
-      if(/^(?:3[.)]?|③)/.test(part))result.gap=compact([part.replace(/^(?:3[.)]?|③)\s*[^\n:：-]*[:：-]?\s*/,'')]);
-      if(/^(?:4[.)]?|④)/.test(part))result.action=compact([part.replace(/^(?:4[.)]?|④)\s*[^\n:：-]*[:：-]?\s*/,'')]);
+      const body=part.replace(/^(?:[1-4][.)]?|[①-④])\s*/,'');
+      if(/^(?:현재|Career)/i.test(body)&&!result.statement)result.statement=body;
+      else if(/^(?:지금\s*)?(?:활용|자산)/.test(body)&&!result.assets)result.assets=body;
+      else if(/^(?:가장\s*)?(?:먼저\s*)?(?:보완|GAP|막막)/i.test(body)&&!result.gap)result.gap=body;
+      else if(/^(?:이번\s*주|실행|할\s*일|다음\s*행동)/.test(body)&&!result.action)result.action=body;
     });
     return result;
   }
@@ -135,7 +155,7 @@ export async function render(ctx){
     const current=ctx.getState(),profile={...current.profile,courseCode:v('courseCode')||c.course||current.profile?.courseCode||'',institution:c.institution||v('institution')||current.profile?.institution||'',age:v('age'),gender:v('gender'),grade:v('grade'),major:v('major'),majorGroup:v('majorGroup'),enrollmentStatus:v('enrollmentStatus'),graduationPlan:v('graduationPlan'),gpaBand:v('gpaBand')};
     const baseline={...current.baseline,jobDecision:v('jobDecision'),industryDecision:v('industryDecision'),prepStage:v('prepStage'),internship:v('internship'),careerProgram:v('careerProgram'),certificate:v('certificate'),priorApplication:v('priorApplication'),workExperience:v('workExperience'),aiFrequency:v('aiFrequency'),aiTools:v('aiTools'),aiCareerUse:v('aiCareerUse'),aiRule:DEFAULT_AI_CAREER_RULE};
     const parsed=parseCheckinResult(v('careerCheckinResult'));
-    ctx.saveState({profile,baseline,artifacts:{careerStartProfile:{jobDecision:baseline.jobDecision,industryDecision:baseline.industryDecision,prepStage:baseline.prepStage,aiRule:baseline.aiRule,aiResult:v('careerCheckinResult'),statement:v('careerStartStatement'),assets:parsed.assets,gap:parsed.gap,nextAction:v('careerStartAction'),updatedAt:new Date().toISOString()}}});
+    ctx.saveState({profile,baseline,artifacts:{careerStartProfile:{jobDecision:baseline.jobDecision,industryDecision:baseline.industryDecision,prepStage:baseline.prepStage,aiRule:baseline.aiRule,aiResult:v('careerCheckinResult'),statement:v('careerStartStatement'),assets:v('careerStartAssets')||parsed.assets,gap:v('careerStartGap')||parsed.gap,nextAction:v('careerStartAction'),updatedAt:new Date().toISOString()}}});
     if(show){const missing=[];if(!current.profile?.anonCode&&!document.getElementById('anonCode').textContent.startsWith('JF26-'))missing.push('익명코드');if(!profile.age||!profile.grade)missing.push('기본정보');if(!baseline.jobDecision||!baseline.prepStage)missing.push('준비상태');document.getElementById('status').textContent=missing.length?`저장했습니다. 아직 확인할 항목: ${missing.join(' · ')}`:'Career Start가 저장되었습니다. PRE 측정과 백업 보관까지 확인하세요.';ctx.toast('Career Start 저장 완료');}
   }
   function renderBackupStatus(){const meta=ctx.getState().meta||{},made=!!meta.lastBackupAt,done=!!meta.backupConfirmed,fileStatus=document.getElementById('backupFileStatus'),completeState=document.getElementById('backupCompleteState'),check=document.getElementById('backupStoredCheck');if(fileStatus)fileStatus.textContent=made?`백업파일 생성됨 · ${formatTime(meta.lastBackupAt)} · ${meta.lastBackupMethod==='share'?'공유':'다운로드'}`:'아직 이번 백업파일을 만들지 않았습니다.';if(check)check.checked=done;if(completeState){completeState.classList.toggle('done',done);completeState.innerHTML=done?'<b>백업 확인 ✓</b><span>다른 기기에서는 이 JSON 파일을 ‘백업 불러오기’로 복구할 수 있습니다.</span>':'<b>선택 확인</b><span>기기 밖 보관을 권장하지만 체크하지 않아도 다음 단계로 진행할 수 있습니다.</span>'}}
