@@ -1,6 +1,7 @@
 import {prepareResearchMeasures,renderMeasurePanel,bindMeasurePanel} from '../researchMeasures.js?v=2';
 
 export async function render(ctx){
+  const displayStep=ctx.displayStep??13;
   if(ctx.courseConfig.researchMeasures)await prepareResearchMeasures(ctx);
   const s=ctx.getState(),jd=s.artifacts?.jdAnalyzer||{postings:[],selectedId:''},posting=jd.postings?.find(x=>x.id===jd.selectedId)||jd.postings?.[0];
   const saved=s.artifacts?.jobPortfolio||{positioning:'',gap:'',plan30:'',plan90:'',finalChecks:{gate:false,jd:false,facts:false,consistency:false,ready:false}};
