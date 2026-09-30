@@ -57,14 +57,45 @@ export async function render(ctx){
         <div class="field"><label>분석할 JD</label><select id="chosenSource"></select></div>
         <div id="chosenPreview" class="callout info" style="margin-top:10px"></div>`)}
 
-      ${block('04','GAP Match','JD의 Gate·Requirement를 STEP 2 Evidence와 비교합니다. 경험을 다시 입력하지 않습니다.',`
-        <textarea id="deepPrompt" rows="18">${esc(buildPrompt(ctx.getState(),target,a),ctx)}</textarea>
-        <div class="actions"><button class="btn secondary" id="refreshDeepPrompt">현재 JD 반영</button><button class="btn primary" id="copyDeepPrompt">AI GAP 분석 프롬프트 복사</button></div>
-        <div class="callout info" style="margin-top:12px"><b>AI 결과 한 번에 불러오기</b><br>마지막 JSON 블록을 붙여넣으면 TASK·Gate·Requirement·GAP이 자동 분리됩니다.</div>
-        <textarea id="deepAiImport" rows="8" placeholder="AI 답변의 JSON 블록을 붙여넣으세요."></textarea>
-        <div class="actions"><button class="btn secondary" id="importDeepAi">GAP 분석 불러오기</button></div>
+      ${block('04','선택 직무 AI 분석','선택한 JD의 직무 자체를 먼저 분석합니다. 아직 학생과 비교하지 않습니다.',`
+        <div class="callout info"><b>JD 분석과 GAP 분석을 분리합니다.</b><br>여기서는 선택한 공고에 적힌 업무만 보고 직무를 5개 항목으로 정리합니다. 학생 스펙은 아직 비교하지 않습니다.</div>
+        <textarea id="jobAiPrompt" rows="16">${esc(buildJobAnalysisPrompt(ctx.getState(),target,a),ctx)}</textarea>
+        <div class="actions"><button class="btn secondary" id="refreshJobAiPrompt">현재 JD 반영</button><button class="btn primary" id="copyJobAiPrompt">직무분석 프롬프트 복사</button></div>
+        <div class="field" style="margin-top:12px"><label>AI 직무분석 답변 붙여넣기</label><textarea id="jobAiImport" rows="10" placeholder="[고객·성과기준]&#10;• ...&#10;[주요 과업]&#10;• ...&#10;[주요 해결과제]&#10;• ...&#10;[해결방법]&#10;• ...&#10;[필요역량]&#10;• ..."></textarea></div>
+        <div class="actions"><button class="btn secondary" id="applyJobAi">AI 답변을 직무분석표에 반영</button></div>`)}
+
+      ${block('05','직무분석 테이블 완성','AI 답변을 확인하고 핵심 5개 항목만 남깁니다. 경력개발은 선택입니다.',`
+        <div class="jobAnalysisFields">
+          ${txt('jobCustomerKpi','고객(KPI)',a.jobTable?.customerKpi||'','이 직무의 고객과 성과기준')}
+          ${txt('jobTasks','주요 과업',a.jobTable?.tasks||'','신입이 실제로 반복 수행하는 일')}
+          ${txt('jobChallenge','주요 해결과제',a.jobTable?.challenge||'','업무에서 해결해야 하는 문제')}
+          ${txt('jobMethod','해결방법',a.jobTable?.method||'','방법·절차·도구')}
+          ${txt('jobCompetencies','필요역량',a.jobTable?.competencies||'','지식·기술·행동')}
+          ${txt('jobCareerPlan','경력개발 · 선택',a.jobTable?.careerPlan||'','신입 초기 → 전문성 확장 방향')}
+        </div>`)}
+
+      ${block('06','완성된 직무분석표','GAP 분석 전에 내가 선택한 직무를 한눈에 확인합니다.',`
+        <div id="jobAnalysisPreview">${jobTablePreviewHtml(a,ctx)}</div>`)}
+
+      ${block('07','My Spec','GAP 분석 전에 현재 스펙을 직접 확인합니다. 빈칸은 없음이 아니라 미확인입니다.',`
+        <div class="callout info"><b>해당 사항이 없으면 ‘없음’이라고 입력하세요.</b><br>자격증·어학·도구/기술을 확인해야 GAP 분석을 시작합니다. STEP 2의 사실확인된 경험은 자동으로 연결됩니다.</div>
+        <div class="grid3" style="margin-top:12px">
+          ${txt('specCertificates','자격증',a.studentSpec?.certificates||'','예: ADsP / 준비 중 / 없음')}
+          ${txt('specLanguage','어학',a.studentSpec?.language||'','예: TOEIC 820 / OPIc IM2 / 없음')}
+          ${txt('specTools','도구·기술',a.studentSpec?.tools||'','예: Excel, Python, Figma / 없음')}
+        </div>
+        <div class="field" style="margin-top:10px"><label>추가 포트폴리오·프로젝트 <span class="muted">(선택)</span></label><textarea id="specPortfolio" placeholder="STEP 2에 없지만 직무와 연결되는 프로젝트·포트폴리오가 있으면 적으세요.">${esc(a.studentSpec?.portfolio||'',ctx)}</textarea></div>
+        <div id="specReady" class="callout ${specReady(a)?'good':'warn'}" style="margin-top:10px">${specReady(a)?'<b>GAP 분석 준비 완료</b><br>입력한 스펙과 STEP 2 경험만 사용합니다.':'<b>GAP 분석 전 확인 필요</b><br>자격증·어학·도구/기술을 모두 입력하세요. 해당 사항이 없으면 ‘없음’이라고 적으세요.'}</div>`)}
+
+      ${block('08','GAP Match','JD Requirements × My Spec을 비교해 실제로 보완할 것만 남깁니다.',`
+        <div class="callout info"><b>AI 답변은 짧은 개조식으로 받습니다.</b><br>JSON·표·긴 설명 없이 ‘내가 가진 것 / 확인 필요 / 핵심 GAP / 3개월 행동’만 받습니다.</div>
+        <textarea id="deepPrompt" rows="16">${esc(buildPrompt(ctx.getState(),target,a),ctx)}</textarea>
+        <div class="actions"><button class="btn secondary" id="refreshDeepPrompt">현재 JD·직무분석·내 스펙 반영</button><button class="btn primary" id="copyDeepPrompt" ${specReady(a)&&jobTableReady(a)?'':'disabled'}>AI GAP 분석 프롬프트 복사</button></div>
+        <div class="callout info" style="margin-top:12px"><b>AI 답변 붙여넣기</b><br>아래 칸에는 AI가 작성한 짧은 개조식 결과만 붙여넣으세요.</div>
+        <textarea id="deepAiImport" rows="10" placeholder="[내가 가진 것]&#10;• ...&#10;[확인 필요]&#10;• ...&#10;[핵심 GAP]&#10;• GAP 1: ...&#10;[3개월 행동]&#10;• ..."></textarea>
+        <div class="actions"><button class="btn secondary" id="importDeepAi" ${specReady(a)&&jobTableReady(a)?'':'disabled'}>GAP 결과 반영</button></div>
         <div id="gapSummary" style="margin-top:12px"></div>
-        <div class="actions"><button class="btn primary" id="saveDeep">GAP Match 저장</button><button class="btn secondary" id="nextStep">STEP 5 MY JOBFIT REPORT v1 →</button></div>
+        <div class="actions"><button class="btn primary" id="saveDeep">GAP Match 저장</button><button class="btn secondary" id="nextStep">STEP 6 MY JOBFIT REPORT v1 →</button></div>
         <div class="status" id="status"></div>`)}
     `;
     bind(target,a);renderSources(target,a);renderChosen(a);renderGap(a);
