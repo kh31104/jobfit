@@ -340,18 +340,26 @@ try{
   assert(portfolio.includes('현재 확인된 근거'),'Portfolio must use derived evidence instead of a duplicate strengths input');
 
   const selfPrompt=await page.locator('#selfIntroPromptPreview').inputValue();
-  const interviewPrompt=await page.locator('#interviewPromptPreview').inputValue();
+  let interviewPrompt=await page.locator('#interviewPromptPreview').inputValue();
   assert(selfPrompt.includes('한국에너지공단 2026 자기소개서 실제 문항'),'KEA self-intro prompt must use official questions');
   assert(selfPrompt.includes('미래성장동력'),'KEA self-intro prompt must include the official contribution question');
   assert(selfPrompt.includes('블라인드'),'KEA self-intro prompt must include blind-writing rules');
   assert(selfPrompt.includes('연결할 공식 NCS/업무축'),'KEA self-intro prompt must map each story to the selected official role');
   assert(selfPrompt.includes('개조식'),'Self-intro prompt must request bullet-style output');
-  assert(interviewPrompt.includes('총 12개의 실무면접 예상질문'),'Interview prompt must request practical interview questions');
+  assert(await page.locator('#interviewModeSelect').inputValue()==='6','STEP6 must default to the 6-question practical interview mode');
+  assert(interviewPrompt.includes('현재 모드: 6문항 실전면접 모드'),'Interview prompt must start in the practical 6-question mode');
+  assert(interviewPrompt.includes('한 번에 질문 하나만'),'Interview prompt must reveal only one interview question at a time');
+  assert(interviewPrompt.includes('추가질문은 최대 3회'),'Interview prompt must cap follow-up questions at three');
+  assert(interviewPrompt.includes('[답변 피드백]'),'Interview prompt must provide feedback after each base question');
   assert(interviewPrompt.includes('직무수행능력면접 60점'),'Interview prompt must reflect KEA interview evaluation');
-  assert(interviewPrompt.includes('발표면접 예상 주제 · 2문항'),'KEA interview prompt must reflect the presentation-interview format');
   assert(interviewPrompt.includes('공정의 연료·에너지 흐름'),'KEA interview prompt must use the selected chemical/environment role question axis');
-  assert(interviewPrompt.includes('공식 근거: NCS/직무수행내용/필요지식/필요기술/직무수행태도'),'KEA interview prompt must trace questions to official evidence');
-  assert(interviewPrompt.includes('예상 꼬리질문'),'Interview prompt must include follow-up questions');
+  assert(interviewPrompt.includes('[실전면접 Q1/6]'),'Practical mode must begin with Q1/6 and wait for the student answer');
+
+  await page.locator('#interviewModeSelect').selectOption('12');
+  interviewPrompt=await page.locator('#interviewPromptPreview').inputValue();
+  assert(interviewPrompt.includes('현재 모드: 12문항 심화모드'),'STEP6 must switch to the 12-question deep interview mode');
+  assert(interviewPrompt.includes('[실전면접 Q1/12]'),'Deep mode must begin with Q1/12');
+  assert(interviewPrompt.includes('기본질문 12개를 모두 마치면'),'Deep mode must terminate after twelve base questions');
 
   await page.locator('[data-path="ai.selfIntroResult"]').fill('• 문항별 소재배치 저장 테스트');
   await page.locator('[data-path="ai.interviewResult"]').fill('• Q1 화공·환경 실무질문 저장 테스트');
@@ -364,6 +372,7 @@ try{
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:flexlab:job-analysis:v1')));
   assert(saved.version===11,'FLEX state version must be 11');
   assert(saved.sampleJobId==='kea-2026-h2','Selected KEA target must persist');
+  assert(saved.interviewMode==='12','Selected STEP6 interview mode must persist');
 
   console.log('FLEX role-specific KEA/HD Electric + browser persistence flow: PASS');
 }finally{
