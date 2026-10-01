@@ -425,6 +425,7 @@ const defaults=()=>({
   requirements:emptyRequirements(),
   matchRows:[0,1,2].map(emptyMatch),
   fit:emptyFit(),
+  interviewMode:"6",
   promptDrafts:{search:"",job:"",keyword:"",gap:"",selfIntro:"",interview:""},
   ai:{keywordResult:"",gapResult:"",selfIntroResult:"",interviewResult:""}
 });
@@ -1944,85 +1945,178 @@ function selfIntroPrompt(){
   ].filter(Boolean).join("\n");
 }
 
+function interviewQuestionCount(){
+  return state.interviewMode==="12"?12:6;
+}
+
 function interviewPrompt(){
   const j=selectedCuratedJob(), rd=j?.roleData||selectedRoleData()||{}, e=state.experiences[state.selectedExperience]||emptyExperience();
   const isKea=state.sampleJobId==="kea-2026-h2";
   const isHd=state.sampleJobId==="hdelectric-2026-h2";
   const keaGuide=isKea?keaRolePromptGuide(j?.selectedRole):null;
+  const total=interviewQuestionCount();
+  const modeLabel=total===12?"12문항 심화모드":"6문항 실전면접 모드";
   return [
-    "너는 "+(j?.company||"지원 기업")+"의 "+(j?.selectedRole||j?.role||state.target.job||"지원 직무")+" 실무면접관이다.",
-    "아래 공식 직무정보와 지원자의 실제 근거를 바탕으로 직무별 예상질문을 만들어줘.",
+    "너는 지금부터 내가 지원하려는 기업의 해당 직무를 담당하는 실무면접관이다.",
+    "아래에 제공되는 기업·직무정보와 내가 실제로 입력한 경험·전공·역량·GAP만 사용하여 실전 모의면접을 진행해라.",
     "",
-    "[기업/공고]",
-    j?(j.company+" / "+j.title):"-",
-    "[선택 직무]",
-    j?.role||state.target.job||"-",
-    "[공식 직무수행내용/직무소개]",
+    "[지원 기업·직무]",
+    (j?.company||"지원 기업")+" / "+(j?.selectedRole||j?.role||state.target.job||"지원 직무"),
+    "",
+    "[공식 직무정보]",
     rd.tasks||state.jobTable.tasks||"-",
-    "[공식 필요지식]",
-    rd.knowledge||"-",
-    "[공식 필요기술]",
-    rd.skills||"-",
-    "[직무수행태도]",
-    rd.attitudes||"-",
-    rd.preferred?"[공식 우대사항]\n"+rd.preferred:"",
-    rd.exam?"[직무별 전공시험 범위]\n"+rd.exam:"",
-    isKea?"[한국에너지공단 면접평가]\n"+KEA_COMMON_RECRUITMENT.interview:"",
-    isKea?"[선택 직무 질문 설계축]\n"+keaGuide.interview:"",
+    "",
+    "[공식 필요지식·기술·태도]",
+    "필요지식: "+(rd.knowledge||"-"),
+    "필요기술: "+(rd.skills||"-"),
+    "직무수행태도: "+(rd.attitudes||"-"),
+    "",
+    "[공식 우대사항·지원조건]",
+    (rd.preferred||j?.preferred||"-"),
+    j?.recruitmentInfo||"",
+    rd.exam?"전공시험 범위: "+rd.exam:"",
+    isKea?"한국에너지공단 면접평가: "+KEA_COMMON_RECRUITMENT.interview:"",
+    isKea?"선택 직무 질문 설계축: "+keaGuide.interview:"",
     "",
     "[내 직무분석]",
-    "과업: "+(state.jobTable.tasks||"-"),
-    "해결과제: "+(state.jobTable.challenge||"-"),
+    "고객·KPI: "+(state.jobTable.customerKpi||"-"),
+    "주요 과업: "+(state.jobTable.tasks||"-"),
+    "주요 해결과제: "+(state.jobTable.challenge||"-"),
     "해결방법: "+(state.jobTable.method||"-"),
     "필요역량: "+(state.jobTable.competencies||"-"),
+    "",
     "[내 전공]",
     state.student.major||"-",
-    "[전공에서 찾은 근거]",
+    "",
+    "[전공에서 찾은 직무 근거]",
     state.student.majorEvidence||"-",
+    "",
     "[대표 경험]",
     e.title||state.star.experience||"-",
-    "[내가 한 행동]",
+    "S 상황: "+(state.star.situation||"-"),
+    "T 역할·과제: "+(state.star.task||"-"),
+    "",
+    "[내가 실제로 한 행동]",
     state.star.actionWhat||"-",
-    "[결과/증거]",
-    (state.star.result||"-")+" / "+(state.star.evidence||"-"),
-    "[현재 GAP과 준비]",
-    (state.fit.gaps||"-")+" / "+(state.fit.actions||"-"),
+    "판단 이유: "+(state.star.actionWhy||"-"),
+    "실행 방식·도구: "+(state.star.actionHow||"-"),
     "",
-    "총 12개의 실무면접 예상질문을 만들어줘.",
-    isKea
-      ?"한국에너지공단의 실제 평가구조를 반영해 직무수행능력(직무이해·지식·기술·태도) 질문과 직업공통능력(의사소통·대인관계·직업윤리) 경험/상황 질문을 모두 포함해줘."
-      :isHd
-        ?"HD현대일렉트릭의 선택 직무에서 실제 수행하는 업무를 중심으로 설계·품질·시스템·HR·영업·기술전략 중 해당 직무에 맞는 상황을 만들어 질문해줘."
-        :"선택 직무의 실제 업무 중심 질문을 만들어줘.",
-    "공식 자료에 없는 세부 기술을 활용할 경우 [일반 직무지식]이라고 표시하고 회사 내부사실처럼 표현하지 마.",
-    "학생이 입력하지 않은 경험이나 성과를 있다고 가정하지 마.",
+    "[결과·Evidence]",
+    "결과: "+(state.star.result||"-"),
+    "Evidence: "+(state.star.evidence||"-"),
     "",
-    isKea?"아래 5개 영역으로 정확히 나눠줘.":"아래 5개 영역으로 나눠줘.",
-    isKea?"[1. 발표면접 예상 주제 · 2문항]":"[1. 직무이해·실무지식 · 4문항]",
-    isKea?"• 선택 직무의 공식 NCS·직무수행내용을 기반으로 3~5분 발표가 가능한 실무 주제를 제시하고 발표 후 예상 질의도 포함":"• 공식 업무의 목적·절차·도구/설비·기준을 이해했는지 확인",
-    isKea?"[2. 직무지식·기술 심층 · 3문항]":"[2. 문제상황·판단 · 3문항]",
-    isKea?"• 공식 필요지식·필요기술·전공시험 범위를 연결해 단순 암기보다 적용과 판단을 묻는다.":"• 선택 직무에서 발생할 수 있는 오류·품질·일정·고객·안전·데이터 문제 중 해당되는 상황만 사용",
-    isKea?"[3. 문제상황·판단 · 3문항]":"[3. 전공·기술 적용 · 2문항]",
-    isKea?"• 선택 직무 질문 설계축에서 실제로 발생 가능한 상황을 사용하고, 무엇을 먼저 확인하고 어떤 기준으로 판단할지 묻는다.":"• 내 전공 수업·실험·도구를 선택 직무에 어떻게 적용할지 확인",
-    isKea?"[4. 경험·직업공통능력 · 3문항]":"[4. 경험 검증 · 2문항]",
-    isKea?"• 대표 경험을 의사소통·대인관계·직업윤리와 연결해 실제 역할·행동·판단근거·결과를 검증한다.":"• 대표 경험의 실제 역할·행동·판단근거·결과를 검증",
-    "[5. 직무준비·GAP · 1문항]",
-    "• 부족한 부분을 어떻게 학습·보완하고 있는지 확인",
+    "[현재 확인된 직무역량]",
+    state.star.competency||state.ai.keywordResult||"-",
     "",
-    "각 질문은 반드시 아래 형식으로 작성해줘.",
-    "[Q1. 질문 유형]",
-    "• 예상 질문:",
-    "• 질문 의도:",
-    "• 연결된 공식 업무/역량:",
-    isKea?"• 공식 근거: NCS/직무수행내용/필요지식/필요기술/직무수행태도 중 해당 항목":"",
-    "• 답변에 연결할 내 근거:",
-    "• 예상 꼬리질문:",
-    "• 근거 구분: [공고/직무기술서] / [일반 직무지식] / [내 경험]",
+    "[현재 GAP]",
+    state.fit.gaps||"-",
     "",
-    isKea?"한국에너지공단 질문 12개 중 최소 8개는 선택 직무의 공식 NCS·직무수행내용·필요지식·필요기술에 직접 연결하고, 다른 직무의 세부내용을 섞지 않는다.":"",
-    "답변 예시나 모범답안은 쓰지 않는다. 학생이 자기 답을 준비할 수 있도록 질문·의도·근거만 제시한다.",
-    ...bulletOutputRules()
+    "[보완 계획]",
+    state.fit.actions||"-",
+    "",
+    "━━━━━━━━━━━━━━━━━━",
+    "[실전 모의면접 진행 방식]",
+    "━━━━━━━━━━━━━━━━━━",
+    "",
+    "현재 모드: "+modeLabel,
+    "기본 면접질문 수: "+total+"문항",
+    "추가질문·꼬리질문은 기본 "+total+"문항 수에 포함하지 않는다.",
+    total===6
+      ?"6문항 실전면접 모드에서는 핵심 영역을 빠르게 점검한다: 직무이해 / 직무지식·기술 / 문제상황·판단 / 실제 경험 / 협업·의사소통 / GAP·준비."
+      :"12문항 심화모드에서는 직무이해·지식·기술·문제상황·전공적용·경험검증·협업·직업공통능력·직무준비를 더 깊게 나누어 확인한다.",
+    "",
+    "지금부터 실제 면접처럼 진행한다.",
+    "",
+    "중요:",
+    "처음부터 전체 예상질문 목록을 보여주지 마라.",
+    "반드시 한 번에 질문 하나만 제시하고 내 답변을 기다려라.",
+    "",
+    "1. 먼저 지원 기업과 선택 직무에 맞는 첫 번째 실무면접 질문 하나만 제시한다.",
+    "2. 내가 답하면 다음 네 가지 기준으로 답변이 충분한지 판단한다.",
+    "- 질문에 직접 답했는가",
+    "- 내가 실제로 한 행동이 구체적으로 드러나는가",
+    "- 선택 직무와 연결되는가",
+    "- 결과·근거·판단기준 중 필요한 내용이 확인되는가",
+    "3. 답변이 충분하면 추가질문을 하지 말고 바로 해당 답변에 대한 피드백을 제공한다.",
+    "4. 답변이 부족하거나 모호하면 가장 필요한 내용 하나만 확인하는 꼬리질문 또는 추가질문을 한다.",
+    "5. 추가질문은 한 번에 하나만 한다.",
+    "6. 하나의 최초 질문에 대해 추가질문은 최대 3회까지만 한다.",
+    "7. 3번의 추가질문 이후에도 답변이 충분하지 않다면 더 이상 질문하지 말고 현재까지의 답변을 기준으로 피드백한다.",
+    "8. 학생이 말하지 않은 경험·역할·수치·성과·도구·자격은 만들어내지 않는다.",
+    "9. 학생이 '없다', '모르겠다', '해본 적 없다'고 답하면 그 사실을 그대로 인정한다. 없는 경험을 만들어 답하도록 유도하지 않는다.",
+    "10. 기업 공식자료에 없는 내부 업무나 평가기준은 사실처럼 말하지 않는다.",
+    "",
+    "━━━━━━━━━━━━━━━━━━",
+    "[꼬리질문 원칙]",
+    "━━━━━━━━━━━━━━━━━━",
+    "",
+    "추가질문은 답변의 부족한 부분을 확인하기 위해 사용한다.",
+    "우선순위는 다음과 같다.",
+    "1순위: 본인이 실제로 한 행동",
+    "2순위: 그렇게 판단하거나 행동한 이유",
+    "3순위: 사용한 방법·도구·기준",
+    "4순위: 결과 또는 확인 가능한 Evidence",
+    "5순위: 선택 직무와의 연결",
+    "",
+    "추가질문은 [추가질문 1/3], [추가질문 2/3], [추가질문 3/3]으로 표시한다.",
+    "이미 답한 내용은 다시 묻지 않는다.",
+    "'조금 더 자세히 설명해 주세요'처럼 넓게 묻지 말고 학생의 실제 경험과 선택 직무를 넣어 구체적으로 묻는다.",
+    "",
+    "━━━━━━━━━━━━━━━━━━",
+    "[답변 피드백 방식]",
+    "━━━━━━━━━━━━━━━━━━",
+    "",
+    "답변이 충분해졌거나 추가질문 3회가 끝나면 아래 형식으로 짧게 피드백한다.",
+    "",
+    "[답변 피드백]",
+    "• 잘된 점: 학생의 답변에서 실제로 확인되는 강점을 1~2개만 구체적으로 설명",
+    "• 보완할 점: 면접관 입장에서 아직 부족하거나 불명확한 부분을 1~2개 설명",
+    "• 직무 연결: 이 답변이 선택 직무의 어떤 업무·역량과 연결되는지 설명. 연결이 약하면 '직무 연결 근거가 약함'이라고 표시",
+    "• 답변 정리 방향: 학생이 이미 말한 사실만 사용하여 '상황 → 내가 한 행동 → 판단기준/방법 → 결과 → 직무 연결' 중 무엇을 앞세우면 더 명확한지 안내",
+    "",
+    "완성된 모범답안을 대신 작성하지 마라.",
+    "학생이 자신의 답변을 직접 수정할 수 있게 피드백하라.",
+    "",
+    "━━━━━━━━━━━━━━━━━━",
+    "[다음 질문]",
+    "━━━━━━━━━━━━━━━━━━",
+    "",
+    "피드백이 끝나면 아직 기본질문 "+total+"개를 모두 마치지 않았다면 다음 실무면접 질문 하나만 제시하고 다시 학생의 답변을 기다린다.",
+    "질문은 같은 유형을 반복하지 않는다.",
+    "기본질문 "+total+"개를 모두 마치면 다음 질문을 만들지 말고 [면접 종료 피드백]을 제시한다.",
+    "",
+    "[면접 종료 피드백]",
+    "• 반복해서 잘된 점 2개",
+    "• 가장 먼저 보완할 점 2개",
+    "• 선택 직무와 연결이 가장 강했던 답변 1개",
+    "• 추가 준비가 필요한 직무지식·경험 1~2개",
+    "• 다음 면접 전 연습할 행동 2개",
+    "",
+    "기업별 실제 면접방식이나 공식 평가기준이 제공되어 있다면 그것을 우선 반영한다.",
+    isKea?"한국에너지공단은 공식 NCS·직무수행내용·필요지식·필요기술·직무수행태도와 면접평가 정보를 우선 사용하고 다른 직무의 세부내용을 섞지 않는다.":"",
+    isHd?"HD현대일렉트릭은 선택 직무의 공식 직무소개와 우대사항을 우선 사용하고, 공식자료에 없는 내용은 [일반 직무지식] 수준으로만 사용한다.":"",
+    "공식 자료에 없는 세부 기술을 질문에 활용할 경우 [일반 직무지식]이라고 표시하고 회사 내부사실처럼 표현하지 마.",
+    "",
+    "━━━━━━━━━━━━━━━━━━",
+    "[질문 출력 형식]",
+    "━━━━━━━━━━━━━━━━━━",
+    "",
+    "면접을 시작할 때는 설명하지 말고 아래 형식으로 첫 질문 하나만 제시한다.",
+    "",
+    "[실전면접 Q1/"+total+"]",
+    "• 질문: (지원기업과 선택직무에 맞는 질문 한 개)",
+    "",
+    "내 답변을 기다려라.",
+    "내가 답하기 전에는 피드백, 다음 질문, 예상답변, 전체 질문목록을 보여주지 마라."
   ].filter(Boolean).join("\n");
+}
+
+function interviewPromptValue(){
+  const generated=interviewPrompt();
+  const draft=state.promptDrafts?.interview||"";
+  const modeLabel=interviewQuestionCount()===12?"12문항 심화모드":"6문항 실전면접 모드";
+  if(draft.includes("[실전 모의면접 진행 방식]")&&draft.includes("현재 모드: "+modeLabel))return draft;
+  return generated;
 }
 
 function step6(){
@@ -2034,10 +2128,11 @@ function step6(){
       '<div class="actions compactActions"><button class="btn ghost" id="refreshSelfIntroPromptBtn">현재 입력 반영</button><button class="btn secondary" id="copySelfIntroPromptBtn">자기소개서 프롬프트 복사</button></div>'+
       field("ai.selfIntroResult","AI 자기소개서 소재정리 결과 <span class=\"hint\">(선택)</span>","내 AI가 정리한 문항별 소재·핵심역량을 붙여넣으세요. 같은 브라우저에 자동 저장됩니다.")+
     '</div>'+
-    '<div class="block noPrint"><h3>③ 내 AI로 실무면접 예상질문 만들기</h3><p class="help">선택 직무의 공식 업무와 내 전공·경험을 기준으로 예상질문 12개를 만듭니다.</p>'+
-      '<textarea class="promptBox promptEditor shortPrompt" id="interviewPromptPreview" data-prompt-key="interview">'+h(promptValue("interview",interviewPrompt()))+'</textarea>'+
-      '<div class="actions compactActions"><button class="btn ghost" id="refreshInterviewPromptBtn">현재 입력 반영</button><button class="btn secondary" id="copyInterviewPromptBtn">실무면접 예상질문 프롬프트 복사</button></div>'+
-      field("ai.interviewResult","AI 실무면접 예상질문 결과 <span class=\"hint\">(선택)</span>","내 AI가 만든 예상질문을 붙여넣으세요. 같은 브라우저에 자동 저장됩니다.")+
+    '<div class="block noPrint"><h3>③ 내 AI로 실전 모의면접 하기</h3><p class="help">선택 기업·직무와 내 전공·경험·GAP을 바탕으로 AI가 질문을 하나씩 합니다. 답변이 부족하면 꼬리질문을 최대 3회 한 뒤 피드백하고 다음 질문으로 넘어갑니다.</p>'+
+      '<div class="grid2"><div class="field"><label>면접 모드</label><select class="input" id="interviewModeSelect"><option value="6" '+(state.interviewMode!=="12"?"selected":"")+'>6문항 실전면접 모드</option><option value="12" '+(state.interviewMode==="12"?"selected":"")+'>12문항 심화모드</option></select></div><div class="selectedEvidence"><span>진행 방식</span><b>질문 1개 → 답변 → 필요 시 꼬리질문 최대 3회 → 피드백 → 다음 질문</b></div></div>'+
+      '<textarea class="promptBox promptEditor shortPrompt" id="interviewPromptPreview" data-prompt-key="interview">'+h(interviewPromptValue())+'</textarea>'+
+      '<div class="actions compactActions"><button class="btn ghost" id="refreshInterviewPromptBtn">현재 입력 반영</button><button class="btn secondary" id="copyInterviewPromptBtn">AI 실전면접 시작하기</button></div>'+
+      field("ai.interviewResult","AI 실전면접 기록 <span class=\"hint\">(선택)</span>","면접이 끝난 뒤 핵심 피드백이나 면접 기록을 붙여넣으세요. 같은 브라우저에 자동 저장됩니다.")+
     '</div>'+
     '<div class="callout good noPrint"><b>자동 저장</b> STEP 1~6의 입력값과 붙여넣은 AI 결과는 이 브라우저에 저장됩니다. 같은 기기·같은 브라우저로 다시 열면 이어서 사용할 수 있습니다.</div>'+
     '<div class="divider noPrint"></div><div class="exportGrid noPrint"><div class="exportCard"><b>Word용 문서</b><p>직무분석 Portfolio를 Word에서 수정합니다.</p><button class="btn primary" id="docBtn">Word 파일 저장</button></div><div class="exportCard"><b>PDF</b><p>인쇄 화면에서 PDF로 저장합니다.</p><button class="btn secondary" id="printBtn">PDF 저장 화면</button></div><div class="exportCard"><b>학습 백업</b><p>브라우저 저장과 별도로 보관할 JSON입니다.</p><button class="btn secondary" id="jsonBtn2">JSON 백업 저장</button></div></div>'+
@@ -2278,8 +2373,15 @@ function bind(){
   document.getElementById("applyGapResultBtn")?.addEventListener("click",applyGapResult);
   document.getElementById("refreshSelfIntroPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("selfIntroPromptPreview"),v=selfIntroPrompt();if(e)e.value=v;updatePromptDraft("selfIntro",v);toast("현재 입력을 자기소개서 프롬프트에 반영했습니다.");});
   document.getElementById("copySelfIntroPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("selfIntroPromptPreview")?.value||selfIntroPrompt(),"내 자기소개서 프롬프트를 복사했습니다."));
-  document.getElementById("refreshInterviewPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("interviewPromptPreview"),v=interviewPrompt();if(e)e.value=v;updatePromptDraft("interview",v);toast("현재 입력을 면접 프롬프트에 반영했습니다.");});
-  document.getElementById("copyInterviewPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("interviewPromptPreview")?.value||interviewPrompt(),"내 실무면접 예상질문 프롬프트를 복사했습니다."));
+  document.getElementById("interviewModeSelect")?.addEventListener("change",e=>{
+    state.interviewMode=e.target.value==="12"?"12":"6";
+    const p=document.getElementById("interviewPromptPreview"),v=interviewPrompt();
+    if(p)p.value=v;
+    updatePromptDraft("interview",v);
+    toast((state.interviewMode==="12"?"12문항 심화모드":"6문항 실전면접 모드")+"로 바꿨습니다.");
+  });
+  document.getElementById("refreshInterviewPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("interviewPromptPreview"),v=interviewPrompt();if(e)e.value=v;updatePromptDraft("interview",v);toast("현재 입력을 실전면접 프롬프트에 반영했습니다.");});
+  document.getElementById("copyInterviewPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("interviewPromptPreview")?.value||interviewPrompt(),"실전면접 프롬프트를 복사했습니다. AI 채팅창에 붙여넣고 면접을 시작하세요."));
   document.getElementById("docBtn")?.addEventListener("click",exportDoc);
   document.getElementById("printBtn")?.addEventListener("click",()=>window.print());
   document.getElementById("jsonBtn2")?.addEventListener("click",exportJson);
