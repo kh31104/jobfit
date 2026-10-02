@@ -65,17 +65,17 @@ async function run(name,viewport){
 
     await page.locator('.stepBtn[data-step="2"]').click();await page.waitForSelector('#saveRoadmap');
     const week4=(await page.locator('#stepRoot').textContent())||'';
-    const week4Expected=['Career DNA 확인','My Best 3 Experience','STAR 기반 AI Interview','사실확인','역량 확인','Experience Map','Competency Map','My Experience DNA'];
+    const week4Expected=['대표 경험 선택','AI 경험 인터뷰','STAR 사실확인','역량 확인','Experience & Competency Map'];
     const week4Actual=(await page.locator('.experienceCompetencyWeek4 > .block > .moduleHead h3').allTextContents()).map(x=>x.replace(/\s+/g,' ').trim());
-    assert(week4Actual.length===8,`Deployed Week4 must contain exactly 8 modules, found ${week4Actual.length}: ${week4Actual.join(' | ')}`);
+    assert(week4Actual.length===5,`Deployed STEP3 must contain exactly 5 modules, found ${week4Actual.length}: ${week4Actual.join(' | ')}`);
     week4Expected.forEach((title,i)=>assert(week4Actual[i]===title,`Deployed Week4 order mismatch at ${i+1}: expected ${title}, got ${week4Actual[i]||'missing'}`));
     assert(await page.locator('.strengthMeasurePanel').count()===0,'Deployed STEP2 must not render the pre-experience 9-item strength measure');
     assert(await page.locator('#situation').count()===1,'Deployed STEP2 04 must include S Situation field');
     assert(await page.locator('[data-measure="pre-sudco"]').count()===0,'Deployed STEP2 must not render pre-SUDCO items');
     assert(!week4.includes('경험 분석 전 강점행동 9문항'),'Legacy STEP2 9-item strength measure copy remains deployed');
     for(const removed of ['Career Story','Career Theme','Career Direction','1개월 Career Experiment'])assert(!week4.includes(removed),`Removed Week4 module remains deployed: ${removed}`);
-    assert(await page.locator('#makeInterviewPrompt').count()===1,'Week4 evidence interview control missing');
-    assert(await page.locator('#saveRoadmap').count()===1,'Week4 Experience Map save control missing');
+    assert(await page.locator('#makeInterviewPrompt').count()===1,'STEP3 evidence interview control missing');
+    assert(await page.locator('#nextStep').count()===1,'STEP3 → STEP4 handoff control missing');
     await page.locator('#goBest3').click();assert(await page.locator('#best3_best_title').isVisible(),'Deployed 01 → 02 route is broken or detoured');
     if(viewport.width<=480){const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);assert(overflow<=2,`Week4 mobile horizontal overflow detected: ${overflow}px`)}
 
@@ -88,11 +88,11 @@ async function run(name,viewport){
     assert(week6.includes('내가 탐색할 직무 찾기'),'Simplified STEP3 heading missing');
     assert(!week6.includes('내가 이 직무를 어떻게 생각하는가'),'Deleted STEP3 rating/reflection module returned');
     const jobPrompt=await page.locator('#jobPrompt').inputValue();
-    assert(jobPrompt.includes('[STEP 1 Career DNA · 보조근거]'),'STEP3 prompt missing Career DNA bridge');
-    assert(jobPrompt.includes('[STEP 2 경험 근거 · 우선근거]'),'STEP3 prompt missing STEP2 Evidence bridge');
+    assert(jobPrompt.includes('[STEP 2 Career DNA · 보조근거]'),'STEP4 prompt missing Career DNA bridge');
+    assert(jobPrompt.includes('[STEP 3 경험 근거 · 우선근거]'),'STEP4 prompt missing STEP3 Evidence bridge');
     assert(jobPrompt.includes('후보는 4~5개만 제안'),'STEP3 prompt must limit job candidates');
     assert(jobPrompt.includes('특정 산업, 특히 에너지 산업을 기본값으로 두지 않는다'),'STEP3 prompt lost industry-neutral guard');
-    assert(jobPrompt.includes('실제 Task·요구기술·기업조건은 STEP 4에서 공식자료로 확인'),'STEP3→4 validation boundary missing');
+    assert(jobPrompt.includes('실제 Task·요구기술·기업조건은 STEP 5에서 공식자료로 확인'),'STEP4→5 validation boundary missing');
     assert(jobPrompt.includes('적합도 %, 추천순위, 취업성공확률을 만들지 않는다.'),'STEP3 prompt lost no-fit-percentage guard');
     assert(jobPrompt.includes('표 금지.'),'STEP3 prompt must forbid table output');
     assert(jobPrompt.includes('JSON 금지.'),'STEP3 prompt must forbid JSON output');
@@ -121,7 +121,7 @@ async function run(name,viewport){
     step4Expected.forEach((title,i)=>assert(step4Actual[i]===title,`Deployed STEP5 order mismatch at ${i+1}: expected ${title}, got ${step4Actual[i]||'missing'}`));
     assert(step4Body.includes('생산기술 × 자동차·모빌리티'),'STEP3 Target Job did not carry into STEP4');
     assert(!step4Body.includes('My Evidence'),'STEP4 must not expose the removed duplicate My Evidence step');
-    assert(step4Body.includes('STEP 2의 경험근거는 자동으로 불러오고'),'STEP4 should explain that prior evidence is reused automatically');
+    assert(step4Body.includes('STEP 3의 경험근거는 자동으로 불러오고'),'STEP5 should explain that prior evidence is reused automatically');
     assert(await page.locator('.jdSiteLink').count()===5,'STEP4 Find JD must expose five recruitment-site links');
     const jdSites=(await page.locator('.jdSiteGrid').allTextContents()).join(' ');
     for(const name of ['사람인','잡코리아','고용24','잡알리오','클린아이 잡플러스'])assert(jdSites.includes(name),`STEP4 missing recruitment site: ${name}`);
