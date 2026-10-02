@@ -160,6 +160,15 @@ await run('Virtual student can move STEP3 01 to 05 and then STEP4 without detour
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   assert(saved.assessments.experienceCompetency.experiences.some(x=>x.title==='팀 프로젝트'),'Virtual-student experience was not saved');
   assert(saved.assessments.experienceCompetency.experiences.some(x=>x.id==='EXP-OLD'),'Virtual-student route overwrote existing experience data');
+  await page.locator('#nextStep').click();
+  await page.waitForSelector('#jobPrompt');
+  const step4Text=(await page.locator('#stepRoot').textContent())||'';
+  assert(step4Text.includes('내가 탐색할 직무 찾기'),'STEP3 → STEP4 button did not navigate to Job Exploration');
+  assert(step4Text.includes('팀 프로젝트'),'STEP4 did not receive the saved STEP3 experience');
+  assert(step4Text.includes('문제해결'),'STEP4 did not receive the confirmed STEP3 competency');
+  const step4Prompt=await page.locator('#jobPrompt').inputValue();
+  assert(step4Prompt.includes('[STEP 3 경험 근거 · 우선근거]'),'STEP4 prompt is missing the STEP3 evidence bridge');
+  assert(step4Prompt.includes('원자료와 발표자료를 대조해 오류 항목을 수정했다.'),'STEP4 prompt did not carry the verified STEP3 action');
 });
 
 await run('Experience save preserves old data and writes competency evidence map',async page=>{
