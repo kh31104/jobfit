@@ -56,6 +56,32 @@ await run('Week 4 focuses on Experience Map and keeps STEP1 bridge',async page=>
   assert(body.includes('기존 경험'),'Existing experience list must be preserved');
 });
 
+await run('Best3 representative switches to the experience the student actually selects',async page=>{
+  await openFor(page,'#best3_best_title');
+  await page.locator('#best3_best_title').fill('마케팅원론 팀플 고객 설문');
+  await page.locator('#best3_best_summary').fill('설문 문항을 정리하고 응답을 분석했다.');
+  await page.locator('#best3_flow_title').fill('학과 인스타그램 카드뉴스');
+  await page.locator('#best3_flow_summary').fill('카드뉴스와 릴스를 직접 제작하고 게시했다.');
+  await page.locator('#best3_recognition_title').fill('카페 신메뉴 안내판');
+  await page.locator('#best3_recognition_summary').fill('고객 문의를 줄이기 위해 안내판을 제작했다.');
+
+  await page.locator('input[name="representative"][value="best"]').check();
+  await page.locator('#useRepresentative').click();
+  assert(await page.locator('#title').inputValue()==='마케팅원론 팀플 고객 설문','First representative did not load');
+
+  await openFor(page,'#best3_flow_title');
+  await page.locator('input[name="representative"][value="flow"]').check();
+  await page.locator('#useRepresentative').click();
+  assert(await page.locator('#title').inputValue()==='학과 인스타그램 카드뉴스','Switching to flow experience kept the first representative');
+  assert((await page.locator('#context').inputValue()).includes('카드뉴스와 릴스'),'Flow experience summary did not replace the first representative');
+
+  await openFor(page,'#best3_recognition_title');
+  await page.locator('input[name="representative"][value="recognition"]').check();
+  await page.locator('#useRepresentative').click();
+  assert(await page.locator('#title').inputValue()==='카페 신메뉴 안내판','Switching to recognition experience kept an earlier representative');
+  assert((await page.locator('#context').inputValue()).includes('안내판'),'Recognition experience summary did not replace the earlier representative');
+});
+
 await run('Best3 representative feeds one-question Experience Interview',async page=>{
   await openFor(page,'#best3_best_title');
   await page.locator('#best3_best_title').fill('캡스톤 프로젝트');
