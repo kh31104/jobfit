@@ -198,10 +198,12 @@ export async function render(ctx){
     const title=v(`best3_${key}_title`),summary=v(`best3_${key}_summary`);
     if(!title&&!summary){ctx.toast('선택한 경험의 제목이나 설명을 먼저 적어 주세요.');return}
     saveWeek4(false);
-    if(!v('title'))set('title',title);if(!v('context'))set('context',summary);
+    // 대표 경험을 바꾸면 이전 경험의 STAR·역량 입력이 섞이지 않도록 분석칸을 새 경험 기준으로 초기화한다.
+    clearForm();
+    set('title',title);set('context',summary);
     const target=document.getElementById('title');window.JobfitStepAccordion?.openBlock?.(target?.closest('.block'));
     target?.scrollIntoView({behavior:'smooth',block:'center'});target?.focus();
-    ctx.toast('대표 경험을 분석칸에 가져왔습니다.');
+    ctx.toast('선택한 대표 경험을 분석칸에 새로 가져왔습니다.');
   }
   function syncInterviewToFactCheck(){
     if(!v('situation')&&v('context'))set('situation',v('context'));
