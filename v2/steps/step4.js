@@ -16,12 +16,12 @@ export async function render(ctx){
   saved.analyses=saved.analyses||{};saved.targetAnalyses=saved.targetAnalyses||{};
   const root=document.getElementById('stepRoot');
   root.innerHTML=`<section class="card jobAnalysisInje">${styleBlock()}
-    <div class="sectionHead"><div><div class="kicker">STEP 4 · JOB ANALYSIS</div><h2>실제 채용공고로 직무 확인하기</h2><p>STEP 3에서 고른 Target Job을 실제 JD로 확인하고, <b>공고 요구 ↔ STEP 2 Evidence ↔ GAP</b>만 남깁니다.</p></div><span class="badge">직무분석</span></div>
+    <div class="sectionHead"><div><div class="kicker">STEP 5 · JOB ANALYSIS</div><h2>실제 채용공고로 직무 확인하기</h2><p>STEP 4에서 고른 Target Job을 실제 JD로 확인하고, <b>공고 요구 ↔ STEP 3 Evidence ↔ GAP</b>만 남깁니다.</p></div><span class="badge">직무분석</span></div>
     <div class="progress"><span style="width:36%"></span></div>
-    <div class="callout info"><b>STEP 2 경험은 다시 쓰지 않습니다.</b><br>STEP 2의 경험근거는 자동으로 불러오고, 학생은 실제 JD와 GAP만 확인합니다.</div>
+    <div class="callout info"><b>STEP 3 경험은 다시 쓰지 않습니다.</b><br>STEP 3의 경험근거는 자동으로 불러오고, 학생은 실제 JD와 GAP만 확인합니다.</div>
     <div id="analysisRoot"></div>
   </section>`;
-  if(!targets.length){document.getElementById('analysisRoot').innerHTML='<div class="callout warn"><b>Target Job이 없습니다.</b><br>STEP 3에서 먼저 Target Job을 선택하세요.</div>';return}
+  if(!targets.length){document.getElementById('analysisRoot').innerHTML='<div class="callout warn"><b>Target Job이 없습니다.</b><br>STEP 4에서 먼저 Target Job을 선택하세요.</div>';return}
   let currentId=targets[0].id;paint();
 
   function paint(){
@@ -30,7 +30,7 @@ export async function render(ctx){
     const section=document.querySelector('.jobAnalysisInje');if(section)section.dataset.accordionDefault=String(recommendedAccordionIndex(a));
     const box=document.getElementById('analysisRoot');
     box.innerHTML=`
-      ${block('01','Target Job','STEP 3에서 선택한 직무를 확인합니다. 새로 고르지 않습니다.',`
+      ${block('01','Target Job','STEP 4에서 선택한 직무를 확인합니다. 새로 고르지 않습니다.',`
         <div class="pillRow">${targets.map((t,i)=>`<button class="btn outline smallBtn targetPick ${t.id===target.id?'activePick':''}" data-id="${esc(t.id,ctx)}">${i+1}. ${esc(t.job?.title||'직무',ctx)} × ${esc(t.industry||'산업 미정',ctx)}</button>`).join('')}</div>
         <div class="callout good" style="margin-top:10px"><b>현재 Target</b><br>${esc(job?.title||'직무',ctx)} × ${esc(target.industry||'산업 미정',ctx)}</div>`)}
 
@@ -77,14 +77,14 @@ export async function render(ctx){
         <div id="jobAnalysisPreview">${jobTablePreviewHtml(a,ctx)}</div>`)}
 
       ${block('07','My Spec','GAP 분석 전에 현재 스펙을 직접 확인합니다. 빈칸은 없음이 아니라 미확인입니다.',`
-        <div class="callout info"><b>해당 사항이 없으면 ‘없음’이라고 입력하세요.</b><br>자격증·어학·도구/기술을 확인해야 GAP 분석을 시작합니다. STEP 2의 사실확인된 경험은 자동으로 연결됩니다.</div>
+        <div class="callout info"><b>해당 사항이 없으면 ‘없음’이라고 입력하세요.</b><br>자격증·어학·도구/기술을 확인해야 GAP 분석을 시작합니다. STEP 3의 사실확인된 경험은 자동으로 연결됩니다.</div>
         <div class="grid3" style="margin-top:12px">
           ${txt('specCertificates','자격증',a.studentSpec?.certificates||'','예: ADsP / 준비 중 / 없음')}
           ${txt('specLanguage','어학',a.studentSpec?.language||'','예: TOEIC 820 / OPIc IM2 / 없음')}
           ${txt('specTools','도구·기술',a.studentSpec?.tools||'','예: Excel, Python, Figma / 없음')}
         </div>
-        <div class="field" style="margin-top:10px"><label>추가 포트폴리오·프로젝트 <span class="muted">(선택)</span></label><textarea id="specPortfolio" placeholder="STEP 2에 없지만 직무와 연결되는 프로젝트·포트폴리오가 있으면 적으세요.">${esc(a.studentSpec?.portfolio||'',ctx)}</textarea></div>
-        <div id="specReady" class="callout ${specReady(a)?'good':'warn'}" style="margin-top:10px">${specReady(a)?'<b>GAP 분석 준비 완료</b><br>입력한 스펙과 STEP 2 경험만 사용합니다.':'<b>GAP 분석 전 확인 필요</b><br>자격증·어학·도구/기술을 모두 입력하세요. 해당 사항이 없으면 ‘없음’이라고 적으세요.'}</div>`)}
+        <div class="field" style="margin-top:10px"><label>추가 포트폴리오·프로젝트 <span class="muted">(선택)</span></label><textarea id="specPortfolio" placeholder="STEP 3에 없지만 직무와 연결되는 프로젝트·포트폴리오가 있으면 적으세요.">${esc(a.studentSpec?.portfolio||'',ctx)}</textarea></div>
+        <div id="specReady" class="callout ${specReady(a)?'good':'warn'}" style="margin-top:10px">${specReady(a)?'<b>GAP 분석 준비 완료</b><br>입력한 스펙과 STEP 3 경험만 사용합니다.':'<b>GAP 분석 전 확인 필요</b><br>자격증·어학·도구/기술을 모두 입력하세요. 해당 사항이 없으면 ‘없음’이라고 적으세요.'}</div>`)}
 
       ${block('08','GAP Match','JD Requirements × My Spec을 비교해 실제로 보완할 것만 남깁니다.',`
         <div class="callout info"><b>AI 답변은 짧은 개조식으로 받습니다.</b><br>JSON·표·긴 설명 없이 ‘내가 가진 것 / 확인 필요 / 핵심 GAP / 3개월 행동’만 받습니다.</div>
@@ -152,7 +152,7 @@ export async function render(ctx){
   function refreshGapControls(target,a){
     const ready=specReady(a)&&jobTableReady(a);
     const info=document.getElementById('specReady');
-    if(info){info.className='callout '+(specReady(a)?'good':'warn');info.innerHTML=specReady(a)?'<b>GAP 분석 준비 완료</b><br>입력한 스펙과 STEP 2 경험만 사용합니다.':'<b>GAP 분석 전 확인 필요</b><br>자격증·어학·도구/기술을 모두 입력하세요. 해당 사항이 없으면 ‘없음’이라고 적으세요.'}
+    if(info){info.className='callout '+(specReady(a)?'good':'warn');info.innerHTML=specReady(a)?'<b>GAP 분석 준비 완료</b><br>입력한 스펙과 STEP 3 경험만 사용합니다.':'<b>GAP 분석 전 확인 필요</b><br>자격증·어학·도구/기술을 모두 입력하세요. 해당 사항이 없으면 ‘없음’이라고 적으세요.'}
     const copyBtn=document.getElementById('copyDeepPrompt'),importBtn=document.getElementById('importDeepAi');if(copyBtn)copyBtn.disabled=!ready;if(importBtn)importBtn.disabled=!ready;
     const p=document.getElementById('deepPrompt');if(p)p.value=buildPrompt(ctx.getState(),target,a);
   }
@@ -166,7 +166,7 @@ export async function render(ctx){
     if(!x.have&&!x.verify&&!x.gaps.length&&!x.actions.length){ctx.toast('개조식 GAP 결과를 읽지 못했습니다. [내가 가진 것] 등 제목 형식을 확인해 주세요.');return}
     a.have=x.have;a.verify=x.verify;a.prepare=x.actions.join(' / ');a.conclusion=x.gaps.length?'핵심 GAP '+x.gaps.length+'개 확인':'추가 확인 필요';
     a.requirements=x.gaps.slice(0,3).map((g,i)=>({id:'gap_ai_'+Date.now()+'_'+i,name:g,type:'기타',status:'준비 필요',evidence:'',gap:g}));
-    persist(target,a,true);paint();ctx.toast('GAP 결과를 반영했습니다. 입력한 스펙과 STEP 2 경험 기준으로 확인하세요.');
+    persist(target,a,true);paint();ctx.toast('GAP 결과를 반영했습니다. 입력한 스펙과 STEP 3 경험 기준으로 확인하세요.');
   }
   function renderSources(target,a){
     const box=document.getElementById('sourceList');if(!box)return;
@@ -203,7 +203,7 @@ function recommendedAccordionIndex(a){
 function syncDownstream(state,target,a){
   const selected=(a.sources||[]).find(x=>x.id===a.selectedSourceId)||(a.sources||[])[0];
   const postingId='jd_step4_'+slug(target.id);
-  const requirements=(a.requirements||[]).filter(r=>!String(r.type).startsWith('Gate')).map((r,i)=>({id:'jdreq_'+i+'_'+slug(r.name),text:r.name,type:normalizeReqType(r.type),level:requirementLevel(r),explicitness:'공고에 명시',sourceQuote:'',evidenceQuestion:'STEP 2 Evidence와 연결 확인'}));
+  const requirements=(a.requirements||[]).filter(r=>!String(r.type).startsWith('Gate')).map((r,i)=>({id:'jdreq_'+i+'_'+slug(r.name),text:r.name,type:normalizeReqType(r.type),level:requirementLevel(r),explicitness:'공고에 명시',sourceQuote:'',evidenceQuestion:'STEP 3 Evidence와 연결 확인'}));
   const gates=lines(a.gate).map((x,i)=>({id:'gate_'+i,text:x,type:'기타',status:'확인 필요',sourceQuote:''}));
   const jdOld=structuredClone(state.artifacts?.jdAnalyzer||{postings:[],selectedId:''});
   const posting={id:postingId,company:selected?.companyName||a.company?.name||'기업 미정',jobTitle:target.job?.title||'',rawPosting:selected?.note||'',source:selected?.url||'',postingUrl:selected?.url||'',requirements,gates,gateReviewed:!!a.gate,createdAt:new Date().toISOString()};
@@ -365,11 +365,11 @@ ${jt.careerPlan?'• 경력개발: '+jt.careerPlan:''}
 • 도구·기술: ${spec.tools}
 • 추가 포트폴리오·프로젝트: ${spec.portfolio||'미입력'}
 
-[STEP 2에서 사실확인된 경험]
+[STEP 3에서 사실확인된 경험]
 ${ex||'확인된 경험 없음'}
 
 [판정 규칙]
-- 학생이 직접 입력한 스펙과 STEP 2에서 사실확인된 경험만 학생 근거로 사용한다.
+- 학생이 직접 입력한 스펙과 STEP 3에서 사실확인된 경험만 학생 근거로 사용한다.
 - 빈칸이나 확인되지 않은 항목을 ‘없음’, ‘준비 필요’, ‘GAP’으로 단정하지 않는다.
 - 학생이 ‘없음’이라고 직접 입력한 경우에만 없는 것으로 본다.
 - 공고의 필수조건과 우대조건을 구분한다.
