@@ -21,18 +21,18 @@ export async function render(ctx){
 
   root.innerHTML=`<section class="card jobExplorerV3">
     ${styleBlock()}
-    <div class="sectionHead"><div><div class="kicker">STEP 3 · JOB EXPLORATION</div><h2>내가 탐색할 직무 찾기</h2><p>STEP 1·2에서 확인한 나를 다시 입력하지 않고, <b>하고 싶은 일 → 산업 → 직무 후보 → Target Job</b>만 빠르게 정합니다.</p></div><span class="badge">직무탐색</span></div>
+    <div class="sectionHead"><div><div class="kicker">STEP 4 · JOB EXPLORATION</div><h2>내가 탐색할 직무 찾기</h2><p>STEP 2·3에서 확인한 나를 다시 입력하지 않고, <b>하고 싶은 일 → 산업 → 직무 후보 → Target Job</b>만 빠르게 정합니다.</p></div><span class="badge">직무탐색</span></div>
     <div class="progress"><span style="width:29%"></span></div>
-    <div class="callout info"><b>여기서는 직무를 확정하지 않습니다.</b><br>STEP 4에서 실제 채용공고를 보고 확인할 Target Job만 1~3개 고릅니다.</div>
+    <div class="callout info"><b>여기서는 직무를 확정하지 않습니다.</b><br>STEP 5에서 실제 채용공고를 보고 확인할 Target Job만 1~3개 고릅니다.</div>
 
-    ${block('01','나의 직무탐색 근거 확인','STEP 1·2 결과를 자동으로 불러옵니다. 다시 작성하지 않습니다.',`
+    ${block('01','나의 직무탐색 근거 확인','STEP 2·3 결과를 자동으로 불러옵니다. 다시 작성하지 않습니다.',`
       <div class="grid3">
         <div class="miniCard"><b>Career DNA</b><span>${esc(summaryCareer(dna,s.artifacts?.careerDNAProfile),ctx)}</span></div>
-        <div class="miniCard"><b>Best Experience</b><span>${esc(experienceMap.slice(0,3).map(x=>x.title||'경험').join(' · ')||'STEP 2 경험을 먼저 정리하세요.',ctx)}</span></div>
+        <div class="miniCard"><b>Best Experience</b><span>${esc(experienceMap.slice(0,3).map(x=>x.title||'경험').join(' · ')||'STEP 3 경험을 먼저 정리하세요.',ctx)}</span></div>
         <div class="miniCard"><b>확인된 역량</b><span>${esc(summaryCompetencies(exp,experienceMap),ctx)}</span></div>
       </div>
-      <div class="evidenceGrid" style="margin-top:10px">${actions.length?actions.map(x=>`<div class="actionEvidence">${esc(x,ctx)}</div>`).join(''):'<div class="placeholder"><b>확인된 행동이 아직 없습니다.</b>STEP 2에서 행동과 Evidence를 정리하면 자동 연결됩니다.</div>'}</div>
-      <div class="actions"><button class="btn primary" id="confirmSelf">확인했어요, 다음</button><button class="btn outline" id="backStep2">STEP 2 수정</button></div>`)}
+      <div class="evidenceGrid" style="margin-top:10px">${actions.length?actions.map(x=>`<div class="actionEvidence">${esc(x,ctx)}</div>`).join(''):'<div class="placeholder"><b>확인된 행동이 아직 없습니다.</b>STEP 3에서 행동과 Evidence를 정리하면 자동 연결됩니다.</div>'}</div>
+      <div class="actions"><button class="btn primary" id="confirmSelf">확인했어요, 다음</button><button class="btn outline" id="backStep2">STEP 3 경험·역량 수정</button></div>`)}
 
     ${block('02','직장에서 해보고 싶은 일','앞으로 실제로 해보고 싶은 업무를 3~5개 고릅니다.',`
       <div class="choiceTiles">${WORK_ACTIVITIES.map(x=>choice('activity',x,data.desiredActivities.includes(x),ctx)).join('')}</div>
@@ -55,14 +55,14 @@ export async function render(ctx){
       <div id="candidateList"></div>
       <details class="subDetails" id="candidateManualEditor" style="margin-top:12px"><summary>직무 후보를 직접 추가·수정할래요</summary>
         <div class="grid2" style="margin-top:10px">${txt('jobTitle','직무명','','예: CRM 마케팅')}${sel('jobFamily','직무군','',JOB_FAMILIES)}${txt('jobIndustries','가능 산업','','예: 유통·물류, 금융')}${txt('jobSummary','어떤 일인가요?','','1~2문장으로 간단히')}</div>
-        <div class="grid2" style="margin-top:12px">${area('jobWhy','관심 근거','','내가 선택한 업무활동과 무엇이 연결되는가?')}${area('jobEvidence','경험·행동 근거','','STEP 2의 어떤 경험과 연결되는가?')}${area('jobUnknown','STEP 4에서 확인할 것','','실제 세부업무, 요구기술, 근무환경 등')}${area('jobSource','참고자료','','선택사항')}</div>
+        <div class="grid2" style="margin-top:12px">${area('jobWhy','관심 근거','','내가 선택한 업무활동과 무엇이 연결되는가?')}${area('jobEvidence','경험·행동 근거','','STEP 3의 어떤 경험과 연결되는가?')}${area('jobUnknown','STEP 5에서 확인할 것','','실제 세부업무, 요구기술, 근무환경 등')}${area('jobSource','참고자료','','선택사항')}</div>
         <div class="actions"><button class="btn primary" id="addCandidate">직무 후보 추가</button><button class="btn outline hidden" id="cancelCandidateEdit">수정 취소</button></div>
       </details>`)}
 
-    ${block('05','Target Job 선택','STEP 4에서 실제 JD로 확인할 직무를 1~3개 선택합니다.',`
+    ${block('05','Target Job 선택','STEP 5에서 실제 JD로 확인할 직무를 1~3개 선택합니다.',`
       <div id="targetEditor"></div>
       <div class="field" style="margin-top:12px"><label>왜 이 직무를 더 알아보고 싶나요?</label><textarea id="targetReason" placeholder="내 경험이나 관심과 연결되는 이유를 짧게 적어보세요.">${esc(data.targetReason||data.notes||'',ctx)}</textarea></div>
-      <div class="actions"><button class="btn primary" id="saveTargets">Target Job 저장</button><button class="btn secondary" id="nextStep">STEP 4 실제 JD 확인 →</button></div>
+      <div class="actions"><button class="btn primary" id="saveTargets">Target Job 저장</button><button class="btn secondary" id="nextStep">STEP 5 실제 JD 확인 →</button></div>
       <div class="status" id="targetStatus"></div>`)}
   </section>`;
   renderInterests();renderCandidates();renderCompare();renderTargets();bindChoices();
@@ -75,7 +75,7 @@ export async function render(ctx){
   document.getElementById('addCandidate')?.addEventListener('click',addCandidate);
   document.getElementById('cancelCandidateEdit')?.addEventListener('click',clearCandidateEditor);
   document.getElementById('saveTargets')?.addEventListener('click',saveTargets);
-  document.getElementById('nextStep')?.addEventListener('click',()=>{saveTargets();ctx.navigate(4)});
+  document.getElementById('nextStep')?.addEventListener('click',()=>{if(saveTargets())ctx.navigate(4)});
 
   function bindChoices(){
     document.querySelectorAll('[data-choice="activity"]').forEach(el=>el.addEventListener('change',()=>{
@@ -100,7 +100,7 @@ export async function render(ctx){
     const raw=v('jobAiImport');if(!raw){status('candidateStatus','AI 결과를 먼저 붙여넣어 주세요.');return}
     const rows=parseCandidateOutput(raw);
     if(!rows.length){status('candidateStatus','직무 후보 형식을 읽지 못했습니다. [후보 1]부터 시작하는 개조식 결과 전체를 붙여넣어 주세요.');return}
-    const now=Date.now(),normalized=rows.slice(0,5).map((x,i)=>({id:'job_ai_'+now+'_'+i,title:String(x.title||'').trim(),family:String(x.family||'').trim(),industries:splitList(x.industries||''),summary:String(x.summary||'').trim(),why:String(x.why||'').trim(),evidence:String(x.evidence||'').trim(),unknowns:String(x.unknowns||'').trim(),source:'AI 탐색결과 · STEP 4에서 공식자료 확인 필요',createdAt:new Date().toISOString()})).filter(x=>x.title);
+    const now=Date.now(),normalized=rows.slice(0,5).map((x,i)=>({id:'job_ai_'+now+'_'+i,title:String(x.title||'').trim(),family:String(x.family||'').trim(),industries:splitList(x.industries||''),summary:String(x.summary||'').trim(),why:String(x.why||'').trim(),evidence:String(x.evidence||'').trim(),unknowns:String(x.unknowns||'').trim(),source:'AI 탐색결과 · STEP 5에서 공식자료 확인 필요',createdAt:new Date().toISOString()})).filter(x=>x.title);
     if(!normalized.length){status('candidateStatus','직무명이 있는 후보를 찾지 못했습니다.');return}
     data.candidates=normalized;data.targets=[];data.targetCombos=[];clearCandidateEditor();persist(false);renderCandidates();renderCompare();renderTargets();status('candidateStatus','AI 후보 '+normalized.length+'개를 불러왔습니다. 각 후보는 수정할 수 있습니다.');
   }
@@ -140,7 +140,7 @@ export async function render(ctx){
   function industryOptions(jobId,current){const job=data.candidates.find(x=>x.id===jobId),all=[...(job?.industries||[]),...data.industryInterests.filter(x=>x!=='아직 잘 모르겠어요')];const vals=[...new Set(all.filter(Boolean))];if(!vals.length)vals.push('산업 미정');return `<option value="">산업 선택</option>`+vals.map(x=>`<option value="${esc(x,ctx)}" ${current===x?'selected':''}>${esc(x,ctx)}</option>`).join('')}
   function saveTargets(){
     const combos=[0,1,2].map(i=>({jobId:document.querySelector(`[data-target-job="${i}"]`)?.value||'',industry:document.querySelector(`[data-target-industry="${i}"]`)?.value||'',priority:i+1})).filter(x=>x.jobId&&x.industry);
-    if(combos.length<1){status('targetStatus','STEP 4에서 확인할 Target Job을 1개 이상 선택하세요.');return false}
+    if(combos.length<1){status('targetStatus','STEP 5에서 확인할 Target Job을 1개 이상 선택하세요.');return false}
     data.targetCombos=combos.map((x,i)=>({...x,id:`target_${x.jobId}_${slug(x.industry)}_${i+1}`}));data.targets=[...new Set(combos.map(x=>x.jobId))];data.targetReason=v('targetReason');data.notes=data.targetReason;persist(true);status('targetStatus',`Target Job ${combos.length}개를 저장했습니다.`);return true;
   }
   function persist(syncContext){data.version=VERSION;data.updatedAt=new Date().toISOString();const patch={jobExplorer:data};if(syncContext)patch.industryCompany=buildIndustryCompany(ctx.getState(),data);ctx.saveState({artifacts:patch});}
@@ -148,14 +148,14 @@ export async function render(ctx){
   function v(id){return document.getElementById(id)?.value?.trim()||''}function set(id,val){const el=document.getElementById(id);if(el)el.value=val}function status(id,t){const el=document.getElementById(id);if(el)el.textContent=t;ctx.toast(t)}function openBlock(index){const blocks=[...root.querySelectorAll('.block')];window.JobfitStepAccordion?.openBlock?.(blocks[index])}
 }
 
-function buildIndustryCompany(state,data){const old=structuredClone(state.artifacts?.industryCompany||{industries:[],targetIndustries:[],companies:[],targetCompanies:[],notes:''}),manual=(old.industries||[]).filter(x=>x.generatedBy!=='step3-v3');const generated=(data.targetCombos||[]).map((c,i)=>({id:`ind_${c.jobId}_${slug(c.industry)}_${i+1}`,name:c.industry,jobId:c.jobId,sourceType:'STEP 3 탐색',source:'',url:'',checkedAt:'',jobLink:'',difference:'',generatedBy:'step3-v3'}));const targetIndustries=generated.map(x=>x.id);return {...old,industries:[...manual,...generated],targetIndustries:targetIndustries.length?targetIndustries:(old.targetIndustries||[]),companies:old.companies||[],targetCompanies:old.targetCompanies||[]}}
+function buildIndustryCompany(state,data){const old=structuredClone(state.artifacts?.industryCompany||{industries:[],targetIndustries:[],companies:[],targetCompanies:[],notes:''}),manual=(old.industries||[]).filter(x=>x.generatedBy!=='step3-v3');const generated=(data.targetCombos||[]).map((c,i)=>({id:`ind_${c.jobId}_${slug(c.industry)}_${i+1}`,name:c.industry,jobId:c.jobId,sourceType:'STEP 4 탐색',source:'',url:'',checkedAt:'',jobLink:'',difference:'',generatedBy:'step3-v3'}));const targetIndustries=generated.map(x=>x.id);return {...old,industries:[...manual,...generated],targetIndustries:targetIndustries.length?targetIndustries:(old.targetIndustries||[]),companies:old.companies||[],targetCompanies:old.targetCompanies||[]}}
 function legacyCombos(data){return (data.targets||[]).map((id,i)=>({id:`legacy_${id}_${i+1}`,jobId:id,industry:'산업 미정',priority:i+1}))}
 function confirmedActions(map){const out=[];for(const x of map||[]){const a=String(x.action||'').trim();if(a&&!out.includes(a))out.push(a);for(const ce of x.competencyEvidence||[]){const e=String(ce?.evidence||'').trim();if(e&&!out.includes(e))out.push(e)}if(out.length>=6)break}return out.slice(0,6)}
-function summaryCareer(dna,profile){const h=profile?.hypothesis?.text||dna.hypothesis?.text||'',values=profile?.valueClues||[];return [h,values.length?`가치: ${values.slice(0,3).join(', ')}`:''].filter(Boolean).join(' / ')||'STEP 1 결과를 확인하세요.'}
-function summaryCompetencies(exp,map){const src=map.length?map:(exp.experiences||[]).filter(x=>x?.factChecked),comps=[...new Set(src.flatMap(x=>x.competencies||[]))];return comps.slice(0,8).join(', ')||'STEP 2에서 경험기반 역량을 확인하세요.'}
+function summaryCareer(dna,profile){const h=profile?.hypothesis?.text||dna.hypothesis?.text||'',values=profile?.valueClues||[];return [h,values.length?`가치: ${values.slice(0,3).join(', ')}`:''].filter(Boolean).join(' / ')||'STEP 2 결과를 확인하세요.'}
+function summaryCompetencies(exp,map){const src=map.length?map:(exp.experiences||[]).filter(x=>x?.factChecked),comps=[...new Set(src.flatMap(x=>x.competencies||[]))];return comps.slice(0,8).join(', ')||'STEP 3에서 경험기반 역량을 확인하세요.'}
 function buildPrompt(s,data,map){const evidence=(map||[]).slice(0,5).map((x,i)=>`${i+1}. ${x.title||'경험'}\n- 행동: ${x.action||'미입력'}\n- 결과: ${x.result||'미입력'}\n- 역량: ${(x.competencies||[]).join(', ')||'미입력'}`).join('\n'),dna=s.assessments?.careerDNA||{},profile=s.artifacts?.careerDNAProfile||{},values=[...new Set(profile.valueClues||((dna.balance?.answers||[]).filter(Boolean).map(x=>x.value)))].slice(0,5),anchors=(profile.careerAnchorTop||dna.careerAnchor?.ranking||[]).slice(0,3).map(x=>x.name||x.code).filter(Boolean),via=(profile.viaTop5||dna.viaTop5||[]).slice(0,5),hypothesis=profile.hypothesis?.text||dna.hypothesis?.text||'';return `당신은 대학생의 직무탐색을 돕는 조력자다. 최종 직무를 대신 결정하지 말고, 학생의 실제 경험과 관심 업무를 근거로 탐색할 직무 후보를 만들어라.
 
-[STEP 1 Career DNA · 보조근거]
+[STEP 2 Career DNA · 보조근거]
 중요 가치: ${values.join(', ')||'입력 없음'}
 Career Anchor TOP: ${anchors.join(', ')||'입력 없음'}
 VIA TOP: ${via.join(', ')||'입력 없음'}
@@ -171,7 +171,7 @@ ${(data.newInterests||[]).join(', ')||'없음'}
 [관심 산업]
 ${(data.industryInterests||[]).join(', ')||'미정'}
 
-[STEP 2 경험 근거 · 우선근거]
+[STEP 3 경험 근거 · 우선근거]
 ${evidence||'확인된 경험 없음'}
 
 [규칙]
@@ -182,7 +182,7 @@ ${evidence||'확인된 경험 없음'}
 5. 특정 산업, 특히 에너지 산업을 기본값으로 두지 않는다.
 6. 적합도 %, 추천순위, 취업성공확률을 만들지 않는다.
 7. 학생이 하지 않은 경험이나 역량을 만들어내지 않는다.
-8. 실제 Task·요구기술·기업조건은 STEP 4에서 공식자료로 확인해야 한다고 표시한다.
+8. 실제 Task·요구기술·기업조건은 STEP 5에서 공식자료로 확인해야 한다고 표시한다.
 9. 답변 앞에 설명문을 붙이지 말고 첫 줄부터 [후보 1]로 시작한다.
 10. JSON 객체, JSON 배열, 마크다운 표, 코드블록은 어떤 경우에도 사용하지 않는다.
 11. 각 후보는 아래 7개 항목을 빠짐없이 일반 텍스트로 작성한다.
@@ -200,10 +200,10 @@ ${evidence||'확인된 경험 없음'}
 직무명: 직무명
 직무군: 직무군
 어떤 일: 1~2문장
-경험·행동 근거: STEP 2의 실제 경험·행동
+경험·행동 근거: STEP 3의 실제 경험·행동
 관심 근거: 학생이 선택한 관심업무와 연결 이유
 가능 산업: 산업1, 산업2
-STEP 4에서 확인할 것: 실제 업무·요구기술·근무환경 중 확인할 것
+STEP 5에서 확인할 것: 실제 업무·요구기술·근무환경 중 확인할 것
 
 [후보 2]
 같은 형식으로 계속 작성
@@ -219,7 +219,7 @@ function parseCandidateOutput(raw=''){
   const legacy=(()=>{try{const x=JSON.parse(text);return Array.isArray(x)?x:(Array.isArray(x?.candidates)?x.candidates:[])}catch{return []}})();
   if(legacy.length)return legacy.map(x=>({title:x.title||x.job||'',family:x.family||'',summary:x.summary||x.description||'',evidence:x.evidence||x.experienceEvidence||'',why:x.why||x.interestEvidence||'',industries:Array.isArray(x.industries)?x.industries.join(', '):(x.industries||''),unknowns:x.unknowns||''}));
   const blocks=text.split(/(?=^\s*\[?후보\s*\d+\]?\s*$)/gmi).map(x=>x.trim()).filter(x=>/^(?:\[?후보\s*\d+\]?)/i.test(x));
-  const keyMap=[['title',/^\s*(?:[-•·]\s*)?직무명\s*[:：]\s*(.*)$/i],['family',/^\s*(?:[-•·]\s*)?직무군\s*[:：]\s*(.*)$/i],['summary',/^\s*(?:[-•·]\s*)?어떤\s*일(?:인가)?\s*[:：]\s*(.*)$/i],['evidence',/^\s*(?:[-•·]\s*)?경험[·ㆍ\s]*행동\s*근거\s*[:：]\s*(.*)$/i],['why',/^\s*(?:[-•·]\s*)?관심\s*근거\s*[:：]\s*(.*)$/i],['industries',/^\s*(?:[-•·]\s*)?가능\s*산업\s*[:：]\s*(.*)$/i],['unknowns',/^\s*(?:[-•·]\s*)?(?:STEP\s*4에서\s*)?확인할\s*것\s*[:：]\s*(.*)$/i]];
+  const keyMap=[['title',/^\s*(?:[-•·]\s*)?직무명\s*[:：]\s*(.*)$/i],['family',/^\s*(?:[-•·]\s*)?직무군\s*[:：]\s*(.*)$/i],['summary',/^\s*(?:[-•·]\s*)?어떤\s*일(?:인가)?\s*[:：]\s*(.*)$/i],['evidence',/^\s*(?:[-•·]\s*)?경험[·ㆍ\s]*행동\s*근거\s*[:：]\s*(.*)$/i],['why',/^\s*(?:[-•·]\s*)?관심\s*근거\s*[:：]\s*(.*)$/i],['industries',/^\s*(?:[-•·]\s*)?가능\s*산업\s*[:：]\s*(.*)$/i],['unknowns',/^\s*(?:[-•·]\s*)?(?:STEP\s*[45]에서\s*)?확인할\s*것\s*[:：]\s*(.*)$/i]];
   return blocks.map(block=>{const out={title:'',family:'',summary:'',evidence:'',why:'',industries:'',unknowns:''};let current='';for(const rawLine of block.split('\n').slice(1)){const line=rawLine.trim();if(!line)continue;const hit=keyMap.map(([k,rx])=>[k,line.match(rx)]).find(([,m])=>m);if(hit){current=hit[0];out[current]=hit[1][1].trim();continue}if(current)out[current]+=(out[current]?' ':'')+line.replace(/^[•·\-*]\s*/,'').trim()}return out}).filter(x=>x.title);
 }
 function splitList(v){return [...new Set(String(v||'').split(/[,/|]/).map(x=>x.trim()).filter(Boolean))]}

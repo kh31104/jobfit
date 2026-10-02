@@ -196,7 +196,7 @@ await run('STEP 3 imports copy-friendly bullet candidates and allows editing',as
     '경험·행동 근거: SNS 홍보안 프로젝트에서 반응이 좋은 게시물 특징을 비교했다.',
     '관심 근거: 마케팅과 브랜드 관련 일에 관심이 있다.',
     '가능 산업: 유통·물류, IT·플랫폼',
-    'STEP 4에서 확인할 것: 실제 요구 포트폴리오와 디지털 마케팅 도구',
+    'STEP 5에서 확인할 것: 실제 요구 포트폴리오와 디지털 마케팅 도구',
     '',
     '[후보 2]',
     '직무명: CRM 마케팅',
@@ -205,7 +205,7 @@ await run('STEP 3 imports copy-friendly bullet candidates and allows editing',as
     '경험·행동 근거: 자료를 기준별로 비교하고 정리한 경험',
     '관심 근거: 사람들의 반응을 분석하는 일에 관심',
     '가능 산업: 유통·물류, 금융',
-    'STEP 4에서 확인할 것: SQL·CRM 도구 요구수준'
+    'STEP 5에서 확인할 것: SQL·CRM 도구 요구수준'
   ].join('\n');
   await page.locator('#jobAiImport').fill(ai);
   await page.locator('#importJobAi').click();
