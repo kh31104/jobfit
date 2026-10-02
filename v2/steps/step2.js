@@ -398,7 +398,7 @@ function experienceReadinessHtml(items,ctx){
   if(n===0)return `<div class="callout warn"><b>저장된 경험 ${total}개 · 사실확인 완료 0개</b><br>저장은 되었지만 아직 STEP 3 근거로 확정되지 않았습니다. 저장된 경험을 수정해 사실확인을 완료하세요.</div>`;
   if(n===1)return `<div class="callout info"><b>사실확인된 경험 1개 · 기본 활동 완료</b><br>현재 저장 ${total}개 중 1개가 검증되었습니다. 반복되는 역량을 비교하려면 사실확인된 경험을 1개 이상 더 만드는 것을 권장합니다.</div>`;
   if(n===2)return `<div class="callout good"><b>사실확인된 경험 2개 · 비교 가능</b><br>현재 저장 ${total}개 중 2개가 검증되었습니다. 이제 같은 행동·역량이 반복되는지 비교할 수 있습니다.</div>`;
-  return `<div class="callout good"><b>사실확인된 경험 ${n}개 · 반복 패턴 확인 가능</b><br>현재 저장 ${total}개 중 검증된 경험을 기준으로 07에서 반복되는 행동과 역량을 확인하세요.</div>`;
+  return `<div class="callout good"><b>사실확인된 경험 ${n}개 · 반복 패턴 확인 가능</b><br>현재 저장 ${total}개 중 검증된 경험을 기준으로 결과 화면에서 반복되는 행동과 역량을 확인하세요.</div>`;
 }
 function experienceDnaReadinessHtml(items,ctx){
   const n=verifiedExperiences(items).length;
@@ -429,7 +429,7 @@ function dnaBridgeHtml(dna,ctx){
   if(c.repeat||r.fit)rows.push(['반복해서 나타난 부분',c.repeat||r.fit]);
   if(c.verify||r.question)rows.push(['경험으로 더 확인하고 싶은 부분',c.verify||r.question]);
   if(!rows.length)return '<div class="callout good"><b>STEP 2 → STEP 3</b> · 저장된 Career DNA 요약이 없습니다. 그래도 괜찮습니다. STEP 3에서는 실제 경험에서 내가 한 행동부터 찾으면 됩니다.</div>';
-  return `<div class="dnaBridge"><div class="dnaBridgeHead"><b>STEP 1 → STEP 2</b><span>가설은 참고만 하고 경험으로 확인합니다.</span></div>${rows.map(([k,val])=>`<div class="dnaBridgeRow"><small>${ctx.escapeHtml(k)}</small><p>${ctx.escapeHtml(val)}</p></div>`).join('')}</div>`;
+  return `<div class="dnaBridge"><div class="dnaBridgeHead"><b>STEP 2 → STEP 3</b><span>가설은 참고만 하고 경험으로 확인합니다.</span></div>${rows.map(([k,val])=>`<div class="dnaBridgeRow"><small>${ctx.escapeHtml(k)}</small><p>${ctx.escapeHtml(val)}</p></div>`).join('')}</div>`;
 }
 function best3Row(key,label,saved,ctx){return `<div class="best3Row"><div class="best3Label"><b>${ctx.escapeHtml(label)}</b></div><input class="input" id="best3_${key}_title" value="${ctx.escapeHtml(saved?.title||'')}" placeholder="경험 이름"><textarea id="best3_${key}_summary" placeholder="무엇을 했고 왜 이 경험이 떠오르는지 한두 문장">${ctx.escapeHtml(saved?.summary||'')}</textarea></div>`}
 function competencyRow(i){return `<div class="metricCard compactCompetency"><b>역량 후보 ${i}</b><div class="field"><label>Jobfit 표준역량</label><select id="comp_${i}"><option value="">선택하지 않아도 됨</option>${COMPETENCY_DICTIONARY.map(x=>`<option value="${x.code}">${x.code} · ${x.label}</option>`).join('')}</select><span class="hint" id="compCue_${i}">역량을 선택하면 확인할 행동 예시가 표시됩니다.</span></div><div class="field" style="margin-top:8px"><label>확인 상태</label><select id="compStatus_${i}"><option value="">판정 선택</option><option>행동 확인</option><option>추가 확인 필요</option><option>현재 경험에서 확인되지 않음</option></select></div><div class="field" style="margin-top:8px"><label>근거 행동 한 줄</label><input class="input" id="compEv_${i}" placeholder="03의 실제 행동 중 근거가 되는 부분"></div></div>`}
