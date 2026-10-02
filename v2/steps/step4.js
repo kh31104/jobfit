@@ -114,7 +114,16 @@ export async function render(ctx){
     document.getElementById('copyDeepPrompt')?.addEventListener('click',()=>{captureJobTable(a);captureSpec(a);if(!jobTableReady(a)){ctx.toast('직무분석표의 핵심 5개 항목을 먼저 확인하세요.');return}if(!specReady(a)){ctx.toast("자격증·어학·도구/기술을 먼저 확인하세요. 없으면 ‘없음’이라고 입력하세요.");return}refreshPrompt(target,a);copy(document.getElementById('deepPrompt').value,ctx)});
     document.getElementById('importDeepAi')?.addEventListener('click',()=>importDeepAi(target,a));
     document.getElementById('saveDeep')?.addEventListener('click',()=>{capture(a);captureJobTable(a);captureSpec(a);persist(target,a,true);renderGap(a);ctx.toast('GAP Match를 저장했습니다.')});
-    document.getElementById('nextStep')?.addEventListener('click',()=>{capture(a);captureJobTable(a);captureSpec(a);persist(target,a,true);ctx.navigate(5)});
+    document.getElementById('nextStep')?.addEventListener('click',()=>{
+      capture(a);captureJobTable(a);captureSpec(a);
+      const selected=(a.sources||[]).find(x=>x.id===a.selectedSourceId);
+      if(!selected){ctx.toast('STEP 6로 가기 전에 분석할 JD를 1개 선택해 주세요.');openAnalysisBlock('03');return}
+      if(!jobTableReady(a)){ctx.toast('직무분석표의 핵심 5개 항목을 먼저 완성해 주세요.');openAnalysisBlock('05');return}
+      if(!specReady(a)){ctx.toast("My Spec의 자격증·어학·도구/기술을 확인해 주세요. 없으면 ‘없음’이라고 입력하세요.");openAnalysisBlock('07');return}
+      const hasGap=!!(String(a.have||'').trim()||String(a.verify||'').trim()||String(a.prepare||'').trim()||(a.requirements||[]).some(r=>String(r?.gap||'').trim()));
+      if(!hasGap){ctx.toast('마지막으로 GAP Match 결과를 반영한 뒤 STEP 6로 이동해 주세요.');openAnalysisBlock('08');return}
+      persist(target,a,true);ctx.navigate(5)
+    });
   }
 
   function saveSourceSlot(target,a,i){
@@ -188,6 +197,7 @@ export async function render(ctx){
   function capture(a){const selected=(a.sources||[]).find(x=>x?.id===a.selectedSourceId);if(selected)a.company={name:selected.companyName||'',url:selected.companyUrl||'',source:'기업 공식자료'};a.version=VERSION;a.updatedAt=new Date().toISOString();}
   function persist(target,a,sync=false){saved.targetAnalyses[target.id]=a;saved.analyses[target.job.id]={...a,jobTitle:target.job.title,industry:target.industry,targetId:target.id};const patch={jobDeepDive:saved};if(sync)Object.assign(patch,syncDownstream(ctx.getState(),target,a));ctx.saveState({artifacts:patch})}
   function refreshPrompt(target,a){capture(a);persist(target,a);const p=document.getElementById('deepPrompt');if(p)p.value=buildPrompt(ctx.getState(),target,a)}
+  function openAnalysisBlock(number){const block=[...document.querySelectorAll('.jobAnalysisInje #analysisRoot > .block')].find(b=>b.querySelector(':scope > .moduleHead > span')?.textContent?.trim()===number);if(block)window.JobfitStepAccordion?.openBlock?.(block)}
   function v(id){return document.getElementById(id)?.value?.trim()||''}function set(id,x){const el=document.getElementById(id);if(el)el.value=x}
 }
 
