@@ -51,7 +51,7 @@ async function run(name,viewport){
 
     // Student safety: an unfinished STEP1 input must be saved before navigating away.
     await expandModule(page,'내가 생각하는 나의 강점');await page.locator('[data-strength]').nth(0).click();
-    await page.locator('.stepBtn[data-step="2"]').click();await page.waitForSelector('#saveRoadmap');
+    await page.locator('.stepBtn[data-step="2"]').click();await page.waitForSelector('#useRepresentative');
     const autoSaved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner'))?.assessments?.careerDNA?.selfStrengths||[]);assert(autoSaved.length===1,'Dirty STEP1 input was not saved before navigation');
     await page.locator('.stepBtn[data-step="1"]').click();await page.waitForSelector('#makePrompt',{state:'attached'});await waitCareerUx(page);
 
@@ -63,7 +63,7 @@ async function run(name,viewport){
     const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));assert(saved?.assessments?.careerDNA?.promptMeta?.version==='career-dna-standard-v1','Prompt version not persisted');
     await page.locator('#saveDNA').click();await page.waitForTimeout(100);const saved2=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));assert(saved2?.assessments?.careerDNA?.interest?.type==='STANDARD','STEP1 compatibility completion marker missing');
 
-    await page.locator('.stepBtn[data-step="2"]').click();await page.waitForSelector('#saveRoadmap');
+    await page.locator('.stepBtn[data-step="2"]').click();await page.waitForSelector('#useRepresentative');
     const week4=(await page.locator('#stepRoot').textContent())||'';
     const week4Expected=['대표 경험 선택','AI 경험 인터뷰','STAR 사실확인','역량 확인','Experience & Competency Map'];
     const week4Actual=(await page.locator('.experienceCompetencyWeek4 > .block > .moduleHead h3').allTextContents()).map(x=>x.replace(/\s+/g,' ').trim());
@@ -76,7 +76,7 @@ async function run(name,viewport){
     for(const removed of ['Career Story','Career Theme','Career Direction','1개월 Career Experiment'])assert(!week4.includes(removed),`Removed Week4 module remains deployed: ${removed}`);
     assert(await page.locator('#makeInterviewPrompt').count()===1,'STEP3 evidence interview control missing');
     assert(await page.locator('#nextStep').count()===1,'STEP3 → STEP4 handoff control missing');
-    await page.locator('#goBest3').click();assert(await page.locator('#best3_best_title').isVisible(),'Deployed 01 → 02 route is broken or detoured');
+    assert(await page.locator('#best3_best_title').isVisible(),'Deployed STEP3 representative experience input missing');
     if(viewport.width<=480){const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);assert(overflow<=2,`Week4 mobile horizontal overflow detected: ${overflow}px`)}
 
     await page.locator('.stepBtn[data-step="3"]').click();await page.waitForSelector('#jobPrompt');
