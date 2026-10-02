@@ -22,7 +22,12 @@ export async function render(ctx){
   const state=ctx.getState();
   const dna=state.assessments?.careerDNA||{};
   const saved=state.assessments?.experienceCompetency||{experiences:[]};
-  const experiences=Array.isArray(saved.experiences)?saved.experiences:[];
+  const rawExperiences=Array.isArray(saved.experiences)?saved.experiences:[];
+  const experiences=dedupeExperiences(rawExperiences);
+  if(experiences.length!==rawExperiences.length){
+    const migrated={...saved,version:WEEK4_VERSION,experiences,updatedAt:new Date().toISOString()};
+    ctx.saveState({assessments:{experienceCompetency:migrated},artifacts:{experienceMap:experienceMap(experiences),competencyMap:competencyMap(experiences),experienceDNA:experienceDNA(experiences,dna)}});
+  }
   const legacyBest3=state.assessments?.careerRoadmap?.best3||{};
   const best3=normalizeBest3(saved.best3||legacyBest3);
   const representativeKey=saved.representativeKey||state.assessments?.careerRoadmap?.representativeKey||'';
@@ -97,7 +102,7 @@ export async function render(ctx){
   document.getElementById('nextStep').addEventListener('click',()=>{
     saveWeek4(false);
     const ready=currentExperiences().some(x=>x?.factChecked&&String(x?.action||'').trim());
-    if(!ready){ctx.toast('STEP 4로 가기 전에 사실확인을 마친 경험을 1개 이상 저장해 주세요.');openModule(currentExperiences().length?'04':'02');return}
+    if(!ready){ctx.toast('STEP 4로 가기 전에 사실확인을 마친 경험을 1개 이상 저장해 주세요.');openModule(currentExperiences().length?'03':'02');return}
     ctx.navigate(3);
   });
   document.getElementById('makeInterviewPrompt').addEventListener('click',async()=>{
@@ -147,23 +152,42 @@ export async function render(ctx){
     if(!v('action')){ctx.toast('03에서 내가 직접 한 행동을 먼저 확인해 주세요.');openModule('03');return}
     if(!ck('experienceFactChecked')){ctx.toast('03에서 실제 경험과 일치하는지 확인해 주세요.');openModule('03');return}
     const confirmedRows=[1,2,3].filter(i=>v(`compStatus_${i}`)==='행동 확인');
-    if(confirmedRows.some(i=>!v(`comp_${i}`)||!v(`compEv_${i}`))){ctx.toast('‘행동 확인’으로 판정한 역량은 역량명과 근거 행동을 함께 적어 주세요.');openModule('05');return}
-    if(confirmedRows.length&&!ck('competencyEvidenceChecked')){ctx.toast('선택한 역량과 행동근거를 확인했다는 체크를 해 주세요.');openModule('05');return}
-    saveWeek4(false);
-    const oldId=v('editId');
-    const studentVerified=ck('competencyEvidenceChecked');
-    const competencyEvidence=[1,2,3].map(i=>{const code=v(`comp_${i}`),def=competencyByCode(code);return {code,label:def?.label||'',keyword:def?.label||'',evidence:v(`compEv_${i}`),status:v(`compStatus_${i}`),studentVerified};}).filter(x=>x.code||x.evidence);
-    const competencies=[...new Set(competencyEvidence.filter(x=>x.status==='행동 확인'&&x.studentVerified).map(x=>x.label).filter(Boolean))];
-    const factChecked=ck('experienceFactChecked');
-    const quality={ownership:factChecked,evidence:factChecked,noFabrication:factChecked,transfer:!!v('learning'),competencyEvidence:studentVerified,interviewOwnership:factChecked,interviewNumbers:factChecked,interviewEvidence:factChecked};
-    const evidenceType=v('evidenceType');
-    const item={id:oldId||`EXP-${Date.now()}`,category:v('category'),title,period:v('period'),workMode:v('workMode'),contribution:n('contribution'),roleTitle:v('roleTitle'),context:v('context'),role:v('role'),situation:v('situation'),challenge:v('challenge'),action:v('action'),reason:v('reason'),result:v('result'),evidence:v('evidence'),evidenceType,evidenceGrade:evidenceGradeFor(evidenceType),actionVerbs:'',learning:v('learning'),rawVoice:v('rawVoice'),aiStructured:v('aiStructured'),competencies,competencyEvidence,quality,factChecked,updatedAt:new Date().toISOString()};
-    const arr=[...currentExperiences()];const idx=arr.findIndex(x=>x.id===item.id);if(idx>=0)arr[idx]=item;else arr.push(item);
-    const current=ctx.getState().assessments?.experienceCompetency||{};
-    ctx.saveState({assessments:{experienceCompetency:{...current,version:WEEK4_VERSION,best3:collectBest3(),representativeKey:selectedRepresentative(),experiences:arr,draft:{},updatedAt:new Date().toISOString()}},artifacts:{experienceMap:experienceMap(arr),competencyMap:competencyMap(arr),experienceDNA:experienceDNA(arr,dna)}});
-    await ctx.navigate(2);
-    openModule('05');
-    ctx.toast(`경험을 저장했습니다. 현재 ${arr.length}개 경험이 Experience Map에 있습니다.`);
+    if(confirmedRows.some(i=>!v(`comp_${i}`)||!v(`compEv_${i}`))){ctx.toast('‘행동 확인’으로 판정한 역량은 역량명과 근거 행동을 함께 적어 주세요.');openModule('04');return}
+    if(confirmedRows.length&&!ck('competencyEvidenceChecked')){ctx.toast('선택한 역량과 행동근거를 확인했다는 체크를 해 주세요.');openModule('04');return}
+
+    const saveBtn=document.getElementById('saveExp');
+    if(saveBtn?.dataset.saving==='1')return;
+    if(saveBtn){saveBtn.dataset.saving='1';saveBtn.disabled=true;saveBtn.textContent='저장 중…'}
+
+    try{
+      saveWeek4(false);
+      const oldId=v('editId');
+      const studentVerified=ck('competencyEvidenceChecked');
+      const competencyEvidence=[1,2,3].map(i=>{const code=v(`comp_${i}`),def=competencyByCode(code);return {code,label:def?.label||'',keyword:def?.label||'',evidence:v(`compEv_${i}`),status:v(`compStatus_${i}`),studentVerified};}).filter(x=>x.code||x.evidence);
+      const competencies=[...new Set(competencyEvidence.filter(x=>x.status==='행동 확인'&&x.studentVerified).map(x=>x.label).filter(Boolean))];
+      const factChecked=ck('experienceFactChecked');
+      const quality={ownership:factChecked,evidence:factChecked,noFabrication:factChecked,transfer:!!v('learning'),competencyEvidence:studentVerified,interviewOwnership:factChecked,interviewNumbers:factChecked,interviewEvidence:factChecked};
+      const evidenceType=v('evidenceType');
+      const item={id:oldId||`EXP-${Date.now()}`,category:v('category'),title,period:v('period'),workMode:v('workMode'),contribution:n('contribution'),roleTitle:v('roleTitle'),context:v('context'),role:v('role'),situation:v('situation'),challenge:v('challenge'),action:v('action'),reason:v('reason'),result:v('result'),evidence:v('evidence'),evidenceType,evidenceGrade:evidenceGradeFor(evidenceType),actionVerbs:'',learning:v('learning'),rawVoice:v('rawVoice'),aiStructured:v('aiStructured'),competencies,competencyEvidence,quality,factChecked,updatedAt:new Date().toISOString()};
+
+      const arr=dedupeExperiences([...currentExperiences()]);
+      let idx=oldId?arr.findIndex(x=>x.id===oldId):-1;
+      if(idx<0){
+        const fp=experienceFingerprint(item);
+        if(fp)idx=arr.findIndex(x=>experienceFingerprint(x)===fp);
+      }
+      if(idx>=0){item.id=arr[idx].id;arr[idx]=mergeDuplicateExperiences(arr[idx],item)}
+      else arr.push(item);
+      const clean=dedupeExperiences(arr);
+
+      const current=ctx.getState().assessments?.experienceCompetency||{};
+      ctx.saveState({assessments:{experienceCompetency:{...current,version:WEEK4_VERSION,best3:collectBest3(),representativeKey:selectedRepresentative(),experiences:clean,draft:{},updatedAt:new Date().toISOString()}},artifacts:{experienceMap:experienceMap(clean),competencyMap:competencyMap(clean),experienceDNA:experienceDNA(clean,dna)}});
+      await ctx.navigate(2);
+      openModule('05');
+      ctx.toast(`경험을 저장했습니다. 현재 ${clean.length}개 경험이 Experience Map에 있습니다.`);
+    }finally{
+      if(saveBtn?.isConnected){delete saveBtn.dataset.saving;saveBtn.disabled=false;saveBtn.textContent='경험·역량 저장 → 결과 확인'}
+    }
   }
   function loadExperience(id){
     const x=currentExperiences().find(e=>e.id===id);if(!x)return;
@@ -224,7 +248,7 @@ export async function render(ctx){
 진행방식: ${v('workMode')||'미입력'}
 내 역할: ${v('roleTitle')||'미입력'}
 배경: ${v('context')||'미입력'}
-책임범위: ${v('role')||'미입력'}${dnaLines.length?`\n\n[3주차 자기이해 가설 · 참고만]\n${dnaLines.join('\n')}`:''}
+책임범위: ${v('role')||'미입력'}${dnaLines.length?`\n\n[STEP 2 Career DNA · 참고만]\n${dnaLines.join('\n')}`:''}
 
 [STAR + WHY 확인 기준]
 S · Situation: 어떤 상황이었는가
@@ -392,6 +416,37 @@ function experienceDNA(arr,dna){
     interpretationRule:'경험 횟수는 역량 수준 점수가 아니라 현재 입력한 경험에서 관련 행동이 확인된 빈도입니다.',
     updatedAt:new Date().toISOString()
   };
+}
+function normalizeExperienceText(value){return String(value||'').trim().toLowerCase().replace(/\s+/g,' ')}
+function experienceFingerprint(x){
+  const title=normalizeExperienceText(x?.title),action=normalizeExperienceText(x?.action),result=normalizeExperienceText(x?.result);
+  return title&&action&&result?`${title}|${action}|${result}`:'';
+}
+function experienceRichness(x){
+  return (x?.factChecked?20:0)+(x?.competencies?.length||0)*5+(x?.competencyEvidence?.length||0)*4+(String(x?.evidence||'').trim()?3:0)+(String(x?.reason||'').trim()?2:0)+(String(x?.learning||'').trim()?1:0);
+}
+function mergeDuplicateExperiences(a,b){
+  const aScore=experienceRichness(a),bScore=experienceRichness(b),primary=bScore>=aScore?b:a,secondary=primary===b?a:b;
+  const competencies=[...new Set([...(secondary?.competencies||[]),...(primary?.competencies||[])].filter(Boolean))];
+  const seen=new Set(),competencyEvidence=[];
+  for(const row of [...(secondary?.competencyEvidence||[]),...(primary?.competencyEvidence||[])]){
+    const key=[row?.code||row?.label||row?.keyword||'',normalizeExperienceText(row?.evidence),row?.status||''].join('|');
+    if(!key.replace(/\|/g,'')||seen.has(key))continue;seen.add(key);competencyEvidence.push(row);
+  }
+  return {...secondary,...primary,id:primary?.id||secondary?.id,factChecked:!!(a?.factChecked||b?.factChecked),quality:{...(secondary?.quality||{}),...(primary?.quality||{})},competencies,competencyEvidence,updatedAt:[a?.updatedAt,b?.updatedAt].filter(Boolean).sort().pop()||new Date().toISOString()};
+}
+function dedupeExperiences(items){
+  const out=[],byFingerprint=new Map();
+  for(const raw of items||[]){
+    if(!raw)continue;
+    const x={...raw},fp=experienceFingerprint(x);
+    if(fp&&byFingerprint.has(fp)){
+      const idx=byFingerprint.get(fp);out[idx]=mergeDuplicateExperiences(out[idx],x);
+    }else{
+      const idx=out.length;out.push(x);if(fp)byFingerprint.set(fp,idx);
+    }
+  }
+  return out;
 }
 function verifiedExperiences(items){return (items||[]).filter(x=>x?.factChecked&&String(x?.action||'').trim())}
 function experienceReadinessHtml(items,ctx){
