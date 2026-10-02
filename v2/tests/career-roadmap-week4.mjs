@@ -43,16 +43,16 @@ async function run(name,fn){
 
 await run('Week 4 focuses on Experience Map and keeps STEP1 bridge',async page=>{
   const body=(await page.locator('#stepRoot').textContent())||'';
-  const expected=['Career DNA 확인','My Best 3 Experience','STAR 기반 AI Interview','사실확인','역량 확인','Experience Map','Competency Map','My Experience DNA'];
+  const expected=['대표 경험 선택','AI 경험 인터뷰','STAR 사실확인','역량 확인','Experience & Competency Map'];
   const actual=await page.locator('.experienceCompetencyWeek4 > .block > .moduleHead h3').allTextContents();
-  assert(actual.length===8,`Week4 must have exactly 8 student modules, found ${actual.length}: ${actual.join(' | ')}`);
+  assert(actual.length===5,`STEP3 must have exactly 5 student modules, found ${actual.length}: ${actual.join(' | ')}`);
   expected.forEach((title,i)=>assert((actual[i]||'').trim().startsWith(title),`Week4 module order mismatch at ${i+1}: ${actual[i]||'missing'}`));
   assert(await page.locator('.strengthMeasurePanel').count()===0,'Pre-experience 9-item strength measure must not render in STEP2');
   assert(!body.includes('경험 분석 전 강점행동 9문항'),'Legacy 9-item strength measure copy remains in STEP2');
-  for(const text of ['나의 경험에서 직무역량 찾기','Competency Map','My Experience DNA'])assert(body.includes(text),`Missing Week4 module: ${text}`);
+  for(const text of ['나의 경험에서 직무역량 찾기','Experience & Competency Map','STEP 4 직무탐색'])assert(body.includes(text),`Missing STEP3 module: ${text}`);
   for(const removed of ['Career Story','Career Theme','Career Direction','1개월 Career Experiment'])assert(!body.includes(removed),`Week4 should not include: ${removed}`);
-  assert(body.includes('학습과 신중함이 반복된다.'),'STEP1 comparison bridge missing');
-  assert(body.includes('전문성을 깊게 쌓고 신중하게 판단'),'STEP1 hypothesis bridge missing');
+  assert(body.includes('학습과 신중함이 반복된다.'),'STEP2 comparison bridge missing');
+  assert(body.includes('전문성을 깊게 쌓고 신중하게 판단'),'STEP2 hypothesis bridge missing');
   assert(body.includes('기존 경험'),'Existing experience list must be preserved');
 });
 
@@ -72,13 +72,10 @@ await run('Best3 representative feeds one-question Experience Interview',async p
   assert(prompt.includes('최대 5회까지 질문'),'Five-question ceiling missing');
   assert(prompt.includes('강점·역량 이름을 확정하지 않는다'),'Evidence-before-competency rule missing');
   await page.locator('#role').fill('센서 데이터 검토와 원인 후보 정리를 맡았다.');
-  await page.locator('#interviewOwnership').check();
-  await page.locator('#interviewNumbers').check();
-  await page.locator('#interviewEvidence').check();
   await page.locator('#goFactCheck').click();
-  assert(await page.locator('#situation').isVisible(),'03 fact check should open 04 with S field');
-  assert((await page.locator('#situation').inputValue()).includes('센서 오류'),'03 experience background should auto-fill 04 Situation');
-  assert((await page.locator('#challenge').inputValue()).includes('센서 데이터 검토'),'03 responsibility should auto-fill 04 Task/Role');
+  assert(await page.locator('#situation').isVisible(),'02 interview should open 03 STAR fact check');
+  assert((await page.locator('#situation').inputValue()).includes('센서 오류'),'Experience background should auto-fill Situation');
+  assert((await page.locator('#challenge').inputValue()).includes('센서 데이터 검토'),'Responsibility should auto-fill Task/Role');
   await page.locator('#aiStructured').fill('S 상황: 팀 프로젝트\nT 문제·목표와 내 역할: 센서 오류 원인을 좁혀야 했다.\nA 내가 직접 한 행동: 원인 후보를 비교했다.\nWHY 판단·선택 이유: 반복 발생 여부를 기준으로 봤다.\nR 결과: 오류 범위를 좁혔다.\n확인 가능한 증거: 실험 기록');
   await page.locator('#importStarSummary').click();
   assert((await page.locator('#situation').inputValue())==='팀 프로젝트','STAR import should fill Situation');
@@ -102,22 +99,18 @@ await run('STEP2 draft survives reload before final experience save',async page=
   assert(await page.locator('#roleTitle').inputValue()==='홍보 담당','Draft role not restored after reload');
 });
 
-await run('Virtual student can move 01 to 08 without detours',async page=>{
-  await page.locator('#goBest3').click();
-  assert(await page.locator('#best3_best_title').isVisible(),'01 → 02 route is broken');
+await run('Virtual student can move STEP3 01 to 05 and then STEP4 without detours',async page=>{
+  assert(await page.locator('#best3_best_title').isVisible(),'STEP3 representative experience input missing');
   await page.locator('#best3_best_title').fill('팀 프로젝트');
   await page.locator('#best3_best_summary').fill('자료 오류를 찾아 수정하고 발표를 마쳤다.');
   await page.locator('input[name="representative"][value="best"]').check();
   await page.locator('#useRepresentative').click();
-  assert(await page.locator('#title').isVisible(),'02 → 03 route is broken');
+  assert(await page.locator('#title').isVisible(),'01 → 02 route is broken');
   await page.locator('#category').selectOption({label:'팀프로젝트'});
   await page.locator('#roleTitle').fill('자료 검토');
   await page.locator('#role').fill('발표자료의 오류 검토를 맡았다.');
-  await page.locator('#interviewOwnership').check();
-  await page.locator('#interviewNumbers').check();
-  await page.locator('#interviewEvidence').check();
   await page.locator('#goFactCheck').click();
-  assert(await page.locator('#situation').isVisible(),'03 → 04 route is broken');
+  assert(await page.locator('#situation').isVisible(),'02 → 03 route is broken');
   assert((await page.locator('#situation').inputValue()).includes('자료 오류'),'Representative context did not auto-fill S');
   assert((await page.locator('#challenge').inputValue()).includes('오류 검토'),'Responsibility did not auto-fill T');
   await page.locator('#challenge').fill('발표 전 자료 오류를 찾아야 했고, 나는 자료 검토를 맡았다.');
@@ -126,19 +119,18 @@ await run('Virtual student can move 01 to 08 without detours',async page=>{
   await page.locator('#result').fill('수정된 자료로 발표를 완료했다.');
   await page.locator('#evidence').fill('최종 발표자료');
   await page.locator('#evidenceType').selectOption({label:'산출물·문서'});
+  await page.locator('#experienceFactChecked').check();
   await page.locator('#goCompetency').click();
-  assert(await page.locator('#comp_1').isVisible(),'04 → 05 route is broken');
+  assert(await page.locator('#comp_1').isVisible(),'03 → 04 route is broken');
   await page.locator('#comp_1').selectOption('C04');
   await page.locator('#compStatus_1').selectOption({label:'행동 확인'});
   await page.locator('#compEv_1').fill('원자료와 발표자료를 대조해 오류를 수정했다.');
   await page.locator('#competencyEvidenceChecked').check();
   await page.locator('#saveExp').click();
   await page.waitForSelector('#experienceMapPreview');
-  assert(await page.locator('#experienceMapPreview').isVisible(),'05 → 06 route is broken');
-  await page.locator('#goCompetencyMap').click();
-  assert(await page.locator('#competencyMapPreview').isVisible(),'06 → 07 route is broken');
-  await page.locator('#goExperienceDna').click();
-  assert(await page.locator('#experienceDnaPreview').isVisible(),'07 → 08 route is broken');
+  assert(await page.locator('#experienceMapPreview').isVisible(),'04 → 05 result route is broken');
+  assert(await page.locator('#competencyMapPreview').count()===1,'Competency Map must stay available inside the result block');
+  assert(await page.locator('#experienceDnaPreview').count()===1,'Career DNA comparison must stay available inside the result block');
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   assert(saved.assessments.experienceCompetency.experiences.some(x=>x.title==='팀 프로젝트'),'Virtual-student experience was not saved');
   assert(saved.assessments.experienceCompetency.experiences.some(x=>x.id==='EXP-OLD'),'Virtual-student route overwrote existing experience data');
@@ -153,9 +145,6 @@ await run('Experience save preserves old data and writes competency evidence map
   assert(await page.locator('#title').isVisible(),'Representative action should open Interview section');
   await page.locator('#category').selectOption({label:'캡스톤·연구'});
   await page.locator('#roleTitle').fill('자료분석');
-  await page.locator('#interviewOwnership').check();
-  await page.locator('#interviewNumbers').check();
-  await page.locator('#interviewEvidence').check();
 
   await openFor(page,'#action');
   await page.locator('#challenge').fill('센서 오류 원인을 좁혀야 했다.');
@@ -164,6 +153,7 @@ await run('Experience save preserves old data and writes competency evidence map
   await page.locator('#result').fill('오류 범위를 좁혔다.');
   await page.locator('#evidence').fill('실험 기록');
   await page.locator('#evidenceType').selectOption({label:'작업기록·로그'});
+  await page.locator('#experienceFactChecked').check();
   assert((await page.locator('#evidenceGradePreview').textContent()).includes('A · 객관적 자료'),'Evidence grade should be automatic');
   assert(await page.locator('#evidenceGrade').count()===0,'Manual evidence grade should be removed');
   assert(await page.locator('#actionVerbs').count()===0,'Manual action verbs field should be removed');
@@ -176,10 +166,10 @@ await run('Experience save preserves old data and writes competency evidence map
   await page.locator('#compEv_1').fill('오류 원인 후보를 비교하고 우선순위를 정했다.');
   await page.locator('#competencyEvidenceChecked').check();
   await page.locator('#saveExp').click();
-  await page.waitForSelector('#saveRoadmap');
+  await page.waitForSelector('#nextStep');
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   const ec=saved.assessments.experienceCompetency;
-  assert(ec.version==='experience-competency-week4-v9','Week4 version missing');
+  assert(ec.version==='experience-competency-step3-v10','STEP3 version missing');
   assert(ec.experiences.some(x=>x.title==='캡스톤 프로젝트'),'New experience not saved');
   assert(ec.experiences.some(x=>x.id==='EXP-OLD'),'Existing experience was overwritten');
   const newExp=ec.experiences.find(x=>x.title==='캡스톤 프로젝트');
@@ -191,12 +181,12 @@ await run('Experience save preserves old data and writes competency evidence map
   assert(readiness.includes('사실확인된 경험 2개')||readiness.includes('반복 패턴'),'Experience readiness guidance missing');
 });
 
-await run('Week4 save stores Best3 in Experience & Competency without creating new Career Roadmap',async page=>{
+await run('STEP3 representative selection stores Best3 without creating new Career Roadmap',async page=>{
   await openFor(page,'#best3_flow_title');
   await page.locator('#best3_flow_title').fill('강의자료 만들기');
   await page.locator('#best3_flow_summary').fill('시간 가는 줄 모르고 자료를 정리했다.');
   await page.locator('input[name="representative"][value="flow"]').check();
-  await page.locator('#saveRoadmap').click();
+  await page.locator('#useRepresentative').click();
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   const ec=saved.assessments.experienceCompetency;
   assert(ec.best3.flow.title==='강의자료 만들기','Best3 not saved under experienceCompetency');
@@ -205,22 +195,22 @@ await run('Week4 save stores Best3 in Experience & Competency without creating n
   assert(saved.assessments.careerDNA.hypothesis.version==='career-dna-hypothesis-v1','Career DNA was changed');
 });
 
-await run('Week6 Job Explorer bridges current Career DNA and Experience Map',async page=>{
+await run('STEP4 Job Explorer bridges current Career DNA and Experience Map',async page=>{
   await page.locator('.stepBtn[data-step="3"]').click();await page.waitForSelector('#jobPrompt');
   const body=(await page.locator('#stepRoot').textContent())||'';
-  for(const text of ['내가 탐색할 직무 찾기','나의 직무탐색 근거 확인','직장에서 해보고 싶은 일','관심 산업·분야','직무 후보 찾기','Target Job 선택'])assert(body.includes(text),`Missing STEP3 module: ${text}`);
+  for(const text of ['내가 탐색할 직무 찾기','나의 직무탐색 근거 확인','직장에서 해보고 싶은 일','관심 산업·분야','직무 후보 찾기','Target Job 선택'])assert(body.includes(text),`Missing STEP4 module: ${text}`);
   assert(body.includes('분석'),'Experience Map competency not shown in Week6 bridge');
   const prompt=await page.locator('#jobPrompt').inputValue();
-  assert(prompt.includes('[STEP 1 Career DNA · 보조근거]'),'Career DNA auxiliary block missing');
-  assert(prompt.includes('[STEP 2 경험 근거 · 우선근거]'),'Experience evidence block missing');
-  assert(prompt.includes('실제 Task·요구기술·기업조건은 STEP 4에서 공식자료로 확인'),'STEP 4 verification bridge missing');
+  assert(prompt.includes('[STEP 2 Career DNA · 보조근거]'),'Career DNA auxiliary block missing');
+  assert(prompt.includes('[STEP 3 경험 근거 · 우선근거]'),'Experience evidence block missing');
+  assert(prompt.includes('실제 Task·요구기술·기업조건은 STEP 5에서 공식자료로 확인'),'STEP 5 verification bridge missing');
   assert(prompt.includes('적합도 %, 추천순위, 취업성공확률을 만들지 않는다.'),'No-fit-score rule missing');
   assert(prompt.includes('Holland/RIASEC 유형을 임의로 추정하지 않는다.'),'No-fabricated-RIASEC rule missing');
   assert(prompt.includes('첫 줄부터 [후보 1]로 시작'),'STEP3 prompt must start directly with candidate text');
   assert(prompt.includes('JSON 금지'),'STEP3 prompt must explicitly forbid JSON');
   assert(prompt.includes('마크다운 표'),'STEP3 prompt must explicitly forbid markdown tables');
   await openFor(page,'#jobAiImport');
-  await page.locator('#jobAiImport').fill('[후보 1]\n직무명: 브랜드 마케터\n직무군: 마케팅·브랜드\n어떤 일: 고객과 시장 데이터를 바탕으로 브랜드 활동을 기획한다.\n경험·행동 근거: 리뷰 데이터를 기준별로 분류했다.\n관심 근거: 자료·데이터 분석하기를 선택했다.\n가능 산업: 유통·물류, IT·플랫폼\nSTEP 4에서 확인할 것: 실제 담당업무와 요구도구');
+  await page.locator('#jobAiImport').fill('[후보 1]\n직무명: 브랜드 마케터\n직무군: 마케팅·브랜드\n어떤 일: 고객과 시장 데이터를 바탕으로 브랜드 활동을 기획한다.\n경험·행동 근거: 리뷰 데이터를 기준별로 분류했다.\n관심 근거: 자료·데이터 분석하기를 선택했다.\n가능 산업: 유통·물류, IT·플랫폼\nSTEP 5에서 확인할 것: 실제 담당업무와 요구도구');
   await page.locator('#importJobAi').click();
   assert(await page.locator('#candidateList [data-edit]').count()===1,'Imported STEP3 candidate must expose an edit button');
   assert(await page.locator('#candidateList [data-del]').count()===1,'Imported STEP3 candidate must keep a delete button');
