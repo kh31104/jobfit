@@ -75,7 +75,7 @@ export async function render(ctx){
   document.getElementById('addCandidate')?.addEventListener('click',addCandidate);
   document.getElementById('cancelCandidateEdit')?.addEventListener('click',clearCandidateEditor);
   document.getElementById('saveTargets')?.addEventListener('click',saveTargets);
-  document.getElementById('nextStep')?.addEventListener('click',()=>{saveTargets();ctx.navigate(4)});
+  document.getElementById('nextStep')?.addEventListener('click',()=>{if(saveTargets())ctx.navigate(4)});
 
   function bindChoices(){
     document.querySelectorAll('[data-choice="activity"]').forEach(el=>el.addEventListener('change',()=>{
@@ -219,7 +219,7 @@ function parseCandidateOutput(raw=''){
   const legacy=(()=>{try{const x=JSON.parse(text);return Array.isArray(x)?x:(Array.isArray(x?.candidates)?x.candidates:[])}catch{return []}})();
   if(legacy.length)return legacy.map(x=>({title:x.title||x.job||'',family:x.family||'',summary:x.summary||x.description||'',evidence:x.evidence||x.experienceEvidence||'',why:x.why||x.interestEvidence||'',industries:Array.isArray(x.industries)?x.industries.join(', '):(x.industries||''),unknowns:x.unknowns||''}));
   const blocks=text.split(/(?=^\s*\[?후보\s*\d+\]?\s*$)/gmi).map(x=>x.trim()).filter(x=>/^(?:\[?후보\s*\d+\]?)/i.test(x));
-  const keyMap=[['title',/^\s*(?:[-•·]\s*)?직무명\s*[:：]\s*(.*)$/i],['family',/^\s*(?:[-•·]\s*)?직무군\s*[:：]\s*(.*)$/i],['summary',/^\s*(?:[-•·]\s*)?어떤\s*일(?:인가)?\s*[:：]\s*(.*)$/i],['evidence',/^\s*(?:[-•·]\s*)?경험[·ㆍ\s]*행동\s*근거\s*[:：]\s*(.*)$/i],['why',/^\s*(?:[-•·]\s*)?관심\s*근거\s*[:：]\s*(.*)$/i],['industries',/^\s*(?:[-•·]\s*)?가능\s*산업\s*[:：]\s*(.*)$/i],['unknowns',/^\s*(?:[-•·]\s*)?(?:STEP\s*4에서\s*)?확인할\s*것\s*[:：]\s*(.*)$/i]];
+  const keyMap=[['title',/^\s*(?:[-•·]\s*)?직무명\s*[:：]\s*(.*)$/i],['family',/^\s*(?:[-•·]\s*)?직무군\s*[:：]\s*(.*)$/i],['summary',/^\s*(?:[-•·]\s*)?어떤\s*일(?:인가)?\s*[:：]\s*(.*)$/i],['evidence',/^\s*(?:[-•·]\s*)?경험[·ㆍ\s]*행동\s*근거\s*[:：]\s*(.*)$/i],['why',/^\s*(?:[-•·]\s*)?관심\s*근거\s*[:：]\s*(.*)$/i],['industries',/^\s*(?:[-•·]\s*)?가능\s*산업\s*[:：]\s*(.*)$/i],['unknowns',/^\s*(?:[-•·]\s*)?(?:STEP\s*[45]에서\s*)?확인할\s*것\s*[:：]\s*(.*)$/i]];
   return blocks.map(block=>{const out={title:'',family:'',summary:'',evidence:'',why:'',industries:'',unknowns:''};let current='';for(const rawLine of block.split('\n').slice(1)){const line=rawLine.trim();if(!line)continue;const hit=keyMap.map(([k,rx])=>[k,line.match(rx)]).find(([,m])=>m);if(hit){current=hit[0];out[current]=hit[1][1].trim();continue}if(current)out[current]+=(out[current]?' ':'')+line.replace(/^[•·\-*]\s*/,'').trim()}return out}).filter(x=>x.title);
 }
 function splitList(v){return [...new Set(String(v||'').split(/[,/|]/).map(x=>x.trim()).filter(Boolean))]}
