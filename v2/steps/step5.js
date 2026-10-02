@@ -4,7 +4,7 @@ export async function render(ctx){
   const s=ctx.getState(),root=document.getElementById('stepRoot');
   const report=buildReport(s,ctx);
   root.innerHTML=`<section class="card jobfitReportStage">${styleBlock()}
-    <div class="sectionHead"><div><div class="kicker">STEP 5</div><h2>MY JOBFIT REPORT v1</h2><p>STEP 1~5에서 완료한 핵심 결과를 3페이지로 정리합니다. 전체 입력 원문은 Jobfit 저장데이터와 백업파일에 남습니다.</p></div><span class="badge">중간 결과물</span></div>
+    <div class="sectionHead"><div><div class="kicker">STEP 6</div><h2>MY JOBFIT REPORT v1</h2><p>STEP 2~5에서 완료한 핵심 결과를 3페이지로 정리합니다. 전체 입력 원문은 Jobfit 저장데이터와 백업파일에 남습니다.</p></div><span class="badge">중간 결과물</span></div>
     <div class="progress"><span style="width:43%"></span></div>
     <div class="callout info"><b>학생이 다시 읽을 수 있는 분량으로 줄였습니다.</b><br>검사 전체 문항, AI 대화 전체, STAR 원문 전체, JD 원문은 PDF에 넣지 않습니다. Career DNA → Experience Evidence → Job Exploration → Job Analysis → GAP만 남깁니다.</div>
 
@@ -55,17 +55,17 @@ function buildReport(s,ctx){
 function reportHtml(r,ctx){return `
   <section class="reportPage">
     ${pageHead('01 · CAREER DNA + EXPERIENCE','WHO AM I?')}
-    ${rBox('MY CAREER DNA',`${r.careerText?`<p>${esc(r.careerText,ctx)}</p>`:''}<p><b>중요 기준</b> ${esc(r.values.join(' · ')||'STEP 1에서 가치 단서를 확인하세요.',ctx)}</p><p><b>내가 생각하는 강점</b> ${esc(r.selfStrengths.join(' · ')||'입력 없음',ctx)}</p>`,'blue')}
+    ${rBox('MY CAREER DNA',`${r.careerText?`<p>${esc(r.careerText,ctx)}</p>`:''}<p><b>중요 기준</b> ${esc(r.values.join(' · ')||'STEP 2에서 가치 단서를 확인하세요.',ctx)}</p><p><b>내가 생각하는 강점</b> ${esc(r.selfStrengths.join(' · ')||'입력 없음',ctx)}</p>`,'blue')}
     <div class="reportGrid2">${rBox('CAREER ANCHOR · TOP 3',anchorText(r.anchor,ctx,r.anchorStatus),'blue',true)}${rBox('VIA 성격강점 · TOP 5',`<p>${esc(r.via.join(' · ')||'VIA 결과 미입력',ctx)}</p><p class="reportNote">자기이해 보조정보로 사용</p>`,'green',true)}</div>
-    ${rBox('MY BEST EXPERIENCE',r.best?.title?`<p><b>${esc(r.best.title,ctx)}</b></p><p>${esc(shortText(r.best.action||r.best.summary||r.best.result||'',180)||'경험의 핵심 행동을 STEP 2에서 확인하세요.',ctx)}</p>`:'<p>STEP 2에서 Best Experience를 확인하세요.</p>','green')}
+    ${rBox('MY BEST EXPERIENCE',r.best?.title?`<p><b>${esc(r.best.title,ctx)}</b></p><p>${esc(shortText(r.best.action||r.best.summary||r.best.result||'',180)||'경험의 핵심 행동을 STEP 3에서 확인하세요.',ctx)}</p>`:'<p>STEP 3에서 Best Experience를 확인하세요.</p>','green')}
     ${rBox('EXPERIENCE DNA',`<p>${esc(r.actions.length?r.actions.map(shortAction).join(' → '):'반복 행동을 확인하는 중입니다.',ctx)}</p>`,'blue')}
-    <div class="reportGrid3">${(r.competencies.length?r.competencies.slice(0,3):['역량 확인 중']).map(x=>rMini(x,'STEP 2의 행동 Evidence에서 확인')).join('')}</div>
+    <div class="reportGrid3">${(r.competencies.length?r.competencies.slice(0,3):['역량 확인 중']).map(x=>rMini(x,'STEP 3의 행동 Evidence에서 확인')).join('')}</div>
     ${pageFoot(r,1)}
   </section>
 
   <section class="reportPage">
     ${pageHead('02 · JOB EXPLORATION + JOB ANALYSIS','WHERE CAN I USE IT?')}
-    <div class="reportGrid2">${rBox('해보고 싶은 업무',`<p>${esc(r.desired.join(' · ')||'STEP 3에서 업무활동을 선택하세요.',ctx)}</p>`,'blue',true)}${rBox('관심 산업',`<p>${esc(r.industries.join(' · ')||'아직 산업 미정',ctx)}</p>`,'green',true)}</div>
+    <div class="reportGrid2">${rBox('해보고 싶은 업무',`<p>${esc(r.desired.join(' · ')||'STEP 4에서 업무활동을 선택하세요.',ctx)}</p>`,'blue',true)}${rBox('관심 산업',`<p>${esc(r.industries.join(' · ')||'아직 산업 미정',ctx)}</p>`,'green',true)}</div>
     ${rBox('MY TARGET',targetText(r.targets,ctx),'blue')}
     ${rBox('분석 기준 JD',jdBasisText(r.analysis,ctx),'green')}
     ${jobAnalysisReportTable(r.analysis,ctx)}
@@ -85,7 +85,7 @@ function pageHead(kicker,title){return `<div class="reportBrand">JOBFIT</div><di
 function pageFoot(r,n){return `<div class="reportMeta">Jobfit 익명코드 ${escSimple(r.code)} · 작성일 ${escSimple(r.date)}<span>MY JOBFIT REPORT v1 · ${n}/3</span></div>`}
 function rBox(title,body,tone='blue',inline=false){return `<div class="reportBox ${tone} ${inline?'inlineBox':''}"><h2>${title}</h2>${body}</div>`}
 function rMini(title,body){return `<div class="reportMini"><h3>${escSimple(title)}</h3><p>${body}</p></div>`}
-function targetText(targets,ctx){if(!targets.length)return '<p>STEP 3에서 직무 × 산업 Target을 선택하세요.</p>';return targets.slice(0,3).map((t,i)=>`<p><b>${i+1}${i===2?' 예비':'순위'}</b> ${esc(t.industry||'산업 미정',ctx)} × ${esc(t.job?.title||'직무',ctx)}</p>`).join('')}
+function targetText(targets,ctx){if(!targets.length)return '<p>STEP 4에서 직무 × 산업 Target을 선택하세요.</p>';return targets.slice(0,3).map((t,i)=>`<p><b>${i+1}${i===2?' 예비':'순위'}</b> ${esc(t.industry||'산업 미정',ctx)} × ${esc(t.job?.title||'직무',ctx)}</p>`).join('')}
 function jdBasisText(a,ctx){const selected=(a.sources||[]).find(x=>x.id===a.selectedSourceId)||(a.sources||[])[0];if(!selected)return '<p>STEP 5에서 분석 기준 JD를 선택하세요.</p>';const company=selected.companyName||a.company?.name||'기업 미입력';return `<p><b>기업</b> ${esc(company,ctx)} · <b>직무</b> ${esc(a.jobTitle||'직무 미입력',ctx)}</p><p><b>공고</b> ${esc(selected.name||'공고명 미입력',ctx)} · <b>확인일</b> ${esc(selected.checkedAt||'미입력',ctx)}</p>`}
 function jobAnalysisText(a,ctx){const jt=a.jobTable||{},tasks=(a.tasks||[]).slice(0,5).map(x=>x.name).filter(Boolean);const taskText=jt.tasks||tasks.join(' · ')||a.newHireWork||'STEP 5에서 실제 직무분석을 완료하세요.';return `<p><b>주요 과업</b> ${esc(taskText,ctx)}</p><p><b>필요역량</b> ${esc(jt.competencies||a.skills||a.knowledge||'확인 필요',ctx)}</p>`}
 function jobAnalysisReportTable(a,ctx){const jt=a.jobTable||{};const legacyTasks=(a.tasks||[]).slice(0,5).map(x=>x.name).filter(Boolean).join(' · ');const rows=[['고객(KPI)',jt.customerKpi||'확인 필요'],['주요 과업',jt.tasks||legacyTasks||a.newHireWork||'확인 필요'],['주요 해결과제',jt.challenge||'확인 필요'],['해결방법',jt.method||'확인 필요'],['필요역량',jt.competencies||[a.knowledge,a.skills,a.behaviors].filter(Boolean).join(' / ')||'확인 필요']];return `<div class="reportTable jobAnalysisReport">${rows.map(([k,v])=>`<div class="tr"><div><b>${esc(k,ctx)}</b></div><div>${esc(v,ctx)}</div></div>`).join('')}</div>${jt.careerPlan?rBox('경력개발 · 선택',`<p>${esc(jt.careerPlan,ctx)}</p>`,'blue'):''}`}
