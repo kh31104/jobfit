@@ -347,6 +347,9 @@ await run('STEP 5 separates job analysis from My Spec and produces concise GAP o
 
 await run('STEP 6 renders a three-page MY JOBFIT REPORT v1 from STEP 5 outputs',async page=>{
   const state=structuredClone(baseState);state.activeStep=5;
+  state.assessments.careerDNA.hypothesis={};
+  state.assessments.careerDNA.reflection={fit:'반복 행동을 실제 경험으로 확인하며 진로 방향을 정리하고 있다.',question:'경험으로 더 확인할 부분'};
+  state.assessments.careerDNA.careerAnchor={ranking:[{code:'TF',name:'전문성 추구형',score:0},{code:'GM',name:'리더십 추구형',score:0},{code:'AU',name:'자율성/독립성 추구형',score:0}],responses:[1,2],bonusItems:[],scores:{TF:0,GM:0,AU:0},complete:false};
   state.artifacts.jobExplorer.targets=['job1'];
   state.artifacts.jobExplorer.targetCombos=[{id:'target_job1_auto',jobId:'job1',industry:'자동차·모빌리티',priority:1}];
   state.artifacts.jobDeepDive={targetAnalyses:{target_job1_auto:{
@@ -363,10 +366,17 @@ await run('STEP 6 renders a three-page MY JOBFIT REPORT v1 from STEP 5 outputs',
   assert(await page.locator('.reportPage').count()===3,'MY JOBFIT REPORT v1 must render exactly three pages');
   const text=(await page.locator('#jobfitReportPrint').textContent())||'';
   for(const expected of ['WHO AM I?','WHERE CAN I USE IT?',"WHAT DO I HAVE & WHAT'S NEXT?",'고객(KPI)','주요 과업','주요 해결과제','해결방법','필요역량','MY SPEC','TOEIC 820','Excel, Python','핵심 GAP','3개월 행동','생산공정 기본지식 보강'])assert(text.includes(expected),'Report missing: '+expected);
+  assert(text.includes('반복 행동을 실제 경험으로 확인하며 진로 방향을 정리하고 있다.'),'Career DNA object fallback did not render readable text');
+  assert(text.includes('검사 미완료'),'Incomplete Career Anchor must be labeled without a fake ranking');
+  assert(!text.includes('[object Object]'),'Report must never expose object stringification');
+  assert(!text.includes('0점'),'Incomplete Career Anchor must not show zero-score TOP 3');
   const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   assert(stored.artifacts.jobfitReportV1?.version==='my-jobfit-report-v1','STEP 6 report metadata missing');
   await page.emulateMedia({media:'print'});
   assert(await page.locator('.reportPage').first().isVisible(),'Report is not visible in print media');
+  const pdf=await page.pdf({printBackground:true,preferCSSPageSize:true});
+  const pdfPageCount=(pdf.toString('latin1').match(/\/Type\s*\/Page\b/g)||[]).length;
+  assert(pdfPageCount===3,`Printed MY JOBFIT REPORT must contain exactly 3 PDF pages, found ${pdfPageCount}`);
 });
 await run('Marketing student STEP 1-6 outputs flow into MY JOBFIT REPORT',async page=>{
   const state=structuredClone(baseState);state.activeStep=4;
@@ -427,6 +437,9 @@ await run('Marketing student STEP 1-6 outputs flow into MY JOBFIT REPORT',async 
   const text=(await page.locator('#jobfitReportPrint').textContent())||'';
   for(const expected of ['브랜드/콘텐츠 마케터','가상뷰티','글로벌 브랜드/콘텐츠 마케터 신입','고객(KPI)','주요 과업','주요 해결과제','해결방법','필요역량','TOEIC 850','Excel, Google Sheets, Canva','숏폼 콘텐츠 직접 기획·제작 포트폴리오 부족','3개월 행동'])assert(text.includes(expected),'Marketing report missing: '+expected);
   assert(await page.locator('.reportPage').count()===3,'Marketing report must remain three pages');
+  const marketingPdf=await page.pdf({printBackground:true,preferCSSPageSize:true});
+  const marketingPdfPageCount=(marketingPdf.toString('latin1').match(/\/Type\s*\/Page\b/g)||[]).length;
+  assert(marketingPdfPageCount===3,`Marketing student PDF must contain exactly 3 pages, found ${marketingPdfPageCount}`);
 });
 
 await run('BASE Career Fit Map accepts linked combination and rejects mismatched relation',async page=>{
