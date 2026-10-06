@@ -131,7 +131,7 @@ await run('STEP 8 Resume Lab supports three form tabs and optional detail docume
   await page.locator('[data-resume-template="ncs"]').click();
   await page.locator('[data-resume-bind="forms.ncs.job"]').fill('생산기술');
   await page.locator('[data-resume-template="blind"]').click();
-  assert(((await page.locator('#resumeTemplateGuide').textContent())||'').includes('블라인드 작성 주의'),'Blind privacy guidance missing');
+  assert(((await page.locator('#resumeTemplateGuide').textContent())||'').includes('블라인드 작성 원칙'),'Blind privacy guidance missing');
   await page.locator('[data-resume-bind="forms.blind.targetJob"]').fill('생산기술');
   await page.locator('[data-resume-doc="experience"]').click();
   await page.locator('details[data-resume-section="experience-doc-evidence"] summary').click();
@@ -145,6 +145,30 @@ await run('STEP 8 Resume Lab supports three form tabs and optional detail docume
   assert(stored.artifacts.resumeLab.optionalDocument.experience.action.includes('측정조건'),'Experience description was not saved');
 });
 
+await run('STEP 8 field policy removes outdated default fields and keeps job-related items',async page=>{
+  const s=state(7);await seed(page,s);
+  let body=(await page.locator('#resumeTemplateForm').textContent())||'';
+  assert(body.includes('필수')&&body.includes('선택·조건부')&&body.includes('기본 양식에서 삭제'),'Standard resume field policy is not visible');
+  assert(await page.locator('[data-resume-bind="forms.standard.birthDate"]').count()===0,'Standard resume should not ask birth date by default');
+  assert(await page.locator('#resumeTemplateForm input[type="file"]').count()===0,'Standard resume should not ask for a photo by default');
+  assert(await page.locator('[data-resume-bind="forms.standard.phone"]').count()===1&&await page.locator('[data-resume-bind="forms.standard.email"]').count()===1,'Standard contact essentials missing');
+
+  await page.locator('[data-resume-template="ncs"]').click();
+  body=(await page.locator('#resumeTemplateForm').textContent())||'';
+  for(const removed of ['학교명','취미 · 특기','자격증(수상)번호'])assert(!body.includes(removed),'NCS default form still contains removed field: '+removed);
+  assert(await page.locator('[data-resume-bind="forms.ncs.nameEn"]').count()===0,'NCS English-name field should be removed');
+  assert(await page.locator('[data-resume-bind="forms.ncs.phone"]').count()===0,'NCS duplicate phone field should be removed');
+  assert(await page.locator('[data-resume-bind^="forms.ncs.training"]').count()>0,'NCS job-related education fields missing');
+
+  await page.locator('[data-resume-template="blind"]').click();
+  body=(await page.locator('#resumeTemplateForm').textContent())||'';
+  assert(await page.locator('[data-resume-bind="forms.blind.receiptNo"]').count()===0,'Blind receipt number should not be manually entered');
+  assert(await page.locator('[data-resume-bind="forms.blind.finalSchoolRegion"]').count()===0,'Blind final-school region should be removed');
+  for(const banned of ['사진','생년월일','최종학교 소재지'])assert(!body.includes(banned),'Blind default form still contains removed field: '+banned);
+  assert(body.includes('학교명 제외'),'Blind experience organization guidance should prevent school-name disclosure');
+  assert(body.includes('공고에 가점기준이 있을 때만'),'Blind bonus fields should be conditional on the posting');
+});
+
 await run('STEP 8 resume forms stay compact and show examples on desktop and mobile',async page=>{
   const s=state(7);await seed(page,s);
   const standardSections=page.locator('#resumeTemplateForm details[data-resume-section]');
@@ -154,12 +178,12 @@ await run('STEP 8 resume forms stay compact and show examples on desktop and mob
   const standardExample=(await page.locator('[data-resume-example-panel="standard"]').textContent())||'';
   assert(standardExample.includes('표준이력서 예시')&&standardExample.includes('김민지'),'Standard resume example did not open');
   await page.locator('[data-resume-template="ncs"]').click();
-  assert(await page.locator('#resumeTemplateForm details[data-resume-section]').count()===7,'NCS resume should be split into seven collapsible sections');
+  assert(await page.locator('#resumeTemplateForm details[data-resume-section]').count()===5,'NCS resume should be split into five collapsible sections');
   await page.locator('[data-resume-example="ncs"]').click();
   const ncsExample=(await page.locator('[data-resume-example-panel="ncs"]').textContent())||'';
   assert(ncsExample.includes('NCS 이력서 예시')&&ncsExample.includes('직무관련 교육'),'NCS resume example did not open');
   await page.locator('[data-resume-template="blind"]').click();
-  assert(await page.locator('#resumeTemplateForm details[data-resume-section]').count()===5,'Blind resume should be split into five collapsible sections');
+  assert(await page.locator('#resumeTemplateForm details[data-resume-section]').count()===6,'Blind resume should be split into six collapsible sections');
   await page.locator('[data-resume-example="blind"]').click();
   const blindExample=(await page.locator('[data-resume-example-panel="blind"]').textContent())||'';
   assert(blindExample.includes('블라인드 이력서 예시')&&blindExample.includes('학교명')&&!blindExample.includes('부경대학교'),'Blind example must teach the no-school-name rule without exposing a school name');
