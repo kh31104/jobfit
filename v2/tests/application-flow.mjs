@@ -155,7 +155,9 @@ await run('STEP 8 field policy removes outdated default fields and keeps job-rel
 
   await page.locator('[data-resume-template="ncs"]').click();
   body=(await page.locator('#resumeTemplateForm').textContent())||'';
-  for(const removed of ['학교명','취미 · 특기','자격증(수상)번호'])assert(!body.includes(removed),'NCS default form still contains removed field: '+removed);
+  assert(await page.locator('[data-resume-bind^="forms.ncs.education"]').count()===0,'NCS school-history fields should be removed from the default form');
+  assert(await page.locator('[data-resume-bind="forms.ncs.hobby"]').count()===0&&await page.locator('[data-resume-bind="forms.ncs.specialty"]').count()===0,'NCS hobby/specialty fields should be removed');
+  assert(await page.locator('[data-resume-bind$=".number"]').count()===0,'NCS certificate-number field should be removed');
   assert(await page.locator('[data-resume-bind="forms.ncs.nameEn"]').count()===0,'NCS English-name field should be removed');
   assert(await page.locator('[data-resume-bind="forms.ncs.phone"]').count()===0,'NCS duplicate phone field should be removed');
   assert(await page.locator('[data-resume-bind^="forms.ncs.training"]').count()>0,'NCS job-related education fields missing');
@@ -164,7 +166,8 @@ await run('STEP 8 field policy removes outdated default fields and keeps job-rel
   body=(await page.locator('#resumeTemplateForm').textContent())||'';
   assert(await page.locator('[data-resume-bind="forms.blind.receiptNo"]').count()===0,'Blind receipt number should not be manually entered');
   assert(await page.locator('[data-resume-bind="forms.blind.finalSchoolRegion"]').count()===0,'Blind final-school region should be removed');
-  for(const banned of ['사진','생년월일','최종학교 소재지'])assert(!body.includes(banned),'Blind default form still contains removed field: '+banned);
+  assert(await page.locator('#resumeTemplateForm input[type="file"]').count()===0,'Blind form should not include a photo field');
+  assert(await page.locator('[data-resume-bind="forms.blind.birthDate"]').count()===0,'Blind form should not include a birth-date field');
   assert(body.includes('학교명 제외'),'Blind experience organization guidance should prevent school-name disclosure');
   assert(body.includes('공고에 가점기준이 있을 때만'),'Blind bonus fields should be conditional on the posting');
 });
