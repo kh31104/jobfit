@@ -222,6 +222,7 @@ await run('STEP 8 auto-fills only reusable facts from STEP 1-7',async page=>{
   assert(((await page.locator('[data-resume-source-for="forms.standard.education.r0.major"]').textContent())||'').includes('STEP 1'),'Education source label missing');
   assert(((await page.locator('[data-resume-source-for="forms.standard.certifications.r0.name"]').textContent())||'').includes('STEP 5'),'Credential source label missing');
   assert(((await page.locator('[data-resume-source-for="forms.standard.activities.r0.activity"]').textContent())||'').includes('STEP 3'),'Experience source label missing');
+  await page.locator('details[data-resume-section="standard-education"] summary').click();
   await page.locator('[data-resume-bind="forms.standard.education.r0.major"]').fill('기계시스템공학과');
   assert(((await page.locator('[data-resume-source-for="forms.standard.education.r0.major"]').textContent())||'').includes('학생 수정'),'Edited imported field must show student modification');
   assert(await page.locator('[data-extra-exp-mode="new"]').count()===1,'New experience tab missing');
