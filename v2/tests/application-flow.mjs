@@ -123,4 +123,25 @@ await run('New STEP 8 Resume Lab keeps unverified STEP 5 evidence as draft',asyn
   assert(stored.artifacts.resumeLab.items[0].status==='draft','Unverified resume item should remain draft');
 });
 
+await run('STEP 8 Resume Lab supports three form tabs and optional detail documents',async page=>{
+  const s=state(7);await seed(page,s);
+  const text=(await page.locator('#stepRoot').textContent())||'';
+  for(const label of ['표준이력서','NCS 이력서','블라인드 이력서'])assert(text.includes(label),'Resume template tab missing: '+label);
+  await page.locator('[data-resume-bind="forms.standard.nameKo"]').fill('홍길동');
+  await page.locator('[data-resume-template="ncs"]').click();
+  await page.locator('[data-resume-bind="forms.ncs.job"]').fill('생산기술');
+  await page.locator('[data-resume-template="blind"]').click();
+  assert(((await page.locator('#resumeTemplateGuide').textContent())||'').includes('블라인드 작성 주의'),'Blind privacy guidance missing');
+  await page.locator('[data-resume-bind="forms.blind.targetJob"]').fill('생산기술');
+  await page.locator('[data-resume-doc="experience"]').click();
+  await page.locator('[data-resume-bind="optionalDocument.experience.action"]').fill('측정조건을 나눠 비교했다');
+  const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
+  assert(stored.artifacts.resumeLab.templateType==='blind','Selected resume template was not saved');
+  assert(stored.artifacts.resumeLab.forms.standard.nameKo==='홍길동','Standard resume input was not preserved');
+  assert(stored.artifacts.resumeLab.forms.ncs.job==='생산기술','NCS resume input was not preserved');
+  assert(stored.artifacts.resumeLab.forms.blind.targetJob==='생산기술','Blind resume input was not preserved');
+  assert(stored.artifacts.resumeLab.optionalDocument.type==='experience','Optional document selection was not saved');
+  assert(stored.artifacts.resumeLab.optionalDocument.experience.action.includes('측정조건'),'Experience description was not saved');
+});
+
 await browser.close();if(failed)process.exit(1);
