@@ -197,6 +197,52 @@ await run('STEP 8 resume forms stay compact and show examples on desktop and mob
   assert(guide.includes('필요한 항목만 열어 작성')&&guide.includes('좌우로 밀어'),'Mobile/compact usage guidance is missing');
 });
 
+await run('STEP 8 auto-fills only reusable facts from STEP 1-7',async page=>{
+  const s=state(7);
+  s.profile.institution='부경대학교';s.profile.major='기계공학과';
+  s.assessments.experienceCompetency.experiences=[
+    {id:'exp1',category:'프로젝트',title:'센서오차 캡스톤',period:'2026.03~2026.06',organization:'부경대학교 기계공학과',roleTitle:'데이터 분석 담당',action:'측정조건을 나눠 비교했다',result:'오차 원인을 확인했다',evidence:'측정기록표',factChecked:true},
+    {id:'exp2',category:'교육·수업',title:'생산관리',period:'2026.03~2026.06',action:'공정 데이터를 조건별로 정리했다',result:'조건별 차이를 비교했다',evidence:'수업 과제',factChecked:true}
+  ];
+  s.artifacts.jdAnalyzer={postings:[{id:'jd1',company:'가상모빌리티',jobTitle:'생산기술',requirements:[],gates:[],gateReviewed:true}],selectedId:'jd1'};
+  s.artifacts.jobDeepDive={analyses:{job1:{company:{name:'가상모빌리티'},studentSpec:{certificates:'컴퓨터활용능력 1급, ADsP 준비 중',language:'TOEIC 820',tools:'Excel, Python',portfolio:''}}},targetAnalyses:{}};
+  await seed(page,s);
+  const autoText=(await page.locator('#resumeAutoImport').textContent())||'';
+  assert(autoText.includes('앞에서 이미 입력한 사실은 다시 쓰지 않습니다'),'STEP 8 prior-data reuse guidance missing');
+  await page.locator('[data-resume-import="all"]').click();
+  assert((await page.locator('[data-resume-bind="forms.standard.education.r0.school"]').inputValue())==='부경대학교','Standard education school was not imported');
+  assert((await page.locator('[data-resume-bind="forms.standard.education.r0.major"]').inputValue())==='기계공학과','Standard major was not imported');
+  const certs=await page.locator('[data-resume-bind^="forms.standard.certifications"][data-resume-bind$=".name"]').allInputValues();
+  assert(certs.some(x=>x.includes('컴퓨터활용능력 1급'))&&certs.some(x=>x.includes('TOEIC 820')),'STEP 5 credentials were not imported');
+  assert(!certs.some(x=>x.includes('준비 중')),'Unacquired credential must not be imported as completed');
+  assert((await page.locator('[data-resume-bind="forms.standard.activities.r0.activity"]').inputValue()).includes('센서오차'),'Verified project experience was not imported');
+  assert((await page.locator('#skills').inputValue()).includes('Excel'),'STEP 5 tools were not reused in Resume skills');
+  await page.locator('[data-resume-template="blind"]').click();
+  await page.locator('[data-resume-import="all"]').click();
+  const blindOrg=await page.locator('[data-resume-bind="forms.blind.experience.r0.organization"]').inputValue();
+  assert(!blindOrg.includes('부경대학교')&&blindOrg.includes('프로젝트'),'Blind auto-import must strip school-identifying organization names');
+  assert(await page.locator('[data-resume-bind^="forms.blind.training"]').count()>0,'Verified education experience should be available to blind education fields');
+});
+
+await run('STEP 9 reuses STEP 8 Final Ready experience without retyping',async page=>{
+  const s=state(8);
+  s.assessments.experienceCompetency.experiences=[{id:'exp1',title:'센서 데이터 캡스톤',rawVoice:'센서 오차가 커서 조건을 나눠 다시 확인했습니다.',challenge:'센서 오차 원인을 찾아야 했다',action:'측정조건을 온도와 설치각도별로 나눠 비교했다',result:'오차가 커지는 조건을 확인했다',evidence:'측정기록표',factChecked:true}];
+  s.artifacts.jdAnalyzer={postings:[{id:'jd1',company:'가상모빌리티',jobTitle:'생산기술',requirements:[{id:'r1',text:'공정 데이터 분석',type:'Skill',level:'필수'}],gates:[],gateReviewed:true}],selectedId:'jd1'};
+  s.artifacts.careerAssets={assets:[{id:'a1',postingId:'jd1',experienceId:'exp1',experienceTitle:'센서 데이터 캡스톤',requirementId:'r1',requirement:'공정 데이터 분석',evidenceLevel:'A · 직접 증거',proof:'측정조건을 온도와 설치각도별로 나눠 비교했다',fact:'측정기록표',factCheck:'검증완료',sourceExperienceFactChecked:true}]};
+  s.artifacts.resumeLab={items:[{id:'resume1',assetId:'a1',assetTitle:'센서 데이터 캡스톤',requirement:'공정 데이터 분석',finalBullet:'측정조건을 나눠 비교해 오차가 커지는 조건을 확인',factChecked:true,assetVerified:true,status:'final-ready'}],summary:'',skills:'Excel',notes:''};
+  await seed(page,s);
+  assert(await page.locator('#resumeEvidenceSource').count()===1,'STEP 9 should expose STEP 8 Final Ready resume evidence');
+  await page.locator('#resumeEvidenceSource').selectOption('resume1');
+  await page.locator('#loadResumeEvidence').click();
+  assert(await page.locator('[data-asset="a1"]').isChecked(),'Resume source did not select its Career Asset');
+  assert((await page.locator('#requirementId').inputValue())==='r1','Resume source did not select the linked JD requirement');
+  assert((await page.locator('#claim').inputValue()).includes('오차가 커지는 조건'),'Resume bullet was not reused as the initial claim');
+  assert((await page.locator('#rawAnswer').inputValue()).includes('센서 오차가 커서'),'Original STEP 3 Raw Voice was not reused');
+  const structure=await page.locator('#structure').inputValue();
+  assert(structure.includes('Action:')&&structure.includes('측정기록표'),'Fact-based structure memo was not generated from existing evidence');
+  assert((await page.locator('#draft').inputValue())==='','AI draft must remain empty until the student requests drafting');
+});
+
 await run('STEP 8 student persona completes resume preview and Career Asset autofill',async page=>{
   const s=state(7);
   s.assessments.experienceCompetency.experiences=[{id:'exp1',category:'프로젝트',title:'캡스톤 센서오차 분석',period:'2026.03~2026.06',roleTitle:'데이터 분석 담당',challenge:'센서 측정값의 오차 원인을 좁혀야 했다',action:'측정조건을 온도와 설치각도별로 나눠 값을 비교했다',result:'설치각도에 따라 오차가 커지는 패턴을 확인했다',evidence:'측정기록표와 발표자료',factChecked:true}];
