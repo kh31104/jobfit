@@ -144,4 +144,43 @@ await run('STEP 8 Resume Lab supports three form tabs and optional detail docume
   assert(stored.artifacts.resumeLab.optionalDocument.experience.action.includes('측정조건'),'Experience description was not saved');
 });
 
+await run('STEP 8 student persona completes resume preview and Career Asset autofill',async page=>{
+  const s=state(7);
+  s.assessments.experienceCompetency.experiences=[{id:'exp1',category:'프로젝트',title:'캡스톤 센서오차 분석',period:'2026.03~2026.06',roleTitle:'데이터 분석 담당',challenge:'센서 측정값의 오차 원인을 좁혀야 했다',action:'측정조건을 온도와 설치각도별로 나눠 값을 비교했다',result:'설치각도에 따라 오차가 커지는 패턴을 확인했다',evidence:'측정기록표와 발표자료',factChecked:true}];
+  s.artifacts.jdAnalyzer={postings:[{id:'jd1',company:'가상모빌리티',jobTitle:'생산기술',rawPosting:'공정 데이터 분석 및 개선',gates:[],gateReviewed:true,requirements:[{id:'r1',text:'공정 데이터 분석',type:'Skill',level:'필수'}]}],selectedId:'jd1'};
+  s.artifacts.careerAssets={assets:[{id:'a1',postingId:'jd1',experienceId:'exp1',experienceTitle:'캡스톤 센서오차 분석',requirementId:'r1',requirement:'공정 데이터 분석',requirementLevel:'필수',evidenceLevel:'A · 직접 증거',proof:'측정조건을 온도와 설치각도별로 나눠 값을 비교했다',fact:'측정기록표와 발표자료',jobLink:'조건별 데이터를 비교해 이상 원인을 좁히는 생산기술 업무와 연결',factCheck:'검증완료',sourceExperienceFactChecked:true}]};
+  await seed(page,s);
+  await page.locator('[data-resume-bind="forms.standard.targetJob"]').fill('생산기술');
+  await page.locator('[data-resume-bind="forms.standard.nameKo"]').fill('김민지');
+  await page.locator('[data-resume-bind="forms.standard.email"]').fill('minji@example.com');
+  await page.locator('[data-resume-bind="forms.standard.phone"]').fill('010-0000-0000');
+  await page.locator('[data-resume-bind="forms.standard.education.r0.period"]').fill('2023.03~2027.02');
+  await page.locator('[data-resume-bind="forms.standard.education.r0.school"]').fill('부경대학교');
+  await page.locator('[data-resume-bind="forms.standard.education.r0.graduation"]').fill('졸업예정');
+  await page.locator('#assetId').selectOption('a1');
+  await page.locator('#section').selectOption({label:'프로젝트'});
+  await page.locator('#rawBullet').fill('센서 측정조건을 나눠 오차 원인을 분석함');
+  await page.locator('#finalBullet').fill('측정조건을 온도와 설치각도별로 나눠 비교해 오차가 커지는 조건을 확인');
+  await page.locator('#factChecked').check();
+  await page.locator('#addItem').click();
+  await page.locator('[data-resume-doc="experience"]').click();
+  await page.locator('[data-asset-source="experience"]').selectOption('a1');
+  await page.locator('[data-auto-asset="experience"]').click();
+  const action=await page.locator('[data-resume-bind="optionalDocument.experience.action"]').inputValue();
+  const evidence=await page.locator('[data-resume-bind="optionalDocument.experience.resultEvidence"]').inputValue();
+  assert(action.includes('온도와 설치각도별'),'Career Asset action was not auto-filled into experience description');
+  assert(evidence.includes('측정기록표'),'Career Asset evidence was not auto-filled into experience description');
+  await page.locator('[data-resume-bind="optionalDocument.experience.factChecked"]').check();
+  await page.locator('#summary').fill('공정 데이터를 조건별로 나눠 원인을 확인해 본 생산기술 지원자');
+  await page.locator('#skills').fill('Excel');
+  await page.locator('#refreshResumePreview').click();
+  const preview=(await page.locator('#resumeA4Preview').textContent())||'';
+  for(const expected of ['김민지','생산기술','부경대학교','측정조건을 온도와 설치각도별로 나눠 비교','경험기술서','측정기록표와 발표자료'])assert(preview.includes(expected),'A4 preview missing: '+expected);
+  assert(!((await page.locator('#resumeA4Preview').getAttribute('class'))||'').includes('hidden'),'A4 preview stayed hidden');
+  const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
+  assert(stored.artifacts.resumeLab.items.some(x=>x.status==='final-ready'),'Verified Resume Bullet was not stored as final-ready');
+  assert(stored.artifacts.resumeLab.optionalDocument.experience.factChecked===true,'Experience description Fact Check was not saved');
+  assert(stored.artifacts.resumeLab.optionalDocument.experience.assetId==='a1','Career Asset source was not preserved');
+});
+
 await browser.close();if(failed)process.exit(1);

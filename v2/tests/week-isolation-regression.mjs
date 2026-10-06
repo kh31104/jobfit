@@ -34,8 +34,11 @@ async function run(name,viewport){
     await page.locator('#makeCodeBtn').click();const code=(await page.locator('#anonCode').textContent()||'').trim();assert(/^JF26-[A-Z2-9]{6}$/.test(code),'Anonymous code creation changed');
     for(let step=0;step<=11;step++){
       await page.locator(`.stepBtn[data-step="${step}"]`).click();await page.waitForTimeout(70);
+      const body=(await page.locator('#stepRoot').textContent())||'';
+      const headingCount=await page.locator('#stepRoot h2').count();
+      if(!headingCount)throw new Error(`STEP ${step} heading missing · BODY: ${body.slice(0,500)} · ERRORS: ${errors.slice(-3).join(' | ')}`);
       const heading=((await page.locator('#stepRoot h2').first().textContent())||'').trim();assert(heading.length>0,`STEP ${step} heading missing`);
-      const body=(await page.locator('#stepRoot').textContent())||'';assert(!body.includes('화면을 불러오지 못했습니다'),`STEP ${step} render failed`);assert(new URL(page.url()).searchParams.get('course')==='INJE2026',`Course URL parameter lost at STEP ${step}`);
+      assert(!body.includes('화면을 불러오지 못했습니다'),`STEP ${step} render failed · ${body.slice(0,500)}`);assert(new URL(page.url()).searchParams.get('course')==='INJE2026',`Course URL parameter lost at STEP ${step}`);
     }
     await page.locator('.stepBtn[data-step="0"]').click();await page.reload({waitUntil:'networkidle'});const restored=(await page.locator('#anonCode').textContent()||'').trim();assert(restored===code,'STEP navigation or reload lost learner identity');
     if(errors.length)throw new Error(errors.join('\n'));console.log(`PASS ${name}`);
