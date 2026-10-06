@@ -72,10 +72,10 @@ function resumeTab(type,label,current){
   return '<button type="button" class="btn '+(current===type?'primary':'secondary')+'" data-resume-template="'+type+'">'+label+'</button>';
 }
 function resumeTemplateGuide(type){
-  var common='<br><span class="muted small">화면이 길지 않도록 기본정보만 먼저 펼쳐집니다. 학력·경력·자격 등 필요한 항목만 열어 작성하세요. 모바일 표는 좌우로 밀어 입력할 수 있습니다.</span>';
-  if(type==='blind')return '<div class="callout warn"><b>블라인드 작성 주의</b><br>사진·생년월일·성별·출신지역·가족관계·학교명 등 기관이 금지한 개인정보는 쓰지 않습니다. 실제 공고의 블라인드 기준이 우선합니다.'+common+'</div>';
-  if(type==='ncs')return '<div class="callout info"><b>NCS 이력서</b><br>교육·자격·훈련·경험을 직무 관련 내용 중심으로 작성합니다. 기관별 NCS 입사지원서 양식이 있으면 그 양식을 우선합니다.'+common+'</div>';
-  return '<div class="callout info"><b>표준이력서</b><br>일반 기업 지원에 쓰기 쉬운 기본형입니다. 사진·생년월일 등은 기업이 요구할 때만 입력하고 불필요한 개인정보는 비워둘 수 있습니다.'+common+'</div>';
+  var common='<br><span class="muted small">Jobfit은 특정 기업의 법정 서식을 대신하지 않습니다. 실제 지원에서는 해당 기업·기관의 지정 양식을 우선하세요.</span>';
+  if(type==='blind')return '<div class="callout warn"><b>블라인드 작성 원칙</b><br>평가와 무관한 개인정보는 빼고 직무 관련 교육·자격·경험·경력 중심으로 작성합니다. 연락처 등 전형 운영에 필요한 정보는 평가자료와 분리되는 것을 전제로 합니다.'+common+'</div>';
+  if(type==='ncs')return '<div class="callout info"><b>NCS 이력서</b><br>지원자 식별에 필요한 최소 정보와 직무 관련 교육·훈련·자격·경험·경력을 중심으로 작성합니다. 학교명·연령·사진처럼 직무와 무관한 요소는 기본 양식에서 제외했습니다.'+common+'</div>';
+  return '<div class="callout info"><b>표준이력서</b><br>일반 기업 지원용 기본형입니다. 연락 가능한 정보와 직무 관련 이력은 남기고, 사진·생년월일처럼 채용 판단에 꼭 필요하지 않은 항목은 Jobfit 기본 양식에서 제외했습니다.'+common+'</div>';
 }
 function resumeTemplateForm(data,ctx){
   if(data.templateType==='ncs')return ncsResumeForm(data,ctx);
@@ -83,65 +83,61 @@ function resumeTemplateForm(data,ctx){
   return standardResumeForm(data,ctx);
 }
 function standardResumeForm(data,ctx){
-  return '<div class="listCard"><div class="listHead"><div><span class="rankTag">선택 양식</span><h3>표준이력서</h3></div><span class="scoreChip">직접 입력</span></div>'
+  return '<div class="listCard"><div class="listHead"><div><span class="rankTag">선택 양식</span><h3>표준이력서</h3></div><span class="scoreChip">일반 기업형</span></div>'
+    +resumeFieldPolicy('standard')
     +resumeExampleControls('standard')
-    +resumeFieldGroup('standard-basic','기본정보 · 먼저 작성','<div class="grid2">'
+    +resumeFieldGroup('standard-basic','기본정보 · 필수','<div class="grid2">'
       +boundField(data,ctx,'forms.standard.targetJob','지원직무','예: 생산기술')
-      +'<div class="field"><label>사진 <span class="muted">선택</span></label><input type="file" accept="image/*"><span class="muted small">사진 파일은 Jobfit 저장데이터에 저장하지 않습니다.</span></div>'
-      +boundField(data,ctx,'forms.standard.nameKo','한글이름')
-      +boundField(data,ctx,'forms.standard.nameEn','영문이름')
-      +boundField(data,ctx,'forms.standard.birthDate','생년월일','선택 입력','date')
+      +boundField(data,ctx,'forms.standard.nameKo','성명')
       +boundField(data,ctx,'forms.standard.phone','휴대폰')
       +boundField(data,ctx,'forms.standard.email','이메일','','email')
-      +boundField(data,ctx,'forms.standard.address','주소','선택 입력')
+      +boundField(data,ctx,'forms.standard.nameEn','영문이름 · 선택','해외업무·영문서류 등 필요한 경우')
+      +boundField(data,ctx,'forms.standard.address','주소 · 지원처 요구 시','시·군·구 또는 지원처가 요구한 범위')
     +'</div>',true)
-    +resumeGridTable(data,ctx,'학력','forms.standard.education',[['period','기간'],['school','학교'],['gpa','학점'],['graduation','졸업여부']],3)
-    +resumeGridTable(data,ctx,'경력','forms.standard.career',[['period','기간'],['company','회사명'],['position','직급·역할'],['employmentType','고용형태']],3)
-    +resumeGridTable(data,ctx,'자격증 · 어학능력','forms.standard.certifications',[['date','날짜'],['name','자격증·어학'],['score','점수/급수'],['issuer','발급기관']],4)
-    +resumeGridTable(data,ctx,'대외활동','forms.standard.activities',[['period','기간'],['activity','활동내용'],['organization','기관'],['note','비고']],4)
+    +resumeGridTable(data,ctx,'학력 · 선택','forms.standard.education',[['period','기간'],['school','학교·교육기관'],['major','전공·과정'],['graduation','졸업·이수상태'],['gpa','학점(요구 시)']],3)
+    +resumeGridTable(data,ctx,'경력 · 해당 시','forms.standard.career',[['period','기간'],['company','회사·기관'],['position','직무·역할'],['duty','담당업무'],['employmentType','고용형태']],3)
+    +resumeGridTable(data,ctx,'자격증 · 어학능력 · 해당 시','forms.standard.certifications',[['date','취득일'],['name','자격·시험'],['score','점수·급수'],['issuer','발급기관']],4)
+    +resumeGridTable(data,ctx,'대외활동 · 프로젝트 · 해당 시','forms.standard.activities',[['period','기간'],['activity','활동·프로젝트'],['organization','기관·팀'],['note','역할·성과']],4)
   +'</div>';
 }
 function ncsResumeForm(data,ctx){
   return '<div class="listCard"><div class="listHead"><div><span class="rankTag">선택 양식</span><h3>NCS 이력서</h3></div><span class="scoreChip">직무중심</span></div>'
+    +resumeFieldPolicy('ncs')
     +resumeExampleControls('ncs')
-    +resumeFieldGroup('ncs-basic','기본정보 · 먼저 작성','<div class="grid2">'
+    +resumeFieldGroup('ncs-basic','기본정보 · 필수','<div class="grid2">'
       +boundField(data,ctx,'forms.ncs.field','지원분야')
       +boundField(data,ctx,'forms.ncs.job','직무')
-      +boundField(data,ctx,'forms.ncs.nameKo','지원자 성명 · 한글')
-      +boundField(data,ctx,'forms.ncs.nameEn','지원자 성명 · 영문')
-      +boundField(data,ctx,'forms.ncs.address','주소(현거주지)')
-      +boundField(data,ctx,'forms.ncs.phone','전화번호')
+      +boundField(data,ctx,'forms.ncs.nameKo','성명')
       +boundField(data,ctx,'forms.ncs.mobile','휴대전화')
       +boundField(data,ctx,'forms.ncs.email','전자우편','','email')
+      +boundField(data,ctx,'forms.ncs.address','주소 · 지원기관 요구 시','평가정보가 아닌 전형 운영용')
     +'</div>',true)
-    +resumeGridTable(data,ctx,'학력사항','forms.ncs.education',[['school','학교명'],['major','전공'],['graduation','졸업(연·월)']],3)
-    +resumeGridTable(data,ctx,'경력사항','forms.ncs.career',[['company','회사명'],['duty','담당 업무(직무내용)'],['period','근무기간']],3)
-    +resumeGridTable(data,ctx,'자격사항 · 수상실적','forms.ncs.certifications',[['number','자격증(수상)번호'],['name','자격(수상)종목'],['date','취득년월']],4)
-    +resumeGridTable(data,ctx,'직무관련 교육이수사항','forms.ncs.training',[['name','교육명'],['content','교육내용'],['period','교육기간']],3)
-    +resumeGridTable(data,ctx,'대내외활동','forms.ncs.activities',[['group','단체명'],['content','활동내용'],['period','활동기간']],3)
-    +resumeFieldGroup('ncs-extra','취미 · 특기','<div class="grid2">'+boundField(data,ctx,'forms.ncs.hobby','취미')+boundField(data,ctx,'forms.ncs.specialty','특기')+'</div>',false)
+    +resumeGridTable(data,ctx,'직무관련 교육사항 · 공고 평가 시 필수','forms.ncs.training',[['type','교육구분',['학교교육','직업교육','기타']],['name','과목·과정명'],['content','직무관련 주요내용'],['hours','교육시간'],['period','교육기간']],4)
+    +resumeGridTable(data,ctx,'자격사항 · 해당 시','forms.ncs.certifications',[['name','자격·수상명'],['issuer','발급기관'],['date','취득일']],4)
+    +resumeGridTable(data,ctx,'경력사항 · 해당 시','forms.ncs.career',[['company','회사·기관'],['duty','담당업무'],['period','근무기간']],4)
+    +resumeGridTable(data,ctx,'경험 · 대내외활동 · 해당 시','forms.ncs.activities',[['group','활동명·조직'],['role','역할'],['content','직무관련 활동내용'],['period','활동기간']],4)
   +'</div>';
 }
 function blindResumeForm(data,ctx){
-  return '<div class="listCard"><div class="listHead"><div><span class="rankTag">선택 양식</span><h3>블라인드 채용 입사지원서</h3></div><span class="scoreChip">개인정보 주의</span></div>'
+  return '<div class="listCard"><div class="listHead"><div><span class="rankTag">선택 양식</span><h3>블라인드 채용 입사지원서</h3></div><span class="scoreChip">차별요소 제외</span></div>'
+    +resumeFieldPolicy('blind')
     +resumeExampleControls('blind')
-    +resumeFieldGroup('blind-basic','기본정보 · 먼저 작성','<div class="grid2">'
+    +resumeFieldGroup('blind-basic','전형 운영정보 · 필수','<div class="grid2">'
       +boundSelect(data,ctx,'forms.blind.applicantType','지원구분',['신입','경력'])
       +boundField(data,ctx,'forms.blind.targetJob','지원직무')
-      +boundField(data,ctx,'forms.blind.receiptNo','접수번호','기관 입력란이면 비워두기')
       +boundField(data,ctx,'forms.blind.name','성명')
-      +boundField(data,ctx,'forms.blind.address','현주소')
       +boundField(data,ctx,'forms.blind.phone','연락처')
       +boundField(data,ctx,'forms.blind.email','전자우편','','email')
-      +boundField(data,ctx,'forms.blind.finalSchoolRegion','최종학교 소재지','예시 항목 · 실제 기관 기준 확인')
-    +'</div><div class="field" style="margin-top:12px"><label>가점항목</label><div class="pillRow">'
-      +boundCheck(data,ctx,'forms.blind.bonusDisability','장애대상')
-      +boundCheck(data,ctx,'forms.blind.bonusVeteran','보훈대상')
-    +'</div></div>',true)
-    +resumeGridTable(data,ctx,'교육사항','forms.blind.training',[['type','교육구분',['학교교육','직업훈련','기타']],['course','과목명 및 교육과정'],['hours','교육시간'],['jobContent','직무관련 주요내용']],3)
-    +resumeGridTable(data,ctx,'자격사항','forms.blind.certifications',[['name','자격증명'],['issuer','발급기관'],['date','취득일자']],4)
-    +resumeGridTable(data,ctx,'경험 또는 경력사항','forms.blind.experience',[['type','구분',['경험','경력']],['organization','소속조직'],['role','역할'],['period','활동기간'],['activity','활동내용']],4)
-    +resumeFieldGroup('blind-job-content','직무관련 주요내용',boundArea(data,ctx,'forms.blind.jobContent','직무관련 주요내용','직무활동, 팀 프로젝트, 연구회, 재능기부 등 지원직무 관련 내용만 작성'),false)
+      +boundField(data,ctx,'forms.blind.address','주소 · 지원기관 요구 시','평가정보와 분리되는 전형 운영용')
+    +'</div>',true)
+    +resumeFieldGroup('blind-bonus','가점사항 · 공고에 있는 경우만','<div class="callout info"><b>공고에 가점기준이 있을 때만 체크하세요.</b><br>가점대상 여부는 서류평가용 직무능력 정보와 구분해서 다루는 것이 안전합니다.</div><div class="pillRow" style="margin-top:10px">'
+      +boundCheck(data,ctx,'forms.blind.bonusDisability','장애인 가점 대상')
+      +boundCheck(data,ctx,'forms.blind.bonusVeteran','취업지원대상자·보훈 가점 대상')
+    +'</div>',false)
+    +resumeGridTable(data,ctx,'교육사항 · 공고 평가 시 필수','forms.blind.training',[['type','교육구분',['학교교육','직업훈련','기타']],['course','과목·교육과정'],['hours','교육시간'],['jobContent','직무관련 주요내용']],4)
+    +resumeGridTable(data,ctx,'자격사항 · 해당 시','forms.blind.certifications',[['name','자격증명'],['issuer','발급기관'],['date','취득일']],4)
+    +resumeGridTable(data,ctx,'경험 또는 경력사항 · 해당 시','forms.blind.experience',[['type','구분',['경험','경력']],['organization','소속조직(학교명 제외)'],['role','역할'],['period','활동기간'],['activity','직무관련 활동내용']],4)
+    +resumeFieldGroup('blind-job-content','직무관련 주요내용 · 해당 시',boundArea(data,ctx,'forms.blind.jobContent','직무관련 주요내용','직무활동, 팀 프로젝트, 연구회, 재능기부 등 지원직무 관련 내용만 작성'),false)
   +'</div>';
 }
 function resumeGridTable(data,ctx,title,base,cols,count){
@@ -163,6 +159,13 @@ function resumeGridTable(data,ctx,title,base,cols,count){
   return resumeFieldGroup(sectionId,title,'<div class="muted small" style="margin-bottom:8px">필요한 행만 작성하세요. 모바일에서는 표를 좌우로 밀어 입력할 수 있습니다.</div><div class="matrixWrap"><table class="matrix"><thead><tr>'+head+'</tr></thead><tbody>'+body+'</tbody></table></div>',false);
 }
 
+
+function resumeFieldPolicy(type){
+  if(type==='ncs')return '<div class="callout info"><b>항목 판정</b><br><b>필수</b> 지원분야·직무·성명·휴대전화·이메일<br><b>선택·조건부</b> 주소(기관 요구 시), 직무관련 교육·자격·경험·경력(공고 평가항목일 때 작성)<br><b>기본 양식에서 삭제</b> 영문성명, 중복 전화번호, 학교명·입학/졸업연도·전체학점, 자격증 번호, 취미·특기</div>';
+  if(type==='blind')return '<div class="callout warn"><b>항목 판정</b><br><b>필수</b> 지원구분·지원직무·성명·연락처·이메일<br><b>선택·조건부</b> 주소(기관 요구 시), 교육·자격·경험·경력, 공고에 명시된 가점사항<br><b>기본 양식에서 삭제</b> 사진·성별·생년월일·학교명·졸업일·전체학점·최종학교 소재지·직접 입력 접수번호</div>';
+  return '<div class="callout info"><b>항목 판정</b><br><b>필수</b> 지원직무·성명·휴대전화·이메일<br><b>선택·조건부</b> 영문명, 주소, 학력, 경력, 자격·어학, 프로젝트·대외활동, 학점<br><b>기본 양식에서 삭제</b> 사진·생년월일·성별·가족사항·신체조건</div>';
+}
+
 function resumeFieldGroup(sectionId,title,inner,open){
   return '<details class="detailsBox resumeFormSection" data-resume-section="'+sectionId+'" '+(open?'open':'')+' style="margin-top:12px"><summary>'+title+'</summary><div style="padding-bottom:14px">'+inner+'</div></details>';
 }
@@ -171,11 +174,10 @@ function resumeExampleControls(type){
     +'<div class="callout info hidden" data-resume-example-panel="'+type+'" style="margin-top:10px">'+resumeExampleHtml(type)+'</div>';
 }
 function resumeExampleHtml(type){
-  if(type==='ncs')return '<b>NCS 이력서 예시</b><br><b>지원분야</b> 기술 · <b>직무</b> 생산기술<br><b>학력사항</b> 부경대학교 / 기계공학 / 2027.02 졸업예정<br><b>직무관련 교육</b> 생산공정 데이터 분석 / 공정 데이터 정리·조건별 비교 / 2026.03~06<br><b>대내외활동</b> 캡스톤팀 / 센서 측정조건별 오차 분석 / 2026.03~06<br><span class="muted small">실제 지원 기관의 지정 양식과 작성기준이 있으면 그 기준을 우선합니다.</span>';
-  if(type==='blind')return '<b>블라인드 이력서 예시</b><br><b>지원직무</b> 생산기술 · <b>성명</b> 김민지<br><b>교육사항</b> 학교교육 / 생산관리 / 45시간 / 공정 데이터 정리 및 조건별 비교<br><b>경험사항</b> 경험 / 캡스톤팀 / 데이터 분석 담당 / 2026.03~06 / 센서 측정조건별 오차 분석<br><span class="muted small">학교명·성별·나이·출신지역·가족관계 등 기관이 금지한 정보는 예시에도 넣지 않습니다.</span>';
-  return '<b>표준이력서 예시</b><br><b>지원직무</b> 생산기술 · <b>한글이름</b> 김민지 · <b>영문이름</b> MINJI KIM<br><b>학력</b> 2023.03~2027.02 / 부경대학교 / 4.12/4.5 / 졸업예정<br><b>자격·어학</b> 2026.05 / 컴퓨터활용능력 1급 / 합격 / 대한상공회의소<br><b>대외활동</b> 2026.03~06 / 캡스톤 센서오차 분석 / 기계공학 캡스톤팀 / 데이터 분석 담당<br><span class="muted small">예시는 작성 방식만 보여주는 가상 사례입니다. 내 사실과 다른 내용은 복사하지 않습니다.</span>';
+  if(type==='ncs')return '<b>NCS 이력서 예시</b><br><b>지원분야</b> 기술 · <b>직무</b> 생산기술<br><b>직무관련 교육</b> 학교교육 / 생산관리 / 공정 데이터 정리·조건별 비교 / 45시간<br><b>경험</b> 캡스톤 프로젝트 / 데이터 분석 담당 / 센서 측정조건별 오차 분석 / 2026.03~06<br><span class="muted small">학교명·입학연도·졸업연도·전체학점은 넣지 않고 직무와 연결되는 교육내용을 적는 예시입니다.</span>';
+  if(type==='blind')return '<b>블라인드 이력서 예시</b><br><b>지원직무</b> 생산기술 · <b>성명</b> 김민지<br><b>교육사항</b> 학교교육 / 생산관리 / 45시간 / 공정 데이터 정리 및 조건별 비교<br><b>경험사항</b> 경험 / 캡스톤 프로젝트팀 / 데이터 분석 담당 / 2026.03~06 / 센서 측정조건별 오차 분석<br><span class="muted small">학교명·성별·나이·출신지역·가족관계 등 개인 배경정보는 쓰지 않습니다.</span>';
+  return '<b>표준이력서 예시</b><br><b>지원직무</b> 생산기술 · <b>성명</b> 김민지<br><b>학력</b> 2023.03~2027.02 / 부경대학교 / 기계공학 / 졸업예정 / 4.12/4.5<br><b>자격·어학</b> 2026.05 / 컴퓨터활용능력 1급 / 합격 / 대한상공회의소<br><b>프로젝트</b> 2026.03~06 / 캡스톤 센서오차 분석 / 캡스톤팀 / 데이터 분석 담당<br><span class="muted small">사진과 생년월일은 Jobfit 기본 양식에서 제외합니다. 실제 기업 지정양식이 있으면 해당 양식을 따르세요.</span>';
 }
-
 function boundField(data,ctx,path,label,ph,type){
   return '<div class="field"><label>'+label+'</label><input type="'+(type||'text')+'" data-resume-bind="'+path+'" value="'+esc(valueAt(data,path),ctx)+'" placeholder="'+esc(ph||'',ctx)+'"></div>';
 }
@@ -386,17 +388,16 @@ function resumeA4Html(data,ctx,posting,assets){
     +'<div style="margin-top:18px;padding-top:8px;border-top:1px solid #d9dde4;font-size:9px;color:#64748b">Jobfit Resume Lab · 검증 완료 항목만 출력</div></div>';
 }
 function previewIdentity(type,form){
-  if(type==='ncs')return {name:form.nameKo||form.nameEn||'',job:form.job||form.field||'',contact:[form.mobile||form.phone,form.email,form.address].filter(Boolean)};
+  if(type==='ncs')return {name:form.nameKo||'',job:form.job||form.field||'',contact:[form.mobile,form.email,form.address].filter(Boolean)};
   if(type==='blind')return {name:form.name||'',job:form.targetJob||'',contact:[form.phone,form.email,form.address].filter(Boolean)};
   return {name:form.nameKo||form.nameEn||'',job:form.targetJob||'',contact:[form.phone,form.email,form.address].filter(Boolean)};
 }
 function previewFormSections(type,form){
   if(type==='ncs')return [
-    ['학력사항',previewRows(form.education,[['school','학교명'],['major','전공'],['graduation','졸업']])],
-    ['경력사항',previewRows(form.career,[['company','회사명'],['duty','담당업무'],['period','기간']])],
-    ['자격사항 · 수상실적',previewRows(form.certifications,[['name','자격·수상'],['date','취득년월'],['number','번호']])],
-    ['직무관련 교육',previewRows(form.training,[['name','교육명'],['content','교육내용'],['period','기간']])],
-    ['대내외활동',previewRows(form.activities,[['group','단체명'],['content','활동내용'],['period','기간']])]
+    ['직무관련 교육사항',previewRows(form.training,[['type','교육구분'],['name','과목·과정명'],['content','직무관련 내용'],['hours','교육시간'],['period','기간']])],
+    ['자격사항',previewRows(form.certifications,[['name','자격·수상'],['issuer','발급기관'],['date','취득일']])],
+    ['경력사항',previewRows(form.career,[['company','회사·기관'],['duty','담당업무'],['period','기간']])],
+    ['경험 · 대내외활동',previewRows(form.activities,[['group','활동명·조직'],['role','역할'],['content','직무관련 활동'],['period','기간']])]
   ].filter(function(x){return x[1];}).map(function(x){return previewSection(x[0],x[1]);}).join('');
   if(type==='blind')return [
     ['교육사항',previewRows(form.training,[['type','구분'],['course','교육과정'],['hours','교육시간'],['jobContent','직무관련 내용']])],
@@ -405,10 +406,10 @@ function previewFormSections(type,form){
     ['직무관련 주요내용',form.jobContent?'<p style="margin:0;white-space:pre-line">'+escapeText(form.jobContent)+'</p>':'']
   ].filter(function(x){return x[1];}).map(function(x){return previewSection(x[0],x[1]);}).join('');
   return [
-    ['학력',previewRows(form.education,[['period','기간'],['school','학교'],['gpa','학점'],['graduation','졸업여부']])],
-    ['경력',previewRows(form.career,[['period','기간'],['company','회사명'],['position','직급·역할'],['employmentType','고용형태']])],
-    ['자격증 · 어학능력',previewRows(form.certifications,[['date','날짜'],['name','자격·어학'],['score','점수·급수'],['issuer','발급기관']])],
-    ['대외활동',previewRows(form.activities,[['period','기간'],['activity','활동내용'],['organization','기관'],['note','비고']])]
+    ['학력',previewRows(form.education,[['period','기간'],['school','학교·교육기관'],['major','전공·과정'],['graduation','졸업·이수상태'],['gpa','학점']])],
+    ['경력',previewRows(form.career,[['period','기간'],['company','회사·기관'],['position','직무·역할'],['duty','담당업무'],['employmentType','고용형태']])],
+    ['자격증 · 어학능력',previewRows(form.certifications,[['date','취득일'],['name','자격·시험'],['score','점수·급수'],['issuer','발급기관']])],
+    ['대외활동 · 프로젝트',previewRows(form.activities,[['period','기간'],['activity','활동·프로젝트'],['organization','기관·팀'],['note','역할·성과']])]
   ].filter(function(x){return x[1];}).map(function(x){return previewSection(x[0],x[1]);}).join('');
 }
 function previewRows(group,cols){
