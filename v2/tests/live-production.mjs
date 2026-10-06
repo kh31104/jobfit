@@ -65,9 +65,9 @@ async function run(name,viewport){
 
     await page.locator('.stepBtn[data-step="2"]').click();await page.waitForSelector('#useRepresentative');
     const week4=(await page.locator('#stepRoot').textContent())||'';
-    const week4Expected=['대표 경험 선택','AI 경험 인터뷰','STAR 사실확인','역량 확인','Experience & Competency Map'];
+    const week4Expected=['대표 경험 선택','AI 경험 인터뷰','STAR 사실확인','역량 확인','Experience & Competency Map','Career Asset 저장'];
     const week4Actual=(await page.locator('.experienceCompetencyWeek4 > .block > .moduleHead h3').allTextContents()).map(x=>x.replace(/\s+/g,' ').trim());
-    assert(week4Actual.length===5,`Deployed STEP3 must contain exactly 5 modules, found ${week4Actual.length}: ${week4Actual.join(' | ')}`);
+    assert(week4Actual.length===6,`Deployed STEP3 must contain exactly 6 modules, found ${week4Actual.length}: ${week4Actual.join(' | ')}`);
     week4Expected.forEach((title,i)=>assert(week4Actual[i]===title,`Deployed Week4 order mismatch at ${i+1}: expected ${title}, got ${week4Actual[i]||'missing'}`));
     assert(await page.locator('.strengthMeasurePanel').count()===0,'Deployed STEP2 must not render the pre-experience 9-item strength measure');
     assert(await page.locator('#situation').count()===1,'Deployed STEP2 04 must include S Situation field');
