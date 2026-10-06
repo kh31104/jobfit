@@ -80,13 +80,14 @@ function resumeAutoImportBlock(prior,type,ctx){
   return '<div class="callout good" id="resumeAutoImport"><b>STEP 1~7 자동 불러오기</b><br>'
     +'앞에서 이미 입력한 사실은 다시 쓰지 않습니다. <b>'+esc(edu,ctx)+' · 자격/어학 '+certCount+'건 · 검증 경험 '+expCount+'건 · '+esc(skill,ctx)+'</b>'
     +blindNote+ncsNote
-    +'<br><span class="muted small">자동 불러오기는 빈칸만 채웁니다. 성명·휴대전화·이메일 등 앞 단계에 없는 개인정보는 학생이 직접 입력합니다.</span>'
+    +'<br><span class="muted small"><b>자동:</b> 선택 JD의 지원직무, 앞 단계의 전공·학력정보, 취득 완료 자격·어학, 검증 완료 경험·활동, 도구·기술. <b>직접 입력:</b> 성명·휴대전화·이메일 등 앞 단계에 없는 개인정보와 자동으로 확인할 수 없는 날짜·기관·점수. 자동 불러오기는 기존 입력값을 덮어쓰지 않습니다.</span>'
     +'<div class="actions" style="margin-top:10px"><button type="button" class="btn secondary smallBtn" data-resume-import="education">학력·교육</button><button type="button" class="btn secondary smallBtn" data-resume-import="credentials">자격·어학</button><button type="button" class="btn secondary smallBtn" data-resume-import="experiences">경험·활동</button><button type="button" class="btn primary smallBtn" data-resume-import="all">가능한 항목 모두 불러오기</button></div></div>';
 }
 function collectResumePriorData(state,posting,experiences){
   var profile=state.profile||{},spec=findRelevantStudentSpec(state,posting),verified=(experiences||[]).filter(function(x){return x&&x.factChecked;});
   return {
-    education:{institution:String(profile.schoolName||profile.university||profile.educationInstitution||'').trim(),major:String(profile.major||'').trim(),grade:String(profile.grade||'').trim()},
+    targetJob:String(posting?.jobTitle||'').trim(),
+    education:{institution:String(profile.schoolName||profile.university||profile.educationInstitution||profile.institution||'').trim(),major:String(profile.major||'').trim(),grade:String(profile.grade||'').trim()},
     certifications:splitResumeSpec(spec.certificates),
     language:splitResumeSpec(spec.language),
     tools:cleanResumeSpec(spec.tools),
@@ -144,6 +145,11 @@ function applyResumePriorData(data,type,prior,scope){
   if(scope==='education'||scope==='all')doEducation();
   if(scope==='credentials'||scope==='all')doCredentials();
   if(scope==='experiences'||scope==='all')doExperiences();
+  if(scope==='all'&&prior.targetJob){
+    if(type==='standard'&&!String(data.forms.standard.targetJob||'').trim()){data.forms.standard.targetJob=prior.targetJob;count++;}
+    if(type==='ncs'&&!String(data.forms.ncs.job||'').trim()){data.forms.ncs.job=prior.targetJob;count++;}
+    if(type==='blind'&&!String(data.forms.blind.targetJob||'').trim()){data.forms.blind.targetJob=prior.targetJob;count++;}
+  }
   if(scope==='all'&&prior.tools&&!String(data.skills||'').trim()){data.skills=prior.tools;count++;}
   var label=scope==='education'?'학력·교육':scope==='credentials'?'자격·어학':scope==='experiences'?'경험·활동':'앞 단계 데이터';
   return {count,message:count?label+' '+count+'개 항목을 빈칸에 불러왔습니다.':'새로 불러올 '+label+' 정보가 없습니다. 기존 입력값은 유지했습니다.'};
