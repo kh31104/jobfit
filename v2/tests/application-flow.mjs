@@ -199,7 +199,7 @@ await run('STEP 8 resume forms stay compact and show examples on desktop and mob
 
 await run('STEP 8 auto-fills only reusable facts from STEP 1-7',async page=>{
   const s=state(7);
-  s.profile.schoolName='부경대학교';s.profile.major='기계공학과';
+  s.profile.institution='부경대학교';s.profile.major='기계공학과';
   s.assessments.experienceCompetency.experiences=[
     {id:'exp1',category:'프로젝트',title:'센서오차 캡스톤',period:'2026.03~2026.06',organization:'부경대학교 기계공학과',roleTitle:'데이터 분석 담당',action:'측정조건을 나눠 비교했다',result:'오차 원인을 확인했다',evidence:'측정기록표',factChecked:true},
     {id:'exp2',category:'교육·수업',title:'생산관리',period:'2026.03~2026.06',action:'공정 데이터를 조건별로 정리했다',result:'조건별 차이를 비교했다',evidence:'수업 과제',factChecked:true}
@@ -210,6 +210,7 @@ await run('STEP 8 auto-fills only reusable facts from STEP 1-7',async page=>{
   const autoText=(await page.locator('#resumeAutoImport').textContent())||'';
   assert(autoText.includes('앞에서 이미 입력한 사실은 다시 쓰지 않습니다'),'STEP 8 prior-data reuse guidance missing');
   await page.locator('[data-resume-import="all"]').click();
+  assert((await page.locator('[data-resume-bind="forms.standard.targetJob"]').inputValue())==='생산기술','Selected JD target job was not imported');
   assert((await page.locator('[data-resume-bind="forms.standard.education.r0.school"]').inputValue())==='부경대학교','Standard education school was not imported');
   assert((await page.locator('[data-resume-bind="forms.standard.education.r0.major"]').inputValue())==='기계공학과','Standard major was not imported');
   const certs=await page.locator('[data-resume-bind^="forms.standard.certifications"][data-resume-bind$=".name"]').evaluateAll(els=>els.map(x=>x.value));
@@ -219,6 +220,7 @@ await run('STEP 8 auto-fills only reusable facts from STEP 1-7',async page=>{
   assert((await page.locator('#skills').inputValue()).includes('Excel'),'STEP 5 tools were not reused in Resume skills');
   await page.locator('[data-resume-template="blind"]').click();
   await page.locator('[data-resume-import="all"]').click();
+  assert((await page.locator('[data-resume-bind="forms.blind.targetJob"]').inputValue())==='생산기술','Blind resume target job was not imported');
   const blindOrg=await page.locator('[data-resume-bind="forms.blind.experience.r0.organization"]').inputValue();
   assert(!blindOrg.includes('부경대학교')&&blindOrg.includes('프로젝트'),'Blind auto-import must strip school-identifying organization names');
   assert(await page.locator('[data-resume-bind^="forms.blind.training"]').count()>0,'Verified education experience should be available to blind education fields');
