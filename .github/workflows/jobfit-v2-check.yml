@@ -63,6 +63,7 @@ jobs:
           node --check v2/storageContinuity.js
           node --check v2/operationalSync.js
           node --check v2/app.js
+          node v2/tests/report-readability.mjs
           node --check v2/research.js
           node --check v2/researchBackend.js
           node --check v2/researchMeasures.js
