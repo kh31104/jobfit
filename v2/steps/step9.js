@@ -72,7 +72,7 @@ function resumeTab(type,label,current){
   return '<button type="button" class="btn '+(current===type?'primary':'secondary')+'" data-resume-template="'+type+'">'+label+'</button>';
 }
 function resumeTemplateGuide(type){
-  var common='<br><span class="muted small">Jobfit은 특정 기업의 법정 서식을 대신하지 않습니다. 실제 지원에서는 해당 기업·기관의 지정 양식을 우선하세요.</span>';
+  var common='<br><span class="muted small">기본정보만 먼저 펼쳐지고 나머지는 필요한 항목만 열어 작성합니다. 모바일 표는 해당 영역 안에서 좌우로 밀어 입력할 수 있습니다. Jobfit은 특정 기업의 법정 서식을 대신하지 않으므로 실제 지원에서는 해당 기업·기관의 지정 양식을 우선하세요.</span>';
   if(type==='blind')return '<div class="callout warn"><b>블라인드 작성 원칙</b><br>평가와 무관한 개인정보는 빼고 직무 관련 교육·자격·경험·경력 중심으로 작성합니다. 연락처 등 전형 운영에 필요한 정보는 평가자료와 분리되는 것을 전제로 합니다.'+common+'</div>';
   if(type==='ncs')return '<div class="callout info"><b>NCS 이력서</b><br>지원자 식별에 필요한 최소 정보와 직무 관련 교육·훈련·자격·경험·경력을 중심으로 작성합니다. 학교명·연령·사진처럼 직무와 무관한 요소는 기본 양식에서 제외했습니다.'+common+'</div>';
   return '<div class="callout info"><b>표준이력서</b><br>일반 기업 지원용 기본형입니다. 연락 가능한 정보와 직무 관련 이력은 남기고, 사진·생년월일처럼 채용 판단에 꼭 필요하지 않은 항목은 Jobfit 기본 양식에서 제외했습니다.'+common+'</div>';
