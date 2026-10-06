@@ -134,6 +134,7 @@ await run('STEP 8 Resume Lab supports three form tabs and optional detail docume
   assert(((await page.locator('#resumeTemplateGuide').textContent())||'').includes('블라인드 작성 주의'),'Blind privacy guidance missing');
   await page.locator('[data-resume-bind="forms.blind.targetJob"]').fill('생산기술');
   await page.locator('[data-resume-doc="experience"]').click();
+  await page.locator('details[data-resume-section="experience-doc-evidence"] summary').click();
   await page.locator('[data-resume-bind="optionalDocument.experience.action"]').fill('측정조건을 나눠 비교했다');
   const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   assert(stored.artifacts.resumeLab.templateType==='blind','Selected resume template was not saved');
