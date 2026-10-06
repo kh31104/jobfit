@@ -86,7 +86,7 @@ function resumeAutoImportBlock(prior,type,ctx){
 function collectResumePriorData(state,posting,experiences){
   var profile=state.profile||{},spec=findRelevantStudentSpec(state,posting),verified=(experiences||[]).filter(function(x){return x&&x.factChecked;});
   return {
-    education:{institution:String(profile.institution||'').trim(),major:String(profile.major||'').trim(),grade:String(profile.grade||'').trim()},
+    education:{institution:String(profile.schoolName||profile.university||profile.educationInstitution||'').trim(),major:String(profile.major||'').trim(),grade:String(profile.grade||'').trim()},
     certifications:splitResumeSpec(spec.certificates),
     language:splitResumeSpec(spec.language),
     tools:cleanResumeSpec(spec.tools),
