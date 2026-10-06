@@ -199,7 +199,7 @@ await run('STEP 8 resume forms stay compact and show examples on desktop and mob
 
 await run('STEP 8 auto-fills only reusable facts from STEP 1-7',async page=>{
   const s=state(7);
-  s.profile.institution='부경대학교';s.profile.major='기계공학과';
+  s.profile.schoolName='부경대학교';s.profile.major='기계공학과';
   s.assessments.experienceCompetency.experiences=[
     {id:'exp1',category:'프로젝트',title:'센서오차 캡스톤',period:'2026.03~2026.06',organization:'부경대학교 기계공학과',roleTitle:'데이터 분석 담당',action:'측정조건을 나눠 비교했다',result:'오차 원인을 확인했다',evidence:'측정기록표',factChecked:true},
     {id:'exp2',category:'교육·수업',title:'생산관리',period:'2026.03~2026.06',action:'공정 데이터를 조건별로 정리했다',result:'조건별 차이를 비교했다',evidence:'수업 과제',factChecked:true}
