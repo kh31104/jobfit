@@ -144,6 +144,31 @@ await run('STEP 8 Resume Lab supports three form tabs and optional detail docume
   assert(stored.artifacts.resumeLab.optionalDocument.experience.action.includes('측정조건'),'Experience description was not saved');
 });
 
+await run('STEP 8 resume forms stay compact and show examples on desktop and mobile',async page=>{
+  const s=state(7);await seed(page,s);
+  const standardSections=page.locator('#resumeTemplateForm details[data-resume-section]');
+  assert(await standardSections.count()===5,'Standard resume should be split into five collapsible sections');
+  assert(await page.locator('#resumeTemplateForm details[data-resume-section][open]').count()===1,'Only the standard basic section should be open by default');
+  await page.locator('[data-resume-example="standard"]').click();
+  const standardExample=(await page.locator('[data-resume-example-panel="standard"]').textContent())||'';
+  assert(standardExample.includes('표준이력서 예시')&&standardExample.includes('김민지'),'Standard resume example did not open');
+  await page.locator('[data-resume-template="ncs"]').click();
+  assert(await page.locator('#resumeTemplateForm details[data-resume-section]').count()===7,'NCS resume should be split into seven collapsible sections');
+  await page.locator('[data-resume-example="ncs"]').click();
+  const ncsExample=(await page.locator('[data-resume-example-panel="ncs"]').textContent())||'';
+  assert(ncsExample.includes('NCS 이력서 예시')&&ncsExample.includes('직무관련 교육'),'NCS resume example did not open');
+  await page.locator('[data-resume-template="blind"]').click();
+  assert(await page.locator('#resumeTemplateForm details[data-resume-section]').count()===5,'Blind resume should be split into five collapsible sections');
+  await page.locator('[data-resume-example="blind"]').click();
+  const blindExample=(await page.locator('[data-resume-example-panel="blind"]').textContent())||'';
+  assert(blindExample.includes('블라인드 이력서 예시')&&blindExample.includes('학교명')&&!blindExample.includes('부경대학교'),'Blind example must teach the no-school-name rule without exposing a school name');
+  await page.setViewportSize({width:390,height:844});
+  const overflow=await page.locator('#stepRoot').evaluate(el=>el.scrollWidth>el.clientWidth+2);
+  assert(!overflow,'STEP 8 causes page-level horizontal overflow on mobile');
+  const guide=(await page.locator('#resumeTemplateGuide').textContent())||'';
+  assert(guide.includes('필요한 항목만 열어 작성')&&guide.includes('좌우로 밀어'),'Mobile/compact usage guidance is missing');
+});
+
 await run('STEP 8 student persona completes resume preview and Career Asset autofill',async page=>{
   const s=state(7);
   s.assessments.experienceCompetency.experiences=[{id:'exp1',category:'프로젝트',title:'캡스톤 센서오차 분석',period:'2026.03~2026.06',roleTitle:'데이터 분석 담당',challenge:'센서 측정값의 오차 원인을 좁혀야 했다',action:'측정조건을 온도와 설치각도별로 나눠 값을 비교했다',result:'설치각도에 따라 오차가 커지는 패턴을 확인했다',evidence:'측정기록표와 발표자료',factChecked:true}];
@@ -154,6 +179,7 @@ await run('STEP 8 student persona completes resume preview and Career Asset auto
   await page.locator('[data-resume-bind="forms.standard.nameKo"]').fill('김민지');
   await page.locator('[data-resume-bind="forms.standard.email"]').fill('minji@example.com');
   await page.locator('[data-resume-bind="forms.standard.phone"]').fill('010-0000-0000');
+  await page.locator('details[data-resume-section="standard-education"] summary').click();
   await page.locator('[data-resume-bind="forms.standard.education.r0.period"]').fill('2023.03~2027.02');
   await page.locator('[data-resume-bind="forms.standard.education.r0.school"]').fill('부경대학교');
   await page.locator('[data-resume-bind="forms.standard.education.r0.graduation"]').fill('졸업예정');
