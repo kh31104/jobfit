@@ -1,14 +1,14 @@
 export async function render(ctx){
   const displayStep=ctx.displayStep??9,injeCompact=displayStep!==9,prevEvidenceStep=injeCompact?'STEP 4 GAP Match':'STEP 8',prevGateStep=injeCompact?'STEP 4 GAP Match':'STEP 7';
   const s=ctx.getState(),jd=s.artifacts?.jdAnalyzer||{postings:[],selectedId:''},posting=jd.postings?.find(x=>x.id===jd.selectedId)||jd.postings?.[0],assets=s.artifacts?.careerAssets?.assets||[],candidateAssets=assets.filter(a=>(a.evidenceLevel||legacyLevel(a.strength))!=='없음'),experiences=s.assessments?.experienceCompetency?.experiences||[],saved=s.artifacts?.resumeLab||{items:[],summary:'',skills:'',notes:''},data=structuredClone(saved),root=document.getElementById('stepRoot');
-  data.items=data.items||[];ensureResumeForms(data);
+  data.items=data.items||[];ensureResumeForms(data);const prior=collectResumePriorData(s,posting,experiences);
 
   root.innerHTML=`<section class="card">
     <div class="sectionHead"><div><div class="kicker">STEP ${displayStep}</div><h2>Resume Lab</h2><p>JD와 Career Asset을 연결해 이력서·경험기술서를 만들되, 검증된 사실만 최종 문장으로 사용합니다.</p></div><span class="badge">9주차</span></div><div class="progress"><span style="width:71%"></span></div>
     ${posting?`<div class="callout info"><b>Target JD</b><br>${esc(posting.company,ctx)} · ${esc(posting.jobTitle,ctx)}</div>`:''}
     ${posting?gateNotice(posting,ctx,prevGateStep):''}
 
-    ${resumeTemplateBlock(data,ctx)}
+    ${resumeTemplateBlock(data,ctx,prior)}
 
     <div class="hr"></div><div class="block"><h3>2. Resume Evidence Gate</h3><div id="resumeGate"></div><div class="grid3" style="margin-top:12px"><div class="miniCard"><b>Fact</b><span>하지 않은 일·없는 수치를 쓰지 않는다.</span></div><div class="miniCard"><b>Action</b><span>역할명이 아니라 내가 직접 한 행동을 쓴다.</span></div><div class="miniCard"><b>Evidence</b><span>JD Requirement를 증명하는 Career Asset만 사용한다.</span></div></div></div>
 
@@ -24,7 +24,7 @@ export async function render(ctx){
     ${resumePreviewBlock()}
   </section>`;
 
-  wireResumeFormUi(data,ctx,persist,candidateAssets,experiences);wireResumePreviewUi(data,ctx,posting,assets,persist);renderAll();document.getElementById('assetId').addEventListener('change',renderAssetContext);document.getElementById('copyPrompt').addEventListener('click',()=>copy(buildPrompt(),ctx));document.getElementById('addItem').addEventListener('click',addItem);document.getElementById('saveResume').addEventListener('click',saveBase);document.getElementById('nextStep').addEventListener('click',()=>{saveBase();ctx.navigate(10)});
+  wireResumeFormUi(data,ctx,persist,candidateAssets,experiences,prior);wireResumePreviewUi(data,ctx,posting,assets,persist);renderAll();document.getElementById('assetId').addEventListener('change',renderAssetContext);document.getElementById('copyPrompt').addEventListener('click',()=>copy(buildPrompt(),ctx));document.getElementById('addItem').addEventListener('click',addItem);document.getElementById('saveResume').addEventListener('click',saveBase);document.getElementById('nextStep').addEventListener('click',()=>{saveBase();ctx.navigate(10)});
 
   function renderAll(){renderGate();renderItems();renderAssetContext();}
   function renderGate(){const box=document.getElementById('resumeGate');if(!box)return;const verified=candidateAssets.filter(isAssetVerified).length,draft=candidateAssets.length-verified,finalItems=data.items.filter(x=>x.factChecked&&x.assetVerified).length,draftItems=data.items.length-finalItems;box.innerHTML=`<div class="grid4"><div class="miniCard"><b>Career Asset 후보</b><span>${candidateAssets.length}개</span></div><div class="miniCard"><b>검증된 Asset</b><span>${verified}개</span></div><div class="miniCard"><b>검증대기 Asset</b><span>${draft}개</span></div><div class="miniCard"><b>최종 사용 가능 Bullet</b><span>${finalItems}개 · 초안 ${draftItems}개</span></div></div>${draft?'<div class="callout warn"><b>검증대기 Career Asset이 있습니다.</b><br>초안 작성은 가능하지만 최종 Resume에는 Career Asset Fact Check와 원경험 Fact Check를 모두 완료한 항목만 사용하세요.</div>':'<div class="callout good"><b>Career Asset 검증상태 양호</b><br>현재 선택 가능한 자산은 사실검증 상태가 확인되었습니다.</div>'}`;}
@@ -54,7 +54,7 @@ function ensureResumeForms(data){
 function resumeTemplateLabel(type){
   return type==='ncs'?'NCS 이력서':type==='blind'?'블라인드 이력서':'표준이력서';
 }
-function resumeTemplateBlock(data,ctx){
+function resumeTemplateBlock(data,ctx,prior){
   ensureResumeForms(data);
   return '<div class="block" id="resumeTemplateLab">'
     +'<h3>1. 이력서 양식 선택 · 직접 작성</h3>'
@@ -65,9 +65,114 @@ function resumeTemplateBlock(data,ctx){
       +resumeTab('blind','블라인드 이력서',data.templateType)
     +'</div>'
     +'<div id="resumeTemplateGuide">'+resumeTemplateGuide(data.templateType)+'</div>'
+    +resumeAutoImportBlock(prior,data.templateType,ctx)
     +'<div id="resumeTemplateForm">'+resumeTemplateForm(data,ctx)+'</div>'
   +'</div>';
 }
+
+function resumeAutoImportBlock(prior,type,ctx){
+  var edu=prior.education?.institution||prior.education?.major?'학력·전공 1건':'학력·전공 없음';
+  var certCount=(prior.certifications||[]).length+(prior.language||[]).length;
+  var expCount=(prior.experiences||[]).length;
+  var skill=prior.tools?'도구·기술 있음':'도구·기술 없음';
+  var blindNote=type==='blind'?'<br><b>블라인드 보호:</b> 학교명은 자동 입력하지 않습니다.':'';
+  var ncsNote=type==='ncs'?'<br><b>NCS 보호:</b> 학교명·학점 대신 직무관련 교육·경험만 가져옵니다.':'';
+  return '<div class="callout good" id="resumeAutoImport"><b>STEP 1~7 자동 불러오기</b><br>'
+    +'앞에서 이미 입력한 사실은 다시 쓰지 않습니다. <b>'+esc(edu,ctx)+' · 자격/어학 '+certCount+'건 · 검증 경험 '+expCount+'건 · '+esc(skill,ctx)+'</b>'
+    +blindNote+ncsNote
+    +'<br><span class="muted small">자동 불러오기는 빈칸만 채웁니다. 성명·휴대전화·이메일 등 앞 단계에 없는 개인정보는 학생이 직접 입력합니다.</span>'
+    +'<div class="actions" style="margin-top:10px"><button type="button" class="btn secondary smallBtn" data-resume-import="education">학력·교육</button><button type="button" class="btn secondary smallBtn" data-resume-import="credentials">자격·어학</button><button type="button" class="btn secondary smallBtn" data-resume-import="experiences">경험·활동</button><button type="button" class="btn primary smallBtn" data-resume-import="all">가능한 항목 모두 불러오기</button></div></div>';
+}
+function collectResumePriorData(state,posting,experiences){
+  var profile=state.profile||{},spec=findRelevantStudentSpec(state,posting),verified=(experiences||[]).filter(function(x){return x&&x.factChecked;});
+  return {
+    education:{institution:String(profile.schoolName||profile.university||profile.educationInstitution||'').trim(),major:String(profile.major||'').trim(),grade:String(profile.grade||'').trim()},
+    certifications:splitResumeSpec(spec.certificates),
+    language:splitResumeSpec(spec.language),
+    tools:cleanResumeSpec(spec.tools),
+    portfolio:cleanResumeSpec(spec.portfolio),
+    experiences:verified
+  };
+}
+function findRelevantStudentSpec(state,posting){
+  var deep=state.artifacts?.jobDeepDive||{},pool=[...Object.values(deep.analyses||{}),...Object.values(deep.targetAnalyses||{})].filter(Boolean);
+  var match=pool.find(function(a){var company=String(a?.company?.name||'').trim();return company&&posting?.company&&company===posting.company&&a?.studentSpec;});
+  if(!match)match=pool.find(function(a){return a?.studentSpec&&Object.values(a.studentSpec).some(function(v){return String(v||'').trim();});});
+  return match?.studentSpec||{};
+}
+function splitResumeSpec(value){
+  return String(value||'').split(/\n|,|;|\s+\/\s+/).map(function(x){return x.trim();}).filter(function(x){return x&&!/^(없음|미확인|해당 없음|해당없음)$/i.test(x)&&!/(준비\s*중|취득\s*예정|공부\s*중)/.test(x);});
+}
+function cleanResumeSpec(value){
+  var x=String(value||'').trim();return /^(없음|미확인|해당 없음|해당없음)$/i.test(x)?'':x;
+}
+function applyResumePriorData(data,type,prior,scope){
+  ensureResumeForms(data);var count=0;
+  function doEducation(){
+    if(type==='standard'&&(prior.education?.institution||prior.education?.major)){
+      count+=putResumeRows(data.forms.standard,'education',[{school:prior.education.institution,major:prior.education.major}],3,['school','major']);
+    }
+    var educationExp=(prior.experiences||[]).filter(function(x){return experienceKind(x)==='education';});
+    if(type==='ncs')count+=putResumeRows(data.forms.ncs,'training',educationExp.map(function(x){return {type:'학교교육',name:x.title||'',content:resumeExperienceContent(x),hours:'',period:x.period||''};}),4,['name','content']);
+    if(type==='blind')count+=putResumeRows(data.forms.blind,'training',educationExp.map(function(x){return {type:'학교교육',course:x.title||'',hours:'',jobContent:resumeExperienceContent(x)};}),4,['course','jobContent']);
+  }
+  function doCredentials(){
+    var entries=[...(prior.certifications||[]),...(prior.language||[])].map(function(x){return {name:x};});
+    if(type==='standard')count+=putResumeRows(data.forms.standard,'certifications',entries,4,['name']);
+    if(type==='ncs')count+=putResumeRows(data.forms.ncs,'certifications',entries.map(function(x){return {name:x.name};}),4,['name']);
+    if(type==='blind')count+=putResumeRows(data.forms.blind,'certifications',entries.map(function(x){return {name:x.name};}),4,['name']);
+  }
+  function doExperiences(){
+    var exps=(prior.experiences||[]).filter(function(x){return experienceKind(x)!=='education';});
+    if(type==='standard'){
+      var careers=exps.filter(function(x){return experienceKind(x)==='career';}).map(function(x){return {period:x.period||'',company:x.organization||x.company||'',position:x.roleTitle||x.role||'',duty:resumeExperienceContent(x),employmentType:x.employmentType||''};});
+      var acts=exps.filter(function(x){return experienceKind(x)!=='career';}).map(function(x){return {period:x.period||'',activity:x.title||'',organization:x.organization||x.team||'',note:uniqueJoin([x.roleTitle||x.role,x.action,x.result])};});
+      count+=putResumeRows(data.forms.standard,'career',careers,3,['company','duty']);
+      count+=putResumeRows(data.forms.standard,'activities',acts,4,['activity','note']);
+    }
+    if(type==='ncs'){
+      var ncsCareers=exps.filter(function(x){return experienceKind(x)==='career';}).map(function(x){return {company:x.organization||x.company||'',duty:resumeExperienceContent(x),period:x.period||''};});
+      var ncsActs=exps.filter(function(x){return experienceKind(x)!=='career';}).map(function(x){return {group:x.organization||x.team||x.title||'',role:x.roleTitle||x.role||'',content:resumeExperienceContent(x),period:x.period||''};});
+      count+=putResumeRows(data.forms.ncs,'career',ncsCareers,4,['company','duty']);
+      count+=putResumeRows(data.forms.ncs,'activities',ncsActs,4,['group','content']);
+    }
+    if(type==='blind'){
+      var blindRows=exps.map(function(x){var kind=experienceKind(x);return {type:kind==='career'?'경력':'경험',organization:safeBlindOrganization(x.organization||x.company||x.team||x.title||'',kind),role:x.roleTitle||x.role||'',period:x.period||'',activity:resumeExperienceContent(x)};});
+      count+=putResumeRows(data.forms.blind,'experience',blindRows,4,['organization','activity']);
+    }
+  }
+  if(scope==='education'||scope==='all')doEducation();
+  if(scope==='credentials'||scope==='all')doCredentials();
+  if(scope==='experiences'||scope==='all')doExperiences();
+  if(scope==='all'&&prior.tools&&!String(data.skills||'').trim()){data.skills=prior.tools;count++;}
+  var label=scope==='education'?'학력·교육':scope==='credentials'?'자격·어학':scope==='experiences'?'경험·활동':'앞 단계 데이터';
+  return {count,message:count?label+' '+count+'개 항목을 빈칸에 불러왔습니다.':'새로 불러올 '+label+' 정보가 없습니다. 기존 입력값은 유지했습니다.'};
+}
+function putResumeRows(form,key,entries,maxRows,dedupeKeys){
+  if(!entries.length)return 0;form[key]=form[key]&&typeof form[key]==='object'?form[key]:{};var added=0;
+  var existing=Object.values(form[key]).filter(function(x){return x&&typeof x==='object';});
+  entries.slice(0,maxRows).forEach(function(entry){
+    var sig=dedupeKeys.map(function(k){return String(entry[k]||'').trim();}).join('|');if(!sig.replace(/\|/g,''))return;
+    var duplicate=existing.some(function(row){return dedupeKeys.map(function(k){return String(row[k]||'').trim();}).join('|')===sig;});if(duplicate)return;
+    var slot='';for(var i=0;i<maxRows;i++){var k='r'+i,row=form[key][k];if(!row||!Object.values(row).some(function(v){return String(v||'').trim();})){slot=k;break;}}
+    if(!slot)return;form[key][slot]={...(form[key][slot]||{}),...entry};existing.push(form[key][slot]);added++;
+  });return added;
+}
+function experienceKind(exp){
+  var t=String(exp?.category||exp?.type||'').toLowerCase();
+  if(/교육|수업|교과|훈련|강의/.test(t))return 'education';
+  if(/인턴|경력|근무|직장|회사|아르바이트|근로/.test(t))return 'career';
+  return 'experience';
+}
+function resumeExperienceContent(exp){
+  return uniqueJoin([exp?.action,exp?.result,exp?.evidence]);
+}
+function safeBlindOrganization(value,kind){
+  var x=String(value||'').trim();if(!x)return kind==='career'?'근무기관':'프로젝트·활동팀';
+  if(/대학교|대학|고등학교|중학교|초등학교|학교/.test(x))return kind==='career'?'근무기관':'프로젝트·활동팀';
+  return x;
+}
+
 function resumeTab(type,label,current){
   return '<button type="button" class="btn '+(current===type?'primary':'secondary')+'" data-resume-template="'+type+'">'+label+'</button>';
 }
@@ -246,10 +351,17 @@ function optionalDocBody(data,ctx,assets=[]){
   }
   return '<div class="placeholder"><b>선택사항입니다.</b>이력서만 필요한 경우 여기서는 아무것도 작성하지 않아도 됩니다.</div>';
 }
-function wireResumeFormUi(data,ctx,persist,assets=[],experiences=[]){
+function wireResumeFormUi(data,ctx,persist,assets=[],experiences=[],prior={}){
   var lab=document.getElementById('resumeTemplateLab');
   if(lab){
     lab.addEventListener('click',function(e){
+      var importer=e.target.closest('[data-resume-import]');
+      if(importer){
+        var result=applyResumePriorData(data,data.templateType,prior,importer.dataset.resumeImport||'all');persist();
+        var form=document.getElementById('resumeTemplateForm');if(form)form.innerHTML=resumeTemplateForm(data,ctx);
+        var skills=document.getElementById('skills');if(skills&&!skills.value&&data.skills)skills.value=data.skills;
+        ctx.toast(result.message);return;
+      }
       var example=e.target.closest('[data-resume-example]');
       if(example){
         var type=example.dataset.resumeExample,panel=lab.querySelector('[data-resume-example-panel="'+type+'"]');
