@@ -43,9 +43,9 @@ async function run(name,fn){
 
 await run('Week 4 focuses on Experience Map and keeps STEP1 bridge',async page=>{
   const body=(await page.locator('#stepRoot').textContent())||'';
-  const expected=['대표 경험 선택','AI 경험 인터뷰','STAR 사실확인','역량 확인','Experience & Competency Map'];
+  const expected=['대표 경험 선택','AI 경험 인터뷰','STAR 사실확인','역량 확인','Experience & Competency Map','Career Asset 저장'];
   const actual=await page.locator('.experienceCompetencyWeek4 > .block > .moduleHead h3').allTextContents();
-  assert(actual.length===5,`STEP3 must have exactly 5 student modules, found ${actual.length}: ${actual.join(' | ')}`);
+  assert(actual.length===6,`STEP3 must have exactly 6 student modules, found ${actual.length}: ${actual.join(' | ')}`);
   expected.forEach((title,i)=>assert((actual[i]||'').trim().startsWith(title),`Week4 module order mismatch at ${i+1}: ${actual[i]||'missing'}`));
   assert(await page.locator('.strengthMeasurePanel').count()===0,'Pre-experience 9-item strength measure must not render in STEP2');
   assert(!body.includes('경험 분석 전 강점행동 9문항'),'Legacy 9-item strength measure copy remains in STEP2');
@@ -204,7 +204,7 @@ await run('Experience save preserves old data and writes competency evidence map
   await page.waitForSelector('#nextStep');
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   const ec=saved.assessments.experienceCompetency;
-  assert(ec.version==='experience-competency-step3-v10','STEP3 version missing');
+  assert(ec.version==='experience-competency-step3-v11','STEP3 version missing');
   assert(ec.experiences.some(x=>x.title==='캡스톤 프로젝트'),'New experience not saved');
   assert(ec.experiences.some(x=>x.id==='EXP-OLD'),'Existing experience was overwritten');
   const newExp=ec.experiences.find(x=>x.title==='캡스톤 프로젝트');
@@ -252,6 +252,47 @@ await run('STEP4 Job Explorer bridges current Career DNA and Experience Map',asy
   await page.locator('#candidateList [data-edit]').click();
   assert((await page.locator('#addCandidate').textContent()).includes('수정 저장'),'STEP3 candidate edit flow did not open');
   assert(await page.locator('#jobTitle').inputValue()==='브랜드 마케터','STEP3 candidate values did not load into editor');
+});
+
+await run('Inventory, HOW and asset bank preserve facts through reload and reuse',async page=>{
+  await openFor(page,'#inventoryTitle');
+  await page.locator('#inventoryCategory').selectOption('아르바이트·근로');
+  await page.locator('#inventoryTitle').fill('축제 부스 운영');
+  await page.locator('#addInventory').click();
+  await page.locator('[data-inventory-use]').click();
+  assert(await page.locator('#title').inputValue()==='축제 부스 운영','Inventory did not load selected experience');
+  await openFor(page,'#aiStructured');
+  await page.locator('#aiStructured').fill('S 상황: 축제 첫날 주문이 몰렸다.\nT 문제·목표와 내 역할: 대기시간을 줄여야 했다.\nWHAT 내가 직접 한 행동: 주문량을 기록하고 역할을 조정했다.\nWHY 판단·선택 이유: 주문 집중이 원인이라고 판단했다.\nHOW 실행 방법: 시간대별 기록과 처리단계를 비교했다.\nR 결과: 다음 날 대기시간이 줄었다.\n결과 이유(학생의 해석): 역할 조정이 도움이 됐다고 본다.\n확인 가능한 증거: 주문 기록');
+  await page.locator('#importStarSummary').click();
+  assert(await page.locator('#method').inputValue()==='시간대별 기록과 처리단계를 비교했다.','HOW import failed');
+  assert(await page.locator('#resultReason').inputValue()==='역할 조정이 도움이 됐다고 본다.','Result interpretation import failed');
+  await page.reload({waitUntil:'networkidle'});
+  await openFor(page,'#method');
+  assert(await page.locator('#method').inputValue()==='시간대별 기록과 처리단계를 비교했다.','HOW draft lost after reload');
+  await page.locator('#experienceFactChecked').check();
+  await openFor(page,'#saveExp');
+  await page.locator('#saveExp').click();
+  await page.waitForFunction(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')).artifacts?.careerAssetBank?.items?.length===2);
+  const state=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
+  assert(state.assessments.experienceCompetency.inventory.length===1,'Inventory lost on experience save');
+  assert(state.artifacts.careerAssetBank.items.some(x=>x.id==='EXP-OLD'),'Legacy experience lost from bank');
+  const saved=state.artifacts.careerAssetBank.items.find(x=>x.title==='축제 부스 운영');
+  assert(saved?.method==='시간대별 기록과 처리단계를 비교했다.','Bank lost HOW');
+  assert(saved?.resultReason==='역할 조정이 도움이 됐다고 본다.','Bank lost result interpretation');
+  assert(!saved?.requirement&&!saved?.company,'Bank must remain independent of a specific JD');
+  await openFor(page,'#careerAssetBankPreview');
+  await page.locator('#careerAssetBankPreview [data-edit]').last().click();
+  await openFor(page,'#method');
+  await page.locator('#method').fill('기록을 표로 나눠 비교했다.');
+  await page.reload({waitUntil:'networkidle'});
+  await openFor(page,'#saveExp');
+  await page.locator('#saveExp').click();
+  await page.waitForFunction(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')).artifacts?.careerAssetBank?.items?.some(x=>x.method==='기록을 표로 나눠 비교했다.'));
+  const updated=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
+  assert(updated.artifacts.careerAssetBank.items.length===2,'Reloaded edit created a duplicate experience');
+  await openFor(page,'#nextStep');await page.locator('#nextStep').click();
+  await page.waitForSelector('.jobExplorerV3');
+  assert((await page.locator('#stepRoot').textContent()).includes('축제 부스 운영'),'STEP4 did not reuse saved experience');
 });
 
 await browser.close();if(failed)process.exit(1);

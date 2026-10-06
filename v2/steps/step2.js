@@ -1,4 +1,4 @@
-const WEEK4_VERSION='experience-competency-step3-v10';
+const WEEK4_VERSION='experience-competency-step3-v11';
 const COMPETENCY_DICTIONARY=[
   ['C01','의사소통','설명·질문·경청·문서작성·정보전달'],
   ['C02','협업','공동작업·정보공유·역할협조·동료지원'],
@@ -15,7 +15,7 @@ const COMPETENCY_DICTIONARY=[
 ].map(([code,label,cues])=>({code,label,cues}));
 function competencyByCode(code){return COMPETENCY_DICTIONARY.find(x=>x.code===code)}
 function competencyByLabel(label){return COMPETENCY_DICTIONARY.find(x=>x.label===label)}
-const CATEGORIES=['수업·과제','팀프로젝트','캡스톤·연구','동아리·학생회','공모전·대외활동','인턴·현장실습','아르바이트·근로','봉사활동','개인프로젝트','기타'];
+const CATEGORIES=['수업·과제','팀프로젝트','캡스톤·연구','동아리·학생회','공모전·대외활동','인턴·현장실습','아르바이트·근로','봉사활동','개인프로젝트','직무경험','개인경험','성공·실패','몰입 경험','기타'];
 const EVIDENCE_TYPES=['수치·지표','산출물·문서','교수·상사·고객 피드백','수상·선발·평가결과','작업기록·로그','동료·팀 피드백','자기기억만'];
 
 export async function render(ctx){
@@ -37,9 +37,13 @@ export async function render(ctx){
     ${styleBlock()}
     <div class="sectionHead"><div><div class="kicker">STEP 3 · EXPERIENCE & COMPETENCY</div><h2>나의 경험에서 직무역량 찾기</h2><p><b>대표 경험 1개</b>를 골라 실제 행동을 확인하고, 다음 직무탐색에 쓸 역량 근거로 정리합니다.</p></div></div>
     <div class="progress"><span style="width:25%"></span></div>
-    <div class="callout info"><b>STEP 3 흐름</b> · 01 대표 경험 선택 → 02 AI 경험 인터뷰 → 03 STAR 사실확인 → 04 역량 확인 → 05 결과 확인</div>
+    <div class="callout info"><b>STEP 3 흐름</b> · 01 경험리스트·대표 경험 선택 → 02 AI 경험 인터뷰 → 03 STAR 사실확인 → 04 역량 확인 → 05 결과 확인 → 06 Career Asset 저장</div>
 
     <div class="block"><div class="moduleHead"><span>01</span><div><h3>대표 경험 선택</h3><p>STEP 2 Career DNA는 참고만 하고, 실제로 내가 행동했던 경험 하나를 고릅니다.</p></div></div>
+      <div class="summaryBox"><h4>내 경험리스트 · 한 경험당 한 줄</h4><p class="help">학업·프로젝트, 동아리·대외활동, 연구, 인턴·알바, 공모전, 직무·개인 경험, 성공·실패, 몰입 경험을 떠올려 보세요. 먼저 이름만 적어도 됩니다.</p>
+        <div class="grid2">${sel('inventoryCategory','경험 분류','',CATEGORIES,ctx)}${txt('inventoryTitle','경험 이름 한 줄','','예: 카페 아르바이트',ctx)}</div>
+        <div class="actions"><button class="btn secondary" id="addInventory" type="button">경험리스트에 추가</button></div><div id="inventoryList"></div>
+      </div>
       ${dnaBridgeHtml(dna,ctx)}
       <div class="callout info" style="margin-top:12px"><b>경험은 1개만 먼저 완성해도 됩니다.</b> 여러 경험의 반복패턴은 나중에 추가 경험을 저장하면 자동으로 비교됩니다.</div>
       ${best3Row('best','내가 잘했다고 생각하는 경험',best3.best,ctx)}
@@ -61,12 +65,14 @@ export async function render(ctx){
     <div class="hr"></div><div class="block"><div class="moduleHead"><span>03</span><div><h3>STAR 사실확인</h3><p>AI가 정리한 내용을 붙여넣고, <b>내가 실제로 한 행동과 확인 가능한 결과만</b> 남깁니다.</p></div></div>
       <div class="starImportBox">
         <label><b>AI의 마지막 STAR 정리 붙여넣기 · 선택</b></label>
-        <textarea id="aiStructured" placeholder="S / T / A / WHY / R 정리를 붙여넣으세요. 직접 입력해도 됩니다."></textarea>
+        <textarea id="aiStructured" placeholder="S / T / WHAT / WHY / HOW / R / 결과 이유 / Evidence 정리를 붙여넣으세요. 직접 입력해도 됩니다."></textarea>
         <div class="actions"><button class="btn secondary" id="importStarSummary">STAR 항목으로 불러오기</button></div>
       </div>
       <div class="grid2" style="margin-top:12px">${area('situation','S · 상황','언제·어디서·무엇을 하던 상황이었나요?','',ctx)}${area('challenge','T · 문제·내 역할','내가 해결해야 했던 문제와 역할은 무엇이었나요?','',ctx)}</div>
-      <div class="grid2" style="margin-top:12px">${area('action','A · 내가 직접 한 행동','내가 직접 한 행동을 동사 중심으로 적으세요.','',ctx)}${area('reason','WHY · 판단','왜 그 행동을 선택했나요?','',ctx)}</div>
+      <div class="grid2" style="margin-top:12px">${area('action','WHAT · 내가 직접 한 행동','내가 직접 한 행동을 동사 중심으로 적으세요.','',ctx)}${area('reason','WHY · 판단','여러 방법 중 왜 그 행동을 선택했나요?','',ctx)}</div>
+      <div style="margin-top:12px">${area('method','HOW · 실행 방법','어떤 순서·기준·도구로 실행했나요?','',ctx)}</div>
       <div class="grid2" style="margin-top:12px">${area('result','R · 결과','내 행동 뒤 무엇이 달라졌나요?','',ctx)}${area('evidence','Evidence · 근거','산출물·수치·피드백·기록 등 확인 가능한 근거','',ctx)}</div>
+      <div style="margin-top:12px">${area('resultReason','결과 이유 · 나의 해석','왜 그런 결과가 나왔다고 보나요? 확인된 사실과 내 해석을 구분하세요. 모르면 비워도 됩니다.','',ctx)}</div>
       <div style="margin-top:12px">${sel('evidenceType','증거 유형 · 선택','',EVIDENCE_TYPES,ctx)}</div>
       <div class="evidenceGradeLine" id="evidenceGradePreview">증거 유형을 선택하면 확인 수준을 표시합니다.</div>
       <details class="detailsBox" style="margin-top:12px"><summary>추가 메모 · 선택사항</summary><div class="grid2">${area('rawVoice','내 원문 메모','AI가 다듬기 전 내가 실제로 말한 내용','',ctx)}${area('learning','반복해서 쓸 수 있는 행동방식','다른 상황에서도 다시 사용할 수 있는 방식','',ctx)}</div></details>
@@ -74,7 +80,7 @@ export async function render(ctx){
       <div class="actions"><button class="btn primary" id="goCompetency">사실확인 완료 → 역량 연결</button></div>
     </div>
 
-    <div class="hr"></div><div class="block"><div class="moduleHead"><span>04</span><div><h3>역량 확인</h3><p>확인한 행동과 직접 연결되는 역량만 최대 3개까지 고릅니다. 세 칸을 모두 채울 필요는 없습니다.</p></div></div>
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>04</span><div><h3>역량 확인</h3><p>확인한 행동과 연결되는 역량 후보만 최대 3개까지 고릅니다. 지원직무의 역량 판정은 실제 JD를 선택한 뒤 다시 확인합니다.</p></div></div>
       <div class="actionSourceBox"><b>역량 판단 근거</b><p id="actionEvidencePreview">03에서 ‘내가 직접 한 행동’을 입력하면 여기에 표시됩니다.</p></div>
       <div class="grid3" style="margin-top:12px">${competencyRow(1)}${competencyRow(2)}${competencyRow(3)}</div>
       <details class="detailsBox" style="margin-top:12px"><summary>역량 기준표가 필요하면 보기</summary><div class="competencyDictionary">${COMPETENCY_DICTIONARY.map(x=>`<div><b>${x.code} · ${x.label}</b><span>${x.cues}</span></div>`).join('')}</div></details>
@@ -91,6 +97,11 @@ export async function render(ctx){
       <div class="actions"><button class="btn outline" id="analyzeAnother">다른 경험 추가</button><button class="btn primary" id="nextStep">STEP 4 직무탐색 →</button></div>
       <div class="status" id="status"></div>
     </div>
+    <div class="hr"></div><div class="block"><div class="moduleHead"><span>06</span><div><h3>Career Asset 저장</h3><p>사실확인을 마친 경험 원본을 저장하고, 다른 기업·직무 지원 때 다시 불러옵니다.</p></div></div>
+      <div class="callout info">상황·문제·행동·판단·방법·결과·근거를 보관합니다. STEP 5에서 실제 JD와 연결하고, STEP 8 이력서·STEP 9 자소서·STEP 10 면접에서 같은 원본을 사용합니다.</div>
+      <div id="careerAssetBankPreview" style="margin-top:12px">${bankHtml(experiences,ctx)}</div>
+      <div class="actions"><button class="btn primary" id="saveAssetBank">Career Asset 저장·갱신</button><button class="btn outline" id="copyAssetBank">경험 원본 복사</button></div>
+    </div>
   </section>`;
 
   root.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>loadExperience(b.dataset.edit)));
@@ -99,6 +110,18 @@ export async function render(ctx){
   document.getElementById('clearForm').addEventListener('click',clearForm);
   document.getElementById('saveExp').addEventListener('click',saveExperience);
   document.getElementById('useRepresentative').addEventListener('click',useRepresentative);
+  renderInventory();
+  document.getElementById('addInventory').addEventListener('click',addInventory);
+  document.getElementById('inventoryTitle').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addInventory()}});
+  document.getElementById('saveAssetBank').addEventListener('click',()=>{if(!verifiedExperiences(currentExperiences()).length){ctx.toast('사실확인을 마친 경험을 먼저 저장해 주세요.');return;}saveWeek4(false);ctx.toast('사실확인된 경험 원본을 저장·갱신했습니다.');});
+  document.getElementById('copyAssetBank').addEventListener('click',async()=>{
+    const bank=bankFor(currentExperiences());
+    if(!bank.items.length){ctx.toast('사실확인을 마친 경험을 먼저 저장해 주세요.');return;}
+    try{await navigator.clipboard.writeText(JSON.stringify(bank,null,2));ctx.toast('경험 원본을 복사했습니다.');}catch{ctx.toast('복사하지 못했습니다. 다시 시도해 주세요.');}
+  });
+  const section=root.querySelector('.experienceCompetencyWeek4');
+  section.addEventListener('input',e=>{if(e.target.matches('input,textarea'))saveDraft()});
+  section.addEventListener('change',e=>{if(e.target.matches('input,select'))saveDraft()});
   document.getElementById('nextStep').addEventListener('click',()=>{
     saveWeek4(false);
     const ready=currentExperiences().some(x=>x?.factChecked&&String(x?.action||'').trim());
@@ -131,6 +154,25 @@ export async function render(ctx){
   updateActionEvidencePreview();updateEvidenceGradePreview();[1,2,3].forEach(updateCompetencyCue);
 
   function currentExperiences(){return ctx.getState().assessments?.experienceCompetency?.experiences||[]}
+  function bankFor(items){return {...(ctx.getState().artifacts?.careerAssetBank||{}),version:1,items:verifiedExperiences(items).map(x=>({...x,sourceExperienceId:x.id})),updatedAt:new Date().toISOString()}}
+  function renderInventory(){
+    const items=ctx.getState().assessments?.experienceCompetency?.inventory||[],box=document.getElementById('inventoryList');
+    box.innerHTML=items.length?items.map(x=>`<div class="summaryBox" style="margin-top:8px"><b>${ctx.escapeHtml(x.title)}</b> <small>${ctx.escapeHtml(x.category||'기타')}</small><div class="actions"><button class="btn outline smallBtn" data-inventory-use="${ctx.escapeHtml(x.id)}">이 경험 분석하기</button><button class="btn danger smallBtn" data-inventory-delete="${ctx.escapeHtml(x.id)}">리스트에서 삭제</button></div></div>`).join(''):'<p class="help">생각나는 경험을 추가한 뒤, 내가 한 행동을 구체적으로 설명할 수 있는 경험부터 고르세요.</p>';
+    box.querySelectorAll('[data-inventory-use]').forEach(b=>b.addEventListener('click',()=>{
+      const x=items.find(x=>x.id===b.dataset.inventoryUse);if(!x)return;
+      saveWeek4(false);clearForm();set('title',x.title);set('category',x.category);saveDraft();openModule('02');
+    }));
+    box.querySelectorAll('[data-inventory-delete]').forEach(b=>b.addEventListener('click',()=>{
+      if(!confirm('경험리스트에서만 삭제할까요? 분석·저장한 경험은 유지됩니다.'))return;
+      ctx.saveState({assessments:{experienceCompetency:{inventory:items.filter(x=>x.id!==b.dataset.inventoryDelete)}}});renderInventory();
+    }));
+  }
+  function addInventory(){
+    const title=v('inventoryTitle');if(!title){ctx.toast('경험 이름을 한 줄로 적어 주세요.');return;}
+    const items=ctx.getState().assessments?.experienceCompetency?.inventory||[],category=v('inventoryCategory')||'기타';
+    if(items.some(x=>x.title===title&&x.category===category)){ctx.toast('이미 경험리스트에 있습니다.');return;}
+    ctx.saveState({assessments:{experienceCompetency:{inventory:[...items,{id:crypto.randomUUID(),title,category}]}}});set('inventoryTitle','');saveDraft();renderInventory();
+  }
   function collectBest3(){return{
     best:{title:v('best3_best_title'),summary:v('best3_best_summary')},
     flow:{title:v('best3_flow_title'),summary:v('best3_flow_summary')},
@@ -141,7 +183,7 @@ export async function render(ctx){
     const exp=currentExperiences();
     const current=ctx.getState().assessments?.experienceCompetency||{};
     const patch={...current,version:WEEK4_VERSION,best3:collectBest3(),representativeKey:selectedRepresentative(),experiences:exp,updatedAt:new Date().toISOString()};
-    ctx.saveState({assessments:{experienceCompetency:patch},artifacts:{experienceMap:experienceMap(exp),competencyMap:competencyMap(exp),experienceDNA:experienceDNA(exp,dna)}});
+    ctx.saveState({assessments:{experienceCompetency:patch},artifacts:{experienceMap:experienceMap(exp),competencyMap:competencyMap(exp),experienceDNA:experienceDNA(exp,dna),careerAssetBank:bankFor(exp)}});
     if(showToast){
       document.getElementById('status').textContent='STEP 3 경험·역량 결과가 이 브라우저에 저장되었습니다.';
       ctx.toast('STEP 3 경험·역량 결과를 저장했습니다.');
@@ -168,7 +210,7 @@ export async function render(ctx){
       const factChecked=ck('experienceFactChecked');
       const quality={ownership:factChecked,evidence:factChecked,noFabrication:factChecked,transfer:!!v('learning'),competencyEvidence:studentVerified,interviewOwnership:factChecked,interviewNumbers:factChecked,interviewEvidence:factChecked};
       const evidenceType=v('evidenceType');
-      const item={id:oldId||`EXP-${Date.now()}`,category:v('category'),title,period:v('period'),workMode:v('workMode'),contribution:n('contribution'),roleTitle:v('roleTitle'),context:v('context'),role:v('role'),situation:v('situation'),challenge:v('challenge'),action:v('action'),reason:v('reason'),result:v('result'),evidence:v('evidence'),evidenceType,evidenceGrade:evidenceGradeFor(evidenceType),actionVerbs:'',learning:v('learning'),rawVoice:v('rawVoice'),aiStructured:v('aiStructured'),competencies,competencyEvidence,quality,factChecked,updatedAt:new Date().toISOString()};
+      const item={id:oldId||`EXP-${Date.now()}`,category:v('category'),title,period:v('period'),workMode:v('workMode'),contribution:n('contribution'),roleTitle:v('roleTitle'),context:v('context'),role:v('role'),situation:v('situation'),challenge:v('challenge'),action:v('action'),reason:v('reason'),method:v('method'),resultReason:v('resultReason'),result:v('result'),evidence:v('evidence'),evidenceType,evidenceGrade:evidenceGradeFor(evidenceType),actionVerbs:'',learning:v('learning'),rawVoice:v('rawVoice'),aiStructured:v('aiStructured'),competencies,competencyEvidence,quality,factChecked,updatedAt:new Date().toISOString()};
 
       const arr=dedupeExperiences([...currentExperiences()]);
       let idx=oldId?arr.findIndex(x=>x.id===oldId):-1;
@@ -181,7 +223,7 @@ export async function render(ctx){
       const clean=dedupeExperiences(arr);
 
       const current=ctx.getState().assessments?.experienceCompetency||{};
-      ctx.saveState({assessments:{experienceCompetency:{...current,version:WEEK4_VERSION,best3:collectBest3(),representativeKey:selectedRepresentative(),experiences:clean,draft:{},updatedAt:new Date().toISOString()}},artifacts:{experienceMap:experienceMap(clean),competencyMap:competencyMap(clean),experienceDNA:experienceDNA(clean,dna)}});
+      ctx.saveState({assessments:{experienceCompetency:{...current,version:WEEK4_VERSION,best3:collectBest3(),representativeKey:selectedRepresentative(),experiences:clean,draft:{},updatedAt:new Date().toISOString()}},artifacts:{experienceMap:experienceMap(clean),competencyMap:competencyMap(clean),experienceDNA:experienceDNA(clean,dna),careerAssetBank:bankFor(clean)}});
       await ctx.navigate(2);
       openModule('05');
       ctx.toast(`경험을 저장했습니다. 현재 ${clean.length}개 경험이 Experience Map에 있습니다.`);
@@ -192,7 +234,7 @@ export async function render(ctx){
   function loadExperience(id){
     const x=currentExperiences().find(e=>e.id===id);if(!x)return;
     set('editId',x.id);
-    ['category','title','period','workMode','roleTitle','context','role','situation','challenge','action','reason','result','evidence','evidenceType','learning','rawVoice','aiStructured'].forEach(k=>set(k,x[k]||''));
+    ['category','title','period','workMode','roleTitle','context','role','situation','challenge','action','reason','method','resultReason','result','evidence','evidenceType','learning','rawVoice','aiStructured'].forEach(k=>set(k,x[k]||''));
     set('contribution',x.contribution||3);
     [1,2,3].forEach((i,idx)=>{const ce=x.competencyEvidence?.[idx]||{},def=competencyByCode(ce.code)||competencyByLabel(ce.label||ce.keyword);set(`comp_${i}`,ce.code||def?.code||'');set(`compEv_${i}`,ce.evidence||'');set(`compStatus_${i}`,ce.status||'')});
     const verified=document.getElementById('competencyEvidenceChecked');if(verified)verified.checked=!!(x.quality?.competencyEvidence||(x.competencyEvidence?.length&&x.competencyEvidence.every(e=>e.studentVerified)));
@@ -206,11 +248,11 @@ export async function render(ctx){
     saveWeek4(false);
     const arr=currentExperiences().filter(x=>x.id!==id);
     const current=ctx.getState().assessments?.experienceCompetency||{};
-    ctx.saveState({assessments:{experienceCompetency:{...current,experiences:arr,updatedAt:new Date().toISOString()}},artifacts:{experienceMap:experienceMap(arr),competencyMap:competencyMap(arr),experienceDNA:experienceDNA(arr,dna)}});
+    ctx.saveState({assessments:{experienceCompetency:{...current,experiences:arr,updatedAt:new Date().toISOString()}},artifacts:{experienceMap:experienceMap(arr),competencyMap:competencyMap(arr),experienceDNA:experienceDNA(arr,dna),careerAssetBank:bankFor(arr)}});
     ctx.toast('삭제했습니다.');ctx.navigate(2);
   }
   function clearForm(){
-    ['editId','category','title','period','workMode','roleTitle','context','role','situation','challenge','action','reason','result','evidence','evidenceType','learning','rawVoice','aiStructured','comp_1','compEv_1','compStatus_1','compStatus_2','compStatus_3','comp_2','compEv_2','comp_3','compEv_3'].forEach(k=>set(k,''));
+    ['editId','category','title','period','workMode','roleTitle','context','role','situation','challenge','action','reason','method','resultReason','result','evidence','evidenceType','learning','rawVoice','aiStructured','comp_1','compEv_1','compStatus_1','compStatus_2','compStatus_3','comp_2','compEv_2','comp_3','compEv_3'].forEach(k=>set(k,''));
     set('contribution',3);
     ['experienceFactChecked','competencyEvidenceChecked'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false});
     updateActionEvidencePreview();updateEvidenceGradePreview();[1,2,3].forEach(updateCompetencyCue);
@@ -224,7 +266,7 @@ export async function render(ctx){
     saveWeek4(false);
     // 대표 경험을 바꾸면 이전 경험의 STAR·역량 입력이 섞이지 않도록 분석칸을 새 경험 기준으로 초기화한다.
     clearForm();
-    set('title',title);set('context',summary);
+    set('title',title);set('context',summary);saveDraft();
     const target=document.getElementById('title');window.JobfitStepAccordion?.openBlock?.(target?.closest('.block'));
     target?.scrollIntoView({behavior:'smooth',block:'center'});target?.focus();
     ctx.toast('선택한 대표 경험을 분석칸에 새로 가져왔습니다.');
@@ -250,18 +292,22 @@ export async function render(ctx){
 배경: ${v('context')||'미입력'}
 책임범위: ${v('role')||'미입력'}${dnaLines.length?`\n\n[STEP 2 Career DNA · 참고만]\n${dnaLines.join('\n')}`:''}
 
-[STAR + WHY 확인 기준]
+[STAR + WHAT / WHY / HOW 확인 기준]
 S · Situation: 어떤 상황이었는가
 T · Task: 해결해야 했던 문제·목표와 내 역할은 무엇이었는가
-A · Action: 내가 직접 무엇을 했는가
+WHAT · Action: 내가 직접 무엇을 했는가
 WHY · Judgment: 왜 그 방법을 선택했는가
+HOW · Method: 어떤 순서·기준·도구로 실행했는가
+결과 이유: 결과 원인에 대한 학생의 해석(검증된 인과관계로 단정하지 않는다)
 R · Result: 그 행동 뒤 무엇이 달라졌는가
 
 [인터뷰 규칙]
 1. 한 번에 질문은 반드시 하나만 한다.
 2. 학생에게 질문할 때는 S/T/A/R 같은 기호를 붙이지 않는다. STAR는 내부 질문 구조로만 사용한다.
 3. 질문은 가능하면 한 문장, 길어도 두 문장 이내로 짧게 한다.
-4. 먼저 현재 입력내용을 읽고 S/T/A/WHY/R 중 이미 확인된 내용과 빠진 내용을 구분한다.
+4. 아래 현재 정리도 읽고 빠진 내용만 묻는다.
+현재 정리: ${JSON.stringify({situation:v('situation'),task:v('challenge'),action:v('action'),why:v('reason'),how:v('method'),result:v('result'),resultReason:v('resultReason'),evidence:v('evidence')})}
+먼저 현재 입력내용을 읽고 S/T/A/WHY/R 중 이미 확인된 내용과 빠진 내용을 구분한다.
 5. 이미 말한 내용은 다시 묻지 않는다. STAR 순서를 기계적으로 처음부터 반복하지 않는다.
 6. 가장 부족한 정보 하나만 다음 질문으로 묻는다.
 7. 특히 A(Action)를 가장 중요하게 확인한다. 팀 전체의 행동과 내가 직접 한 행동을 반드시 분리한다.
@@ -286,9 +332,11 @@ R · Result: 그 행동 뒤 무엇이 달라졌는가
 [마지막 정리 형식]
 - S 상황
 - T 문제·목표와 내 역할
-- A 내가 직접 한 행동 1~5개(확인된 행동만)
+- WHAT 내가 직접 한 행동 1~5개(확인된 행동만)
 - WHY 판단·선택 이유
+- HOW 실행 방법
 - R 결과
+- 결과 이유(학생의 해석)
 - 확인 가능한 증거
 - 핵심 행동동사
 - 확인 필요 사항
@@ -299,7 +347,7 @@ R · Result: 그 행동 뒤 무엇이 달라졌는가
 첫 질문부터 시작해줘.`;
   }
   function draftSnapshot(){
-    const fields=['category','title','period','workMode','roleTitle','context','role','situation','challenge','action','reason','result','evidence','evidenceType','learning','rawVoice','aiStructured'];
+    const fields=['editId','inventoryTitle','inventoryCategory','category','title','period','workMode','roleTitle','context','role','situation','challenge','action','reason','method','resultReason','result','evidence','evidenceType','learning','rawVoice','aiStructured'];
     const values={};fields.forEach(id=>values[id]=v(id));
     values.contribution=n('contribution')||3;
     values.factChecked=ck('experienceFactChecked');
@@ -319,7 +367,7 @@ R · Result: 그 행동 뒤 무엇이 달라졌는가
   function restoreDraft(){
     const d=ctx.getState().assessments?.experienceCompetency?.draft||{};
     if(!d||!Object.keys(d).length)return;
-    ['category','title','period','workMode','roleTitle','context','role','situation','challenge','action','reason','result','evidence','evidenceType','learning','rawVoice','aiStructured'].forEach(id=>{if(d[id]!==undefined&&d[id]!==null)set(id,d[id])});
+    ['editId','inventoryTitle','inventoryCategory','category','title','period','workMode','roleTitle','context','role','situation','challenge','action','reason','method','resultReason','result','evidence','evidenceType','learning','rawVoice','aiStructured'].forEach(id=>{if(d[id]!==undefined&&d[id]!==null)set(id,d[id])});
     set('contribution',d.contribution||3);
     const legacyChecks=d.interviewChecks||{};
     const fact=document.getElementById('experienceFactChecked'),verified=document.getElementById('competencyEvidenceChecked');
@@ -337,10 +385,12 @@ R · Result: 그 행동 뒤 무엇이 달라졌는가
     if(parsed.task)set('challenge',parsed.task);
     if(parsed.action)set('action',parsed.action);
     if(parsed.why)set('reason',parsed.why);
+    if(parsed.how)set('method',parsed.how);
+    if(parsed.resultReason)set('resultReason',parsed.resultReason);
     if(parsed.result)set('result',parsed.result);
     if(parsed.evidence)set('evidence',parsed.evidence);
     updateActionEvidencePreview();
-    const filled=[parsed.situation,parsed.task,parsed.action,parsed.why,parsed.result,parsed.evidence].filter(Boolean).length;
+    const filled=[parsed.situation,parsed.task,parsed.action,parsed.why,parsed.how,parsed.resultReason,parsed.result,parsed.evidence].filter(Boolean).length;
     saveDraft();
     ctx.toast(filled?`STAR 정리에서 ${filled}개 항목을 불러왔습니다. 실제 경험과 맞는지 수정해 주세요.`:'STAR 제목을 찾지 못했습니다. 아래 칸에 직접 정리해 주세요.');
   }
@@ -348,13 +398,15 @@ R · Result: 그 행동 뒤 무엇이 달라졌는가
     const aliases=[
       ['situation',/^(?:[-*•]\s*)?(?:S\s*[·.:)-]?\s*)?(?:상황|Situation)/i],
       ['task',/^(?:[-*•]\s*)?(?:T\s*[·.:)-]?\s*)?(?:문제·목표와 내 역할|문제·내 역할|문제·목표|문제|과제|Task)/i],
-      ['action',/^(?:[-*•]\s*)?(?:A\s*[·.:)-]?\s*)?(?:내가 직접 한 행동|행동|Action)/i],
+      ['action',/^(?:[-*•]\s*)?(?:(?:A|WHAT|A-WHAT)\s*[·.:)-]?\s*)?(?:내가 직접 한 행동|행동|Action)/i],
       ['why',/^(?:[-*•]\s*)?(?:WHY\s*[·.:)-]?\s*)?(?:판단·선택 이유|판단|이유|Judgment)/i],
+      ['how',/^(?:[-*•]\s*)?(?:HOW\s*[·.:)-]?\s*)?(?:실행 방법|실행방법|방법|Method)/i],
+      ['resultReason',/^(?:[-*•]\s*)?(?:R-WHY\s*[·.:)-]?\s*)?(?:결과 이유(?:\(학생의 해석\))?|결과 원인|Result Reason)/i],
       ['result',/^(?:[-*•]\s*)?(?:R\s*[·.:)-]?\s*)?(?:결과|Result)/i],
       ['evidence',/^(?:[-*•]\s*)?(?:확인 가능한 증거|증거|Evidence)/i],
       ['stop',/^(?:[-*•]\s*)?(?:핵심 행동동사|확인 필요 사항)/i]
     ];
-    const out={situation:'',task:'',action:'',why:'',result:'',evidence:''};let current='';
+    const out={situation:'',task:'',action:'',why:'',how:'',resultReason:'',result:'',evidence:''};let current='';
     for(const original of String(raw).split(/\r?\n/)){
       const line=original.trim();if(!line)continue;
       const hit=aliases.find(([,re])=>re.test(line));
@@ -386,7 +438,7 @@ R · Result: 그 행동 뒤 무엇이 달라졌는가
 }
 
 function normalizeBest3(x){return{best:{title:x?.best?.title||'',summary:x?.best?.summary||''},flow:{title:x?.flow?.title||'',summary:x?.flow?.summary||''},recognition:{title:x?.recognition?.title||'',summary:x?.recognition?.summary||''}}}
-function experienceMap(arr){return arr.map(x=>({id:x.id,title:x.title,category:x.category,roleTitle:x.roleTitle,action:x.action,actionVerbs:x.actionVerbs,result:x.result,evidence:x.evidence,evidenceGrade:x.evidenceGrade,competencies:x.competencies,competencyEvidence:x.competencyEvidence,learning:x.learning,factChecked:x.factChecked}))}
+function experienceMap(arr){return arr.map(x=>({id:x.id,title:x.title,category:x.category,roleTitle:x.roleTitle,situation:x.situation,challenge:x.challenge,reason:x.reason,method:x.method,resultReason:x.resultReason,action:x.action,actionVerbs:x.actionVerbs,result:x.result,evidence:x.evidence,evidenceGrade:x.evidenceGrade,competencies:x.competencies,competencyEvidence:x.competencyEvidence,learning:x.learning,factChecked:x.factChecked}))}
 function competencyMap(arr){
   const map={};
   verifiedExperiences(arr).forEach(x=>{
@@ -433,7 +485,7 @@ function mergeDuplicateExperiences(a,b){
     const key=[row?.code||row?.label||row?.keyword||'',normalizeExperienceText(row?.evidence),row?.status||''].join('|');
     if(!key.replace(/\|/g,'')||seen.has(key))continue;seen.add(key);competencyEvidence.push(row);
   }
-  return {...secondary,...primary,id:primary?.id||secondary?.id,factChecked:!!(a?.factChecked||b?.factChecked),quality:{...(secondary?.quality||{}),...(primary?.quality||{})},competencies,competencyEvidence,updatedAt:[a?.updatedAt,b?.updatedAt].filter(Boolean).sort().pop()||new Date().toISOString()};
+  return {...secondary,...primary,method:primary?.method||secondary?.method||'',resultReason:primary?.resultReason||secondary?.resultReason||'',id:primary?.id||secondary?.id,factChecked:!!(a?.factChecked||b?.factChecked),quality:{...(secondary?.quality||{}),...(primary?.quality||{})},competencies,competencyEvidence,updatedAt:[a?.updatedAt,b?.updatedAt].filter(Boolean).sort().pop()||new Date().toISOString()};
 }
 function dedupeExperiences(items){
   const out=[],byFingerprint=new Map();
@@ -501,8 +553,14 @@ function listHtml(items,ctx){
 }
 function experienceMapHtml(items,ctx){
   if(!items.length)return '<div class="placeholder"><b>Experience Map이 아직 비어 있습니다.</b> 경험을 하나 이상 저장하면 행동·결과·역량근거가 여기에 정리됩니다.</div>';
-  return `<div class="experienceMapGrid">${items.map((x,i)=>{const ce=x.competencyEvidence||[],confirmed=ce.filter(c=>c.status==='행동 확인'&&c.studentVerified),pending=ce.filter(c=>c.status!=='행동 확인'||!c.studentVerified);return `<div class="mapCard"><div class="listHead"><span class="rankTag">Experience ${i+1}</span><span class="scoreChip">${x.factChecked?'사실확인 완료':'사실확인 필요'}</span></div><h4>${ctx.escapeHtml(x.title)}</h4><div><small>내 행동</small><p>${ctx.escapeHtml(x.action||'아직 정리하지 않음')}</p></div><div><small>결과·증거</small><p>${ctx.escapeHtml(x.result||'결과 미입력')}${x.evidence?` · ${ctx.escapeHtml(x.evidence)}`:''}</p></div><div><small>확인된 역량 + 근거</small>${confirmed.length?`<ul>${confirmed.map(c=>`<li><b>${ctx.escapeHtml(c.keyword||'역량')}</b> · ${ctx.escapeHtml(c.evidence||'근거행동 미입력')}</li>`).join('')}</ul>`:'<p>아직 행동근거로 확정한 역량이 없습니다.</p>'}${pending.length?`<details class="detailsBox" style="margin-top:8px"><summary>추가 확인 중인 역량 ${pending.length}개</summary><ul>${pending.map(c=>`<li><b>${ctx.escapeHtml(c.keyword||'역량')}</b> · ${ctx.escapeHtml(c.status||'판정 필요')}</li>`).join('')}</ul></details>`:''}</div></div>`}).join('')}</div>`;
+  return `<div class="experienceMapGrid">${items.map((x,i)=>{const ce=x.competencyEvidence||[],confirmed=ce.filter(c=>c.status==='행동 확인'&&c.studentVerified),pending=ce.filter(c=>c.status!=='행동 확인'||!c.studentVerified);return `<div class="mapCard"><div class="listHead"><span class="rankTag">Experience ${i+1}</span><span class="scoreChip">${x.factChecked?'사실확인 완료':'사실확인 필요'}</span></div><h4>${ctx.escapeHtml(x.title)}</h4><div><small>내 행동</small><p>${ctx.escapeHtml(x.action||'아직 정리하지 않음')}</p></div>${x.reason?`<div><small>판단 이유</small><p>${ctx.escapeHtml(x.reason)}</p></div>`:''}${x.method?`<div><small>실행 방법</small><p>${ctx.escapeHtml(x.method)}</p></div>`:''}${x.resultReason?`<div><small>결과 이유 · 본인의 해석</small><p>${ctx.escapeHtml(x.resultReason)}</p></div>`:''}<div><small>결과·증거</small><p>${ctx.escapeHtml(x.result||'결과 미입력')}${x.evidence?` · ${ctx.escapeHtml(x.evidence)}`:''}</p></div><div><small>확인된 역량 + 근거</small>${confirmed.length?`<ul>${confirmed.map(c=>`<li><b>${ctx.escapeHtml(c.keyword||'역량')}</b> · ${ctx.escapeHtml(c.evidence||'근거행동 미입력')}</li>`).join('')}</ul>`:'<p>아직 행동근거로 확정한 역량이 없습니다.</p>'}${pending.length?`<details class="detailsBox" style="margin-top:8px"><summary>추가 확인 중인 역량 ${pending.length}개</summary><ul>${pending.map(c=>`<li><b>${ctx.escapeHtml(c.keyword||'역량')}</b> · ${ctx.escapeHtml(c.status||'판정 필요')}</li>`).join('')}</ul></details>`:''}</div></div>`}).join('')}</div>`;
 }
 function styleBlock(){return `<style>
 .experienceCompetencyWeek4 .moduleHead{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}.experienceCompetencyWeek4 .moduleHead>span{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#eef0ff;color:#4940b8;font-weight:900;flex:0 0 auto}.experienceCompetencyWeek4 .moduleHead h3{margin:0 0 3px}.experienceCompetencyWeek4 .moduleHead p{margin:0;color:var(--muted);font-size:13px}.dnaBridge{border:1px solid var(--line);border-radius:16px;overflow:hidden}.dnaBridgeHead{display:flex;justify-content:space-between;gap:10px;padding:12px 14px;background:#f7f8ff}.dnaBridgeHead span{font-size:12px;color:var(--muted)}.dnaBridgeRow{padding:10px 14px;border-top:1px solid var(--line)}.dnaBridgeRow small{color:var(--muted);font-weight:800}.dnaBridgeRow p{margin:4px 0 0;white-space:pre-wrap}.best3Row{display:grid;grid-template-columns:220px 1fr 1.5fr;gap:9px;align-items:stretch;margin-top:9px}.best3Label{display:flex;align-items:center;padding:10px 12px;background:#fafafa;border:1px solid var(--line);border-radius:12px}.best3Row textarea{min-height:70px}.repChoices{display:flex;flex-wrap:wrap;gap:8px}.repChoices label input{position:absolute;opacity:0}.repChoices label span{display:block;padding:8px 12px;border:1px solid var(--line);border-radius:999px;cursor:pointer}.repChoices label input:checked+span{background:#5b50dd;color:#fff;border-color:#5b50dd}.qualityBox{border:1px solid var(--line);border-radius:14px;padding:10px}.evidenceGradeLine{margin-top:8px;font-size:12px;color:var(--muted);font-weight:750}.actionSourceBox{border:1px solid #dbe4ff;background:#f7f9ff;border-radius:14px;padding:12px}.actionSourceBox b{display:block;margin-bottom:5px}.actionSourceBox p{margin:0;white-space:pre-wrap;line-height:1.55;color:#41547f}.compactCompetency .field{gap:5px}.starImportBox{border:1px solid #dbe4ff;background:#f8faff;border-radius:14px;padding:12px}.starImportBox textarea{margin-top:8px;min-height:120px}.competencyDictionary{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}.competencyDictionary>div{border:1px solid var(--line);border-radius:10px;padding:9px;background:#fff}.competencyDictionary b{display:block;font-size:12px;margin-bottom:3px}.competencyDictionary span{font-size:11px;color:var(--muted);line-height:1.45}.starHandoff{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.starHandoff>div{border:1px solid var(--line);border-radius:12px;padding:10px;background:#fafbff}.starHandoff b{display:block;margin-bottom:4px}.starHandoff span{display:block;font-size:12px;line-height:1.45;color:var(--muted)}.summaryBox{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fafbff}.summaryBox h4{margin:0 0 6px}.experienceMapGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.mapCard{border:1px solid var(--line);border-radius:14px;padding:12px}.mapCard h4{margin:8px 0 12px}.mapCard small{color:var(--muted);font-weight:800}.mapCard p{margin:4px 0 10px;line-height:1.55}.mapCard ul{margin:6px 0 0;padding-left:18px}.mapCard li{margin:5px 0}@media(max-width:760px){.best3Row,.experienceMapGrid,.starHandoff,.competencyDictionary{grid-template-columns:1fr}.dnaBridgeHead{display:block}.dnaBridgeHead span{display:block;margin-top:4px}}
 </style>`}
+
+function bankHtml(items,ctx){
+  const verified=verifiedExperiences(items);
+  if(!verified.length)return '<div class="placeholder"><b>아직 사실확인된 경험이 없습니다.</b> 02~04에서 경험을 저장하면 이곳에 모입니다.</div>';
+  return verified.map(x=>`<div class="summaryBox" style="margin-top:8px"><h4>${ctx.escapeHtml(x.title)}</h4><p style="white-space:pre-wrap">${ctx.escapeHtml(x.action)}</p><p>결과: ${ctx.escapeHtml(x.result||'미입력')}<br>근거: ${ctx.escapeHtml(x.evidence||'미입력 · 본인의 설명 확인')}</p><div class="actions"><button class="btn outline smallBtn" data-edit="${ctx.escapeHtml(x.id)}">경험 원본 불러오기·수정</button></div></div>`).join('');
+}
