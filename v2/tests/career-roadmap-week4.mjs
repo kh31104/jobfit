@@ -109,6 +109,16 @@ await run('Best3 representative feeds one-question Experience Interview',async p
   assert((await page.locator('#challenge').inputValue())==='센서 오류 원인을 좁혀야 했다.','STAR import should strip the Task label cleanly');
 });
 
+await run('Mobile STAR import accepts touch and mobile-copied markdown labels',async page=>{
+  await page.setViewportSize({width:390,height:844});
+  await openFor(page,'#aiStructured');
+  await page.locator('#aiStructured').fill('- **S 상황**: 모바일 팀 프로젝트\n- **T 문제·목표와 내 역할**: 자료 오류를 확인해야 했다.\n- **WHAT 내가 직접 한 행동**: 원자료와 결과표를 비교했다.\n- **WHY 판단·선택 이유**: 오류 가능성이 큰 항목부터 확인했다.\n- **R 결과**: 오류 2건을 수정했다.\n- **확인 가능한 증거**: 수정된 결과표');
+  await page.locator('#importStarSummary').evaluate(el=>el.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerType:'touch'})));
+  assert((await page.locator('#situation').inputValue())==='모바일 팀 프로젝트','Mobile touch STAR import should fill Situation');
+  assert((await page.locator('#action').inputValue()).includes('원자료와 결과표를 비교했다.'),'Mobile-copied markdown STAR import should fill Action');
+  assert((await page.locator('#evidence').inputValue())==='수정된 결과표','Mobile-copied markdown STAR import should fill Evidence');
+});
+
 await run('STEP2 draft survives reload before final experience save',async page=>{
   await openFor(page,'#best3_best_title');
   await page.locator('#best3_best_title').fill('학생회 행사');
