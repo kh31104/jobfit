@@ -66,7 +66,7 @@ export async function render(ctx){
       <div class="starImportBox">
         <label><b>AI의 마지막 STAR 정리 붙여넣기 · 선택</b></label>
         <textarea id="aiStructured" placeholder="S / T / WHAT / WHY / HOW / R / 결과 이유 / Evidence 정리를 붙여넣으세요. 직접 입력해도 됩니다."></textarea>
-        <div class="actions"><button class="btn secondary" id="importStarSummary">STAR 항목으로 불러오기</button></div>
+        <div class="actions"><button class="btn secondary" id="importStarSummary" type="button">STAR 항목으로 불러오기</button></div>
       </div>
       <div class="grid2" style="margin-top:12px">${area('situation','S · 상황','언제·어디서·무엇을 하던 상황이었나요?','',ctx)}${area('challenge','T · 문제·내 역할','내가 해결해야 했던 문제와 역할은 무엇이었나요?','',ctx)}</div>
       <div class="grid2" style="margin-top:12px">${area('action','WHAT · 내가 직접 한 행동','내가 직접 한 행동을 동사 중심으로 적으세요.','',ctx)}${area('reason','WHY · 판단','여러 방법 중 왜 그 행동을 선택했나요?','',ctx)}</div>
@@ -144,7 +144,17 @@ export async function render(ctx){
   document.getElementById('goFactCheck')?.addEventListener('click',()=>{
     syncInterviewToFactCheck();saveDraft();openModule('03');
   });
-  document.getElementById('importStarSummary')?.addEventListener('click',importStarSummary);
+  const importStarButton=document.getElementById('importStarSummary');
+  let lastStarImportAt=0;
+  const runStarImport=()=>{
+    const now=Date.now();
+    if(now-lastStarImportAt<350)return;
+    lastStarImportAt=now;
+    importStarSummary();
+  };
+  importStarButton?.addEventListener('click',runStarImport);
+  importStarButton?.addEventListener('pointerup',e=>{if(e.pointerType==='touch')runStarImport()});
+  importStarButton?.addEventListener('touchend',runStarImport,{passive:true});
   document.getElementById('goCompetency')?.addEventListener('click',()=>{if(!v('action')){ctx.toast('내가 직접 한 행동을 먼저 확인해 주세요.');return}if(!ck('experienceFactChecked')){ctx.toast('실제 경험과 일치하는지 확인해 주세요.');return}saveDraft();openModule('04')});
   document.getElementById('analyzeAnother')?.addEventListener('click',()=>openModule('01'));
     document.getElementById('action')?.addEventListener('input',updateActionEvidencePreview);
@@ -408,7 +418,7 @@ R · Result: 그 행동 뒤 무엇이 달라졌는가
     ];
     const out={situation:'',task:'',action:'',why:'',how:'',resultReason:'',result:'',evidence:''};let current='';
     for(const original of String(raw).split(/\r?\n/)){
-      const line=original.trim();if(!line)continue;
+      const line=original.replace(/[\u200B-\u200D\uFEFF]/g,'').replace(/\u00A0/g,' ').trim().replace(/^[>#]+\s*/,'').replace(/\*\*/g,'').replace(/__/g,'').trim();if(!line)continue;
       const hit=aliases.find(([,re])=>re.test(line));
       if(hit){
         current=hit[0]==='stop'?'':hit[0];
