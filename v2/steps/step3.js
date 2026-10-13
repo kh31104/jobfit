@@ -15,6 +15,9 @@ export async function render(ctx){
   data.newInterests=Array.isArray(data.newInterests)?data.newInterests:[];
   data.industryInterests=Array.isArray(data.industryInterests)?data.industryInterests:[];
   data.targetCombos=Array.isArray(data.targetCombos)?data.targetCombos:legacyCombos(data);
+  const repairedCandidates=data.candidates.map(normalizedCandidate);
+  const needsRepair=repairedCandidates.some((j,i)=>j!==data.candidates[i]);
+  if(needsRepair)data.candidates=repairedCandidates;
   const root=document.getElementById('stepRoot');
   const actions=confirmedActions(experienceMap);
   let editingCandidateId='';
@@ -65,6 +68,7 @@ export async function render(ctx){
       <div class="actions"><button class="btn primary" id="saveTargets">Target Job 저장</button><button class="btn secondary" id="nextStep">STEP 5 실제 JD 확인 →</button></div>
       <div class="status" id="targetStatus"></div>`)}
   </section>`;
+  if(needsRepair)persist(false);
   renderInterests();renderCandidates();renderCompare();renderTargets();bindChoices();
   document.getElementById('confirmSelf')?.addEventListener('click',()=>openBlock(1));
   document.getElementById('backStep2')?.addEventListener('click',()=>ctx.navigate(2));
@@ -216,11 +220,40 @@ function area(id,label,value,ph){return `<div class="field"><label>${label}</lab
 function sel(id,label,value,opts){return `<div class="field"><label>${label}</label><select id="${id}"><option value="">선택</option>${opts.map(o=>`<option ${o===value?'selected':''}>${o}</option>`).join('')}</select></div>`}
 function parseCandidateOutput(raw=''){
   const text=String(raw||'').replace(/\r/g,'').replace(/\*\*/g,'').replace(/```(?:json|text)?/gi,'').replace(/```/g,'').trim();
-  const legacy=(()=>{try{const x=JSON.parse(text);return Array.isArray(x)?x:(Array.isArray(x?.candidates)?x.candidates:[])}catch{return []}})();
-  if(legacy.length)return legacy.map(x=>({title:x.title||x.job||'',family:x.family||'',summary:x.summary||x.description||'',evidence:x.evidence||x.experienceEvidence||'',why:x.why||x.interestEvidence||'',industries:Array.isArray(x.industries)?x.industries.join(', '):(x.industries||''),unknowns:x.unknowns||''}));
-  const blocks=text.split(/(?=^\s*\[?후보\s*\d+\]?\s*$)/gmi).map(x=>x.trim()).filter(x=>/^(?:\[?후보\s*\d+\]?)/i.test(x));
-  const keyMap=[['title',/^\s*(?:[-•·]\s*)?직무명\s*[:：]\s*(.*)$/i],['family',/^\s*(?:[-•·]\s*)?직무군\s*[:：]\s*(.*)$/i],['summary',/^\s*(?:[-•·]\s*)?어떤\s*일(?:인가)?\s*[:：]\s*(.*)$/i],['evidence',/^\s*(?:[-•·]\s*)?경험[·ㆍ\s]*행동\s*근거\s*[:：]\s*(.*)$/i],['why',/^\s*(?:[-•·]\s*)?관심\s*근거\s*[:：]\s*(.*)$/i],['industries',/^\s*(?:[-•·]\s*)?가능\s*산업\s*[:：]\s*(.*)$/i],['unknowns',/^\s*(?:[-•·]\s*)?(?:STEP\s*[45]에서\s*)?확인할\s*것\s*[:：]\s*(.*)$/i]];
-  return blocks.map(block=>{const out={title:'',family:'',summary:'',evidence:'',why:'',industries:'',unknowns:''};let current='';for(const rawLine of block.split('\n').slice(1)){const line=rawLine.trim();if(!line)continue;const hit=keyMap.map(([k,rx])=>[k,line.match(rx)]).find(([,m])=>m);if(hit){current=hit[0];out[current]=hit[1][1].trim();continue}if(current)out[current]+=(out[current]?' ':'')+line.replace(/^[•·\-*]\s*/,'').trim()}return out}).filter(x=>x.title);
+  const json=(()=>{try{const x=JSON.parse(text);return Array.isArray(x)?x:(Array.isArray(x?.candidates)?x.candidates:[])}catch{return []}})();
+  if(json.length)return json.map(x=>({title:x.title||x.job||'',family:x.family||'',summary:x.summary||x.description||'',evidence:x.evidence||x.experienceEvidence||'',why:x.why||x.interestEvidence||'',industries:Array.isArray(x.industries)?x.industries.join(', '):(x.industries||''),unknowns:x.unknowns||''}));
+  const blocks=text.split(/(?=^\s*(?:#{1,4}\s*)?\[?후보\s*\d+\]?(?:\s|$))/gmi).map(x=>x.trim()).filter(x=>/^(?:#{1,4}\s*)?\[?후보\s*\d+\]?/i.test(x));
+  const labels=/(직무명|직무군|어떤\s*일(?:인가요?)?|경험\s*[·ㆍ∙/,-]?\s*행동\s*근거|관심\s*근거|가능\s*산업|(?:STEP\s*[45]\s*에서\s*)?확인할\s*것)\s*[:：]\s*/gi;
+  return blocks.map(block=>{
+    const out={title:'',family:'',summary:'',evidence:'',why:'',industries:'',unknowns:''};
+    const found=[...block.matchAll(labels)];
+    for(let i=0;i<found.length;i++){
+      const label=found[i][1].replace(/\s+/g,'').toLowerCase();
+      const value=block.slice(found[i].index+found[i][0].length,i+1<found.length?found[i+1].index:block.length).replace(/\s+/g,' ').replace(/^[\-•·:：\s]+|[\s]+$/g,'').trim();
+      const field=label==='직무명'?'title':label==='직무군'?'family':label.startsWith('어떤일')?'summary':label.startsWith('경험')?'evidence':label.startsWith('관심')?'why':label==='가능산업'?'industries':'unknowns';
+      out[field]+=(out[field]?' ':'')+value;
+    }
+    return out;
+  }).filter(x=>x.title);
+}
+function normalizedCandidate(j){
+  if(!j||typeof j!=='object')return j;
+  const originalTitle=String(j.title||'');
+  if(!/(?:직무명|직무군|어떤\s*일|경험\s*[·ㆍ∙/,-]?\s*행동\s*근거|관심\s*근거|가능\s*산업|확인할\s*것)\s*[:：]/i.test(originalTitle))return j;
+  let parsed=parseCandidateOutput('[후보 1]\n'+originalTitle)[0];
+  if(!parsed?.title){
+    const cutoff=originalTitle.search(/\s+(?:직무군|어떤\s*일|관심\s*근거|경험\s*[·ㆍ∙/,-]?\s*행동\s*근거)\s*[:：]/);
+    if(cutoff<0)return j;
+    parsed=parseCandidateOutput('[후보 1]\n직무명: '+originalTitle.slice(0,cutoff).replace(/^직무명\s*[:：]\s*/,'').trim()+' '+originalTitle.slice(cutoff))[0];
+  }
+  if(!parsed?.title||parsed.title===originalTitle&&!(parsed.summary||parsed.evidence||parsed.why||parsed.family||parsed.industries))return j;
+  const keep=(oldVal,newVal)=>String(oldVal||'').trim()||String(newVal||'').trim();
+  return {...j,rawImportText:j.rawImportText||originalTitle,title:parsed.title,family:keep(j.family,parsed.family),summary:keep(j.summary,parsed.summary),why:keep(j.why,parsed.why),evidence:keep(j.evidence,parsed.evidence),unknowns:keep(j.unknowns,parsed.unknowns),industries:Array.isArray(j.industries)&&j.industries.length?j.industries:[...new Set(String(parsed.industries||'').split(/[,/|]/).map(x=>x.trim()).filter(Boolean))]};
+}
+function jobTitleOnly(j){
+ const title=String(j?.title||'').replace(/^직무명\s*[:：]\s*/,'').trim();
+ const cutoff=title.search(/\s+(?:직무군|어떤\s*일|관심\s*근거|경험\s*[·ㆍ∙/,-]?\s*행동\s*근거|가능\s*산업|STEP\s*[45]에서\s*확인할\s*것)\s*[:：]/);
+ return (cutoff>=0?title.slice(0,cutoff):title).trim()||'직무명 미입력';
 }
 function splitList(v){return [...new Set(String(v||'').split(/[,/|]/).map(x=>x.trim()).filter(Boolean))]}
 function slug(x=''){return String(x).trim().replace(/[^0-9A-Za-z가-힣]+/g,'-').replace(/^-|-$/g,'').slice(0,30)||'undecided'}
