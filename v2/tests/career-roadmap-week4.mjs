@@ -325,7 +325,7 @@ await run('STEP4 keeps old target choices and restores one-line AI reasons on de
   assert(before.candidates[0].id==='job-old'&&before.candidates[0].rawImportText,'Old candidate metadata not preserved');
   assert(before.targetCombos[0].id==='target-old','Existing ranking lost on migration');
   await openFor(page,'#jobAiImport');
-  await page.locator('#jobAiImport').fill('[후보 1]\\n직무명: 브랜드 마케팅\\n관심 근거: 자료 분석을 직접 선택했다.\\n경험·행동 근거: 리뷰를 분류했다.');
+  await page.locator('#jobAiImport').fill(['[후보 1]','직무명: 브랜드 마케팅','관심 근거: 자료 분석을 직접 선택했다.','경험·행동 근거: 리뷰를 분류했다.'].join(String.fromCharCode(10)));
   await page.locator('#importJobAi').click();
   const after=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')).artifacts.jobExplorer);
   assert(after.candidates.length===1&&after.candidates[0].id==='job-old','AI re-import deleted saved candidate');
