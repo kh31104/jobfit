@@ -182,19 +182,30 @@ export async function render(ctx){
   function renderSources(target,a){
     const box=document.getElementById('sourceList');if(!box)return;
     if(!a.sources?.length){box.innerHTML='<div class="placeholder"><b>아직 JD가 없습니다.</b>기업 공식 채용공고를 우선 등록하세요.</div>';updateChosenSelect(a);return}
-    box.innerHTML=a.sources.map((x,i)=>`<div class="listCard"><div class="listHead"><div><span class="rankTag">JD ${i+1}</span><h3>${esc((x.companyName?x.companyName+' · ':'')+x.name,ctx)}</h3><div class="muted small">${esc(x.type,ctx)} · ${esc(x.checkedAt||'',ctx)}</div></div><button class="btn danger smallBtn" data-delsrc="${x.id}">삭제</button></div><p>${esc(x.note||'핵심내용 미입력',ctx)}</p><a href="${esc(x.url,ctx)}" target="_blank" rel="noopener">원문 열기 ↗</a></div>`).join('');
+    box.innerHTML='<div class="sourceSummaryTitle">저장한 공고 · '+a.sources.length+'개</div><div class="sourceCompactList">'+a.sources.map((x,i)=>
+      '<div class="sourceCompactItem"><span class="rankTag">JD '+(i+1)+'</span><div class="sourceCompactInfo"><b>'+esc((x.companyName?x.companyName+' · ':'')+x.name,ctx)+'</b><span>'+esc(x.type||'채용공고',ctx)+' · '+esc(x.checkedAt||'확인일 미입력',ctx)+'</span></div><div class="sourceCompactActions"><a href="'+esc(safeLink(x.url),ctx)+'" target="_blank" rel="noopener noreferrer">원문 ↗</a><button class="btn danger smallBtn" data-delsrc="'+esc(x.id,ctx)+'">삭제</button></div></div>'
+    ).join('')+'</div>';
     box.querySelectorAll('[data-delsrc]').forEach(b=>b.addEventListener('click',()=>{a.sources=a.sources.filter(x=>x.id!==b.dataset.delsrc);if(a.selectedSourceId===b.dataset.delsrc)a.selectedSourceId=a.sources[0]?.id||'';persist(target,a);paint()}));updateChosenSelect(a);
   }
   function updateChosenSelect(a){const el=document.getElementById('chosenSource');if(!el)return;el.innerHTML='<option value="">JD 선택</option>'+((a.sources||[]).map(x=>`<option value="${x.id}" ${a.selectedSourceId===x.id?'selected':''}>${esc((x.companyName?x.companyName+' · ':'')+x.name,ctx)}</option>`).join(''))}
-  function renderChosen(a){updateChosenSelect(a);const box=document.getElementById('chosenPreview');if(!box)return;const x=(a.sources||[]).find(s=>s.id===a.selectedSourceId);box.innerHTML=x?`<b>${esc((x.companyName?x.companyName+' · ':'')+x.name,ctx)}</b><br>${esc(x.note||'원문 핵심내용을 확인하세요.',ctx)}`:'분석할 JD를 선택하세요.'}
+  function renderChosen(a){
+    updateChosenSelect(a);
+    const box=document.getElementById('chosenPreview');if(!box)return;
+    const x=(a.sources||[]).find(v=>v.id===a.selectedSourceId);
+    if(!x){box.innerHTML='<p class="readableEmpty">분석할 JD를 선택하세요.</p>';return}
+    box.innerHTML='<div class="chosenJdHeader"><b>'+esc((x.companyName?x.companyName+' · ':'')+x.name,ctx)+'</b><span>선택된 공고 · '+esc(x.checkedAt||'확인일 미입력',ctx)+'</span></div>'+
+      '<p class="chosenJdHint">STEP 02에 입력한 원문은 여기서 반복 표시하지 않습니다.</p>'+
+      '<details class="jdNoteDetails"><summary>선택한 JD의 세부 내용 펼치기</summary><div class="jdNoteBody">'+readableText(x.note||'공고 핵심내용 미입력',ctx)+'</div><a href="'+esc(safeLink(x.url),ctx)+'" target="_blank" rel="noopener noreferrer">공고 원문 열기 ↗</a></details>';
+  }
   function renderGap(a){
     const box=document.getElementById('gapSummary');if(!box)return;
     const gaps=(a.requirements||[]).filter(r=>r.gap||r.status==='준비 필요').slice(0,3).map(r=>r.gap||r.name);
     if(!a.have&&!a.verify&&!gaps.length&&!a.prepare){box.innerHTML='<div class="callout info">My Spec 입력 후 AI GAP 분석을 실행하면 핵심만 여기에 정리됩니다.</div>';return}
-    box.innerHTML=`
-      <div class="grid2"><div class="miniCard"><b>① 내가 가진 것</b><span>${esc(a.have||'확인된 근거 없음',ctx)}</span></div><div class="miniCard"><b>② 확인 필요</b><span>${esc(a.verify||'없음',ctx)}</span></div></div>
-      <div class="miniCard" style="margin-top:12px"><b>③ 핵심 GAP · 최대 3개</b><span>${esc(gaps.length?gaps.map((x,i)=>(i+1)+'. '+x).join(' / '):'확인된 GAP 없음',ctx)}</span></div>
-      <div class="miniCard" style="margin-top:12px"><b>④ 3개월 행동</b><span>${esc(a.prepare||'아직 입력되지 않음',ctx)}</span></div>`;
+    box.innerHTML='<div class="sourceSummaryTitle">저장한 GAP 분석 결과</div><div class="readableGrid">'+
+      readablePanel('① 내가 가진 것',a.have||'확인된 근거 없음',ctx)+
+      readablePanel('② 확인 필요',a.verify||'없음',ctx)+
+      readablePanel('③ 핵심 GAP · 최대 3개',gaps.length?gaps.map((x,i)=>(i+1)+'. '+x).join(' / '):'확인된 GAP 없음',ctx)+
+      readablePanel('④ 3개월 행동',a.prepare||'아직 입력되지 않음',ctx)+'</div>';
   }
   function renderJobAiDraftPreview(a){
     const box=document.getElementById('jobAiLivePreview');if(!box)return;
@@ -333,10 +344,40 @@ ${selected.note||'미입력'}
 
 function jobTablePreviewHtml(a,ctx){
   const jt=a.jobTable||{};
-  const cells=[['고객(KPI)',jt.customerKpi],['주요 과업',jt.tasks],['주요 해결과제',jt.challenge],['해결방법',jt.method],['필요역량',jt.competencies]];
-  return `<div class="matrixWrap"><table class="matrix"><thead><tr>${cells.map(x=>'<th>'+esc(x[0],ctx)+'</th>').join('')}</tr></thead><tbody><tr>${cells.map(x=>'<td>'+esc(x[1]||'-',ctx)+'</td>').join('')}</tr></tbody></table></div>${jt.careerPlan?'<div class="callout info" style="margin-top:10px"><b>경력개발</b><br>'+esc(jt.careerPlan,ctx)+'</div>':''}`;
+  const fields=[
+    ['01','고객·성과기준',jt.customerKpi],
+    ['02','주요 과업',jt.tasks],
+    ['03','주요 해결과제',jt.challenge],
+    ['04','해결방법',jt.method],
+    ['05','필요역량',jt.competencies]
+  ];
+  return '<div class="readableAnalysisGrid">'+fields.map(([n,title,content])=>
+    '<section class="analysisResultCard"><div class="analysisResultTitle"><span>'+n+'</span><h4>'+title+'</h4></div>'+readableText(content||'아직 입력되지 않았습니다.',ctx)+'</section>'
+  ).join('')+'</div>'+(jt.careerPlan?'<div class="careerPlanCard"><b>경력개발 · 선택사항</b>'+readableText(jt.careerPlan,ctx)+'</div>':'');
 }
-
+function safeLink(url=''){
+  const value=String(url||'').trim();
+  return /^https?:\/\//i.test(value)?value:'#';
+}
+function readableLines(raw=''){
+  // Display-only segmentation. Never write these normalized lines back to student state.
+  return String(raw||'')
+    .replace(/\r\n?/g,'\n')
+    .replace(/(?=\[(?:담당업무|주요업무|자격요건|지원자격|필수조건|우대사항|담당 업무|지원 조건|자격 요건|우대 사항|주요 과업|필요역량|해결방법|고객·성과기준)\])/g,'\n')
+    .split(/\n+|\s+\/\s+/g)
+    .map(line=>line.trim().replace(/^(?:[•●▪*-]|\\\s*[-])\s*/,'').replace(/^#{1,3}\s*$/,'').trim())
+    .filter(Boolean);
+}
+function readableText(raw,ctx){
+  const parts=readableLines(raw);
+  return parts.length?'<ul class="analysisBulletList">'+parts.map(x=>'<li>'+esc(x,ctx)+'</li>').join('')+'</ul>':'<p class="readableEmpty">아직 입력되지 않았습니다.</p>';
+}
+function readablePanel(title,value,ctx){
+  return '<section class="analysisResultCard gapResultCard"><h4>'+title+'</h4>'+readableText(value,ctx)+'</section>';
+}
+function analysisArea(id,label,value,placeholder,ctx){
+  return '<div class="field analysisEditField"><label for="'+id+'">'+label+'</label><textarea class="analysisTextArea" id="'+id+'" rows="4" placeholder="'+esc(placeholder,ctx)+'">'+esc(value||'',ctx)+'</textarea></div>';
+}
 function cleanBulletBlock(x=''){return String(x||'').split(/\r?\n/).map(v=>v.trim().replace(/^[-*•]\s*/,'' )).filter(Boolean).join(' / ')}
 function sectionText(text,heading,next=[]){
   const start=text.indexOf('['+heading+']');if(start<0)return '';
@@ -438,17 +479,19 @@ function normalizeReqType(t=''){if(t.includes('Knowledge'))return 'Knowledge';if
 function lines(x=''){return String(x).split(/\n|·|;/).map(x=>x.trim()).filter(Boolean)}
 function renderJdRecordEditors(a,ctx){
   return '<div class="jdRecordGrid">'+[0,1,2].map(i=>{
-    const x=(a.sources||[]).find(v=>v&&v.slot===i)||(a.sources||[])[i]||{},s=i===0?'':String(i),n=i+1;
-    const title=x.name?esc((x.companyName?x.companyName+' · ':'')+x.name,ctx):'새 공고 입력';
-    return '<div class="jdRecordCard">'+
-      '<div class="jdRecordHead"><span class="rankTag">공고 '+n+'</span><b>'+title+'</b></div>'+
-      '<div class="grid2">'+txt('companyName'+s,'기업명',x.companyName||'','예: 기업명')+txt('companyUrl'+s,'기업 공식페이지',x.companyUrl||'','https://...')+'</div>'+
-      '<div class="grid2" style="margin-top:10px">'+sel('sourceType'+s,'자료 유형',x.type||'',SOURCE_TYPES)+txt('sourceChecked'+s,'확인일',x.checkedAt||today(),'YYYY-MM-DD')+'</div>'+
-      '<div class="field" style="margin-top:10px"><label>공고명·직무</label><input class="input" id="sourceName'+s+'" value="'+esc(x.name||'',ctx)+'" placeholder="예: 브랜드/콘텐츠 마케터 신입"></div>'+
-      '<div class="field" style="margin-top:10px"><label>공고 원문 URL</label><input class="input" id="sourceUrl'+s+'" value="'+esc(x.url||'',ctx)+'" placeholder="https://..."></div>'+
-      '<div class="field" style="margin-top:10px"><label>담당업무·지원조건·우대사항</label><textarea id="sourceNote'+s+'" placeholder="공고 원문에서 핵심 내용을 붙여넣으세요.">'+esc(x.note||'',ctx)+'</textarea></div>'+
-      '<div class="actions"><button class="btn primary" id="'+(i===0?'addSource':'saveSource'+s)+'">공고 '+n+' 저장</button></div>'+
-    '</div>';
+    const x=(a.sources||[]).find(v=>v&&v.slot===i)||(a.sources||[])[i]||{},z=i===0?'':String(i),n=i+1;
+    const label=x.name?(x.companyName?x.companyName+' · ':'')+x.name:'새 공고 입력';
+    const open=x.id?'':' open';
+    return '<details class="jdRecordCard"'+open+'>'+
+      '<summary class="jdRecordHead"><span class="rankTag">공고 '+n+'</span><span class="jdRecordHeadTitle">'+esc(label,ctx)+'</span><span class="jdRecordToggle">입력·수정</span></summary>'+
+      '<div class="jdRecordBody">'+
+      '<div class="grid2">'+txt('companyName'+z,'기업명',x.companyName||'','예: 기업명')+txt('companyUrl'+z,'기업 공식페이지',x.companyUrl||'','https://...')+'</div>'+
+      '<div class="grid2" style="margin-top:10px">'+sel('sourceType'+z,'자료 유형',x.type||'',SOURCE_TYPES)+txt('sourceChecked'+z,'확인일',x.checkedAt||today(),'YYYY-MM-DD')+'</div>'+
+      '<div class="field" style="margin-top:10px"><label>공고명·직무</label><input class="input" id="sourceName'+z+'" value="'+esc(x.name||'',ctx)+'" placeholder="예: 브랜드/콘텐츠 마케터 신입"></div>'+
+      '<div class="field" style="margin-top:10px"><label>공고 원문 URL</label><input class="input" id="sourceUrl'+z+'" value="'+esc(x.url||'',ctx)+'" placeholder="https://..."></div>'+
+      '<div class="field" style="margin-top:10px"><label>담당업무·지원조건·우대사항</label><textarea class="jdNoteInput" id="sourceNote'+z+'" rows="6" placeholder="공고 원문에서 핵심 내용을 붙여넣으세요.">'+esc(x.note||'',ctx)+'</textarea></div>'+
+      '<div class="actions"><button class="btn primary" id="'+(i===0?'addSource':'saveSource'+z)+'">공고 '+n+' 저장</button></div>'+
+      '</div></details>';
   }).join('')+'</div>';
 }
 function block(n,title,desc,body){return `<div class="hr"></div><div class="block"><div class="moduleHead"><span>${n}</span><div><h3>${title}</h3><p>${desc}</p></div></div>${body}</div>`}
