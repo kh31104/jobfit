@@ -295,5 +295,24 @@ function slug(x=''){return String(x).trim().replace(/[^0-9A-Za-z가-힣]+/g,'-')
 function esc(x,ctx){return ctx.escapeHtml(String(x??''))}
 async function copy(text,ctx){try{await navigator.clipboard.writeText(text);ctx.toast('프롬프트를 복사했습니다.')}catch{ctx.toast('복사하지 못했습니다.')}}
 function styleBlock(){return `<style>
-.jobExplorerV3 .moduleHead{display:flex;gap:11px;align-items:flex-start}.jobExplorerV3 .moduleHead>span{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:#eef3ff;color:#3152c9;font-weight:950;flex:0 0 auto}.jobExplorerV3 .moduleHead h3{margin:2px 0 3px}.jobExplorerV3 .moduleHead p{margin:0;color:#667085;font-size:12px;line-height:1.5}.choiceTiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.choiceTile{display:flex;align-items:center;gap:8px;border:1px solid #e3e8f2;border-radius:13px;padding:11px;background:#fff;font-size:13px;font-weight:800}.choiceTile:has(input:checked){border-color:#8fa5ff;background:#f4f6ff;color:#244bd7}.inlineAdd{display:flex;gap:8px}.interestPill button{border:0;background:transparent;color:#98a2b3;font-size:16px}.evidenceGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.actionEvidence{border:1px solid #e3e8f2;border-radius:13px;padding:12px;background:#fbfcff;font-size:13px;line-height:1.55}.targetRow{display:grid;grid-template-columns:150px 1fr 1fr;gap:9px;align-items:center;border:1px solid #e3e8f2;border-radius:15px;padding:12px;margin:9px 0}.targetRow b,.targetRow span{display:block}.targetRow span{font-size:11px;color:#667085;margin-top:2px}@media(max-width:700px){.choiceTiles,.evidenceGrid{grid-template-columns:1fr 1fr}.targetRow{grid-template-columns:1fr}.inlineAdd{flex-direction:column}}@media(max-width:460px){.choiceTiles,.evidenceGrid{grid-template-columns:1fr}}
+.jobExplorerV3 .moduleHead{display:flex;gap:11px;align-items:flex-start}.jobExplorerV3 .moduleHead>span{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:#eef3ff;color:#3152c9;font-weight:950;flex:0 0 auto}.jobExplorerV3 .moduleHead h3{margin:2px 0 3px}.jobExplorerV3 .moduleHead p{margin:0;color:#667085;font-size:12px;line-height:1.5}.choiceTiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.choiceTile{display:flex;align-items:center;gap:8px;border:1px solid #e3e8f2;border-radius:13px;padding:11px;background:#fff;font-size:13px;font-weight:800}.choiceTile:has(input:checked){border-color:#8fa5ff;background:#f4f6ff;color:#244bd7}.inlineAdd{display:flex;gap:8px}.interestPill button{border:0;background:transparent;color:#98a2b3;font-size:16px}.evidenceGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.actionEvidence{border:1px solid #e3e8f2;border-radius:13px;padding:12px;background:#fbfcff;font-size:13px;line-height:1.55}.targetRow{display:grid;grid-template-columns:150px 1fr 1fr;gap:9px;align-items:center;border:1px solid #e3e8f2;border-radius:15px;padding:12px;margin:9px 0}.targetRow b,.targetRow span{display:block}.targetRow span{font-size:11px;color:#667085;margin-top:2px}@media(max-width:700px){.choiceTiles,.evidenceGrid{grid-template-columns:1fr 1fr}.targetRow{grid-template-columns:1fr}.inlineAdd{flex-direction:column}}
+.jobExplorerV3 .candidateCard{margin-top:12px;padding:16px;overflow-wrap:anywhere}
+.jobExplorerV3 .candidateCard .listHead{display:flex;align-items:flex-start;gap:14px}
+.jobExplorerV3 .candidateCardHeading{min-width:0;flex:1}
+.jobExplorerV3 .candidateCard h3{font-size:17px;line-height:1.45;margin:7px 0 6px;word-break:keep-all;overflow-wrap:anywhere}
+.jobExplorerV3 .candidateMeta{display:flex;flex-wrap:wrap;gap:5px 12px;color:#667085;font-size:12px}
+.jobExplorerV3 .candidateField{min-width:0;margin-top:12px;padding:12px 14px;border:1px solid #e3e8f2;border-radius:12px;background:#fbfcff}
+.jobExplorerV3 .candidateField>b{display:block;font-size:13px;color:#344054;margin-bottom:7px}
+.jobExplorerV3 .candidateBullets{margin:0;padding-left:19px;font-size:13px;line-height:1.7;white-space:pre-line;word-break:keep-all;overflow-wrap:anywhere}
+.jobExplorerV3 .candidateBullets li+li{margin-top:5px}
+.jobExplorerV3 .candidateMissing{margin:0;color:#946200;font-size:12px;line-height:1.6}
+.jobExplorerV3 .candidateEvidenceGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.jobExplorerV3 .targetRow select{max-width:100%;width:100%;min-width:0;text-overflow:ellipsis}
+@media(max-width:700px){
+.jobExplorerV3 .candidateEvidenceGrid{grid-template-columns:minmax(0,1fr)}
+.jobExplorerV3 .candidateCard .listHead{flex-direction:column}
+.jobExplorerV3 .candidateCard .compactActions{align-self:flex-end}
+.jobExplorerV3 .candidateCard .candidateField{margin-top:9px}
+}
+@media(max-width:460px){.choiceTiles,.evidenceGrid{grid-template-columns:1fr}}
 </style>`}
