@@ -120,7 +120,7 @@ await run('INJE STEP 7 analyzes industry and up to three companies from STEP 5 t
   stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   assert(stored.artifacts.industryCompany.targetCompanies.length===3,'STEP 7 must save up to three target companies');
   const compare=(await page.locator('#companyCompare').textContent())||'';
-  for(const expected of ['기업A','기업B','기업C','Business · Customer','Hiring Signal'])assert(compare.includes(expected),'Company comparison missing: '+expected);
+  for(const expected of ['기업A','기업B','기업C','사업·고객','채용 역량신호'])assert(compare.includes(expected),'Company comparison missing: '+expected);
 });
 
 await run('STEP 0 Career Check-in auto summary accepts student-facing heading variants',async page=>{
