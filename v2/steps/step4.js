@@ -502,4 +502,52 @@ function stateClass(x=''){return x==='근거 있음'?'good':x==='일부 근거 �
 function slug(x=''){return String(x||'').trim().replace(/[^0-9A-Za-z가-힣]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'item'}
 function today(){const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()),g=t=>p.find(x=>x.type===t)?.value||'';return [g('year'),g('month'),g('day')].join('-')}function esc(x,ctx){return ctx.escapeHtml(String(x??''))}
 async function copy(t,ctx){try{await navigator.clipboard.writeText(t);ctx.toast('프롬프트를 복사했습니다.')}catch{ctx.toast('복사하지 못했습니다.')}}
-function styleBlock(){return `<style>.jobAnalysisInje .siteSection{margin-top:14px}.jobAnalysisInje .jdSiteGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}.jobAnalysisInje .jdSiteLink{display:flex;flex-direction:column;gap:3px;padding:13px 14px;border:1px solid #dfe5f2;border-radius:14px;background:#fff;text-decoration:none;color:#1d2939}.jobAnalysisInje .jdSiteLink:hover{border-color:#8fa5ff;background:#f7f8ff}.jobAnalysisInje .jdSiteLink span{font-size:11px;color:#667085}.jobAnalysisInje .aiSearchBox{border:1px solid #dfe5f2;border-radius:16px;padding:14px;background:#fbfcff}.jobAnalysisInje .jdRecordGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}.jobAnalysisInje .jdRecordCard{border:1px solid #dfe5f2;border-radius:16px;padding:14px;background:#fff}.jobAnalysisInje .jdRecordHead{display:flex;align-items:center;gap:8px;margin-bottom:12px}.jobAnalysisInje .sourceSavedSummary{margin-top:12px}@media(max-width:980px){.jobAnalysisInje .jdRecordGrid{grid-template-columns:1fr}}@media(max-width:700px){.jobAnalysisInje .jdSiteGrid{grid-template-columns:1fr 1fr}}@media(max-width:460px){.jobAnalysisInje .jdSiteGrid{grid-template-columns:1fr}}.jobAnalysisInje .moduleHead{display:flex;gap:11px;align-items:flex-start}.jobAnalysisInje .moduleHead>span{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:#eef3ff;color:#3152c9;font-weight:950;flex:0 0 auto}.jobAnalysisInje .moduleHead h3{margin:2px 0 3px}.jobAnalysisInje .moduleHead p{margin:0;color:#667085;font-size:12px;line-height:1.5}.activePick{background:#eef3ff!important;color:#3152c9!important}.stateTag{display:inline-flex;padding:5px 8px;border-radius:999px;font-weight:900;font-size:11px}.state-good{background:#ecfdf7;color:#087a63}.state-partial{background:#eef3ff;color:#3152c9}.state-prepare{background:#fff8e6;color:#9a6700}.state-verify{background:#f2f4f7;color:#667085}</style>`}
+function styleBlock(){return `<style>.jobAnalysisInje .siteSection{margin-top:14px}.jobAnalysisInje .jdSiteGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}.jobAnalysisInje .jdSiteLink{display:flex;flex-direction:column;gap:3px;padding:13px 14px;border:1px solid #dfe5f2;border-radius:14px;background:#fff;text-decoration:none;color:#1d2939}.jobAnalysisInje .jdSiteLink:hover{border-color:#8fa5ff;background:#f7f8ff}.jobAnalysisInje .jdSiteLink span{font-size:11px;color:#667085}.jobAnalysisInje .aiSearchBox{border:1px solid #dfe5f2;border-radius:16px;padding:14px;background:#fbfcff}.jobAnalysisInje .jdRecordGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}.jobAnalysisInje .jdRecordCard{border:1px solid #dfe5f2;border-radius:16px;padding:14px;background:#fff}.jobAnalysisInje .jdRecordHead{display:flex;align-items:center;gap:8px;margin-bottom:12px}.jobAnalysisInje .sourceSavedSummary{margin-top:12px}@media(max-width:980px){.jobAnalysisInje .jdRecordGrid{grid-template-columns:1fr}}@media(max-width:700px){.jobAnalysisInje .jdSiteGrid{grid-template-columns:1fr 1fr}}@media(max-width:460px){.jobAnalysisInje .jdSiteGrid{grid-template-columns:1fr}}.jobAnalysisInje .moduleHead{display:flex;gap:11px;align-items:flex-start}.jobAnalysisInje .moduleHead>span{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:#eef3ff;color:#3152c9;font-weight:950;flex:0 0 auto}.jobAnalysisInje .moduleHead h3{margin:2px 0 3px}.jobAnalysisInje .moduleHead p{margin:0;color:#667085;font-size:12px;line-height:1.5}.activePick{background:#eef3ff!important;color:#3152c9!important}.stateTag{display:inline-flex;padding:5px 8px;border-radius:999px;font-weight:900;font-size:11px}.state-good{background:#ecfdf7;color:#087a63}.state-partial{background:#eef3ff;color:#3152c9}.state-prepare{background:#fff8e6;color:#9a6700}.state-verify{background:#f2f4f7;color:#667085}
+.jobAnalysisInje .jdRecordGrid{align-items:start}
+.jobAnalysisInje .jdRecordCard{min-width:0;overflow:hidden;padding:0}
+.jobAnalysisInje .jdRecordHead{cursor:pointer;list-style:none;display:flex;gap:8px;align-items:center;padding:13px;margin:0;min-height:58px}
+.jobAnalysisInje .jdRecordHead::-webkit-details-marker{display:none}
+.jobAnalysisInje .jdRecordHeadTitle{flex:1;min-width:0;font-size:13px;line-height:1.5;word-break:keep-all;overflow-wrap:anywhere;font-weight:750}
+.jobAnalysisInje .jdRecordToggle{font-size:11px;color:#3152c9;white-space:nowrap}
+.jobAnalysisInje .jdRecordBody{padding:0 13px 13px;border-top:1px solid #edf0f6}
+.jobAnalysisInje .jdRecordBody .grid2{margin-top:12px}
+.jobAnalysisInje .jdNoteInput{width:100%;min-height:140px;resize:vertical;line-height:1.6;overflow-wrap:anywhere}
+.jobAnalysisInje .sourceSummaryTitle{font-size:13px;font-weight:800;margin:12px 0 8px;color:#344054}
+.jobAnalysisInje .sourceCompactList{display:flex;flex-direction:column;gap:8px}
+.jobAnalysisInje .sourceCompactItem{display:flex;align-items:center;gap:10px;min-width:0;padding:12px;border:1px solid #e3e8f2;border-radius:12px}
+.jobAnalysisInje .sourceCompactInfo{flex:1;min-width:0}
+.jobAnalysisInje .sourceCompactInfo b{display:block;font-size:13px;line-height:1.5;overflow-wrap:anywhere;word-break:keep-all}
+.jobAnalysisInje .sourceCompactInfo span{display:block;margin-top:3px;font-size:11px;color:#667085}
+.jobAnalysisInje .sourceCompactActions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.jobAnalysisInje .sourceCompactActions>a{font-size:12px;font-weight:700}
+.jobAnalysisInje .chosenJdCompact{border:1px solid #e3e8f2;border-radius:13px;padding:14px;min-width:0}
+.jobAnalysisInje .chosenJdHeader{display:flex;flex-wrap:wrap;gap:5px 12px;align-items:baseline}
+.jobAnalysisInje .chosenJdHeader b{font-size:14px;line-height:1.5;word-break:keep-all;overflow-wrap:anywhere}
+.jobAnalysisInje .chosenJdHeader span,.jobAnalysisInje .chosenJdHint{font-size:12px;color:#667085;line-height:1.5}
+.jobAnalysisInje .chosenJdHint{margin:7px 0}
+.jobAnalysisInje .jdNoteDetails{border-top:1px solid #edf0f6;padding-top:10px;margin-top:10px}
+.jobAnalysisInje .jdNoteDetails>summary{cursor:pointer;font-size:13px;color:#3152c9;font-weight:700}
+.jobAnalysisInje .jdNoteBody{padding:6px 0}
+.jobAnalysisInje .readablePreview{margin-top:10px}
+.jobAnalysisInje .readableEmpty{margin:0;padding:10px 2px;font-size:13px;color:#667085}
+.jobAnalysisInje .fieldReadHint{margin:10px 0 6px;font-size:12px;color:#667085;line-height:1.6}
+.jobAnalysisInje .analysisInputGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.jobAnalysisInje .analysisEditField{padding:12px;border:1px solid #e3e8f2;border-radius:13px;min-width:0}
+.jobAnalysisInje .analysisEditField label{display:block;margin-bottom:8px;font-size:13px;font-weight:800}
+.jobAnalysisInje .analysisTextArea{box-sizing:border-box;display:block;width:100%;min-width:0;min-height:118px;resize:vertical;padding:11px;line-height:1.75;font-size:14px;overflow-wrap:anywhere;word-break:keep-all;white-space:pre-wrap;border:1px solid #dfe5f2;border-radius:9px}
+.jobAnalysisInje .readableAnalysisGrid,.jobAnalysisInje .readableGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.jobAnalysisInje .analysisResultCard{min-width:0;overflow-wrap:anywhere;word-break:keep-all;border:1px solid #e3e8f2;border-radius:13px;padding:15px;background:#fff}
+.jobAnalysisInje .analysisResultTitle{display:flex;gap:9px;align-items:center;margin-bottom:9px}
+.jobAnalysisInje .analysisResultTitle span{display:grid;place-items:center;font-size:12px;flex-shrink:0;color:#3152c9;background:#eef3ff;border-radius:7px;width:25px;height:25px}
+.jobAnalysisInje .analysisResultCard h4{font-size:14px;line-height:1.5;margin:0 0 10px;color:#243047}
+.jobAnalysisInje .analysisResultTitle h4{margin:0}
+.jobAnalysisInje .analysisBulletList{padding-left:19px;margin:0;line-height:1.75;font-size:14px}
+.jobAnalysisInje .analysisBulletList li{padding-left:2px;white-space:pre-wrap;overflow-wrap:anywhere;word-break:keep-all}
+.jobAnalysisInje .analysisBulletList li+li{margin-top:8px}
+.jobAnalysisInje .careerPlanCard{padding:15px;border:1px solid #dfe5f2;border-radius:13px;margin-top:12px}
+.jobAnalysisInje .careerPlanCard>b{display:block;margin-bottom:10px;font-size:14px}
+.jobAnalysisInje .specInputGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.jobAnalysisInje .specInputGrid>.field{min-width:0}
+.jobAnalysisInje #chosenSource{display:block;max-width:100%;text-overflow:ellipsis}
+@media(max-width:760px){.jobAnalysisInje .jdRecordGrid,.jobAnalysisInje .analysisInputGrid,.jobAnalysisInje .readableAnalysisGrid,.jobAnalysisInje .readableGrid{grid-template-columns:minmax(0,1fr)}.jobAnalysisInje .specInputGrid{grid-template-columns:minmax(0,1fr)}.jobAnalysisInje .sourceCompactItem{flex-wrap:wrap;align-items:flex-start}.jobAnalysisInje .sourceCompactActions{margin-left:auto}.jobAnalysisInje .analysisResultCard{padding:13px}.jobAnalysisInje .analysisTextArea{font-size:16px;min-height:130px}.jobAnalysisInje .analysisBulletList{font-size:14px}}
+</style>`}
