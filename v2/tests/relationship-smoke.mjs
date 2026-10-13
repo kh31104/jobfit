@@ -257,7 +257,7 @@ await run('STEP 5 stores up to three JDs and keeps the selected company relation
   await add(0,'가상모빌리티A','생산기술 신입공고 A','https://example.com/job1');
   await add(1,'가상모빌리티B','생산기술 신입공고 B','https://example.com/job2');
   await add(2,'가상모빌리티C','생산기술 신입공고 C','https://example.com/job3');
-  assert(await page.locator('#sourceList .listCard').count()===3,'Find JD must store exactly three postings');
+  assert(await page.locator('#sourceList .sourceCompactItem').count()===3,'Find JD must store exactly three postings');
   assert((await page.locator('#companyName').inputValue())==='가상모빌리티A','JD 1 company was overwritten');
   assert((await page.locator('#companyName1').inputValue())==='가상모빌리티B','JD 2 company was not stored independently');
   assert((await page.locator('#companyName2').inputValue())==='가상모빌리티C','JD 3 company was not stored independently');
