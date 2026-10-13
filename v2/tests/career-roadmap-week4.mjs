@@ -366,7 +366,7 @@ await run('STEP5 completed JD and GAP records stay intact with readable desktop/
   assert(await page.locator('.jdRecordCard').first().evaluate(el=>!el.open),'Saved JD editor should start collapsed');
   assert(await page.locator('#sourceNote').inputValue()===original.sources[0].note,'Saved JD raw text changed in editor');
   assert(await page.locator('#chosenPreview .jdNoteDetails').count()===1,'Chosen JD should offer expandable full details');
-  assert(!(await page.locator('#chosenPreview').textContent()).includes(original.sources[0].note),'Chosen JD duplicates full posting by default');
+  assert(await page.locator('#chosenPreview .jdNoteDetails').evaluate(el=>!el.open),'Chosen JD should hide the repeated raw note until expanded');
   assert(await page.locator('#jobAiImport').inputValue()===original.jobTable.aiResult,'Saved AI analysis original response not restored');
   assert(await page.locator('#jobAiLivePreview .analysisResultCard').count()===5,'AI reply needs five readable cards');
   assert(await page.locator('#jobAnalysisPreview .analysisResultCard').count()===5,'Completed job analysis should have five cards');
