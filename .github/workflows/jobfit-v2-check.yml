@@ -77,6 +77,7 @@ jobs:
           node --check v2/tests/career-dna-regression.mjs
           node --check v2/tests/career-dna-prompt-matrix.mjs
           node --check v2/tests/career-roadmap-week4.mjs
+          node --check v2/tests/inje-step7-12-readability.mjs
           node --check v2/tests/week-isolation-regression.mjs
           node --check v2/tests/live-production.mjs
           node --check v2/tests/research-measures.mjs
@@ -220,6 +221,7 @@ jobs:
           node v2/tests/career-dna-regression.mjs
           node v2/tests/career-dna-prompt-matrix.mjs
           node v2/tests/career-roadmap-week4.mjs
+          node v2/tests/inje-step7-12-readability.mjs
           node v2/tests/research-measures.mjs
           node v2/tests/relationship-smoke.mjs
           node v2/tests/application-flow.mjs
@@ -233,6 +235,7 @@ jobs:
           node v2/tests/career-dna-regression.mjs
           node v2/tests/career-dna-prompt-matrix.mjs
           node v2/tests/career-roadmap-week4.mjs
+          node v2/tests/inje-step7-12-readability.mjs
           node v2/tests/research-measures.mjs
           node v2/tests/relationship-smoke.mjs
           node v2/tests/application-flow.mjs
