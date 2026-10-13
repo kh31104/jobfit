@@ -335,4 +335,57 @@ await run('STEP4 keeps old target choices and restores one-line AI reasons on de
   const columns=await page.locator('.candidateEvidenceGrid').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length);
   assert(columns===1,'Mobile reasons should stack vertically');
 });
+
+await run('STEP5 completed JD and GAP records stay intact with readable desktop/mobile layouts',async page=>{
+  const original={
+    sources:[
+      {id:'jd-saved-1',slot:0,companyName:'무신사',companyUrl:'https://www.musinsa.com',type:'기업 공식 채용공고',name:'Brand Marketing Assistant',url:'https://example.org/jd',checkedAt:'2026-10-13',note:'[담당업무] 브랜드 캠페인·프로모션 운영 / SNS 채널 운영 / 유관 부서 협업 [자격 요건] 1년 미만 경험'},
+      {id:'jd-saved-2',slot:1,companyName:'예시기업',type:'기업 공식 채용공고',name:'Brand Marketing Intern',url:'https://example.org/jd2',checkedAt:'2026-10-13',note:'상세 자료 조사 / 캠페인 지원'}
+    ],
+    selectedSourceId:'jd-saved-1',
+    jobTable:{customerKpi:'고객의 브랜드 인지도 / 고객 반응',tasks:'SNS 채널 운영 / 캠페인 실행 / 문서 정리',challenge:'캠페인 성과 확인 / 유관부서 협업',method:'시장조사 / Excel 자료 정리',competencies:'커뮤니케이션 / 분석 / 실행관리',careerPlan:'캠페인 운영 실무 → 브랜드 기획',aiResult:'[고객·성과기준]\\n• 고객 반응\\n[주요 과업]\\n• 캠페인 지원\\n[주요 해결과제]\\n• 일정 조율\\n[해결방법]\\n• 문서 정리\\n[필요역량]\\n• Excel'},
+    studentSpec:{certificates:'없음',language:'TOEIC 800',tools:'Excel',portfolio:'리뷰 데이터 분석 프로젝트'},
+    have:'Excel 사용 경험 / 리뷰 데이터 정리 경험',verify:'고객접점 경험 확인 필요',prepare:'브랜드 캠페인 사례 분석 / 보고서 작성',
+    requirements:[{id:'gap1',name:'브랜드 캠페인 자료 작성',type:'Skill',status:'준비 필요',evidence:'',gap:'브랜드 캠페인 문서 제작 경험 확인 필요'}]
+  };
+  await page.evaluate(jd=>{
+    const key='jobfit:v2:learner',state=JSON.parse(localStorage.getItem(key));
+    const job={id:'marketing-job',title:'브랜드 마케팅',family:'마케팅'};
+    state.artifacts.jobExplorer={
+      candidates:[job],targets:[job.id],targetCombos:[{id:'target-marketing-1',jobId:job.id,industry:'유통·패션',priority:1}]
+    };
+    state.artifacts.jobDeepDive={analyses:{},targetAnalyses:{'target-marketing-1':jd}};
+    localStorage.setItem(key,JSON.stringify(state));
+  },original);
+  await page.reload({waitUntil:'networkidle'});
+  await page.locator('.stepBtn[data-step="4"]').click();
+  await page.waitForSelector('.jobAnalysisInje');
+  assert(await page.locator('#sourceList .sourceCompactItem').count()===2,'STEP5 posting summary must show saved JDs');
+  assert(await page.locator('#sourceList').textContent().then(t=>!t.includes('SNS 채널 운영 / 유관 부서 협업')),'STEP5 duplicates full posting notes in source list');
+  assert(await page.locator('.jdRecordCard').count()===3,'All three JD editor slots should still be present');
+  assert(await page.locator('.jdRecordCard').first().evaluate(el=>!el.open),'Saved JD editor should start collapsed');
+  assert(await page.locator('#sourceNote').inputValue()===original.sources[0].note,'Saved JD raw text changed in editor');
+  assert(await page.locator('#chosenPreview .jdNoteDetails').count()===1,'Chosen JD should offer expandable full details');
+  assert(!(await page.locator('#chosenPreview').textContent()).includes(original.sources[0].note),'Chosen JD duplicates full posting by default');
+  assert(await page.locator('#jobAiImport').inputValue()===original.jobTable.aiResult,'Saved AI analysis original response not restored');
+  assert(await page.locator('#jobAiLivePreview .analysisResultCard').count()===5,'AI reply needs five readable cards');
+  assert(await page.locator('#jobAnalysisPreview .analysisResultCard').count()===5,'Completed job analysis should have five cards');
+  assert(await page.locator('#jobAnalysisPreview table.matrix').count()===0,'Dense horizontal job-analysis table remains');
+  assert(await page.locator('#jobTasks').evaluate(el=>el.tagName)==='TEXTAREA','Job analysis long text should be multiline');
+  assert(await page.locator('#jobTasks').inputValue()===original.jobTable.tasks,'Original job tasks changed in multiline editor');
+  assert(await page.locator('#specTools').inputValue()==='Excel','Existing STEP7 student spec missing');
+  assert(await page.locator('#gapSummary .analysisResultCard').count()===4,'Saved GAP must display four readable cards');
+  const preserved=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')).artifacts.jobDeepDive.targetAnalyses['target-marketing-1']);
+  assert(JSON.stringify(preserved)===JSON.stringify(original),'Viewing STEP5 modified completed student data');
+  await page.setViewportSize({width:390,height:844});
+  const grids=['.readableAnalysisGrid','.readableGrid','.analysisInputGrid','.specInputGrid'];
+  for(const selector of grids){
+    const columns=await page.locator('.jobAnalysisInje '+selector).first().evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length);
+    assert(columns===1,'STEP5 mobile view is not single-column: '+selector);
+  }
+  await page.reload({waitUntil:'networkidle'});
+  await page.locator('.stepBtn[data-step="4"]').click();await page.waitForSelector('#jobAnalysisPreview .analysisResultCard');
+  const after=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')).artifacts.jobDeepDive.targetAnalyses['target-marketing-1']);
+  assert(JSON.stringify(after)===JSON.stringify(original),'Saved STEP5 state changed after PC/mobile reload');
+});
 await browser.close();if(failed)process.exit(1);
