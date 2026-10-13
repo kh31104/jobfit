@@ -305,4 +305,34 @@ await run('Inventory, HOW and asset bank preserve facts through reload and reuse
   assert((await page.locator('#stepRoot').textContent()).includes('축제 부스 운영'),'STEP4 did not reuse saved experience');
 });
 
+
+await run('STEP4 keeps old target choices and restores one-line AI reasons on desktop and mobile',async page=>{
+  await page.evaluate(()=>{
+    const key='jobfit:v2:learner',state=JSON.parse(localStorage.getItem(key));
+    state.artifacts.jobExplorer={candidates:[{
+      id:'job-old',title:'직무명: 브랜드 마케팅 직무군: 마케팅 어떤 일: 브랜드 콘텐츠 기획. 경험·행동 근거: 리뷰를 분류했다. 관심 근거: 데이터 분석에 관심. 가능 산업: 유통·물류 STEP 5에서 확인할 것: 요구도구',
+      summary:'',why:'',evidence:'',family:'',industries:[]
+    }],targets:['job-old'],targetCombos:[{id:'target-old',jobId:'job-old',industry:'유통·물류',priority:1}],desiredActivities:['자료·데이터 분석하기'],industryInterests:['유통·물류']};
+    localStorage.setItem(key,JSON.stringify(state));
+  });
+  await page.reload({waitUntil:'networkidle'});
+  await page.locator('.stepBtn[data-step="3"]').click();await page.waitForSelector('.candidateCard');
+  assert((await page.locator('#candidateList h3').first().textContent()).trim()==='브랜드 마케팅','Long title was not repaired');
+  const content=await page.locator('#candidateList').textContent();
+  assert(content.includes('리뷰를 분류했다.')&&content.includes('데이터 분석에 관심.'),'Missing reasons were not recovered');
+  assert((await page.locator('[data-target-job="0"] option:checked').textContent()).trim()==='브랜드 마케팅','Target selection shows full text');
+  const before=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')).artifacts.jobExplorer);
+  assert(before.candidates[0].id==='job-old'&&before.candidates[0].rawImportText,'Old candidate metadata not preserved');
+  assert(before.targetCombos[0].id==='target-old','Existing ranking lost on migration');
+  await openFor(page,'#jobAiImport');
+  await page.locator('#jobAiImport').fill('[후보 1]\\n직무명: 브랜드 마케팅\\n관심 근거: 자료 분석을 직접 선택했다.\\n경험·행동 근거: 리뷰를 분류했다.');
+  await page.locator('#importJobAi').click();
+  const after=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')).artifacts.jobExplorer);
+  assert(after.candidates.length===1&&after.candidates[0].id==='job-old','AI re-import deleted saved candidate');
+  assert(after.targetCombos[0].id==='target-old','AI re-import deleted target ranking');
+  await page.setViewportSize({width:390,height:844});
+  assert(await page.locator('.candidateCard').count()===1,'Mobile card not rendered');
+  const columns=await page.locator('.candidateEvidenceGrid').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length);
+  assert(columns===1,'Mobile reasons should stack vertically');
+});
 await browser.close();if(failed)process.exit(1);
