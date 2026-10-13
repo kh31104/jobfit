@@ -54,23 +54,23 @@ export async function render(ctx){
 
       ${block('03','Choose JD','분석에 사용할 실제 공고 하나를 선택합니다.',`
         <div class="field"><label>분석할 JD</label><select id="chosenSource"></select></div>
-        <div id="chosenPreview" class="callout info" style="margin-top:10px"></div>`)}
+        <div id="chosenPreview" class="chosenJdCompact" style="margin-top:10px"></div>`)}
 
       ${block('04','선택 직무 AI 분석','선택한 JD의 직무 자체를 먼저 분석합니다. 아직 학생과 비교하지 않습니다.',`
         <div class="callout info"><b>JD 분석과 GAP 분석을 분리합니다.</b><br>여기서는 선택한 공고에 적힌 업무만 보고 직무를 5개 항목으로 정리합니다. 학생 스펙은 아직 비교하지 않습니다.</div>
         <textarea id="jobAiPrompt" rows="16">${esc(buildJobAnalysisPrompt(ctx.getState(),target,a),ctx)}</textarea>
         <div class="actions"><button class="btn secondary" id="refreshJobAiPrompt">현재 JD 반영</button><button class="btn primary" id="copyJobAiPrompt">직무분석 프롬프트 복사</button></div>
-        <div class="field" style="margin-top:12px"><label>AI 직무분석 답변 붙여넣기</label><textarea id="jobAiImport" rows="10" placeholder="[고객·성과기준]&#10;• ...&#10;[주요 과업]&#10;• ...&#10;[주요 해결과제]&#10;• ...&#10;[해결방법]&#10;• ...&#10;[필요역량]&#10;• ..."></textarea></div>
-        <div class="actions"><button class="btn secondary" id="applyJobAi">AI 답변을 직무분석표에 반영</button></div>`)}
+        <div class="field" style="margin-top:12px"><label>AI 직무분석 답변 붙여넣기</label><textarea id="jobAiImport" rows="9" placeholder="[고객·성과기준]&#10;• ...&#10;[주요 과업]&#10;• ...&#10;[주요 해결과제]&#10;• ...&#10;[해결방법]&#10;• ...&#10;[필요역량]&#10;• ...">${esc(a.jobTable?.aiResult||"",ctx)}</textarea></div>
+        <div class="actions"><button class="btn secondary" id="applyJobAi">AI 답변을 직무분석표에 반영</button></div><div class="fieldReadHint">아래는 입력 원문을 읽기 좋게 정리한 미리보기입니다. 원문은 변경하지 않습니다.</div><div id="jobAiLivePreview" class="readablePreview"></div>`)}
 
       ${block('05','직무분석 테이블 완성','AI 답변을 확인하고 핵심 5개 항목만 남깁니다. 경력개발은 선택입니다.',`
-        <div class="jobAnalysisFields">
-          ${txt('jobCustomerKpi','고객(KPI)',a.jobTable?.customerKpi||'','이 직무의 고객과 성과기준')}
-          ${txt('jobTasks','주요 과업',a.jobTable?.tasks||'','신입이 실제로 반복 수행하는 일')}
-          ${txt('jobChallenge','주요 해결과제',a.jobTable?.challenge||'','업무에서 해결해야 하는 문제')}
-          ${txt('jobMethod','해결방법',a.jobTable?.method||'','방법·절차·도구')}
-          ${txt('jobCompetencies','필요역량',a.jobTable?.competencies||'','지식·기술·행동')}
-          ${txt('jobCareerPlan','경력개발 · 선택',a.jobTable?.careerPlan||'','신입 초기 → 전문성 확장 방향')}
+        <div class="jobAnalysisFields analysisInputGrid">
+          ${analysisArea('jobCustomerKpi','고객(KPI)',a.jobTable?.customerKpi||'','이 직무의 고객과 성과기준',ctx)}
+          ${analysisArea('jobTasks','주요 과업',a.jobTable?.tasks||'','신입이 실제로 반복 수행하는 일',ctx)}
+          ${analysisArea('jobChallenge','주요 해결과제',a.jobTable?.challenge||'','업무에서 해결해야 하는 문제',ctx)}
+          ${analysisArea('jobMethod','해결방법',a.jobTable?.method||'','방법·절차·도구',ctx)}
+          ${analysisArea('jobCompetencies','필요역량',a.jobTable?.competencies||'','지식·기술·행동',ctx)}
+          ${analysisArea('jobCareerPlan','경력개발 · 선택',a.jobTable?.careerPlan||'','신입 초기 → 전문성 확장 방향',ctx)}
         </div>`)}
 
       ${block('06','완성된 직무분석표','GAP 분석 전에 내가 선택한 직무를 한눈에 확인합니다.',`
@@ -78,7 +78,7 @@ export async function render(ctx){
 
       ${block('07','My Spec','GAP 분석 전에 현재 스펙을 직접 확인합니다. 빈칸은 없음이 아니라 미확인입니다.',`
         <div class="callout info"><b>해당 사항이 없으면 ‘없음’이라고 입력하세요.</b><br>자격증·어학·도구/기술을 확인해야 GAP 분석을 시작합니다. STEP 3의 사실확인된 경험은 자동으로 연결됩니다.</div>
-        <div class="grid3" style="margin-top:12px">
+        <div class="grid3 specInputGrid" style="margin-top:12px">
           ${txt('specCertificates','자격증',a.studentSpec?.certificates||'','예: ADsP / 준비 중 / 없음')}
           ${txt('specLanguage','어학',a.studentSpec?.language||'','예: TOEIC 820 / OPIc IM2 / 없음')}
           ${txt('specTools','도구·기술',a.studentSpec?.tools||'','예: Excel, Python, Figma / 없음')}
@@ -91,13 +91,13 @@ export async function render(ctx){
         <textarea id="deepPrompt" rows="16">${esc(buildPrompt(ctx.getState(),target,a),ctx)}</textarea>
         <div class="actions"><button class="btn secondary" id="refreshDeepPrompt">현재 JD·직무분석·내 스펙 반영</button><button class="btn primary" id="copyDeepPrompt" ${specReady(a)&&jobTableReady(a)?'':'disabled'}>AI GAP 분석 프롬프트 복사</button></div>
         <div class="callout info" style="margin-top:12px"><b>AI 답변 붙여넣기</b><br>아래 칸에는 AI가 작성한 짧은 개조식 결과만 붙여넣으세요.</div>
-        <textarea id="deepAiImport" rows="10" placeholder="[내가 가진 것]&#10;• ...&#10;[확인 필요]&#10;• ...&#10;[핵심 GAP]&#10;• GAP 1: ...&#10;[3개월 행동]&#10;• ..."></textarea>
+        <textarea id="deepAiImport" rows="9" placeholder="[내가 가진 것]&#10;• ...&#10;[확인 필요]&#10;• ...&#10;[핵심 GAP]&#10;• GAP 1: ...&#10;[3개월 행동]&#10;• ..."></textarea><div id="gapAiLivePreview" class="readablePreview"></div>
         <div class="actions"><button class="btn secondary" id="importDeepAi" ${specReady(a)&&jobTableReady(a)?'':'disabled'}>GAP 결과 반영</button></div>
         <div id="gapSummary" style="margin-top:12px"></div>
         <div class="actions"><button class="btn primary" id="saveDeep">GAP Match 저장</button><button class="btn secondary" id="nextStep">STEP 6 MY JOBFIT REPORT v1 →</button></div>
         <div class="status" id="status"></div>`)}
     `;
-    bind(target,a);renderSources(target,a);renderChosen(a);renderGap(a);
+    bind(target,a);renderSources(target,a);renderChosen(a);renderGap(a);renderJobAiDraftPreview(a);renderGapAiDraftPreview();
   }
 
   function bind(target,a){
@@ -107,6 +107,8 @@ export async function render(ctx){
     document.getElementById('refreshJobAiPrompt')?.addEventListener('click',()=>{captureJobTable(a);persist(target,a);const p=document.getElementById('jobAiPrompt');if(p)p.value=buildJobAnalysisPrompt(ctx.getState(),target,a)});
     document.getElementById('copyJobAiPrompt')?.addEventListener('click',()=>copy(document.getElementById('jobAiPrompt')?.value||buildJobAnalysisPrompt(ctx.getState(),target,a),ctx));
     document.getElementById('applyJobAi')?.addEventListener('click',()=>applyJobAnalysis(target,a));
+    document.getElementById('jobAiImport')?.addEventListener('input',()=>renderJobAiDraftPreview(a));
+    document.getElementById('deepAiImport')?.addEventListener('input',renderGapAiDraftPreview);
     ['jobCustomerKpi','jobTasks','jobChallenge','jobMethod','jobCompetencies','jobCareerPlan'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{captureJobTable(a);persist(target,a);renderJobTablePreview(a);refreshGapControls(target,a)}));
     ['specCertificates','specLanguage','specTools','specPortfolio'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{captureSpec(a);persist(target,a);refreshGapControls(target,a)}));
     document.getElementById('chosenSource')?.addEventListener('change',e=>{a.selectedSourceId=e.target.value;const chosen=(a.sources||[]).find(x=>x.id===a.selectedSourceId);if(chosen?.companyName)a.company={name:chosen.companyName,url:chosen.companyUrl||'',source:'기업 공식자료'};persist(target,a);renderChosen(a);const jp=document.getElementById('jobAiPrompt');if(jp)jp.value=buildJobAnalysisPrompt(ctx.getState(),target,a);refreshPrompt(target,a)});
@@ -180,19 +182,51 @@ export async function render(ctx){
   function renderSources(target,a){
     const box=document.getElementById('sourceList');if(!box)return;
     if(!a.sources?.length){box.innerHTML='<div class="placeholder"><b>아직 JD가 없습니다.</b>기업 공식 채용공고를 우선 등록하세요.</div>';updateChosenSelect(a);return}
-    box.innerHTML=a.sources.map((x,i)=>`<div class="listCard"><div class="listHead"><div><span class="rankTag">JD ${i+1}</span><h3>${esc((x.companyName?x.companyName+' · ':'')+x.name,ctx)}</h3><div class="muted small">${esc(x.type,ctx)} · ${esc(x.checkedAt||'',ctx)}</div></div><button class="btn danger smallBtn" data-delsrc="${x.id}">삭제</button></div><p>${esc(x.note||'핵심내용 미입력',ctx)}</p><a href="${esc(x.url,ctx)}" target="_blank" rel="noopener">원문 열기 ↗</a></div>`).join('');
+    box.innerHTML='<div class="sourceSummaryTitle">저장한 공고 · '+a.sources.length+'개</div><div class="sourceCompactList">'+a.sources.map((x,i)=>
+      '<div class="sourceCompactItem"><span class="rankTag">JD '+(i+1)+'</span><div class="sourceCompactInfo"><b>'+esc((x.companyName?x.companyName+' · ':'')+x.name,ctx)+'</b><span>'+esc(x.type||'채용공고',ctx)+' · '+esc(x.checkedAt||'확인일 미입력',ctx)+'</span></div><div class="sourceCompactActions"><a href="'+esc(safeLink(x.url),ctx)+'" target="_blank" rel="noopener noreferrer">원문 ↗</a><button class="btn danger smallBtn" data-delsrc="'+esc(x.id,ctx)+'">삭제</button></div></div>'
+    ).join('')+'</div>';
     box.querySelectorAll('[data-delsrc]').forEach(b=>b.addEventListener('click',()=>{a.sources=a.sources.filter(x=>x.id!==b.dataset.delsrc);if(a.selectedSourceId===b.dataset.delsrc)a.selectedSourceId=a.sources[0]?.id||'';persist(target,a);paint()}));updateChosenSelect(a);
   }
   function updateChosenSelect(a){const el=document.getElementById('chosenSource');if(!el)return;el.innerHTML='<option value="">JD 선택</option>'+((a.sources||[]).map(x=>`<option value="${x.id}" ${a.selectedSourceId===x.id?'selected':''}>${esc((x.companyName?x.companyName+' · ':'')+x.name,ctx)}</option>`).join(''))}
-  function renderChosen(a){updateChosenSelect(a);const box=document.getElementById('chosenPreview');if(!box)return;const x=(a.sources||[]).find(s=>s.id===a.selectedSourceId);box.innerHTML=x?`<b>${esc((x.companyName?x.companyName+' · ':'')+x.name,ctx)}</b><br>${esc(x.note||'원문 핵심내용을 확인하세요.',ctx)}`:'분석할 JD를 선택하세요.'}
+  function renderChosen(a){
+    updateChosenSelect(a);
+    const box=document.getElementById('chosenPreview');if(!box)return;
+    const x=(a.sources||[]).find(v=>v.id===a.selectedSourceId);
+    if(!x){box.innerHTML='<p class="readableEmpty">분석할 JD를 선택하세요.</p>';return}
+    box.innerHTML='<div class="chosenJdHeader"><b>'+esc((x.companyName?x.companyName+' · ':'')+x.name,ctx)+'</b><span>선택된 공고 · '+esc(x.checkedAt||'확인일 미입력',ctx)+'</span></div>'+
+      '<p class="chosenJdHint">STEP 02에 입력한 원문은 여기서 반복 표시하지 않습니다.</p>'+
+      '<details class="jdNoteDetails"><summary>선택한 JD의 세부 내용 펼치기</summary><div class="jdNoteBody">'+readableText(x.note||'공고 핵심내용 미입력',ctx)+'</div><a href="'+esc(safeLink(x.url),ctx)+'" target="_blank" rel="noopener noreferrer">공고 원문 열기 ↗</a></details>';
+  }
   function renderGap(a){
     const box=document.getElementById('gapSummary');if(!box)return;
     const gaps=(a.requirements||[]).filter(r=>r.gap||r.status==='준비 필요').slice(0,3).map(r=>r.gap||r.name);
     if(!a.have&&!a.verify&&!gaps.length&&!a.prepare){box.innerHTML='<div class="callout info">My Spec 입력 후 AI GAP 분석을 실행하면 핵심만 여기에 정리됩니다.</div>';return}
-    box.innerHTML=`
-      <div class="grid2"><div class="miniCard"><b>① 내가 가진 것</b><span>${esc(a.have||'확인된 근거 없음',ctx)}</span></div><div class="miniCard"><b>② 확인 필요</b><span>${esc(a.verify||'없음',ctx)}</span></div></div>
-      <div class="miniCard" style="margin-top:12px"><b>③ 핵심 GAP · 최대 3개</b><span>${esc(gaps.length?gaps.map((x,i)=>(i+1)+'. '+x).join(' / '):'확인된 GAP 없음',ctx)}</span></div>
-      <div class="miniCard" style="margin-top:12px"><b>④ 3개월 행동</b><span>${esc(a.prepare||'아직 입력되지 않음',ctx)}</span></div>`;
+    box.innerHTML='<div class="sourceSummaryTitle">저장한 GAP 분석 결과</div><div class="readableGrid">'+
+      readablePanel('① 내가 가진 것',a.have||'확인된 근거 없음',ctx)+
+      readablePanel('② 확인 필요',a.verify||'없음',ctx)+
+      readablePanel('③ 핵심 GAP · 최대 3개',gaps.length?gaps.map((x,i)=>(i+1)+'. '+x).join(' / '):'확인된 GAP 없음',ctx)+
+      readablePanel('④ 3개월 행동',a.prepare||'아직 입력되지 않음',ctx)+'</div>';
+  }
+  function renderJobAiDraftPreview(a){
+    const box=document.getElementById('jobAiLivePreview');if(!box)return;
+    const raw=document.getElementById('jobAiImport')?.value||'';
+    if(!raw.trim()){box.innerHTML='<p class="readableEmpty">AI 답변을 붙여넣으면 항목별 미리보기가 나타납니다.</p>';return}
+    const parsed=parseJobAnalysisBullet(raw);
+    box.innerHTML=jobTableReady({jobTable:parsed})||Object.values(parsed).some(Boolean)
+      ?jobTablePreviewHtml({jobTable:parsed},ctx)
+      :readableText(raw,ctx);
+  }
+  function renderGapAiDraftPreview(){
+    const box=document.getElementById('gapAiLivePreview');if(!box)return;
+    const raw=document.getElementById('deepAiImport')?.value||'';
+    if(!raw.trim()){box.innerHTML='';return}
+    const parsed=parseGapBullet(raw);
+    if(parsed.have||parsed.verify||parsed.gaps.length||parsed.actions.length){
+      box.innerHTML='<div class="fieldReadHint">AI GAP 답변 미리보기 · 아직 저장되지 않은 내용</div>'+
+        '<div class="readableGrid">'+
+          readablePanel('① 내가 가진 것',parsed.have,ctx)+readablePanel('② 확인 필요',parsed.verify,ctx)+
+          readablePanel('③ 핵심 GAP',parsed.gaps.join(' / '),ctx)+readablePanel('④ 3개월 행동',parsed.actions.join(' / '),ctx)+'</div>';
+    }else box.innerHTML=readableText(raw,ctx);
   }
   function capture(a){const selected=(a.sources||[]).find(x=>x?.id===a.selectedSourceId);if(selected)a.company={name:selected.companyName||'',url:selected.companyUrl||'',source:'기업 공식자료'};a.version=VERSION;a.updatedAt=new Date().toISOString();}
   function persist(target,a,sync=false){saved.targetAnalyses[target.id]=a;saved.analyses[target.job.id]={...a,jobTitle:target.job.title,industry:target.industry,targetId:target.id};const patch={jobDeepDive:saved};if(sync)Object.assign(patch,syncDownstream(ctx.getState(),target,a));ctx.saveState({artifacts:patch})}
@@ -310,10 +344,40 @@ ${selected.note||'미입력'}
 
 function jobTablePreviewHtml(a,ctx){
   const jt=a.jobTable||{};
-  const cells=[['고객(KPI)',jt.customerKpi],['주요 과업',jt.tasks],['주요 해결과제',jt.challenge],['해결방법',jt.method],['필요역량',jt.competencies]];
-  return `<div class="matrixWrap"><table class="matrix"><thead><tr>${cells.map(x=>'<th>'+esc(x[0],ctx)+'</th>').join('')}</tr></thead><tbody><tr>${cells.map(x=>'<td>'+esc(x[1]||'-',ctx)+'</td>').join('')}</tr></tbody></table></div>${jt.careerPlan?'<div class="callout info" style="margin-top:10px"><b>경력개발</b><br>'+esc(jt.careerPlan,ctx)+'</div>':''}`;
+  const fields=[
+    ['01','고객·성과기준',jt.customerKpi],
+    ['02','주요 과업',jt.tasks],
+    ['03','주요 해결과제',jt.challenge],
+    ['04','해결방법',jt.method],
+    ['05','필요역량',jt.competencies]
+  ];
+  return '<div class="readableAnalysisGrid">'+fields.map(([n,title,content])=>
+    '<section class="analysisResultCard"><div class="analysisResultTitle"><span>'+n+'</span><h4>'+title+'</h4></div>'+readableText(content||'아직 입력되지 않았습니다.',ctx)+'</section>'
+  ).join('')+'</div>'+(jt.careerPlan?'<div class="careerPlanCard"><b>경력개발 · 선택사항</b>'+readableText(jt.careerPlan,ctx)+'</div>':'');
 }
-
+function safeLink(url=''){
+  const value=String(url||'').trim();
+  return /^https?:\/\//i.test(value)?value:'#';
+}
+function readableLines(raw=''){
+  // Display-only segmentation. Never write these normalized lines back to student state.
+  return String(raw||'')
+    .replace(/\r\n?/g,'\n')
+    .replace(/(?=\[(?:담당업무|주요업무|자격요건|지원자격|필수조건|우대사항|담당 업무|지원 조건|자격 요건|우대 사항|주요 과업|필요역량|해결방법|고객·성과기준)\])/g,'\n')
+    .split(/\n+|\s+\/\s+/g)
+    .map(line=>line.trim().replace(/^(?:[•●▪*-]|\\\s*[-])\s*/,'').replace(/^#{1,3}\s*$/,'').trim())
+    .filter(Boolean);
+}
+function readableText(raw,ctx){
+  const parts=readableLines(raw);
+  return parts.length?'<ul class="analysisBulletList">'+parts.map(x=>'<li>'+esc(x,ctx)+'</li>').join('')+'</ul>':'<p class="readableEmpty">아직 입력되지 않았습니다.</p>';
+}
+function readablePanel(title,value,ctx){
+  return '<section class="analysisResultCard gapResultCard"><h4>'+title+'</h4>'+readableText(value,ctx)+'</section>';
+}
+function analysisArea(id,label,value,placeholder,ctx){
+  return '<div class="field analysisEditField"><label for="'+id+'">'+label+'</label><textarea class="analysisTextArea" id="'+id+'" rows="4" placeholder="'+esc(placeholder,ctx)+'">'+esc(value||'',ctx)+'</textarea></div>';
+}
 function cleanBulletBlock(x=''){return String(x||'').split(/\r?\n/).map(v=>v.trim().replace(/^[-*•]\s*/,'' )).filter(Boolean).join(' / ')}
 function sectionText(text,heading,next=[]){
   const start=text.indexOf('['+heading+']');if(start<0)return '';
@@ -415,17 +479,19 @@ function normalizeReqType(t=''){if(t.includes('Knowledge'))return 'Knowledge';if
 function lines(x=''){return String(x).split(/\n|·|;/).map(x=>x.trim()).filter(Boolean)}
 function renderJdRecordEditors(a,ctx){
   return '<div class="jdRecordGrid">'+[0,1,2].map(i=>{
-    const x=(a.sources||[]).find(v=>v&&v.slot===i)||(a.sources||[])[i]||{},s=i===0?'':String(i),n=i+1;
-    const title=x.name?esc((x.companyName?x.companyName+' · ':'')+x.name,ctx):'새 공고 입력';
-    return '<div class="jdRecordCard">'+
-      '<div class="jdRecordHead"><span class="rankTag">공고 '+n+'</span><b>'+title+'</b></div>'+
-      '<div class="grid2">'+txt('companyName'+s,'기업명',x.companyName||'','예: 기업명')+txt('companyUrl'+s,'기업 공식페이지',x.companyUrl||'','https://...')+'</div>'+
-      '<div class="grid2" style="margin-top:10px">'+sel('sourceType'+s,'자료 유형',x.type||'',SOURCE_TYPES)+txt('sourceChecked'+s,'확인일',x.checkedAt||today(),'YYYY-MM-DD')+'</div>'+
-      '<div class="field" style="margin-top:10px"><label>공고명·직무</label><input class="input" id="sourceName'+s+'" value="'+esc(x.name||'',ctx)+'" placeholder="예: 브랜드/콘텐츠 마케터 신입"></div>'+
-      '<div class="field" style="margin-top:10px"><label>공고 원문 URL</label><input class="input" id="sourceUrl'+s+'" value="'+esc(x.url||'',ctx)+'" placeholder="https://..."></div>'+
-      '<div class="field" style="margin-top:10px"><label>담당업무·지원조건·우대사항</label><textarea id="sourceNote'+s+'" placeholder="공고 원문에서 핵심 내용을 붙여넣으세요.">'+esc(x.note||'',ctx)+'</textarea></div>'+
-      '<div class="actions"><button class="btn primary" id="'+(i===0?'addSource':'saveSource'+s)+'">공고 '+n+' 저장</button></div>'+
-    '</div>';
+    const x=(a.sources||[]).find(v=>v&&v.slot===i)||(a.sources||[])[i]||{},z=i===0?'':String(i),n=i+1;
+    const label=x.name?(x.companyName?x.companyName+' · ':'')+x.name:'새 공고 입력';
+    const open=x.id?'':' open';
+    return '<details class="jdRecordCard"'+open+'>'+
+      '<summary class="jdRecordHead"><span class="rankTag">공고 '+n+'</span><span class="jdRecordHeadTitle">'+esc(label,ctx)+'</span><span class="jdRecordToggle">입력·수정</span></summary>'+
+      '<div class="jdRecordBody">'+
+      '<div class="grid2">'+txt('companyName'+z,'기업명',x.companyName||'','예: 기업명')+txt('companyUrl'+z,'기업 공식페이지',x.companyUrl||'','https://...')+'</div>'+
+      '<div class="grid2" style="margin-top:10px">'+sel('sourceType'+z,'자료 유형',x.type||'',SOURCE_TYPES)+txt('sourceChecked'+z,'확인일',x.checkedAt||today(),'YYYY-MM-DD')+'</div>'+
+      '<div class="field" style="margin-top:10px"><label>공고명·직무</label><input class="input" id="sourceName'+z+'" value="'+esc(x.name||'',ctx)+'" placeholder="예: 브랜드/콘텐츠 마케터 신입"></div>'+
+      '<div class="field" style="margin-top:10px"><label>공고 원문 URL</label><input class="input" id="sourceUrl'+z+'" value="'+esc(x.url||'',ctx)+'" placeholder="https://..."></div>'+
+      '<div class="field" style="margin-top:10px"><label>담당업무·지원조건·우대사항</label><textarea class="jdNoteInput" id="sourceNote'+z+'" rows="6" placeholder="공고 원문에서 핵심 내용을 붙여넣으세요.">'+esc(x.note||'',ctx)+'</textarea></div>'+
+      '<div class="actions"><button class="btn primary" id="'+(i===0?'addSource':'saveSource'+z)+'">공고 '+n+' 저장</button></div>'+
+      '</div></details>';
   }).join('')+'</div>';
 }
 function block(n,title,desc,body){return `<div class="hr"></div><div class="block"><div class="moduleHead"><span>${n}</span><div><h3>${title}</h3><p>${desc}</p></div></div>${body}</div>`}
@@ -436,4 +502,52 @@ function stateClass(x=''){return x==='근거 있음'?'good':x==='일부 근거 �
 function slug(x=''){return String(x||'').trim().replace(/[^0-9A-Za-z가-힣]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'item'}
 function today(){const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()),g=t=>p.find(x=>x.type===t)?.value||'';return [g('year'),g('month'),g('day')].join('-')}function esc(x,ctx){return ctx.escapeHtml(String(x??''))}
 async function copy(t,ctx){try{await navigator.clipboard.writeText(t);ctx.toast('프롬프트를 복사했습니다.')}catch{ctx.toast('복사하지 못했습니다.')}}
-function styleBlock(){return `<style>.jobAnalysisInje .siteSection{margin-top:14px}.jobAnalysisInje .jdSiteGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}.jobAnalysisInje .jdSiteLink{display:flex;flex-direction:column;gap:3px;padding:13px 14px;border:1px solid #dfe5f2;border-radius:14px;background:#fff;text-decoration:none;color:#1d2939}.jobAnalysisInje .jdSiteLink:hover{border-color:#8fa5ff;background:#f7f8ff}.jobAnalysisInje .jdSiteLink span{font-size:11px;color:#667085}.jobAnalysisInje .aiSearchBox{border:1px solid #dfe5f2;border-radius:16px;padding:14px;background:#fbfcff}.jobAnalysisInje .jdRecordGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}.jobAnalysisInje .jdRecordCard{border:1px solid #dfe5f2;border-radius:16px;padding:14px;background:#fff}.jobAnalysisInje .jdRecordHead{display:flex;align-items:center;gap:8px;margin-bottom:12px}.jobAnalysisInje .sourceSavedSummary{margin-top:12px}@media(max-width:980px){.jobAnalysisInje .jdRecordGrid{grid-template-columns:1fr}}@media(max-width:700px){.jobAnalysisInje .jdSiteGrid{grid-template-columns:1fr 1fr}}@media(max-width:460px){.jobAnalysisInje .jdSiteGrid{grid-template-columns:1fr}}.jobAnalysisInje .moduleHead{display:flex;gap:11px;align-items:flex-start}.jobAnalysisInje .moduleHead>span{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:#eef3ff;color:#3152c9;font-weight:950;flex:0 0 auto}.jobAnalysisInje .moduleHead h3{margin:2px 0 3px}.jobAnalysisInje .moduleHead p{margin:0;color:#667085;font-size:12px;line-height:1.5}.activePick{background:#eef3ff!important;color:#3152c9!important}.stateTag{display:inline-flex;padding:5px 8px;border-radius:999px;font-weight:900;font-size:11px}.state-good{background:#ecfdf7;color:#087a63}.state-partial{background:#eef3ff;color:#3152c9}.state-prepare{background:#fff8e6;color:#9a6700}.state-verify{background:#f2f4f7;color:#667085}</style>`}
+function styleBlock(){return `<style>.jobAnalysisInje .siteSection{margin-top:14px}.jobAnalysisInje .jdSiteGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}.jobAnalysisInje .jdSiteLink{display:flex;flex-direction:column;gap:3px;padding:13px 14px;border:1px solid #dfe5f2;border-radius:14px;background:#fff;text-decoration:none;color:#1d2939}.jobAnalysisInje .jdSiteLink:hover{border-color:#8fa5ff;background:#f7f8ff}.jobAnalysisInje .jdSiteLink span{font-size:11px;color:#667085}.jobAnalysisInje .aiSearchBox{border:1px solid #dfe5f2;border-radius:16px;padding:14px;background:#fbfcff}.jobAnalysisInje .jdRecordGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}.jobAnalysisInje .jdRecordCard{border:1px solid #dfe5f2;border-radius:16px;padding:14px;background:#fff}.jobAnalysisInje .jdRecordHead{display:flex;align-items:center;gap:8px;margin-bottom:12px}.jobAnalysisInje .sourceSavedSummary{margin-top:12px}@media(max-width:980px){.jobAnalysisInje .jdRecordGrid{grid-template-columns:1fr}}@media(max-width:700px){.jobAnalysisInje .jdSiteGrid{grid-template-columns:1fr 1fr}}@media(max-width:460px){.jobAnalysisInje .jdSiteGrid{grid-template-columns:1fr}}.jobAnalysisInje .moduleHead{display:flex;gap:11px;align-items:flex-start}.jobAnalysisInje .moduleHead>span{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:#eef3ff;color:#3152c9;font-weight:950;flex:0 0 auto}.jobAnalysisInje .moduleHead h3{margin:2px 0 3px}.jobAnalysisInje .moduleHead p{margin:0;color:#667085;font-size:12px;line-height:1.5}.activePick{background:#eef3ff!important;color:#3152c9!important}.stateTag{display:inline-flex;padding:5px 8px;border-radius:999px;font-weight:900;font-size:11px}.state-good{background:#ecfdf7;color:#087a63}.state-partial{background:#eef3ff;color:#3152c9}.state-prepare{background:#fff8e6;color:#9a6700}.state-verify{background:#f2f4f7;color:#667085}
+.jobAnalysisInje .jdRecordGrid{align-items:start}
+.jobAnalysisInje .jdRecordCard{min-width:0;overflow:hidden;padding:0}
+.jobAnalysisInje .jdRecordHead{cursor:pointer;list-style:none;display:flex;gap:8px;align-items:center;padding:13px;margin:0;min-height:58px}
+.jobAnalysisInje .jdRecordHead::-webkit-details-marker{display:none}
+.jobAnalysisInje .jdRecordHeadTitle{flex:1;min-width:0;font-size:13px;line-height:1.5;word-break:keep-all;overflow-wrap:anywhere;font-weight:750}
+.jobAnalysisInje .jdRecordToggle{font-size:11px;color:#3152c9;white-space:nowrap}
+.jobAnalysisInje .jdRecordBody{padding:0 13px 13px;border-top:1px solid #edf0f6}
+.jobAnalysisInje .jdRecordBody .grid2{margin-top:12px}
+.jobAnalysisInje .jdNoteInput{width:100%;min-height:140px;resize:vertical;line-height:1.6;overflow-wrap:anywhere}
+.jobAnalysisInje .sourceSummaryTitle{font-size:13px;font-weight:800;margin:12px 0 8px;color:#344054}
+.jobAnalysisInje .sourceCompactList{display:flex;flex-direction:column;gap:8px}
+.jobAnalysisInje .sourceCompactItem{display:flex;align-items:center;gap:10px;min-width:0;padding:12px;border:1px solid #e3e8f2;border-radius:12px}
+.jobAnalysisInje .sourceCompactInfo{flex:1;min-width:0}
+.jobAnalysisInje .sourceCompactInfo b{display:block;font-size:13px;line-height:1.5;overflow-wrap:anywhere;word-break:keep-all}
+.jobAnalysisInje .sourceCompactInfo span{display:block;margin-top:3px;font-size:11px;color:#667085}
+.jobAnalysisInje .sourceCompactActions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.jobAnalysisInje .sourceCompactActions>a{font-size:12px;font-weight:700}
+.jobAnalysisInje .chosenJdCompact{border:1px solid #e3e8f2;border-radius:13px;padding:14px;min-width:0}
+.jobAnalysisInje .chosenJdHeader{display:flex;flex-wrap:wrap;gap:5px 12px;align-items:baseline}
+.jobAnalysisInje .chosenJdHeader b{font-size:14px;line-height:1.5;word-break:keep-all;overflow-wrap:anywhere}
+.jobAnalysisInje .chosenJdHeader span,.jobAnalysisInje .chosenJdHint{font-size:12px;color:#667085;line-height:1.5}
+.jobAnalysisInje .chosenJdHint{margin:7px 0}
+.jobAnalysisInje .jdNoteDetails{border-top:1px solid #edf0f6;padding-top:10px;margin-top:10px}
+.jobAnalysisInje .jdNoteDetails>summary{cursor:pointer;font-size:13px;color:#3152c9;font-weight:700}
+.jobAnalysisInje .jdNoteBody{padding:6px 0}
+.jobAnalysisInje .readablePreview{margin-top:10px}
+.jobAnalysisInje .readableEmpty{margin:0;padding:10px 2px;font-size:13px;color:#667085}
+.jobAnalysisInje .fieldReadHint{margin:10px 0 6px;font-size:12px;color:#667085;line-height:1.6}
+.jobAnalysisInje .analysisInputGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.jobAnalysisInje .analysisEditField{padding:12px;border:1px solid #e3e8f2;border-radius:13px;min-width:0}
+.jobAnalysisInje .analysisEditField label{display:block;margin-bottom:8px;font-size:13px;font-weight:800}
+.jobAnalysisInje .analysisTextArea{box-sizing:border-box;display:block;width:100%;min-width:0;min-height:118px;resize:vertical;padding:11px;line-height:1.75;font-size:14px;overflow-wrap:anywhere;word-break:keep-all;white-space:pre-wrap;border:1px solid #dfe5f2;border-radius:9px}
+.jobAnalysisInje .readableAnalysisGrid,.jobAnalysisInje .readableGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.jobAnalysisInje .analysisResultCard{min-width:0;overflow-wrap:anywhere;word-break:keep-all;border:1px solid #e3e8f2;border-radius:13px;padding:15px;background:#fff}
+.jobAnalysisInje .analysisResultTitle{display:flex;gap:9px;align-items:center;margin-bottom:9px}
+.jobAnalysisInje .analysisResultTitle span{display:grid;place-items:center;font-size:12px;flex-shrink:0;color:#3152c9;background:#eef3ff;border-radius:7px;width:25px;height:25px}
+.jobAnalysisInje .analysisResultCard h4{font-size:14px;line-height:1.5;margin:0 0 10px;color:#243047}
+.jobAnalysisInje .analysisResultTitle h4{margin:0}
+.jobAnalysisInje .analysisBulletList{padding-left:19px;margin:0;line-height:1.75;font-size:14px}
+.jobAnalysisInje .analysisBulletList li{padding-left:2px;white-space:pre-wrap;overflow-wrap:anywhere;word-break:keep-all}
+.jobAnalysisInje .analysisBulletList li+li{margin-top:8px}
+.jobAnalysisInje .careerPlanCard{padding:15px;border:1px solid #dfe5f2;border-radius:13px;margin-top:12px}
+.jobAnalysisInje .careerPlanCard>b{display:block;margin-bottom:10px;font-size:14px}
+.jobAnalysisInje .specInputGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.jobAnalysisInje .specInputGrid>.field{min-width:0}
+.jobAnalysisInje #chosenSource{display:block;max-width:100%;text-overflow:ellipsis}
+@media(max-width:760px){.jobAnalysisInje .jdRecordGrid,.jobAnalysisInje .analysisInputGrid,.jobAnalysisInje .readableAnalysisGrid,.jobAnalysisInje .readableGrid{grid-template-columns:minmax(0,1fr)}.jobAnalysisInje .specInputGrid{grid-template-columns:minmax(0,1fr)}.jobAnalysisInje .sourceCompactItem{flex-wrap:wrap;align-items:flex-start}.jobAnalysisInje .sourceCompactActions{margin-left:auto}.jobAnalysisInje .analysisResultCard{padding:13px}.jobAnalysisInje .analysisTextArea{font-size:16px;min-height:130px}.jobAnalysisInje .analysisBulletList{font-size:14px}}
+</style>`}
