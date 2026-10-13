@@ -54,23 +54,23 @@ export async function render(ctx){
 
       ${block('03','Choose JD','분석에 사용할 실제 공고 하나를 선택합니다.',`
         <div class="field"><label>분석할 JD</label><select id="chosenSource"></select></div>
-        <div id="chosenPreview" class="callout info" style="margin-top:10px"></div>`)}
+        <div id="chosenPreview" class="chosenJdCompact" style="margin-top:10px"></div>`)}
 
       ${block('04','선택 직무 AI 분석','선택한 JD의 직무 자체를 먼저 분석합니다. 아직 학생과 비교하지 않습니다.',`
         <div class="callout info"><b>JD 분석과 GAP 분석을 분리합니다.</b><br>여기서는 선택한 공고에 적힌 업무만 보고 직무를 5개 항목으로 정리합니다. 학생 스펙은 아직 비교하지 않습니다.</div>
         <textarea id="jobAiPrompt" rows="16">${esc(buildJobAnalysisPrompt(ctx.getState(),target,a),ctx)}</textarea>
         <div class="actions"><button class="btn secondary" id="refreshJobAiPrompt">현재 JD 반영</button><button class="btn primary" id="copyJobAiPrompt">직무분석 프롬프트 복사</button></div>
-        <div class="field" style="margin-top:12px"><label>AI 직무분석 답변 붙여넣기</label><textarea id="jobAiImport" rows="10" placeholder="[고객·성과기준]&#10;• ...&#10;[주요 과업]&#10;• ...&#10;[주요 해결과제]&#10;• ...&#10;[해결방법]&#10;• ...&#10;[필요역량]&#10;• ..."></textarea></div>
-        <div class="actions"><button class="btn secondary" id="applyJobAi">AI 답변을 직무분석표에 반영</button></div>`)}
+        <div class="field" style="margin-top:12px"><label>AI 직무분석 답변 붙여넣기</label><textarea id="jobAiImport" rows="9" placeholder="[고객·성과기준]&#10;• ...&#10;[주요 과업]&#10;• ...&#10;[주요 해결과제]&#10;• ...&#10;[해결방법]&#10;• ...&#10;[필요역량]&#10;• ...">${esc(a.jobTable?.aiResult||"",ctx)}</textarea></div>
+        <div class="actions"><button class="btn secondary" id="applyJobAi">AI 답변을 직무분석표에 반영</button></div><div class="fieldReadHint">아래는 입력 원문을 읽기 좋게 정리한 미리보기입니다. 원문은 변경하지 않습니다.</div><div id="jobAiLivePreview" class="readablePreview"></div>`)}
 
       ${block('05','직무분석 테이블 완성','AI 답변을 확인하고 핵심 5개 항목만 남깁니다. 경력개발은 선택입니다.',`
-        <div class="jobAnalysisFields">
-          ${txt('jobCustomerKpi','고객(KPI)',a.jobTable?.customerKpi||'','이 직무의 고객과 성과기준')}
-          ${txt('jobTasks','주요 과업',a.jobTable?.tasks||'','신입이 실제로 반복 수행하는 일')}
-          ${txt('jobChallenge','주요 해결과제',a.jobTable?.challenge||'','업무에서 해결해야 하는 문제')}
-          ${txt('jobMethod','해결방법',a.jobTable?.method||'','방법·절차·도구')}
-          ${txt('jobCompetencies','필요역량',a.jobTable?.competencies||'','지식·기술·행동')}
-          ${txt('jobCareerPlan','경력개발 · 선택',a.jobTable?.careerPlan||'','신입 초기 → 전문성 확장 방향')}
+        <div class="jobAnalysisFields analysisInputGrid">
+          ${analysisArea('jobCustomerKpi','고객(KPI)',a.jobTable?.customerKpi||'','이 직무의 고객과 성과기준',ctx)}
+          ${analysisArea('jobTasks','주요 과업',a.jobTable?.tasks||'','신입이 실제로 반복 수행하는 일',ctx)}
+          ${analysisArea('jobChallenge','주요 해결과제',a.jobTable?.challenge||'','업무에서 해결해야 하는 문제',ctx)}
+          ${analysisArea('jobMethod','해결방법',a.jobTable?.method||'','방법·절차·도구',ctx)}
+          ${analysisArea('jobCompetencies','필요역량',a.jobTable?.competencies||'','지식·기술·행동',ctx)}
+          ${analysisArea('jobCareerPlan','경력개발 · 선택',a.jobTable?.careerPlan||'','신입 초기 → 전문성 확장 방향',ctx)}
         </div>`)}
 
       ${block('06','완성된 직무분석표','GAP 분석 전에 내가 선택한 직무를 한눈에 확인합니다.',`
@@ -78,7 +78,7 @@ export async function render(ctx){
 
       ${block('07','My Spec','GAP 분석 전에 현재 스펙을 직접 확인합니다. 빈칸은 없음이 아니라 미확인입니다.',`
         <div class="callout info"><b>해당 사항이 없으면 ‘없음’이라고 입력하세요.</b><br>자격증·어학·도구/기술을 확인해야 GAP 분석을 시작합니다. STEP 3의 사실확인된 경험은 자동으로 연결됩니다.</div>
-        <div class="grid3" style="margin-top:12px">
+        <div class="grid3 specInputGrid" style="margin-top:12px">
           ${txt('specCertificates','자격증',a.studentSpec?.certificates||'','예: ADsP / 준비 중 / 없음')}
           ${txt('specLanguage','어학',a.studentSpec?.language||'','예: TOEIC 820 / OPIc IM2 / 없음')}
           ${txt('specTools','도구·기술',a.studentSpec?.tools||'','예: Excel, Python, Figma / 없음')}
@@ -91,13 +91,13 @@ export async function render(ctx){
         <textarea id="deepPrompt" rows="16">${esc(buildPrompt(ctx.getState(),target,a),ctx)}</textarea>
         <div class="actions"><button class="btn secondary" id="refreshDeepPrompt">현재 JD·직무분석·내 스펙 반영</button><button class="btn primary" id="copyDeepPrompt" ${specReady(a)&&jobTableReady(a)?'':'disabled'}>AI GAP 분석 프롬프트 복사</button></div>
         <div class="callout info" style="margin-top:12px"><b>AI 답변 붙여넣기</b><br>아래 칸에는 AI가 작성한 짧은 개조식 결과만 붙여넣으세요.</div>
-        <textarea id="deepAiImport" rows="10" placeholder="[내가 가진 것]&#10;• ...&#10;[확인 필요]&#10;• ...&#10;[핵심 GAP]&#10;• GAP 1: ...&#10;[3개월 행동]&#10;• ..."></textarea>
+        <textarea id="deepAiImport" rows="9" placeholder="[내가 가진 것]&#10;• ...&#10;[확인 필요]&#10;• ...&#10;[핵심 GAP]&#10;• GAP 1: ...&#10;[3개월 행동]&#10;• ..."></textarea><div id="gapAiLivePreview" class="readablePreview"></div>
         <div class="actions"><button class="btn secondary" id="importDeepAi" ${specReady(a)&&jobTableReady(a)?'':'disabled'}>GAP 결과 반영</button></div>
         <div id="gapSummary" style="margin-top:12px"></div>
         <div class="actions"><button class="btn primary" id="saveDeep">GAP Match 저장</button><button class="btn secondary" id="nextStep">STEP 6 MY JOBFIT REPORT v1 →</button></div>
         <div class="status" id="status"></div>`)}
     `;
-    bind(target,a);renderSources(target,a);renderChosen(a);renderGap(a);
+    bind(target,a);renderSources(target,a);renderChosen(a);renderGap(a);renderJobAiDraftPreview(a);renderGapAiDraftPreview();
   }
 
   function bind(target,a){
@@ -107,6 +107,8 @@ export async function render(ctx){
     document.getElementById('refreshJobAiPrompt')?.addEventListener('click',()=>{captureJobTable(a);persist(target,a);const p=document.getElementById('jobAiPrompt');if(p)p.value=buildJobAnalysisPrompt(ctx.getState(),target,a)});
     document.getElementById('copyJobAiPrompt')?.addEventListener('click',()=>copy(document.getElementById('jobAiPrompt')?.value||buildJobAnalysisPrompt(ctx.getState(),target,a),ctx));
     document.getElementById('applyJobAi')?.addEventListener('click',()=>applyJobAnalysis(target,a));
+    document.getElementById('jobAiImport')?.addEventListener('input',()=>renderJobAiDraftPreview(a));
+    document.getElementById('deepAiImport')?.addEventListener('input',renderGapAiDraftPreview);
     ['jobCustomerKpi','jobTasks','jobChallenge','jobMethod','jobCompetencies','jobCareerPlan'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{captureJobTable(a);persist(target,a);renderJobTablePreview(a);refreshGapControls(target,a)}));
     ['specCertificates','specLanguage','specTools','specPortfolio'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{captureSpec(a);persist(target,a);refreshGapControls(target,a)}));
     document.getElementById('chosenSource')?.addEventListener('change',e=>{a.selectedSourceId=e.target.value;const chosen=(a.sources||[]).find(x=>x.id===a.selectedSourceId);if(chosen?.companyName)a.company={name:chosen.companyName,url:chosen.companyUrl||'',source:'기업 공식자료'};persist(target,a);renderChosen(a);const jp=document.getElementById('jobAiPrompt');if(jp)jp.value=buildJobAnalysisPrompt(ctx.getState(),target,a);refreshPrompt(target,a)});
@@ -193,6 +195,27 @@ export async function render(ctx){
       <div class="grid2"><div class="miniCard"><b>① 내가 가진 것</b><span>${esc(a.have||'확인된 근거 없음',ctx)}</span></div><div class="miniCard"><b>② 확인 필요</b><span>${esc(a.verify||'없음',ctx)}</span></div></div>
       <div class="miniCard" style="margin-top:12px"><b>③ 핵심 GAP · 최대 3개</b><span>${esc(gaps.length?gaps.map((x,i)=>(i+1)+'. '+x).join(' / '):'확인된 GAP 없음',ctx)}</span></div>
       <div class="miniCard" style="margin-top:12px"><b>④ 3개월 행동</b><span>${esc(a.prepare||'아직 입력되지 않음',ctx)}</span></div>`;
+  }
+  function renderJobAiDraftPreview(a){
+    const box=document.getElementById('jobAiLivePreview');if(!box)return;
+    const raw=document.getElementById('jobAiImport')?.value||'';
+    if(!raw.trim()){box.innerHTML='<p class="readableEmpty">AI 답변을 붙여넣으면 항목별 미리보기가 나타납니다.</p>';return}
+    const parsed=parseJobAnalysisBullet(raw);
+    box.innerHTML=jobTableReady({jobTable:parsed})||Object.values(parsed).some(Boolean)
+      ?jobTablePreviewHtml({jobTable:parsed},ctx)
+      :readableText(raw,ctx);
+  }
+  function renderGapAiDraftPreview(){
+    const box=document.getElementById('gapAiLivePreview');if(!box)return;
+    const raw=document.getElementById('deepAiImport')?.value||'';
+    if(!raw.trim()){box.innerHTML='';return}
+    const parsed=parseGapBullet(raw);
+    if(parsed.have||parsed.verify||parsed.gaps.length||parsed.actions.length){
+      box.innerHTML='<div class="fieldReadHint">AI GAP 답변 미리보기 · 아직 저장되지 않은 내용</div>'+
+        '<div class="readableGrid">'+
+          readablePanel('① 내가 가진 것',parsed.have,ctx)+readablePanel('② 확인 필요',parsed.verify,ctx)+
+          readablePanel('③ 핵심 GAP',parsed.gaps.join(' / '),ctx)+readablePanel('④ 3개월 행동',parsed.actions.join(' / '),ctx)+'</div>';
+    }else box.innerHTML=readableText(raw,ctx);
   }
   function capture(a){const selected=(a.sources||[]).find(x=>x?.id===a.selectedSourceId);if(selected)a.company={name:selected.companyName||'',url:selected.companyUrl||'',source:'기업 공식자료'};a.version=VERSION;a.updatedAt=new Date().toISOString();}
   function persist(target,a,sync=false){saved.targetAnalyses[target.id]=a;saved.analyses[target.job.id]={...a,jobTitle:target.job.title,industry:target.industry,targetId:target.id};const patch={jobDeepDive:saved};if(sync)Object.assign(patch,syncDownstream(ctx.getState(),target,a));ctx.saveState({artifacts:patch})}
