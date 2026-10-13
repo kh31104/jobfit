@@ -1,3 +1,4 @@
+import {readValue,readField,READABLE_STYLES} from './readableResults.js';
 import {prepareResearchMeasures,renderMeasurePanel,bindMeasurePanel} from '../researchMeasures.js?v=2';
 
 export async function render(ctx){
@@ -8,7 +9,7 @@ export async function render(ctx){
   const data=structuredClone(saved);data.finalChecks=data.finalChecks||{};
   const root=document.getElementById('stepRoot');
 
-  root.innerHTML=`<section class="card portfolioStage">
+  root.innerHTML=`<section class="card portfolioStage jobfitReadable">${READABLE_STYLES}
     <div class="sectionHead"><div><div class="kicker">STEP ${displayStep}</div><h2>AI Job Portfolio</h2><p>한 학기 동안 검증한 Career Evidence를 실제 지원 가능한 Job Application Package로 조립합니다.</p></div><span class="badge">14주차 · Workshop</span></div>
     <div class="progress"><span style="width:100%"></span></div>
     <div class="callout good"><b>14주차의 역할</b><br>새로운 내용을 만들어 채우는 시간이 아닙니다. Jobfit에 누적된 결과 중 <b>검증된 자료를 선택·편집·최종확인</b>합니다.</div>
@@ -31,8 +32,19 @@ export async function render(ctx){
     </div>
 
     ${ctx.courseConfig.researchMeasures?renderMeasurePanel(ctx,'post'):''}
-    <div class="hr"></div><div class="block"><h3>4. Portfolio Preview</h3><p class="help">Resume·Cover Letter·Interview는 Final Ready 상태를 우선 반영합니다. Draft는 최종 지원자료에 자동 포함하지 않습니다.</p><div id="portfolioPrint" class="portfolioPaper"></div></div>
-  </section>`;
+    <div class="hr"></div><div class="block"><h3>4. Portfolio Preview</h3><p class="help">Resume·Cover Letter·Interview는 Final Ready 상태를 우선 반영합니다. Draft는 최종 지원자료에 자동 포함하지 않습니다.</p><div id="portfolioPrint" class="portfolioPaper jfPortfolioPaper"></div></div>
+<style>
+.portfolioStage .jfPortfolioPaper,.portfolioStage .portfolioDoc{max-width:100%;min-width:0;overflow-wrap:anywhere;word-break:keep-all}
+.portfolioStage .portfolioDoc .portfolioSection{min-width:0;page-break-inside:auto}
+.portfolioStage .portfolioDoc .portfolioItem{margin:11px 0;padding:12px;border:1px solid #e3e8f1;border-radius:11px;break-inside:avoid}
+.portfolioStage .portfolioDoc .portfolioItem>b{display:block;line-height:1.6;margin-bottom:7px}
+.portfolioStage .portfolioDoc .jfReadField{margin:9px 0}
+.portfolioStage .portfolioDoc .jfReadBullets{line-height:1.7}
+.portfolioStage .portfolioDoc .jfReadProse{line-height:1.75}
+.portfolioStage .portfolioDoc .portfolioSection>p{white-space:pre-wrap;line-height:1.7}
+@media(max-width:760px){.portfolioStage .grid2,.portfolioStage .grid3,.portfolioStage .grid4{grid-template-columns:minmax(0,1fr)}.portfolioStage .jfPortfolioPaper{overflow-x:hidden}.portfolioStage .portfolioDoc .portfolioItem{padding:10px}.portfolioStage .portfolioDoc .portfolioCover h1{overflow-wrap:anywhere}}
+@media print{.portfolioStage .portfolioDoc .portfolioItem,.portfolioStage .portfolioDoc .jfReadField{break-inside:avoid;box-shadow:none}.portfolioStage .portfolioDoc .portfolioSection{break-before:auto}}
+</style></section>`;
 
   renderPreview();
   document.getElementById('buildPortfolio').addEventListener('click',()=>{save(false);renderAll();ctx.toast('Portfolio를 갱신했습니다.');});
@@ -52,20 +64,37 @@ function readinessHtml(s,ctx){const r=readiness(s);return `<div class="grid4"><d
 function portfolioGuardHtml(s,ctx){const r=readiness(s),issues=[];if(!r.p)issues.push('Target JD 미등록');if(!r.gate.ready)issues.push(r.gate.fail?`Application Gate 미충족 ${r.gate.fail}개`:r.gate.check?`Application Gate 확인필요 ${r.gate.check}개`:'Application Gate 검토 미완료');if(!r.verifiedAssets.length)issues.push('검증된 Career Asset 없음');if(!r.resumeReady.length)issues.push('Final Ready Resume 없음');if(!r.humanReady.length&&!r.coverReady.length)issues.push('Final Ready Cover Letter 없음');if(!r.interviewReady.length)issues.push('Ready Interview Evidence 없음');if(r.critical.length)issues.push(`Critical GAP ${r.critical.length}개`);return issues.length?`<div class="callout warn"><b>현재 Portfolio는 Draft입니다.</b><br>${issues.map(x=>esc(x,ctx)).join(' · ')}<br><span class="muted">Critical GAP가 있다고 Portfolio 작성이 불가능한 것은 아니지만, 실제 지원 전 반드시 인지·보완전략을 정해야 합니다.</span></div>`:'<div class="callout good"><b>System Readiness 기본조건 충족</b><br>지원자격·Career Asset·Resume·Cover Letter·Interview의 검증된 자료가 연결되어 있습니다. 학생의 최종 체크 후 제출하세요.</div>'}
 function portfolioSystemReady(s){const r=readiness(s);return !!r.p&&r.gate.ready&&r.verifiedAssets.length>0&&r.resumeReady.length>0&&(r.humanReady.length>0||r.coverReady.length>0)&&r.interviewReady.length>0}
 
-function portfolioHtml(s,data,ctx){const p=selectedPosting(s),fit=s.artifacts?.careerFit||{},selected=fit.comparisons?.find(x=>x.id===fit.selectedId),jobs=getTargetJobs(s),ic=s.artifacts?.industryCompany||{},r=readiness(s),resumeReady=r.resumeReady,humanReady=r.humanReady,coverReady=r.coverReady,interviewReady=r.interviewReady,verifiedAssets=r.verifiedAssets;return `<article class="portfolioDoc"><div class="portfolioCover"><div class="kicker">AI JOB APPLICATION PORTFOLIO</div><h1>${esc(p?`${p.company} · ${p.jobTitle}`:'My Job Application Portfolio',ctx)}</h1><p>${esc(data.positioning||'한 문장 Positioning을 입력하세요.',ctx)}</p><div class="muted small">Jobfit Code: ${esc(s.profile?.anonCode||'—',ctx)} · Status: ${esc(data.status||'DRAFT',ctx)}</div></div>
-  ${section('01 WHO I AM',careerProfile(s,ctx))}
-  ${section('02 TARGET JOB',jobs.length?jobs.map((j,i)=>`<p><b>${i+1}. ${esc(j.title,ctx)}</b> · ${esc(j.family||'',ctx)}</p>`).join(''):'<p>Target Job 미입력</p>')}
-  ${section('03 INDUSTRY & COMPANY',industryCompany(ic,ctx))}
-  ${section('04 TARGET JD & APPLICATION GATE',p?targetJdHtml(p,ctx):'<p>Target JD 미등록</p>')}
-  ${section('05 VERIFIED CAREER ASSETS',verifiedAssets.length?verifiedAssets.map((a,i)=>`<div class="portfolioItem"><b>Asset ${i+1}. ${esc(a.experienceTitle,ctx)}</b><p>${esc(a.proof||'',ctx)}</p><p><span class="muted">Evidence:</span> ${esc(a.fact||'',ctx)}</p><p><span class="muted">JD:</span> ${esc(a.requirement||'',ctx)} · ${esc(a.evidenceLevel||'',ctx)}</p></div>`).join(''):'<p>검증된 Career Asset 없음</p>')}
-  ${section('06 RESUME · FINAL READY',resumeReady.length?resumeReady.map(x=>`<p>• ${esc(x.finalBullet||x.aiBullet||x.rawBullet||'',ctx)}</p>`).join(''):'<p>Final Ready Resume 없음</p>')}
-  ${section('07 COVER LETTER · HUMAN-FIRST',humanReady.length?humanReady.map((x,i)=>`<div class="portfolioItem"><b>문항 ${i+1}</b><p>${esc(x.finalText||'',ctx)}</p></div>`).join(''):coverReady.length?coverReady.map((x,i)=>`<div class="portfolioItem"><b>문항 ${i+1} · Human-First 편집 전</b><p>${esc(x.draft||x.rawAnswer||'',ctx)}</p></div>`).join(''):'<p>Final Ready Cover Letter 없음</p>')}
-  ${section('08 INTERVIEW EVIDENCE · READY',interviewReady.length?interviewReady.slice(0,10).map(q=>`<div class="portfolioItem"><b>${esc(q.question,ctx)}</b><p>${esc(q.answerOutline||'',ctx)}</p></div>`).join(''):'<p>Ready Interview Evidence 없음</p>')}
-  ${section('09 CAREER FIT',selected?`<p>${esc(resolveFit(selected,s),ctx)}</p><p>${esc(selected.reasons||'',ctx)}</p><p><b>Risk/GAP</b> ${esc(selected.risks||'',ctx)}</p>`:'<p>중간 FIT 우선방향 미선택</p>')}
-  ${section('10 CRITICAL GAP & ACTION PLAN',`${r.critical.length?`<p><b>JD Critical GAP</b><br>${r.critical.map(x=>esc(x.text,ctx)).join(' · ')}</p>`:''}<p><b>나의 핵심 GAP</b><br>${esc(data.gap||'—',ctx)}</p><p><b>30일</b><br>${esc(data.plan30||'—',ctx)}</p><p><b>90일</b><br>${esc(data.plan90||'—',ctx)}</p>`)}
-  </article>`}
+function portfolioHtml(s,data,ctx){
+  const p=selectedPosting(s),fit=s.artifacts?.careerFit||{},selected=fit.comparisons?.find(x=>x.id===fit.selectedId),
+    jobs=getTargetJobs(s),ic=s.artifacts?.industryCompany||{},r=readiness(s),
+    resumeReady=r.resumeReady,humanReady=r.humanReady,coverReady=r.coverReady,interviewReady=r.interviewReady,verifiedAssets=r.verifiedAssets;
+  return `<article class="portfolioDoc">
+    <div class="portfolioCover"><div class="kicker">AI JOB APPLICATION PORTFOLIO</div>
+      <h1>${esc(p?p.company+' · '+p.jobTitle:'My Job Application Portfolio',ctx)}</h1>
+      ${readValue(data.positioning||'한 문장 Positioning을 입력하세요.',ctx)}
+      <div class="muted small">Jobfit Code: ${esc(s.profile?.anonCode||'—',ctx)} · Status: ${esc(data.status||'DRAFT',ctx)}</div>
+    </div>
+    ${section('01 WHO I AM',careerProfile(s,ctx))}
+    ${section('02 TARGET JOB',jobs.length?jobs.map((j,i)=>`<div class="jfDocBlock"><b>${i+1}. ${esc(j.title,ctx)}</b> · ${esc(j.family||'',ctx)}</div>`).join(''):'<p>Target Job 미입력</p>')}
+    ${section('03 INDUSTRY & COMPANY',industryCompany(ic,ctx))}
+    ${section('04 TARGET JD & APPLICATION GATE',p?targetJdHtml(p,ctx):'<p>Target JD 미등록</p>')}
+    ${section('05 VERIFIED CAREER ASSETS',verifiedAssets.length?verifiedAssets.map((a,i)=>`<div class="portfolioItem"><b>Asset ${i+1}. ${esc(a.experienceTitle,ctx)}</b>
+      ${readField('핵심 행동',a.proof,ctx)}${readField('Evidence',a.fact,ctx)}${readField('JD Requirement',a.requirement,ctx)}
+      <p class="muted small">${esc(a.evidenceLevel||'',ctx)}</p></div>`).join(''):'<p>검증된 Career Asset 없음</p>')}
+    ${section('06 RESUME · FINAL READY',resumeReady.length?resumeReady.map((x,i)=>`<div class="portfolioItem"><b>Resume ${i+1}</b>${readValue(x.finalBullet||x.aiBullet||x.rawBullet,ctx)}</div>`).join(''):'<p>Final Ready Resume 없음</p>')}
+    ${section('07 COVER LETTER · HUMAN-FIRST',humanReady.length?humanReady.map((x,i)=>`<div class="portfolioItem"><b>문항 ${i+1}</b>${readValue(x.finalText,ctx)}</div>`).join(''):coverReady.length?coverReady.map((x,i)=>`<div class="portfolioItem"><b>문항 ${i+1} · Human-First 편집 전</b>${readValue(x.draft||x.rawAnswer,ctx)}</div>`).join(''):'<p>Final Ready Cover Letter 없음</p>')}
+    ${section('08 INTERVIEW EVIDENCE · READY',interviewReady.length?interviewReady.slice(0,10).map(q=>`<div class="portfolioItem"><b>${esc(q.question,ctx)}</b>${readValue(q.answerOutline,ctx)}</div>`).join(''):'<p>Ready Interview Evidence 없음</p>')}
+    ${section('09 CAREER FIT',selected?`<div class="portfolioItem"><b>${esc(resolveFit(selected,s),ctx)}</b>
+      ${readField('선택 근거',selected.reasons,ctx)}${readField('Risk / GAP',selected.risks,ctx)}</div>`:'<p>중간 FIT 우선방향 미선택</p>')}
+    ${section('10 CRITICAL GAP & ACTION PLAN',`<div class="jfReadFields">
+      ${r.critical.length?readField('JD Critical GAP',r.critical.map(x=>x.text).join(' / '),ctx):''}
+      ${readField('나의 핵심 GAP',data.gap||'—',ctx)}
+      ${readField('30일 행동계획',data.plan30||'—',ctx)}
+      ${readField('90일 행동계획',data.plan90||'—',ctx)}</div>`)}
+  </article>`;
+}
 function targetJdHtml(p,ctx){const gates=p.gates||[];return `<p><b>${esc(p.company,ctx)} · ${esc(p.jobTitle,ctx)}</b></p><p>${esc(p.analysisNote||'JD 핵심해석을 입력하세요.',ctx)}</p>${gates.length?`<p><b>Application Gate</b><br>${gates.map(g=>`${esc(g.text,ctx)} — ${esc(g.status||'미확인',ctx)}`).join('<br>')}</p>`:'<p><b>Application Gate</b> 별도 조건 미등록 / 확인 필요</p>'}<p class="muted small">${esc(p.url||'',ctx)}</p>`}
-function portfolioText(s,data){const temp={escapeHtml:x=>String(x??'')};return portfolioHtml(s,data,temp).replace(/<br\s*\/?>/gi,'\n').replace(/<\/p>/gi,'\n').replace(/<\/div>/gi,'\n').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\n{3,}/g,'\n\n').trim()}
+function portfolioText(s,data){const temp={escapeHtml:x=>String(x??'')};return portfolioHtml(s,data,temp).replace(/<br\s*\/?>/gi,'\n').replace(/<\/li>/gi,'\n').replace(/<\/section>/gi,'\n\n').replace(/<\/p>/gi,'\n').replace(/<\/div>/gi,'\n').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\n{3,}/g,'\n\n').trim()}
 function selectedPosting(s){const jd=s.artifacts?.jdAnalyzer||{};return jd.postings?.find(x=>x.id===jd.selectedId)||jd.postings?.[0]}
 function gateState(p){const fail=(p?.gates||[]).filter(x=>x.status==='미충족').length,check=(p?.gates||[]).filter(x=>x.status==='확인 필요').length;return {fail,check,ready:!!p?.gateReviewed&&!fail&&!check}}
 function isAssetVerified(a){return !!a&&a.factCheck==='검증완료'&&a.sourceExperienceFactChecked!==false&&(a.evidenceLevel||legacyLevel(a.strength))!=='없음'}
