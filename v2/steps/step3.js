@@ -15,6 +15,9 @@ export async function render(ctx){
   data.newInterests=Array.isArray(data.newInterests)?data.newInterests:[];
   data.industryInterests=Array.isArray(data.industryInterests)?data.industryInterests:[];
   data.targetCombos=Array.isArray(data.targetCombos)?data.targetCombos:legacyCombos(data);
+  const repairedCandidates=data.candidates.map(normalizedCandidate);
+  const needsRepair=repairedCandidates.some((j,i)=>j!==data.candidates[i]);
+  if(needsRepair)data.candidates=repairedCandidates;
   const root=document.getElementById('stepRoot');
   const actions=confirmedActions(experienceMap);
   let editingCandidateId='';
@@ -50,7 +53,8 @@ export async function render(ctx){
       <div class="actions"><button class="btn secondary" id="refreshPrompt">현재 선택 반영</button><button class="btn primary" id="copyPrompt">AI 직무탐색 프롬프트 복사</button></div>
       <div class="callout info" style="margin-top:12px"><b>표나 JSON은 사용하지 않습니다.</b><br>AI가 만든 개조식 텍스트 전체를 복사해 아래 칸에 붙여넣으면 후보카드가 자동 생성됩니다.</div>
       <textarea id="jobAiImport" rows="10" placeholder="[후보 1]부터 마지막 후보까지 AI 결과 전체를 그대로 붙여넣으세요."></textarea>
-      <div class="actions"><button class="btn secondary" id="importJobAi">AI 후보 한 번에 불러오기</button></div>
+      <div class="actions"><button class="btn secondary" id="importJobAi">AI 후보 한 번에 불러오기</button><button class="btn outline" id="copyEvidencePrompt">기존 후보 근거 보완 프롬프트 복사</button></div>
+      <p class="muted small">이미 저장한 후보와 순위는 그대로 유지됩니다. 근거가 비어 있으면 보완 프롬프트를 AI에 보내고 답변을 위 칸에 붙여넣으세요.</p>
       <div class="status" id="candidateStatus"></div>
       <div id="candidateList"></div>
       <details class="subDetails" id="candidateManualEditor" style="margin-top:12px"><summary>직무 후보를 직접 추가·수정할래요</summary>
@@ -65,6 +69,7 @@ export async function render(ctx){
       <div class="actions"><button class="btn primary" id="saveTargets">Target Job 저장</button><button class="btn secondary" id="nextStep">STEP 5 실제 JD 확인 →</button></div>
       <div class="status" id="targetStatus"></div>`)}
   </section>`;
+  if(needsRepair)persist(false);
   renderInterests();renderCandidates();renderCompare();renderTargets();bindChoices();
   document.getElementById('confirmSelf')?.addEventListener('click',()=>openBlock(1));
   document.getElementById('backStep2')?.addEventListener('click',()=>ctx.navigate(2));
@@ -72,6 +77,7 @@ export async function render(ctx){
   document.getElementById('refreshPrompt')?.addEventListener('click',refreshPrompt);
   document.getElementById('copyPrompt')?.addEventListener('click',()=>copy(document.getElementById('jobPrompt').value,ctx));
   document.getElementById('importJobAi')?.addEventListener('click',importJobAi);
+  document.getElementById('copyEvidencePrompt')?.addEventListener('click',()=>copy(buildEvidencePrompt(ctx.getState(),data,experienceMap),ctx));
   document.getElementById('addCandidate')?.addEventListener('click',addCandidate);
   document.getElementById('cancelCandidateEdit')?.addEventListener('click',clearCandidateEditor);
   document.getElementById('saveTargets')?.addEventListener('click',saveTargets);
@@ -102,7 +108,17 @@ export async function render(ctx){
     if(!rows.length){status('candidateStatus','직무 후보 형식을 읽지 못했습니다. [후보 1]부터 시작하는 개조식 결과 전체를 붙여넣어 주세요.');return}
     const now=Date.now(),normalized=rows.slice(0,5).map((x,i)=>({id:'job_ai_'+now+'_'+i,title:String(x.title||'').trim(),family:String(x.family||'').trim(),industries:splitList(x.industries||''),summary:String(x.summary||'').trim(),why:String(x.why||'').trim(),evidence:String(x.evidence||'').trim(),unknowns:String(x.unknowns||'').trim(),source:'AI 탐색결과 · STEP 5에서 공식자료 확인 필요',createdAt:new Date().toISOString()})).filter(x=>x.title);
     if(!normalized.length){status('candidateStatus','직무명이 있는 후보를 찾지 못했습니다.');return}
-    data.candidates=normalized;data.targets=[];data.targetCombos=[];clearCandidateEditor();persist(false);renderCandidates();renderCompare();renderTargets();status('candidateStatus','AI 후보 '+normalized.length+'개를 불러왔습니다. 각 후보는 수정할 수 있습니다.');
+    let updated=0,added=0,skipped=0;
+    for(const incoming of normalized){
+      const index=data.candidates.findIndex(x=>jobTitleOnly(x).toLocaleLowerCase()===jobTitleOnly(incoming).toLocaleLowerCase());
+      if(index>=0){
+        const prior=data.candidates[index],keep=(next,old)=>!next||/^(확인 필요|미입력|없음|—|-)$/.test(String(next).trim())?old:next;
+        data.candidates[index]={...prior,family:keep(incoming.family,prior.family),summary:keep(incoming.summary,prior.summary),why:keep(incoming.why,prior.why),evidence:keep(incoming.evidence,prior.evidence),unknowns:keep(incoming.unknowns,prior.unknowns),industries:incoming.industries.length?incoming.industries:prior.industries,updatedAt:new Date().toISOString()};updated++;
+      }else if(data.candidates.length<5){data.candidates.push(incoming);added++}
+      else skipped++;
+    }
+    clearCandidateEditor();persist(false);renderCandidates();renderCompare();renderTargets();
+    status('candidateStatus',`불러오기 완료: 기존 후보 보완 ${updated}개 · 새 후보 추가 ${added}개${skipped?' · 후보 5개 제한으로 추가하지 못한 '+skipped+'개':''}. 기존 Target 선택은 유지됩니다.`);
   }
   function addCandidate(){
     const title=v('jobTitle');if(!title){status('candidateStatus','직무명을 입력하세요.');return}
@@ -131,12 +147,12 @@ export async function render(ctx){
   function renderCandidates(){
     const box=document.getElementById('candidateList');if(!box)return;
     if(!data.candidates.length){box.innerHTML='<div class="placeholder"><b>아직 직무 후보가 없습니다.</b>AI 프롬프트로 탐색한 뒤 4~5개 후보를 불러오세요.</div>';return}
-    box.innerHTML=data.candidates.map((j,i)=>`<div class="listCard"><div class="listHead"><div><span class="rankTag">후보 ${i+1}</span><h3>${esc(j.title,ctx)}</h3><div class="muted small">${esc(j.family||'직무군 미입력',ctx)} · ${(j.industries||[]).map(x=>esc(x,ctx)).join(' / ')||'산업 미정'}</div></div><div class="actions compactActions"><button class="btn secondary smallBtn" data-edit="${j.id}">수정</button><button class="btn danger smallBtn" data-del="${j.id}">삭제</button></div></div><p><b>어떤 일?</b> ${esc(j.summary||'—',ctx)}</p><div class="grid2"><div><b>관심 근거</b><p>${esc(j.why||'—',ctx)}</p></div><div><b>경험·행동 근거</b><p>${esc(j.evidence||'—',ctx)}</p></div></div><div class="callout info"><b>아직 확인할 것</b><br>${esc(j.unknowns||'실제 Task·요구기술·근무환경 확인 필요',ctx)}</div></div>`).join('');
+    box.innerHTML=data.candidates.map((j,i)=>candidateCard(j,i,ctx)).join('');
     box.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>editCandidate(b.dataset.edit)));
     box.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{if(editingCandidateId===b.dataset.del)clearCandidateEditor();data.candidates=data.candidates.filter(x=>x.id!==b.dataset.del);data.targets=data.targets.filter(x=>x!==b.dataset.del);data.targetCombos=data.targetCombos.filter(x=>x.jobId!==b.dataset.del);persist(false);renderCandidates();renderCompare();renderTargets();}));
   }
   function renderCompare(){const box=document.getElementById('compareBox');if(!box)return;if(!data.candidates.length){box.innerHTML='<div class="callout info">후보를 추가하면 비교표가 만들어집니다.</div>';return}box.innerHTML=`<div class="matrixWrap"><table class="matrix"><thead><tr><th>직무</th><th>경험·행동 근거</th><th>관심 근거</th><th>가능 산업</th><th>더 확인할 것</th></tr></thead><tbody>${data.candidates.map(j=>`<tr><td><b>${esc(j.title,ctx)}</b></td><td>${esc(j.evidence||'—',ctx)}</td><td>${esc(j.why||'—',ctx)}</td><td>${esc((j.industries||[]).join(', ')||'미정',ctx)}</td><td>${esc(j.unknowns||'—',ctx)}</td></tr>`).join('')}</tbody></table></div>`;}
-  function renderTargets(){const box=document.getElementById('targetEditor');if(!box)return;if(!data.candidates.length){box.innerHTML='<div class="callout warn">직무 후보를 먼저 추가하세요.</div>';return}const combos=[0,1,2].map(i=>data.targetCombos[i]||{});box.innerHTML=combos.map((combo,i)=>`<div class="targetRow"><div><b>${i<2?`${i+1}순위 Target`:'예비 Target'}</b><span>${i<2?'필수 선택':'선택사항'}</span></div><select data-target-job="${i}"><option value="">직무 선택</option>${data.candidates.map(j=>`<option value="${j.id}" ${combo.jobId===j.id?'selected':''}>${esc(j.title,ctx)}</option>`).join('')}</select><select data-target-industry="${i}">${industryOptions(combo.jobId,combo.industry)}</select></div>`).join('');box.querySelectorAll('[data-target-job]').forEach(selEl=>selEl.addEventListener('change',()=>{const i=Number(selEl.dataset.targetJob),ind=box.querySelector(`[data-target-industry="${i}"]`);if(ind)ind.innerHTML=industryOptions(selEl.value,'');}));}
+  function renderTargets(){const box=document.getElementById('targetEditor');if(!box)return;if(!data.candidates.length){box.innerHTML='<div class="callout warn">직무 후보를 먼저 추가하세요.</div>';return}const combos=[0,1,2].map(i=>data.targetCombos[i]||{});box.innerHTML=combos.map((combo,i)=>`<div class="targetRow"><div><b>${`${i+1}순위 Target`}</b><span>${i===0?'우선 선택':'선택사항'}</span></div><select data-target-job="${i}"><option value="">직무 선택</option>${data.candidates.map(j=>`<option value="${j.id}" ${combo.jobId===j.id?'selected':''}>${esc(jobTitleOnly(j),ctx)}</option>`).join('')}</select><select data-target-industry="${i}">${industryOptions(combo.jobId,combo.industry)}</select></div>`).join('');box.querySelectorAll('[data-target-job]').forEach(selEl=>selEl.addEventListener('change',()=>{const i=Number(selEl.dataset.targetJob),ind=box.querySelector(`[data-target-industry="${i}"]`);if(ind)ind.innerHTML=industryOptions(selEl.value,'');}));}
   function industryOptions(jobId,current){const job=data.candidates.find(x=>x.id===jobId),all=[...(job?.industries||[]),...data.industryInterests.filter(x=>x!=='아직 잘 모르겠어요')];const vals=[...new Set(all.filter(Boolean))];if(!vals.length)vals.push('산업 미정');return `<option value="">산업 선택</option>`+vals.map(x=>`<option value="${esc(x,ctx)}" ${current===x?'selected':''}>${esc(x,ctx)}</option>`).join('')}
   function saveTargets(){
     const combos=[0,1,2].map(i=>({jobId:document.querySelector(`[data-target-job="${i}"]`)?.value||'',industry:document.querySelector(`[data-target-industry="${i}"]`)?.value||'',priority:i+1})).filter(x=>x.jobId&&x.industry);
@@ -216,16 +232,87 @@ function area(id,label,value,ph){return `<div class="field"><label>${label}</lab
 function sel(id,label,value,opts){return `<div class="field"><label>${label}</label><select id="${id}"><option value="">선택</option>${opts.map(o=>`<option ${o===value?'selected':''}>${o}</option>`).join('')}</select></div>`}
 function parseCandidateOutput(raw=''){
   const text=String(raw||'').replace(/\r/g,'').replace(/\*\*/g,'').replace(/```(?:json|text)?/gi,'').replace(/```/g,'').trim();
-  const legacy=(()=>{try{const x=JSON.parse(text);return Array.isArray(x)?x:(Array.isArray(x?.candidates)?x.candidates:[])}catch{return []}})();
-  if(legacy.length)return legacy.map(x=>({title:x.title||x.job||'',family:x.family||'',summary:x.summary||x.description||'',evidence:x.evidence||x.experienceEvidence||'',why:x.why||x.interestEvidence||'',industries:Array.isArray(x.industries)?x.industries.join(', '):(x.industries||''),unknowns:x.unknowns||''}));
-  const blocks=text.split(/(?=^\s*\[?후보\s*\d+\]?\s*$)/gmi).map(x=>x.trim()).filter(x=>/^(?:\[?후보\s*\d+\]?)/i.test(x));
-  const keyMap=[['title',/^\s*(?:[-•·]\s*)?직무명\s*[:：]\s*(.*)$/i],['family',/^\s*(?:[-•·]\s*)?직무군\s*[:：]\s*(.*)$/i],['summary',/^\s*(?:[-•·]\s*)?어떤\s*일(?:인가)?\s*[:：]\s*(.*)$/i],['evidence',/^\s*(?:[-•·]\s*)?경험[·ㆍ\s]*행동\s*근거\s*[:：]\s*(.*)$/i],['why',/^\s*(?:[-•·]\s*)?관심\s*근거\s*[:：]\s*(.*)$/i],['industries',/^\s*(?:[-•·]\s*)?가능\s*산업\s*[:：]\s*(.*)$/i],['unknowns',/^\s*(?:[-•·]\s*)?(?:STEP\s*[45]에서\s*)?확인할\s*것\s*[:：]\s*(.*)$/i]];
-  return blocks.map(block=>{const out={title:'',family:'',summary:'',evidence:'',why:'',industries:'',unknowns:''};let current='';for(const rawLine of block.split('\n').slice(1)){const line=rawLine.trim();if(!line)continue;const hit=keyMap.map(([k,rx])=>[k,line.match(rx)]).find(([,m])=>m);if(hit){current=hit[0];out[current]=hit[1][1].trim();continue}if(current)out[current]+=(out[current]?' ':'')+line.replace(/^[•·\-*]\s*/,'').trim()}return out}).filter(x=>x.title);
+  const json=(()=>{try{const x=JSON.parse(text);return Array.isArray(x)?x:(Array.isArray(x?.candidates)?x.candidates:[])}catch{return []}})();
+  if(json.length)return json.map(x=>({title:x.title||x.job||'',family:x.family||'',summary:x.summary||x.description||'',evidence:x.evidence||x.experienceEvidence||'',why:x.why||x.interestEvidence||'',industries:Array.isArray(x.industries)?x.industries.join(', '):(x.industries||''),unknowns:x.unknowns||''}));
+  const blocks=text.split(/(?=^\s*(?:#{1,4}\s*)?\[?후보\s*\d+\]?(?:\s|$))/gmi).map(x=>x.trim()).filter(x=>/^(?:#{1,4}\s*)?\[?후보\s*\d+\]?/i.test(x));
+  const labels=/(직무명|직무군|어떤\s*일(?:인가요?)?|경험\s*[·ㆍ∙/,-]?\s*행동\s*근거|관심\s*근거|가능\s*산업|(?:STEP\s*[45]\s*에서\s*)?확인할\s*것)\s*[:：]\s*/gi;
+  return blocks.map(block=>{
+    const out={title:'',family:'',summary:'',evidence:'',why:'',industries:'',unknowns:''};
+    const found=[...block.matchAll(labels)];
+    for(let i=0;i<found.length;i++){
+      const label=found[i][1].replace(/\s+/g,'').toLowerCase();
+      const value=block.slice(found[i].index+found[i][0].length,i+1<found.length?found[i+1].index:block.length).replace(/\s+/g,' ').replace(/^[\-•·:：\s]+|[\s]+$/g,'').trim();
+      const field=label==='직무명'?'title':label==='직무군'?'family':label.startsWith('어떤일')?'summary':label.startsWith('경험')?'evidence':label.startsWith('관심')?'why':label==='가능산업'?'industries':'unknowns';
+      out[field]+=(out[field]?' ':'')+value;
+    }
+    return out;
+  }).filter(x=>x.title);
+}
+function normalizedCandidate(j){
+  if(!j||typeof j!=='object')return j;
+  const originalTitle=String(j.title||'');
+  if(!/(?:직무명|직무군|어떤\s*일|경험\s*[·ㆍ∙/,-]?\s*행동\s*근거|관심\s*근거|가능\s*산업|확인할\s*것)\s*[:：]/i.test(originalTitle))return j;
+  let parsed=parseCandidateOutput('[후보 1]\n'+originalTitle)[0];
+  if(!parsed?.title){
+    const cutoff=originalTitle.search(/\s+(?:직무군|어떤\s*일|관심\s*근거|경험\s*[·ㆍ∙/,-]?\s*행동\s*근거)\s*[:：]/);
+    if(cutoff<0)return j;
+    parsed=parseCandidateOutput('[후보 1]\n직무명: '+originalTitle.slice(0,cutoff).replace(/^직무명\s*[:：]\s*/,'').trim()+' '+originalTitle.slice(cutoff))[0];
+  }
+  if(!parsed?.title||parsed.title===originalTitle&&!(parsed.summary||parsed.evidence||parsed.why||parsed.family||parsed.industries))return j;
+  const keep=(oldVal,newVal)=>String(oldVal||'').trim()||String(newVal||'').trim();
+  return {...j,rawImportText:j.rawImportText||originalTitle,title:parsed.title,family:keep(j.family,parsed.family),summary:keep(j.summary,parsed.summary),why:keep(j.why,parsed.why),evidence:keep(j.evidence,parsed.evidence),unknowns:keep(j.unknowns,parsed.unknowns),industries:Array.isArray(j.industries)&&j.industries.length?j.industries:[...new Set(String(parsed.industries||'').split(/[,/|]/).map(x=>x.trim()).filter(Boolean))]};
+}
+function jobTitleOnly(j){
+ const title=String(j?.title||'').replace(/^직무명\s*[:：]\s*/,'').trim();
+ const cutoff=title.search(/\s+(?:직무군|어떤\s*일|관심\s*근거|경험\s*[·ㆍ∙/,-]?\s*행동\s*근거|가능\s*산업|STEP\s*[45]에서\s*확인할\s*것)\s*[:：]/);
+ return (cutoff>=0?title.slice(0,cutoff):title).trim()||'직무명 미입력';
+}
+function candidateField(title,value,ctx,missing=false){
+  const pieces=String(value||'').split('\n').map(x=>x.replace(/^[•●▪-]\s*/,'').trim()).filter(Boolean);
+  return '<div class="candidateField"><b>'+title+'</b>'+(pieces.length?'<ul class="candidateBullets">'+pieces.map(x=>'<li>'+esc(x,ctx)+'</li>').join('')+'</ul>':'<p class="candidateMissing">'+(missing?'AI 결과에 근거가 없습니다. 아래 보완 기능을 사용하세요.':'아직 입력되지 않았습니다.')+'</p>')+'</div>';
+}
+function candidateCard(j,i,ctx){
+  const industries=Array.isArray(j.industries)?j.industries:[];
+  return '<div class="listCard candidateCard"><div class="listHead"><div class="candidateCardHeading"><span class="rankTag">후보 '+(i+1)+'</span><h3>'+esc(jobTitleOnly(j),ctx)+'</h3><div class="candidateMeta"><span>'+esc(j.family||'직무군 미입력',ctx)+'</span><span>'+esc(industries.join(' · ')||'산업 미정',ctx)+'</span></div></div><div class="actions compactActions"><button class="btn secondary smallBtn" data-edit="'+esc(j.id,ctx)+'">수정</button><button class="btn danger smallBtn" data-del="'+esc(j.id,ctx)+'">삭제</button></div></div>'+
+    candidateField('어떤 일을 하나요?',j.summary,ctx)+
+    '<div class="candidateEvidenceGrid">'+candidateField('관심 근거',j.why,ctx,true)+candidateField('경험·행동 근거',j.evidence,ctx,true)+'</div>'+
+    candidateField('STEP 5에서 확인할 것',j.unknowns||'실제 담당업무 · 요구기술 · 근무환경',ctx)+'</div>';
+}
+function buildEvidencePrompt(state,data,map){
+  const jobs=(data.candidates||[]).map((x,i)=>'[후보 '+(i+1)+']\n직무명: '+jobTitleOnly(x)).join('\n\n');
+  const exp=(map||[]).slice(0,6).map((x,i)=>(i+1)+'. '+(x.title||'경험')+'\n- 행동: '+(x.action||'미입력')+'\n- 결과: '+(x.result||'미입력')).join('\n');
+  return [
+    '아래 저장된 직무 후보 이름은 변경하지 말고, 제공된 학생 정보 안에서 근거만 보완해라. 하지 않은 경험·성과·관심을 절대 만들어내지 마라.',
+    '[기존 후보]\n'+jobs,
+    '[학생이 선택한 관심 업무]\n'+(data.desiredActivities||[]).concat(data.newInterests||[]).join(', '),
+    '[STEP 3 사실 확인된 경험]\n'+(exp||'기록 없음'),
+    '[규칙]\n- 관심 근거: 학생의 선택 업무와 연결\n- 경험·행동 근거: STEP 3의 구체적인 행동만 인용\n- 관련 근거가 없거나 불분명하면 확인 필요\n- 표, JSON, 코드블록, 추가 설명 금지',
+    '[출력 형식: 후보마다 세 항목]\n[후보 1]\n직무명: (기존과 동일한 직무명)\n관심 근거: 학생이 선택한 업무와의 연결 또는 확인 필요\n경험·행동 근거: 확인된 경험의 구체적 행동 또는 확인 필요\n[후보 2]부터 마지막까지 반복'
+  ].join('\n\n');
 }
 function splitList(v){return [...new Set(String(v||'').split(/[,/|]/).map(x=>x.trim()).filter(Boolean))]}
 function slug(x=''){return String(x).trim().replace(/[^0-9A-Za-z가-힣]+/g,'-').replace(/^-|-$/g,'').slice(0,30)||'undecided'}
 function esc(x,ctx){return ctx.escapeHtml(String(x??''))}
 async function copy(text,ctx){try{await navigator.clipboard.writeText(text);ctx.toast('프롬프트를 복사했습니다.')}catch{ctx.toast('복사하지 못했습니다.')}}
 function styleBlock(){return `<style>
-.jobExplorerV3 .moduleHead{display:flex;gap:11px;align-items:flex-start}.jobExplorerV3 .moduleHead>span{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:#eef3ff;color:#3152c9;font-weight:950;flex:0 0 auto}.jobExplorerV3 .moduleHead h3{margin:2px 0 3px}.jobExplorerV3 .moduleHead p{margin:0;color:#667085;font-size:12px;line-height:1.5}.choiceTiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.choiceTile{display:flex;align-items:center;gap:8px;border:1px solid #e3e8f2;border-radius:13px;padding:11px;background:#fff;font-size:13px;font-weight:800}.choiceTile:has(input:checked){border-color:#8fa5ff;background:#f4f6ff;color:#244bd7}.inlineAdd{display:flex;gap:8px}.interestPill button{border:0;background:transparent;color:#98a2b3;font-size:16px}.evidenceGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.actionEvidence{border:1px solid #e3e8f2;border-radius:13px;padding:12px;background:#fbfcff;font-size:13px;line-height:1.55}.targetRow{display:grid;grid-template-columns:150px 1fr 1fr;gap:9px;align-items:center;border:1px solid #e3e8f2;border-radius:15px;padding:12px;margin:9px 0}.targetRow b,.targetRow span{display:block}.targetRow span{font-size:11px;color:#667085;margin-top:2px}@media(max-width:700px){.choiceTiles,.evidenceGrid{grid-template-columns:1fr 1fr}.targetRow{grid-template-columns:1fr}.inlineAdd{flex-direction:column}}@media(max-width:460px){.choiceTiles,.evidenceGrid{grid-template-columns:1fr}}
+.jobExplorerV3 .moduleHead{display:flex;gap:11px;align-items:flex-start}.jobExplorerV3 .moduleHead>span{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:#eef3ff;color:#3152c9;font-weight:950;flex:0 0 auto}.jobExplorerV3 .moduleHead h3{margin:2px 0 3px}.jobExplorerV3 .moduleHead p{margin:0;color:#667085;font-size:12px;line-height:1.5}.choiceTiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.choiceTile{display:flex;align-items:center;gap:8px;border:1px solid #e3e8f2;border-radius:13px;padding:11px;background:#fff;font-size:13px;font-weight:800}.choiceTile:has(input:checked){border-color:#8fa5ff;background:#f4f6ff;color:#244bd7}.inlineAdd{display:flex;gap:8px}.interestPill button{border:0;background:transparent;color:#98a2b3;font-size:16px}.evidenceGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.actionEvidence{border:1px solid #e3e8f2;border-radius:13px;padding:12px;background:#fbfcff;font-size:13px;line-height:1.55}.targetRow{display:grid;grid-template-columns:150px 1fr 1fr;gap:9px;align-items:center;border:1px solid #e3e8f2;border-radius:15px;padding:12px;margin:9px 0}.targetRow b,.targetRow span{display:block}.targetRow span{font-size:11px;color:#667085;margin-top:2px}@media(max-width:700px){.choiceTiles,.evidenceGrid{grid-template-columns:1fr 1fr}.targetRow{grid-template-columns:1fr}.inlineAdd{flex-direction:column}}
+.jobExplorerV3 .candidateCard{margin-top:12px;padding:16px;overflow-wrap:anywhere}
+.jobExplorerV3 .candidateCard .listHead{display:flex;align-items:flex-start;gap:14px}
+.jobExplorerV3 .candidateCardHeading{min-width:0;flex:1}
+.jobExplorerV3 .candidateCard h3{font-size:17px;line-height:1.45;margin:7px 0 6px;word-break:keep-all;overflow-wrap:anywhere}
+.jobExplorerV3 .candidateMeta{display:flex;flex-wrap:wrap;gap:5px 12px;color:#667085;font-size:12px}
+.jobExplorerV3 .candidateField{min-width:0;margin-top:12px;padding:12px 14px;border:1px solid #e3e8f2;border-radius:12px;background:#fbfcff}
+.jobExplorerV3 .candidateField>b{display:block;font-size:13px;color:#344054;margin-bottom:7px}
+.jobExplorerV3 .candidateBullets{margin:0;padding-left:19px;font-size:13px;line-height:1.7;white-space:pre-line;word-break:keep-all;overflow-wrap:anywhere}
+.jobExplorerV3 .candidateBullets li+li{margin-top:5px}
+.jobExplorerV3 .candidateMissing{margin:0;color:#946200;font-size:12px;line-height:1.6}
+.jobExplorerV3 .candidateEvidenceGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.jobExplorerV3 .targetRow select{max-width:100%;width:100%;min-width:0;text-overflow:ellipsis}
+@media(max-width:700px){
+.jobExplorerV3 .candidateEvidenceGrid{grid-template-columns:minmax(0,1fr)}
+.jobExplorerV3 .candidateCard .listHead{flex-direction:column}
+.jobExplorerV3 .candidateCard .compactActions{align-self:flex-end}
+.jobExplorerV3 .candidateCard .candidateField{margin-top:9px}
+}
+@media(max-width:460px){.choiceTiles,.evidenceGrid{grid-template-columns:1fr}}
 </style>`}
