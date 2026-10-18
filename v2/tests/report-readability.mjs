@@ -27,7 +27,7 @@ assert.match(root.innerHTML,/<div class="reportTable jobAnalysisReport"/);
 assert.match(root.innerHTML,/<strong>캠페인 운영:<\/strong>/);
 assert.match(root.innerHTML,/<strong>SNS·채널 관리:<\/strong>/);
 assert.match(root.innerHTML,/<strong>고객:<\/strong>/);
-assert.match(root.innerHTML,/행사 운영:.*?행사 홍보/);
+assert.match(root.innerHTML,/<strong>캠페인 운영:<\/strong>\s*<span>행사 홍보<\/span>/);
 assert.match(root.innerHTML,/data-label="확인된 나의 근거"/);
 assert.match(root.innerHTML,/\.jobAnalysisReport \.tr\{grid-template-columns:minmax\(0,1fr\)\}/);
 assert.match(root.innerHTML,/\.evidenceReportTable \.tr\.th\{display:none\}/);
