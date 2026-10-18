@@ -29,7 +29,7 @@ assert.match(root.innerHTML,/<strong>SNS·채널 관리:<\/strong>/);
 assert.match(root.innerHTML,/<strong>고객:<\/strong>/);
 assert.match(root.innerHTML,/<strong>캠페인 운영:<\/strong>\s*<span>행사 홍보<\/span>/);
 assert.match(root.innerHTML,/data-label="확인된 나의 근거"/);
-assert.match(root.innerHTML,/\.jobAnalysisReport \.tr\{grid-template-columns:minmax\(0,1fr\)\}/);
+assert.match(root.innerHTML,/\.reportTable \.tr\{grid-template-columns:minmax\(0,1fr\)\}/);
 assert.match(root.innerHTML,/\.evidenceReportTable \.tr\.th\{display:none\}/);
 
 state.assessments.experienceCompetency.experiences=[];state.assessments.careerDNA={};await render(ctx);assert.match(root.innerHTML,/확인된 행동이 없습니다/);assert.doesNotMatch(root.innerHTML,/안전\/안정성 추구형/);console.log('PASS report readability: ranked rows, sentence lists, actual competency evidence, no truncation, no state mutation, empty inputs');
