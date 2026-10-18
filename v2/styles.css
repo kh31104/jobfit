@@ -11,3 +11,23 @@
 
 @media(max-width:940px){.shell{grid-template-columns:1fr}.side{position:static}.sideCard{display:flex;overflow:auto;gap:6px;padding:9px}.sideTitle{display:none}.stepBtn{min-width:160px}.grid4{grid-template-columns:1fr 1fr}}
 @media(max-width:650px){.jobfitAccordionToolbar{align-items:flex-start;flex-direction:column}.jobfitAccordionToolbar>div{width:100%}.jobfitAccordionToolbar .btn{flex:1}.jobfitAccordionBlock{padding:0 11px}.wrap{padding:10px 10px 60px}.topbar{padding:0 4px;align-items:flex-start}.topActions{justify-content:flex-end;flex-wrap:wrap}.topActions .btn{padding:9px 10px}.saveState{display:none}.hero{border-radius:22px;padding:23px 20px}.hero:after{font-size:62px}.card{padding:17px;border-radius:18px}.grid2,.grid3,.grid4,.modeGrid,.choiceGrid,.resultGrid{grid-template-columns:1fr}.sectionHead{flex-direction:column}.sectionHead h2{font-size:24px}.codeBox{align-items:flex-start;flex-direction:column}.anonCode{font-size:19px}.metricGrid{grid-template-columns:1fr 1fr}.listHead{flex-direction:column}.scoreChip{align-self:flex-start}}
+
+
+/* STEP 1~5 결과 표시: 원문·입력값·저장 키는 수정하지 않고 줄바꿈만 보완 */
+#stepRoot .summaryBox,#stepRoot .resultCard,#stepRoot .listCard,#stepRoot .miniCard{
+  min-width:0;overflow-wrap:anywhere;word-break:keep-all;
+}
+#stepRoot .summaryBox p,#stepRoot .resultCard p,#stepRoot .listCard p{
+  line-height:1.75;white-space:pre-line;overflow-wrap:anywhere;word-break:keep-all;
+}
+#stepRoot .summaryBox li,#stepRoot .resultCard li,#stepRoot .listCard li{
+  line-height:1.75;overflow-wrap:anywhere;word-break:keep-all;
+}
+#stepRoot .summaryBox li+li,#stepRoot .resultCard li+li,#stepRoot .listCard li+li{margin-top:7px}
+#stepRoot .resultGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+#stepRoot .miniCard span{overflow-wrap:anywhere;word-break:keep-all;line-height:1.7}
+@media(max-width:650px){
+  #stepRoot .resultGrid{grid-template-columns:minmax(0,1fr)}
+  #stepRoot .summaryBox,#stepRoot .resultCard,#stepRoot .listCard{padding:14px}
+  #stepRoot .summaryBox p,#stepRoot .resultCard p,#stepRoot .listCard p{font-size:13.5px}
+}
