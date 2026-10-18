@@ -33,7 +33,7 @@ async function run(name,viewport){
 
     await page.locator('#makeCodeBtn').click();const code=(await page.locator('#anonCode').textContent()||'').trim();assert(/^JF26-[A-Z2-9]{6}$/.test(code),'Anonymous code creation changed');
     for(let step=0;step<=11;step++){
-      await page.locator(`.stepBtn[data-step="${step}"]`).click();await page.waitForTimeout(70);
+      await page.locator(`.stepBtn[data-step="${step}"]`).click();await page.locator('#stepRoot h2').first().waitFor({state:'visible',timeout:15000});
       const body=(await page.locator('#stepRoot').textContent())||'';
       const headingCount=await page.locator('#stepRoot h2').count();
       if(!headingCount)throw new Error(`STEP ${step} heading missing · BODY: ${body.slice(0,500)} · ERRORS: ${errors.slice(-3).join(' | ')}`);

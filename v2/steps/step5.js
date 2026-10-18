@@ -89,9 +89,36 @@ function rMini(title,body){return `<div class="reportMini"><h3>${escSimple(title
 function targetText(targets,ctx){if(!targets.length)return '<p>STEP 4에서 직무 × 산업 Target을 선택하세요.</p>';return targets.slice(0,3).map((t,i)=>`<p><b>${i+1}${i===2?' 예비':'순위'}</b> ${esc(t.industry||'산업 미정',ctx)} × ${esc(t.job?.title||'직무',ctx)}</p>`).join('')}
 function jdBasisText(a,ctx){const selected=(a.sources||[]).find(x=>x.id===a.selectedSourceId)||(a.sources||[])[0];if(!selected)return '<p>STEP 5에서 분석 기준 JD를 선택하세요.</p>';const company=selected.companyName||a.company?.name||'기업 미입력';return `<p><b>기업</b> ${esc(company,ctx)} · <b>직무</b> ${esc(a.jobTitle||'직무 미입력',ctx)}</p><p><b>공고</b> ${esc(selected.name||'공고명 미입력',ctx)} · <b>확인일</b> ${esc(selected.checkedAt||'미입력',ctx)}</p>`}
 function jobAnalysisText(a,ctx){const jt=a.jobTable||{},tasks=(a.tasks||[]).slice(0,5).map(x=>x.name).filter(Boolean);const taskText=jt.tasks||tasks.join(' · ')||a.newHireWork||'STEP 5에서 실제 직무분석을 완료하세요.';return `<p><b>주요 과업</b> ${esc(taskText,ctx)}</p><p><b>필요역량</b> ${esc(jt.competencies||a.skills||a.knowledge||'확인 필요',ctx)}</p>`}
-function jobAnalysisReportTable(a,ctx){const jt=a.jobTable||{};const legacyTasks=(a.tasks||[]).slice(0,5).map(x=>x.name).filter(Boolean).join(' · ');const rows=[['고객(KPI)',jt.customerKpi||'확인 필요'],['주요 과업',jt.tasks||legacyTasks||a.newHireWork||'확인 필요'],['주요 해결과제',jt.challenge||'확인 필요'],['해결방법',jt.method||'확인 필요'],['필요역량',jt.competencies||[a.knowledge,a.skills,a.behaviors].filter(Boolean).join(' / ')||'확인 필요']];return `<div class="reportTable jobAnalysisReport">${rows.map(([k,v])=>`<div class="tr"><div><b>${esc(k,ctx)}</b></div><div>${listHtml(v,ctx)}</div></div>`).join('')}</div>${jt.careerPlan?rBox('경력개발 · 선택',`<p>${esc(jt.careerPlan,ctx)}</p>`,'blue'):''}`}
+function jobAnalysisReportTable(a,ctx){
+  const jt=a.jobTable||{};
+  const legacyTasks=(a.tasks||[]).slice(0,5).map(x=>x.name).filter(Boolean).join(' · ');
+  const rows=[
+    ['고객(KPI)',jt.customerKpi||'확인 필요'],
+    ['주요 과업',jt.tasks||legacyTasks||a.newHireWork||'확인 필요'],
+    ['주요 해결과제',jt.challenge||'확인 필요'],
+    ['해결방법',jt.method||'확인 필요'],
+    ['필요역량',jt.competencies||[a.knowledge,a.skills,a.behaviors].filter(Boolean).join(' / ')||'확인 필요']
+  ];
+  return '<div class="reportTable jobAnalysisReport" aria-label="직무분석 핵심 5개 항목">'
+    +rows.map(([k,v])=>'<div class="tr"><div class="jobAnalysisLabel"><b>'+esc(k,ctx)+'</b></div><div class="jobAnalysisValue">'+jobAnalysisListHtml(v,ctx)+'</div></div>').join('')
+    +'</div>'+(jt.careerPlan?rBox('경력개발 · 선택',listHtml(jt.careerPlan,ctx),'blue'):'');
+}
+function jobAnalysisListHtml(value,ctx){
+  const items=reportItems(value);
+  if(!items.length)return '<p>확인 필요</p>';
+  return '<ul class="reportList analysisDetailList">'+items.map(item=>{
+    const labeled=item.match(/^([^:：\n]{1,24})[:：]\s*(.+)$/u);
+    return '<li>'+(labeled?'<strong>'+esc(labeled[1],ctx)+':</strong> <span>'+esc(labeled[2],ctx)+'</span>':esc(item,ctx))+'</li>';
+  }).join('')+'</ul>';
+}
 function specText(r,ctx){const s=r.studentSpec||{};return `<p><b>전공</b> ${esc(r.major||'미입력',ctx)}</p><p><b>자격증</b> ${esc(s.certificates||'미입력',ctx)}</p><p><b>어학</b> ${esc(s.language||'미입력',ctx)}</p><p><b>도구·기술</b> ${esc(s.tools||'미입력',ctx)}</p>${s.portfolio?`<p><b>추가 프로젝트</b> ${esc(s.portfolio,ctx)}</p>`:''}`}
-function evidenceTable(reqs,ctx){const rows=(reqs||[]).filter(r=>String(r.evidence||'').trim()).slice(0,5);if(!rows.length)return '';return `<div class="reportTable"><div class="tr th"><div>직무에서 필요한 것</div><div>확인된 나의 근거</div><div>현재 상태</div></div>${rows.map(r=>`<div class="tr"><div>${esc(r.name,ctx)}</div><div>${listHtml(r.evidence,ctx)}</div><div><b class="${statusTone(r.status)}">${esc(r.status||'확인 필요',ctx)}</b></div></div>`).join('')}</div>`}
+function evidenceTable(reqs,ctx){
+  const rows=(reqs||[]).filter(r=>String(r.evidence||'').trim()).slice(0,5);
+  if(!rows.length)return '';
+  return '<div class="reportTable evidenceReportTable"><div class="tr th"><div>직무에서 필요한 것</div><div>확인된 나의 근거</div><div>현재 상태</div></div>'
+    +rows.map(r=>'<div class="tr"><div data-label="직무에서 필요한 것">'+esc(r.name,ctx)+'</div><div data-label="확인된 나의 근거">'+listHtml(r.evidence,ctx)+'</div><div data-label="현재 상태"><b class="'+statusTone(r.status)+'">'+esc(r.status||'확인 필요',ctx)+'</b></div></div>').join('')
+    +'</div>';
+}
 function statusTone(s=''){return s==='근거 있음'?'ok':s==='일부 근거 있음'?'partial':'need'}
 function getTargets(explorer){const combos=Array.isArray(explorer.targetCombos)&&explorer.targetCombos.length?explorer.targetCombos:(explorer.targets||[]).map((jobId,i)=>({id:`target_${jobId}_${i+1}`,jobId,industry:'산업 미정',priority:i+1}));return combos.map(c=>({...c,job:explorer.candidates?.find(x=>x.id===c.jobId)})).filter(x=>x.job)}
 function makeToday(actions,targets,prepare,anchor=[],via=[]){const act=actions.length?`‘${shortAction(actions[0])}’처럼 실제로 한 행동 근거가 있다`:'현재까지의 경험 근거를 정리하고 있다';const ts=targets.slice(0,2).map(t=>`${t.industry} × ${t.job?.title||'직무'}`).join(', ');const tests=[anchor.length?`Career Anchor에서는 ${anchor.slice(0,2).map(x=>x.name).join('·')}`:'',via.length?`VIA에서는 ${via.slice(0,2).join('·')}`:''].filter(Boolean).join(', ');return `현재 나는 ${act}. ${tests?tests+'가 주요 자기이해 결과로 나타났다. ':''}${ts?`${ts}를 우선 탐색하고 있으며, `:''}${prepare?`${shortText(prepare,90)}은 앞으로 확인·준비할 항목이다.`:'다음 직무분석에서 부족한 부분을 더 확인할 예정이다.'}`}
@@ -99,7 +126,14 @@ function readinessHtml(s,ctx){const d=s.assessments?.careerDNA||{},ex=s.assessme
 function firstText(...values){for(const value of values){if(typeof value==='string'&&value.trim())return value.trim()}return ''}
 function careerAnchorStatus(anchor={}){const responses=Array.isArray(anchor?.responses)?anchor.responses:[],bonus=Array.isArray(anchor?.bonusItems)?anchor.bonusItems:[];const responseComplete=responses.length===40&&responses.every(v=>Number.isFinite(Number(v))&&Number(v)>=1&&Number(v)<=6);const complete=anchor?.complete===true||(responseComplete&&bonus.length===3);const started=complete||responses.some(v=>v!==null&&v!==undefined&&String(v)!=='')||(Array.isArray(anchor?.ranking)&&anchor.ranking.length>0)||Object.keys(anchor?.scores||{}).length>0;return{complete,started}}
 function anchorText(items,ctx,status={complete:false,started:false}){if(!status.complete)return `<p>${status.started?'검사 미완료':'Career Anchor 결과 미입력'}</p><p class="reportNote">검사를 완료한 경우에만 TOP 3를 표시합니다.</p>`;if(!items?.length)return '<p>Career Anchor 결과 확인 필요</p>';return '<ol class="reportList rankedList">'+items.map(x=>`<li>${esc(x.name,ctx)}${x.score!==null?` <b>${esc(String(x.score),ctx)}점</b>`:''}</li>`).join('')+'</ol><p class="reportNote">상위 결과를 직무추천의 단독 근거로 사용하지 않음</p>'}
-export function reportItems(value){const entries=Array.isArray(value)?value:[value];return entries.flatMap(v=>String(v??'').replace(/\r\n/g,'\n').split(/\n+|(?<=[.!?。])\s+(?=[^\d])/u)).map(x=>x.replace(/^\s*(?:[-•·]\s*|\d+[.)]\s+)/,'').trim()).filter(Boolean);}
+export function reportItems(value){
+  const entries=Array.isArray(value)?value:[value];
+  return entries.flatMap(v=>String(v??'')
+    .replace(/\r\n/g,'\n')
+    .split(/\n+|\s+\/\s+|;\s+(?=\S)|(?<=[.!?。])\s+(?=[^\d])/u))
+    .map(x=>x.replace(/^\s*(?:[-•·]\s*|\d+[.)]\s+)/,'').trim()).filter(Boolean);
+}
+
 function listHtml(value,ctx,empty='입력 없음',ordered=false){const items=reportItems(value);if(!items.length)return `<p>${esc(empty,ctx)}</p>`;const tag=ordered?'ol':'ul';return `<${tag} class="reportList">${items.map(x=>`<li>${esc(x,ctx)}</li>`).join('')}</${tag}>`;}
 function koreaDate(){const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()),g=t=>p.find(x=>x.type===t)?.value||'';return [g('year'),g('month'),g('day')].join('-')}
 function shortAction(x=''){return shortText(String(x).replace(/[.!?].*$/,''),45)}function shortText(x='',n=120){const s=String(x).trim().replace(/\s+/g,' ');return s.length>n?`${s.slice(0,n-1)}…`:s}
@@ -107,6 +141,44 @@ function esc(x,ctx){return ctx.escapeHtml(String(x??''))}function escSimple(x=''
 function styleBlock(){return `<style>
 .jobfitReportStage .moduleHead{display:flex;gap:11px;align-items:flex-start}.jobfitReportStage .moduleHead>span{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:#eef3ff;color:#3152c9;font-weight:950;flex:0 0 auto}.reportPreview{display:grid;gap:18px;margin-top:16px}.reportPage{position:relative;width:100%;max-width:794px;min-height:1123px;margin:0 auto;background:#fff;border:1px solid #e3e8f2;box-shadow:0 10px 28px rgba(30,55,105,.08);padding:48px 48px 54px;overflow:visible;display:flex;flex-direction:column}.reportBrand{display:inline-block;background:#315df4;color:#fff;border-radius:999px;padding:7px 16px;font-size:11px;font-weight:950}.reportKicker{margin-top:18px;color:#315df4;font-weight:900;font-size:11px}.reportPage h1{font-size:28px;margin:8px 0 14px}.reportRule{height:1px;background:#dbe2ec;margin-bottom:24px}.reportBox{border:1px solid #dfe6f2;border-radius:14px;padding:16px 18px;margin:13px 0;min-height:82px;position:relative}.reportBox:after{content:'';position:absolute;left:0;right:0;bottom:0;height:5px;border-radius:0 0 14px 14px;background:#315df4}.reportBox.green:after{background:#087a63}.reportBox h2{font-size:14px;margin:0 0 10px}.reportBox p{margin:5px 0;color:#667085;line-height:1.55;font-size:11px}.reportBox .reportNote{font-size:9.5px;color:#98a2b3}.reportGrid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.reportGrid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.reportMini{border:1px solid #dfe6f2;border-radius:14px;padding:14px;min-height:95px}.reportMini h3{font-size:13px;margin:0 0 9px}.reportMini p{font-size:10px;color:#667085;line-height:1.5}.reportTable{border:1px solid #dfe6f2;border-radius:14px;overflow:hidden;margin:13px 0}.reportTable .tr{display:grid;grid-template-columns:1.15fr 1.2fr .7fr;border-top:1px solid #e8edf5}.jobAnalysisReport .tr{grid-template-columns:.7fr 2fr}.reportTable .tr:first-child{border-top:0}.reportTable .tr>div{padding:12px;font-size:10.5px;color:#475467}.reportTable .th{background:#f8faff;font-weight:900}.reportTable .th>div{color:#172033}.reportTable .ok{color:#087a63}.reportTable .partial,.reportTable .need{color:#9a6700}.reportMeta{position:static;margin-top:auto;padding-top:20px;color:#667085;font-size:9px;display:flex;justify-content:space-between}.reportMeta span{margin-left:auto}.inlineBox{margin-top:0}.noReportPrint{display:flex}
 .reportList{margin:6px 0;padding-left:20px;color:#344054;font-size:12px;line-height:1.7}.reportList li{margin:5px 0;overflow-wrap:anywhere}.reportBox p{font-size:12px;color:#344054;white-space:pre-line;overflow-wrap:anywhere}.reportTable .tr>div{font-size:11.5px;white-space:pre-line;overflow-wrap:anywhere}.competencyEvidenceRow{padding:10px 0;border-top:1px solid #dfe6f2}.competencyEvidenceRow h3{font-size:13px;margin:0 0 6px}.reportBox,.reportMini{break-inside:avoid}.reportBrand{align-self:flex-start}
-@media(max-width:700px){.reportPage{padding:26px 22px 44px;aspect-ratio:auto;min-height:900px}.reportGrid2,.reportGrid3{grid-template-columns:1fr}.reportMeta{left:22px;right:22px}}
+
+/* STEP 6: 표시만 재배치하며 저장된 직무분석 원문은 변경하지 않는다. */
+.jobfitReportStage,.jobfitReportStage .reportPreview,.jobfitReportStage .reportPage,.jobfitReportStage .reportTable,.jobfitReportStage .reportBox{min-width:0}
+.jobAnalysisReport .tr{grid-template-columns:140px minmax(0,1fr)}
+.jobAnalysisReport .tr>.jobAnalysisLabel{display:flex;align-items:flex-start;background:#f8faff;padding:15px 13px}
+.jobAnalysisReport .tr>.jobAnalysisLabel b{font-size:12.5px;line-height:1.55;color:#344054;word-break:keep-all}
+.jobAnalysisReport .tr>.jobAnalysisValue{padding:13px 17px}
+.jobAnalysisReport .analysisDetailList{font-size:12.7px;line-height:1.7;margin:0;padding-left:19px;color:#26364b}
+.jobAnalysisReport .analysisDetailList li{margin:0;padding-left:3px;white-space:pre-wrap;overflow-wrap:anywhere;word-break:keep-all}
+.jobAnalysisReport .analysisDetailList li+li{margin-top:10px}
+.jobAnalysisReport .analysisDetailList strong{color:#253959;font-weight:850}
+.reportTable .tr>div{min-width:0}
+.reportTable .reportList{line-height:1.7}
+
+@media(max-width:700px){
+  .reportPage{padding:22px 15px 32px;aspect-ratio:auto;min-height:0}
+  .reportGrid2,.reportGrid3{grid-template-columns:minmax(0,1fr)}
+  .reportPage h1{font-size:clamp(22px,6vw,28px)}
+  .reportBox{padding:13px 14px}
+  .reportTable .tr{grid-template-columns:minmax(0,1fr)}
+  .jobAnalysisReport .tr>.jobAnalysisLabel{padding:10px 13px;border-bottom:1px solid #e8edf5}
+  .jobAnalysisReport .tr>.jobAnalysisValue{padding:12px 14px 15px}
+  .jobAnalysisReport .analysisDetailList{font-size:13.5px;line-height:1.75}
+  .jobAnalysisReport .analysisDetailList li+li{margin-top:12px}
+  .evidenceReportTable .tr.th{display:none}
+  .evidenceReportTable .tr>div{padding:10px 13px;font-size:13px;line-height:1.65}
+  .evidenceReportTable .tr>div+div{border-top:1px dashed #e8edf5}
+  .evidenceReportTable .tr>div[data-label]:before{content:attr(data-label);display:block;margin-bottom:5px;font-size:11px;font-weight:850;color:#667085}
+  .reportMeta{gap:8px;flex-wrap:wrap;line-height:1.5}
+  .reportMeta span{margin-left:0}
+}
 @media print{@page{size:A4;margin:14mm 14mm 16mm}body *{visibility:hidden!important}.jobfitReportStage,#jobfitReportPrint,#jobfitReportPrint *{visibility:visible!important}.jobfitReportStage{position:absolute!important;left:0!important;top:0!important;width:182mm!important;padding:0!important;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#fff!important}.jobfitReportStage>.sectionHead,.jobfitReportStage>.progress,.jobfitReportStage>.callout,.jobfitReportStage>.block:not(:last-child),.jobfitReportStage>.hr,.noReportPrint,.jobfitReportStage .status,.jobfitAccordionToolbar{display:none!important}.jobfitReportStage>.block:last-child{margin:0!important;padding:0!important}.jobfitReportStage>.block:last-child>.moduleHead{display:none!important}#jobfitReportPrint{display:block!important;width:182mm!important;margin:0!important;padding:0!important}.reportPage{width:182mm!important;height:auto!important;min-height:267mm!important;max-width:none!important;aspect-ratio:auto!important;border:0!important;box-shadow:none!important;margin:0!important;padding:0!important;break-inside:auto!important;page-break-inside:auto!important;break-after:page;page-break-after:always}.reportPage:last-child{break-after:auto;page-break-after:auto}.reportMeta{position:static!important}.reportBox{break-inside:avoid!important}.reportList li,.competencyEvidenceRow{break-inside:avoid}.reportPage h2,.reportPage h3{break-after:avoid}}
+@media print{
+  .jobAnalysisReport .tr{grid-template-columns:140px minmax(0,1fr)!important}
+  .evidenceReportTable .tr{grid-template-columns:1.15fr 1.2fr .7fr!important}
+  .evidenceReportTable .tr.th{display:grid!important}
+  .evidenceReportTable .tr>div[data-label]:before{content:none!important}
+  .evidenceReportTable .tr>div+div{border-top:0!important}
+  .reportPage{min-height:267mm!important}
+}
 </style>`}
