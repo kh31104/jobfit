@@ -15,12 +15,22 @@ export async function render(ctx){
   data.newInterests=Array.isArray(data.newInterests)?data.newInterests:[];
   data.industryInterests=Array.isArray(data.industryInterests)?data.industryInterests:[];
   data.targetCombos=Array.isArray(data.targetCombos)?data.targetCombos:legacyCombos(data);
+  // Recover only explicitly selected STEP 4 choices from the separate saved snapshot.
+  // Never infer choices from a target job or invent an industry.
+  const snapshot=s.artifacts?.jobExplorerChoiceSnapshot||{};
+  let restoredChoices=false;
+  for(const field of ['desiredActivities','industryInterests']){
+    if(!data[field].length&&Array.isArray(snapshot[field])&&snapshot[field].length){
+      data[field]=structuredClone(snapshot[field]);
+      restoredChoices=true;
+    }
+  }
   const repairedCandidates=data.candidates.map(normalizedCandidate);
   const needsRepair=repairedCandidates.some((j,i)=>j!==data.candidates[i]);
   if(needsRepair)data.candidates=repairedCandidates;
   const root=document.getElementById('stepRoot');
   const actions=confirmedActions(experienceMap);
-  let editingCandidateId='';
+  let editingCandidateId='',selectionChanged=false;
 
   root.innerHTML=`<section class="card jobExplorerV3">
     ${styleBlock()}
@@ -69,7 +79,7 @@ export async function render(ctx){
       <div class="actions"><button class="btn primary" id="saveTargets">Target Job 저장</button><button class="btn secondary" id="nextStep">STEP 5 실제 JD 확인 →</button></div>
       <div class="status" id="targetStatus"></div>`)}
   </section>`;
-  if(needsRepair)persist(false);
+  if(needsRepair||restoredChoices)persist(false);
   renderInterests();renderCandidates();renderCompare();renderTargets();bindChoices();
   document.getElementById('confirmSelf')?.addEventListener('click',()=>openBlock(1));
   document.getElementById('backStep2')?.addEventListener('click',()=>ctx.navigate(2));
@@ -87,7 +97,7 @@ export async function render(ctx){
     document.querySelectorAll('[data-choice="activity"]').forEach(el=>el.addEventListener('change',()=>{
       let chosen=checked('activity');
       if(chosen.length>5){el.checked=false;chosen=checked('activity');ctx.toast('하고 싶은 업무는 최대 5개까지 선택하세요.')}
-      data.desiredActivities=chosen;persist(false);refreshPrompt();
+      data.desiredActivities=chosen;selectionChanged=true;persist(false);refreshPrompt();
       const st=document.getElementById('activityStatus');if(st)st.textContent=data.desiredActivities.length<3?'3개 이상 선택하는 것을 권장합니다.':`${data.desiredActivities.length}개 선택됨`;
     }));
     document.querySelectorAll('[data-choice="industry"]').forEach(el=>el.addEventListener('change',()=>{
@@ -96,7 +106,7 @@ export async function render(ctx){
       if(el.checked&&el.value!==undecided){const u=document.querySelector('[data-choice="industry"][value="'+undecided+'"]');if(u)u.checked=false}
       let chosen=checked('industry');
       if(!chosen.includes(undecided)&&chosen.length>3){el.checked=false;chosen=checked('industry');ctx.toast('관심 산업은 최대 3개까지 선택하세요.')}
-      data.industryInterests=chosen;persist(false);refreshPrompt();renderTargets();
+      data.industryInterests=chosen;selectionChanged=true;persist(false);refreshPrompt();renderTargets();
     }));
   }
   function checked(type){return [...document.querySelectorAll(`[data-choice="${type}"]:checked`)].map(x=>x.value)}
@@ -159,7 +169,29 @@ export async function render(ctx){
     if(combos.length<1){status('targetStatus','STEP 5에서 확인할 Target Job을 1개 이상 선택하세요.');return false}
     data.targetCombos=combos.map((x,i)=>({...x,id:`target_${x.jobId}_${slug(x.industry)}_${i+1}`}));data.targets=[...new Set(combos.map(x=>x.jobId))];data.targetReason=v('targetReason');data.notes=data.targetReason;persist(true);status('targetStatus',`Target Job ${combos.length}개를 저장했습니다.`);return true;
   }
-  function persist(syncContext){data.version=VERSION;data.updatedAt=new Date().toISOString();const patch={jobExplorer:data};if(syncContext)patch.industryCompany=buildIndustryCompany(ctx.getState(),data);ctx.saveState({artifacts:patch});}
+  function persist(syncContext){
+    data.version=VERSION;data.updatedAt=new Date().toISOString();
+    const patch={jobExplorer:data};
+    // Keep a second copy of selections at the exact moment the learner changes them.
+    // Explicit de-selection is also recorded as [] to avoid resurrecting old choices.
+    if(selectionChanged){
+      patch.jobExplorerChoiceSnapshot={
+        desiredActivities:structuredClone(data.desiredActivities),
+        industryInterests:structuredClone(data.industryInterests),
+        updatedAt:data.updatedAt
+      };
+      selectionChanged=false;
+    }else if(!ctx.getState().artifacts?.jobExplorerChoiceSnapshot&&
+      (data.desiredActivities.length||data.industryInterests.length)){
+      patch.jobExplorerChoiceSnapshot={
+        desiredActivities:structuredClone(data.desiredActivities),
+        industryInterests:structuredClone(data.industryInterests),
+        updatedAt:data.updatedAt
+      };
+    }
+    if(syncContext)patch.industryCompany=buildIndustryCompany(ctx.getState(),data);
+    ctx.saveState({artifacts:patch});
+  }
   function refreshPrompt(){persist(false);const el=document.getElementById('jobPrompt');if(el)el.value=buildPrompt(ctx.getState(),data,experienceMap)}
   function v(id){return document.getElementById(id)?.value?.trim()||''}function set(id,val){const el=document.getElementById(id);if(el)el.value=val}function status(id,t){const el=document.getElementById(id);if(el)el.textContent=t;ctx.toast(t)}function openBlock(index){const blocks=[...root.querySelectorAll('.block')];window.JobfitStepAccordion?.openBlock?.(blocks[index])}
 }
