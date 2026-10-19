@@ -52,6 +52,14 @@ jobs:
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
         run: node v2/tests/inje-step-navigation.mjs
+      - name: Verify STEP5 AI previews on PC and mobile (student root)
+        env:
+          JOBFIT_TEST_URL: http://127.0.0.1:8765/
+        run: node v2/tests/inje-step5-preview-toggle.mjs
+      - name: Verify STEP5 AI previews on PC and mobile (v2)
+        env:
+          JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
+        run: node v2/tests/inje-step5-preview-toggle.mjs
       - name: Print local server errors if failed
         if: failure()
         run: cat /tmp/jobfit-mobile-server.log || true
@@ -88,6 +96,14 @@ jobs:
         env:
           JOBFIT_TEST_URL: https://kh31104.github.io/jobfit/v2/
         run: node v2/tests/inje-step-navigation.mjs
+      - name: Verify deployed STEP5 previews on PC and mobile (student root)
+        env:
+          JOBFIT_TEST_URL: https://kh31104.github.io/jobfit/
+        run: node v2/tests/inje-step5-preview-toggle.mjs
+      - name: Verify deployed STEP5 previews on PC and mobile (v2)
+        env:
+          JOBFIT_TEST_URL: https://kh31104.github.io/jobfit/v2/
+        run: node v2/tests/inje-step5-preview-toggle.mjs
       - name: Record production iOS Android verification on commit
         if: always()
         env:
