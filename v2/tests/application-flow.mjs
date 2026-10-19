@@ -83,7 +83,16 @@ await run('STEP 5 separates JD analysis, My Spec, and GAP Match',async page=>{
   assert(await page.locator('.jdSiteLink').count()===5,'STEP4 Find JD must expose five real recruitment-site links');
   const sites=(await page.locator('.jdSiteGrid').allTextContents()).join(' ');
   for(const name of ['사람인','잡코리아','고용24','잡알리오','클린아이 잡플러스'])assert(sites.includes(name),`STEP4 recruitment site missing: ${name}`);
-  assert(await page.locator('#jdSearchPrompt').isVisible(),'STEP4 AI job-posting search prompt must be immediately visible');
+  // STEP 5 uses accordion sections: the JD search prompt should become visible
+  // when its Find JD section is opened, not while an unrelated section is active.
+  if(!(await page.locator('#jdSearchPrompt').isVisible())){
+    await page.evaluate(()=>{
+      const heading=[...document.querySelectorAll('.jobAnalysisInje .moduleHead')]
+        .find(el=>el.textContent.includes('Find JD'));
+      if(heading)window.JobfitStepAccordion?.openBlock?.(heading.closest('.block'));
+    });
+  }
+  assert(await page.locator('#jdSearchPrompt').isVisible(),'STEP 5 Find JD prompt must be visible when its section is opened');
   const searchPrompt=await page.locator('#jdSearchPrompt').inputValue();
   assert(searchPrompt.includes('첫 줄부터 [공고 1]로 시작'),'STEP4 AI search prompt must use copy-friendly plain text');
   assert(searchPrompt.includes('표, JSON, 코드블록을 사용하지 않는다'),'STEP4 AI search prompt must forbid non-copy-friendly formats');
