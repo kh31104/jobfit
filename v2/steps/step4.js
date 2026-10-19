@@ -436,7 +436,7 @@ export function parseGapBullet(raw=''){
     const heading=line.replace(/^[\s>]*(?:#{1,6}\s*)?/,'')
       .replace(/^\s*(?:[①②③④]|[1-4][.)])\s*/,'')
       .replace(/[\\*_\x60]/g,'').trim()
-      .replace(/^[\[【［(]\s*/,'').replace(/\s*[\]】］)]\s*[:：]?\s*$/,'')
+      .replace(/^[\[【［]\s*/,'').replace(/\s*[\]】］]\s*[:：]?\s*$/,'')
       .replace(/\s*[:：]\s*$/,'').trim();
     let label='';
     if(/^내가\s*가진\s*것$/.test(heading))label='내가 가진 것';
