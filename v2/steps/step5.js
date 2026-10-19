@@ -1,3 +1,4 @@
+import {parseGapBullet} from './step4.js';
 const VERSION='my-jobfit-report-v1.1';
 
 export async function render(ctx){
@@ -57,14 +58,18 @@ export async function render(ctx){
   function saveMeta(show){const now=new Date().toISOString();ctx.saveState({artifacts:{jobfitReportV1:{version:VERSION,generatedAt:now,pageCount:3,sectionCount:3,paginationMode:'flow',targetCount:report.targets.length}}});if(show){const el=document.getElementById('status');if(el)el.textContent='보고서 내용을 갱신했습니다. PDF 저장 화면에서 “PDF로 저장”을 선택하세요.';}}
 }
 
-function buildReport(s,ctx){
+export function buildReport(s,ctx){
   const dna=s.assessments?.careerDNA||{},profile=s.artifacts?.careerDNAProfile||{},exp=s.assessments?.experienceCompetency||{experiences:[]},map=Array.isArray(s.artifacts?.experienceMap)?s.artifacts.experienceMap.filter(x=>x?.factChecked):[];
   const experiences=map.length?map:(exp.experiences||[]).filter(x=>x?.factChecked);
   const best3=exp.best3||{},repKey=exp.representativeKey||'',repSeed=repKey&&best3[repKey]?best3[repKey]:null;
   const best=(repSeed?.title?experiences.find(x=>x?.title===repSeed.title):null)||experiences[0]||repSeed||{};
   const explorer=s.artifacts?.jobExplorer||{},targets=getTargets(explorer),deep=s.artifacts?.jobDeepDive||{},targetAnalyses=deep.targetAnalyses||{};
-  const completedTarget=targets.find(t=>{const a=targetAnalyses[t.id]||deep.analyses?.[t.jobId]||{};const jt=a.jobTable||{};return [jt.customerKpi,jt.tasks,jt.challenge,jt.method,jt.competencies].some(v=>String(v||'').trim())||String(a.have||'').trim()||String(a.prepare||'').trim();});
-  const primary=completedTarget||targets[0],analysis=primary?(targetAnalyses[primary.id]||deep.analyses?.[primary.jobId]||{}):{};
+  const analysisFor=t=>targetAnalyses[t.id]||deep.analyses?.[t.jobId]||{};
+  const gapFor=a=>(a.requirements||[]).some(r=>String(r?.gap||'').trim()||r?.status==='준비 필요')||!!parseGapBullet(a.gapAiDraft||'').gaps.length;
+  const completedTarget=targets.find(t=>{const a=analysisFor(t),jt=a.jobTable||{};return [jt.customerKpi,jt.tasks,jt.challenge,jt.method,jt.competencies].some(v=>String(v||'').trim())||String(a.have||'').trim()||String(a.prepare||'').trim();});
+  const recentlySaved=targets.find(t=>t.id===deep.reportTargetId);
+  const primary=(recentlySaved&&gapFor(analysisFor(recentlySaved))?recentlySaved:null)||targets.find(t=>gapFor(analysisFor(t)))||recentlySaved||completedTarget||targets[0];
+  const analysis=primary?analysisFor(primary):{};
   const values=[...new Set(profile.valueClues||((dna.balance?.answers||[]).filter(Boolean).map(x=>x.value)))].slice(0,3);
   const anchorStatus=careerAnchorStatus(dna.careerAnchor);
   const anchorSource=anchorStatus.complete?(profile.careerAnchorTop||dna.careerAnchor?.ranking||[]):[];
@@ -83,15 +88,18 @@ function buildReport(s,ctx){
   const interests=Array.isArray(explorer.industryInterests)&&explorer.industryInterests.length
     ?explorer.industryInterests:choiceSnapshot.industryInterests||[];
   const desired=activities.slice(0,5),industries=interests.filter(x=>x!=='아직 잘 모르겠어요').slice(0,4);
-  const reqs=(analysis.requirements||[]).slice(0,5);
+  const allReqs=Array.isArray(analysis.requirements)?analysis.requirements:[];
+  const reqs=allReqs.filter(x=>!String(x.id||'').startsWith('gap_ai_')).slice(0,5);
+  const recoveredGap=parseGapBullet(analysis.gapAiDraft||'');
   const jobTable=analysis.jobTable||{};
   const studentSpec=analysis.studentSpec||{};
-  const have=(analysis.have||reqs.filter(x=>['근거 있음','일부 근거 있음'].includes(x.status)).map(x=>x.name).join(' · '));
-  const verify=analysis.verify||'';
-  const gaps=reqs.filter(x=>x.gap||x.status==='준비 필요').map(x=>x.gap||x.name).filter(Boolean).slice(0,3);
-  const prepare=(analysis.prepare||reqs.filter(x=>['준비 필요','확인 필요'].includes(x.status)).map(x=>x.name).join(' · '));
+  const have=analysis.have||recoveredGap.have||reqs.filter(x=>['근거 있음','일부 근거 있음'].includes(x.status)).map(x=>x.name).join(' · ');
+  const verify=analysis.verify||recoveredGap.verify||'';
+  const savedGaps=allReqs.filter(x=>x.gap||x.status==='준비 필요').map(x=>x.gap||x.name).filter(Boolean);
+  const gaps=(savedGaps.length?savedGaps:recoveredGap.gaps).slice(0,3);
+  const prepare=analysis.prepare||(recoveredGap.actions.length?recoveredGap.actions.join(' / '):reqs.filter(x=>['준비 필요','확인 필요'].includes(x.status)).map(x=>x.name).join(' · '));
   const todaySummary=makeToday(actions,targets,prepare,anchor,via);
-  const competencyDetails=competencies.map(keyword=>{const linked=experiences.filter(x=>(x.competencies||[]).includes(keyword)||(x.competencyEvidence||[]).some(e=>(e.label||e.keyword)===keyword&&(!e.status||e.status==='행동 확인')));const sources=linked.flatMap(x=>{const explicit=(x.competencyEvidence||[]).filter(e=>(e.label||e.keyword)===keyword&&(!e.status||e.status==='행동 확인')&&e.evidence).map(e=>e.evidence);return [{title:x.title,text:explicit.join('\n')||x.action||'',proof:x.evidence||''}]}).filter(x=>x.text);return {keyword,sources};});
+  const competencyDetails=competencies.map(keyword=>{const linked=experiences.filter(x=>(x.competencies||[]).includes(keyword)||(x.competencyEvidence||[]).some(e=>(e.label||e.keyword)===keyword&&(!e.status||e.status==='행동 확인')));const sources=linked.flatMap(x=>{const explicit=(x.competencyEvidence||[]).filter(e=>(e.label||e.keyword)===keyword&&(!e.status||e.status==='행동 확인')&&e.evidence).map(e=>e.evidence);return [{title:x.title,text:explicit.join('\n')||x.action||'',proof:x.evidence||'',sharedAction:!explicit.length}]}).filter(x=>x.text);return {keyword,sources};});
   return {competencyDetails,experiences,code:s.profile?.anonCode||'—',major:s.profile?.major||'미입력',date:koreaDate(),careerText,values,anchor,anchorStatus,selfStrengths,via,best,competencies,actions,desired,industries,targets,analysis,jobTable,studentSpec,reqs,have,verify,gaps,prepare,todaySummary};
 }
 function reportHtml(r,ctx){return `
@@ -101,7 +109,7 @@ function reportHtml(r,ctx){return `
     <div class="reportGrid2">${rBox('CAREER ANCHOR · TOP 3',anchorText(r.anchor,ctx,r.anchorStatus),'blue',true)}${rBox('VIA 성격강점 · TOP 5',`${listHtml(r.via,ctx,'VIA 결과 미입력',true)}<p class="reportNote">자기이해 보조정보로 사용</p>`,'green',true)}</div>
     ${rBox('MY BEST EXPERIENCE',r.best?.title?`<p><b>${esc(r.best.title,ctx)}</b></p>${listHtml(r.best.action||r.best.summary||'',ctx,'핵심 행동 미입력')}${r.best.result?`<p><b>결과</b></p>${listHtml(r.best.result,ctx)}`:''}${r.best.evidence?`<p><b>확인 자료</b></p>${listHtml(r.best.evidence,ctx)}`:''}`:'<p>STEP 3에서 Best Experience를 확인하세요.</p>','green')}
     ${rBox('EXPERIENCE DNA',`${r.experiences.filter(x=>x.action).length?r.experiences.filter(x=>x.action).map(x=>`<p><b>${esc(x.title||'경험',ctx)}</b></p>${listHtml(x.action,ctx)}`).join(''):'<p>확인된 행동이 없습니다.</p>'}<p class="reportNote">입력한 행동을 정리한 목록입니다. 반복 여부나 역량 수준을 자동 판정하지 않습니다.</p>`,'blue')}
-    ${rBox('역량별 행동 근거',r.competencyDetails.length?r.competencyDetails.map(x=>`<div class="competencyEvidenceRow"><h3>${esc(x.keyword,ctx)}</h3>${x.sources.length?x.sources.map(src=>`<p class="reportNote">관련 경험: ${esc(src.title,ctx)}</p>${listHtml(src.text,ctx)}${src.proof?`<p><b>확인 자료</b> ${esc(src.proof,ctx)}</p>`:''}`).join(''):'<p>역량명은 저장되어 있지만 연결된 행동 근거는 확인되지 않았습니다.</p>'}</div>`).join(''):'<p>확인된 역량 없음</p>','green')}
+    ${rBox('역량별 행동 근거',r.competencyDetails.length?r.competencyDetails.map(x=>`<div class="competencyEvidenceRow"><h3>${esc(x.keyword,ctx)}</h3>${x.sources.length?x.sources.map(src=>`<p class="reportNote">관련 경험: ${esc(src.title,ctx)}${src.sharedAction?' · 해당 경험의 공통 행동':''}</p>${listHtml(src.text,ctx)}${src.proof?`<p><b>확인 자료</b> ${esc(src.proof,ctx)}</p>`:''}`).join(''):'<p>역량명은 저장되어 있지만 연결된 행동 근거는 확인되지 않았습니다.</p>'}</div>`).join(''):'<p>확인된 역량 없음</p>','green')}
     ${pageFoot(r,1)}
   </section>
 
@@ -163,7 +171,7 @@ function evidenceTable(reqs,ctx){
 function statusTone(s=''){return s==='근거 있음'?'ok':s==='일부 근거 있음'?'partial':'need'}
 function getTargets(explorer){const combos=Array.isArray(explorer.targetCombos)&&explorer.targetCombos.length?explorer.targetCombos:(explorer.targets||[]).map((jobId,i)=>({id:`target_${jobId}_${i+1}`,jobId,industry:'산업 미정',priority:i+1}));return combos.map(c=>({...c,job:explorer.candidates?.find(x=>x.id===c.jobId)})).filter(x=>x.job)}
 function makeToday(actions,targets,prepare,anchor=[],via=[]){const act=actions.length?`‘${shortAction(actions[0])}’처럼 실제로 한 행동 근거가 있다`:'현재까지의 경험 근거를 정리하고 있다';const ts=targets.slice(0,2).map(t=>`${t.industry} × ${t.job?.title||'직무'}`).join(', ');const tests=[anchor.length?`Career Anchor에서는 ${anchor.slice(0,2).map(x=>x.name).join('·')}`:'',via.length?`VIA에서는 ${via.slice(0,2).join('·')}`:''].filter(Boolean).join(', ');return `현재 나는 ${act}. ${tests?tests+'가 주요 자기이해 결과로 나타났다. ':''}${ts?`${ts}를 우선 탐색하고 있으며, `:''}${prepare?`${shortText(prepare,90)}은 앞으로 확인·준비할 항목이다.`:'다음 직무분석에서 부족한 부분을 더 확인할 예정이다.'}`}
-function readinessHtml(s,ctx){const d=s.assessments?.careerDNA||{},ex=s.assessments?.experienceCompetency?.experiences||[],j=s.artifacts?.jobExplorer||{},deep=s.artifacts?.jobDeepDive||{},analyses=Object.values(deep.targetAnalyses||deep.analyses||{}),jobReady=analyses.some(a=>{const t=a?.jobTable||{};return [t.customerKpi,t.tasks,t.challenge,t.method,t.competencies].every(v=>String(v||'').trim())}),gapReady=analyses.some(a=>String(a?.have||'').trim()||String(a?.prepare||'').trim()||(a?.requirements||[]).some(r=>r?.gap));const rows=[['Career DNA',!!(d.hypothesis||d.reflection||d.selfStrengths?.length||d.careerAnchor?.ranking?.length||d.viaTop5?.length)],['Experience & Competency',ex.some(x=>x?.factChecked&&String(x.action||'').trim())],['Job Exploration',!!(j.targetCombos?.length||j.targets?.length)],['Job Analysis',jobReady],['GAP Match',gapReady]];return `<div class="grid4">${rows.map(([name,on])=>`<div class="miniCard"><b>${on?'✓':'○'} ${esc(name,ctx)}</b><span>${on?'보고서에 반영 가능':'입력된 내용만 반영'}</span></div>`).join('')}</div>`}
+function readinessHtml(s,ctx){const d=s.assessments?.careerDNA||{},ex=s.assessments?.experienceCompetency?.experiences||[],j=s.artifacts?.jobExplorer||{},deep=s.artifacts?.jobDeepDive||{},analyses=Object.values(deep.targetAnalyses||deep.analyses||{}),jobReady=analyses.some(a=>{const t=a?.jobTable||{};return [t.customerKpi,t.tasks,t.challenge,t.method,t.competencies].every(v=>String(v||'').trim())}),gapReady=analyses.some(a=>String(a?.have||'').trim()||String(a?.prepare||'').trim()||(a?.requirements||[]).some(r=>r?.gap)||!!parseGapBullet(a?.gapAiDraft||'').gaps.length);const rows=[['Career DNA',!!(d.hypothesis||d.reflection||d.selfStrengths?.length||d.careerAnchor?.ranking?.length||d.viaTop5?.length)],['Experience & Competency',ex.some(x=>x?.factChecked&&String(x.action||'').trim())],['Job Exploration',!!(j.targetCombos?.length||j.targets?.length)],['Job Analysis',jobReady],['GAP Match',gapReady]];return `<div class="grid4">${rows.map(([name,on])=>`<div class="miniCard"><b>${on?'✓':'○'} ${esc(name,ctx)}</b><span>${on?'보고서에 반영 가능':'입력된 내용만 반영'}</span></div>`).join('')}</div>`}
 function firstText(...values){for(const value of values){if(typeof value==='string'&&value.trim())return value.trim()}return ''}
 function careerAnchorStatus(anchor={}){const responses=Array.isArray(anchor?.responses)?anchor.responses:[],bonus=Array.isArray(anchor?.bonusItems)?anchor.bonusItems:[];const responseComplete=responses.length===40&&responses.every(v=>Number.isFinite(Number(v))&&Number(v)>=1&&Number(v)<=6);const complete=anchor?.complete===true||(responseComplete&&bonus.length===3);const started=complete||responses.some(v=>v!==null&&v!==undefined&&String(v)!=='')||(Array.isArray(anchor?.ranking)&&anchor.ranking.length>0)||Object.keys(anchor?.scores||{}).length>0;return{complete,started}}
 function anchorText(items,ctx,status={complete:false,started:false}){if(!status.complete)return `<p>${status.started?'검사 미완료':'Career Anchor 결과 미입력'}</p><p class="reportNote">검사를 완료한 경우에만 TOP 3를 표시합니다.</p>`;if(!items?.length)return '<p>Career Anchor 결과 확인 필요</p>';return '<ol class="reportList rankedList">'+items.map(x=>`<li>${esc(x.name,ctx)}${x.score!==null?` <b>${esc(String(x.score),ctx)}점</b>`:''}</li>`).join('')+'</ol><p class="reportNote">상위 결과를 직무추천의 단독 근거로 사용하지 않음</p>'}
