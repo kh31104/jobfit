@@ -66,4 +66,4 @@ export async function saveReportPdf(source){
 }
 
 // Start loading while the student reviews the report, before tapping the download button.
-if(typeof document!=='undefined')loadEngine().catch(()=>{});
+if(typeof window!=='undefined'&&typeof document!=='undefined')loadEngine().catch(()=>{});
