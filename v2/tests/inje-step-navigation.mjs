@@ -38,11 +38,15 @@ function stateFor({jd=true,draft=''}={}){
 }
 function originalFields(s){
   return {
-    profile:s.profile,
+    profile:{anonCode:s.profile.anonCode,courseCode:s.profile.courseCode,major:s.profile.major},
     careerDNA:s.assessments.careerDNA,
     experiences:s.assessments.experienceCompetency.experiences,
     explorer:s.artifacts.jobExplorer,
-    targetAnalysis:s.artifacts.jobDeepDive.targetAnalyses['target-j1'],
+    targetAnalysis:(a=>{
+      // Only learner-authored fields; system-generated timestamps/analysis pointers may be added.
+      return {sources:a.sources,selectedSourceId:a.selectedSourceId,jobTable:a.jobTable,
+        studentSpec:a.studentSpec,requirements:a.requirements,gapAiDraft:a.gapAiDraft};
+    })(s.artifacts.jobDeepDive.targetAnalyses['target-j1']),
     assets:s.artifacts.careerAssets,
     jdAnalyzer:s.artifacts.jdAnalyzer
   };
