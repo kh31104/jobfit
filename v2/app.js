@@ -73,7 +73,34 @@ function makeAnonCode(){
 function backupFileName(){return `jobfit-${state.profile.anonCode||'mydata'}-${new Date().toISOString().slice(0,10)}.json`}
 function makeBackupFile(){const exportedAt=new Date().toISOString(),backup=structuredClone(state);backup.meta=backup.meta||{};backup.meta.backupExportedAt=exportedAt;return {file:new File([JSON.stringify(backup,null,2)],backupFileName(),{type:'application/json'}),exportedAt}}
 function markBackup(method,exportedAt){saveState({meta:{lastBackupAt:exportedAt,lastBackupMethod:method,backupConfirmed:false,backupConfirmedAt:null}})}
-function downloadJSON(){const {file,exportedAt}=makeBackupFile(),a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500);markBackup('download',exportedAt);toast('백업파일을 저장했습니다. 이메일·카카오톡·클라우드에도 보관하세요.');return file.name}
+function requestBackupDownload(file,exportedAt){
+  // iOS and Android may ignore clicks on detached links or lose URLs revoked too early.
+  const url=URL.createObjectURL(file),a=document.createElement('a');
+  a.href=url;a.download=file.name;a.style.display='none';
+  document.body.appendChild(a);
+  try{a.click()}finally{a.remove();setTimeout(()=>URL.revokeObjectURL(url),120000)}
+  markBackup('download',exportedAt);
+  toast('백업파일 저장을 요청했습니다. 휴대폰 다운로드/파일 앱에서 파일을 확인하세요.');
+  return file.name;
+}
+function downloadJSON(){
+  const {file,exportedAt}=makeBackupFile();
+  const mobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    ||(navigator.maxTouchPoints>1&&window.innerWidth<800);
+  // Native file-sharing is the most reliable Save to Files path on supported phones.
+  // Call navigator.share immediately from the tap, without prior awaits.
+  if(mobile&&navigator.share&&navigator.canShare?.({files:[file]})){
+    navigator.share({title:'Jobfit 학습 백업',text:'Jobfit JSON 백업을 파일 앱 또는 개인 저장소에 보관하세요.',files:[file]})
+      .then(()=>{markBackup('native-share',exportedAt);toast('백업 공유를 완료했습니다. 선택한 저장 위치에서 파일을 확인하세요.')})
+      .catch(error=>{
+        if(error?.name==='AbortError'){toast('백업 공유를 취소했습니다. 다시 눌러 저장할 수 있습니다.');return}
+        console.warn('Jobfit native backup share:',error);
+        requestBackupDownload(file,exportedAt);
+      });
+    return file.name;
+  }
+  return requestBackupDownload(file,exportedAt);
+}
 function downloadResearchJSON(){
   if(!state.profile?.anonCode){toast('익명코드를 먼저 생성해 주세요.');return null}
   const completedSteps=STEPS.map((_,i)=>i).filter(i=>isStepComplete(i,state));
@@ -184,7 +211,7 @@ function installStepAccordion(root,step){
   stepAccordionObserver=new MutationObserver(()=>prepare());
   stepAccordionObserver.observe(section,{childList:true,subtree:true});
 }
-async function navigate(step,{skipSave=false}={}){state.activeStep=resolveNavigationStep(step);if(!skipSave)saveState();else{renderHeroMeta();renderNav()}const root=document.getElementById('stepRoot');root.innerHTML='<div class="card placeholder"><b>불러오는 중</b>선택한 모듈을 준비하고 있습니다.</div>';try{const physical=moduleStepFor(state.activeStep);const stepModule=state.mode==='selective'&&state.activeStep===5?'./steps/step5IndustryCompany.js?v=1':IS_INJE_FULL&&state.activeStep===6?'./steps/step6IndustryCompany.js?v=2':`./steps/step${physical}.js?v=${physical===2?31:physical===3?32:physical===4?33:physical===5?31:[9,10,11,12,13].includes(physical)?34:30}`;const mod=await import(stepModule);root.innerHTML='';const moduleContext=IS_INJE_FULL?{...context,navigate:(requested,opts)=>navigate(logicalStepFromModule(requested),opts),displayStep:state.activeStep}:context;await mod.render(moduleContext);const kicker=root.querySelector('.kicker');if(kicker&&/^STEP\s*\d+/i.test(kicker.textContent||''))kicker.textContent=(kicker.textContent||'').replace(/^STEP\s*\d+/i,`STEP ${state.mode==='selective'?visibleStepIndexes().indexOf(state.activeStep)+1:state.activeStep+1}`);root.querySelectorAll('.badge').forEach(el=>{if(/주차/.test(el.textContent||''))el.remove()});neutralizeSelectiveLabels(root);installStepAccordion(root,state.activeStep)}catch(err){console.error(err);root.innerHTML=`<div class="card callout warn"><b>선택한 모듈 화면을 불러오지 못했습니다.</b><br>새로고침 후 다시 시도해 주세요.<br><small>${escapeHtml(err.message)}</small></div>`}scrollTo({top:0,behavior:'smooth'})}
+async function navigate(step,{skipSave=false}={}){state.activeStep=resolveNavigationStep(step);if(!skipSave)saveState();else{renderHeroMeta();renderNav()}const root=document.getElementById('stepRoot');root.innerHTML='<div class="card placeholder"><b>불러오는 중</b>선택한 모듈을 준비하고 있습니다.</div>';try{const physical=moduleStepFor(state.activeStep);const stepModule=state.mode==='selective'&&state.activeStep===5?'./steps/step5IndustryCompany.js?v=1':IS_INJE_FULL&&state.activeStep===6?'./steps/step6IndustryCompany.js?v=2':`./steps/step${physical}.js?v=${physical===2?31:physical===3?33:physical===4?34:physical===5?32:[9,10,11,12,13].includes(physical)?34:30}`;const mod=await import(stepModule);root.innerHTML='';const moduleContext=IS_INJE_FULL?{...context,navigate:(requested,opts)=>navigate(logicalStepFromModule(requested),opts),displayStep:state.activeStep}:context;await mod.render(moduleContext);const kicker=root.querySelector('.kicker');if(kicker&&/^STEP\s*\d+/i.test(kicker.textContent||''))kicker.textContent=(kicker.textContent||'').replace(/^STEP\s*\d+/i,`STEP ${state.mode==='selective'?visibleStepIndexes().indexOf(state.activeStep)+1:state.activeStep+1}`);root.querySelectorAll('.badge').forEach(el=>{if(/주차/.test(el.textContent||''))el.remove()});neutralizeSelectiveLabels(root);installStepAccordion(root,state.activeStep)}catch(err){console.error(err);root.innerHTML=`<div class="card callout warn"><b>선택한 모듈 화면을 불러오지 못했습니다.</b><br>새로고침 후 다시 시도해 주세요.<br><small>${escapeHtml(err.message)}</small></div>`}scrollTo({top:0,behavior:'smooth'})}
 
 const context={STEPS,getState,saveState,toast,escapeHtml,makeAnonCode,courseConfig,navigate,applyCourseCode,downloadJSON,downloadResearchJSON,shareBackup,researchSyncStatus,syncResearchData};
 document.getElementById('exportBtn').addEventListener('click',downloadJSON);document.getElementById('researchExportBtn')?.addEventListener('click',downloadResearchJSON);document.getElementById('importBtn').addEventListener('click',requestImport);document.getElementById('importFile').addEventListener('change',e=>importJSONFile(e.target.files?.[0]));renderHeroMeta();renderNav();navigate(state.activeStep||visibleStepIndexes()[0]||0);

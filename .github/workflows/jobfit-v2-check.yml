@@ -223,6 +223,8 @@ jobs:
           node v2/tests/career-dna-prompt-matrix.mjs
           node v2/tests/career-roadmap-week4.mjs
           node v2/tests/inje-step1-6-report-mobile.mjs
+          node v2/tests/inje-mobile-gap-save.mjs
+          node v2/tests/inje-mobile-choice-backup.mjs
           node v2/tests/inje-step7-12-readability.mjs
           node v2/tests/research-measures.mjs
           node v2/tests/relationship-smoke.mjs
@@ -238,6 +240,8 @@ jobs:
           node v2/tests/career-dna-prompt-matrix.mjs
           node v2/tests/career-roadmap-week4.mjs
           node v2/tests/inje-step1-6-report-mobile.mjs
+          node v2/tests/inje-mobile-gap-save.mjs
+          node v2/tests/inje-mobile-choice-backup.mjs
           node v2/tests/inje-step7-12-readability.mjs
           node v2/tests/research-measures.mjs
           node v2/tests/relationship-smoke.mjs

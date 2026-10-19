@@ -91,8 +91,8 @@ export async function render(ctx){
         <textarea id="deepPrompt" rows="16">${esc(buildPrompt(ctx.getState(),target,a),ctx)}</textarea>
         <div class="actions"><button class="btn secondary" id="refreshDeepPrompt">현재 JD·직무분석·내 스펙 반영</button><button class="btn primary" id="copyDeepPrompt" ${specReady(a)&&jobTableReady(a)?'':'disabled'}>AI GAP 분석 프롬프트 복사</button></div>
         <div class="callout info" style="margin-top:12px"><b>AI 답변 붙여넣기</b><br>아래 칸에는 AI가 작성한 짧은 개조식 결과만 붙여넣으세요.</div>
-        <textarea id="deepAiImport" rows="9" placeholder="[내가 가진 것]&#10;• ...&#10;[확인 필요]&#10;• ...&#10;[핵심 GAP]&#10;• GAP 1: ...&#10;[3개월 행동]&#10;• ..."></textarea><div id="gapAiLivePreview" class="readablePreview"></div>
-        <div class="actions"><button class="btn secondary" id="importDeepAi" ${specReady(a)&&jobTableReady(a)?'':'disabled'}>GAP 결과 반영</button></div>
+        <textarea id="deepAiImport" rows="9" placeholder="[내가 가진 것]&#10;• ...&#10;[확인 필요]&#10;• ...&#10;[핵심 GAP]&#10;• GAP 1: ...&#10;[3개월 행동]&#10;• ...">${esc(a.gapAiDraft||"",ctx)}</textarea><div id="gapAiLivePreview" class="readablePreview"></div>
+        <div class="actions"><button class="btn secondary" id="importDeepAi">GAP 결과 반영</button></div>
         <div id="gapSummary" style="margin-top:12px"></div>
         <div class="actions"><button class="btn primary" id="saveDeep">GAP Match 저장</button><button class="btn secondary" id="nextStep">STEP 6 MY JOBFIT REPORT v1 →</button></div>
         <div class="status" id="status"></div>`)}
@@ -108,22 +108,30 @@ export async function render(ctx){
     document.getElementById('copyJobAiPrompt')?.addEventListener('click',()=>copy(document.getElementById('jobAiPrompt')?.value||buildJobAnalysisPrompt(ctx.getState(),target,a),ctx));
     document.getElementById('applyJobAi')?.addEventListener('click',()=>applyJobAnalysis(target,a));
     document.getElementById('jobAiImport')?.addEventListener('input',()=>renderJobAiDraftPreview(a));
-    document.getElementById('deepAiImport')?.addEventListener('input',renderGapAiDraftPreview);
+    document.getElementById('deepAiImport')?.addEventListener('input',()=>{a.gapAiDraft=document.getElementById('deepAiImport')?.value||'';persist(target,a);renderGapAiDraftPreview()});
     ['jobCustomerKpi','jobTasks','jobChallenge','jobMethod','jobCompetencies','jobCareerPlan'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{captureJobTable(a);persist(target,a);renderJobTablePreview(a);refreshGapControls(target,a)}));
     ['specCertificates','specLanguage','specTools','specPortfolio'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{captureSpec(a);persist(target,a);refreshGapControls(target,a)}));
     document.getElementById('chosenSource')?.addEventListener('change',e=>{a.selectedSourceId=e.target.value;const chosen=(a.sources||[]).find(x=>x.id===a.selectedSourceId);if(chosen?.companyName)a.company={name:chosen.companyName,url:chosen.companyUrl||'',source:'기업 공식자료'};persist(target,a);renderChosen(a);const jp=document.getElementById('jobAiPrompt');if(jp)jp.value=buildJobAnalysisPrompt(ctx.getState(),target,a);refreshPrompt(target,a)});
     document.getElementById('refreshDeepPrompt')?.addEventListener('click',()=>refreshPrompt(target,a));
     document.getElementById('copyDeepPrompt')?.addEventListener('click',()=>{captureJobTable(a);captureSpec(a);if(!jobTableReady(a)){ctx.toast('직무분석표의 핵심 5개 항목을 먼저 확인하세요.');return}if(!specReady(a)){ctx.toast("자격증·어학·도구/기술을 먼저 확인하세요. 없으면 ‘없음’이라고 입력하세요.");return}refreshPrompt(target,a);copy(document.getElementById('deepPrompt').value,ctx)});
     document.getElementById('importDeepAi')?.addEventListener('click',()=>importDeepAi(target,a));
-    document.getElementById('saveDeep')?.addEventListener('click',()=>{capture(a);captureJobTable(a);captureSpec(a);persist(target,a,true);renderGap(a);ctx.toast('GAP Match를 저장했습니다.')});
+    document.getElementById('saveDeep')?.addEventListener('click',()=>{
+      capture(a);captureJobTable(a);captureSpec(a);
+      a.gapAiDraft=document.getElementById('deepAiImport')?.value||a.gapAiDraft||'';
+      const hasDraft=!!a.gapAiDraft.trim();
+      const applied=hasDraft?applyGapDraft(a,false):false;
+      persist(target,a,true);renderGap(a);
+      if(hasDraft&&!applied){announceGap('AI 답변 원문은 저장했습니다. 결과가 반영되지 않아 제목 형식을 확인해 주세요.');return}
+      announceGap(gapResultPresent(a)?'GAP Match를 저장했습니다.':'현재 입력을 저장했습니다. GAP 분석 결과를 붙여넣고 반영해 주세요.');
+    });
     document.getElementById('nextStep')?.addEventListener('click',()=>{
       capture(a);captureJobTable(a);captureSpec(a);
+      a.gapAiDraft=document.getElementById('deepAiImport')?.value||a.gapAiDraft||'';
+      if(a.gapAiDraft.trim())applyGapDraft(a,false);
       const selected=(a.sources||[]).find(x=>x.id===a.selectedSourceId);
       if(!selected){ctx.toast('STEP 6로 가기 전에 분석할 JD를 1개 선택해 주세요.');openAnalysisBlock('03');return}
-      if(!jobTableReady(a)){ctx.toast('직무분석표의 핵심 5개 항목을 먼저 완성해 주세요.');openAnalysisBlock('05');return}
-      if(!specReady(a)){ctx.toast("My Spec의 자격증·어학·도구/기술을 확인해 주세요. 없으면 ‘없음’이라고 입력하세요.");openAnalysisBlock('07');return}
-      const hasGap=!!(String(a.have||'').trim()||String(a.verify||'').trim()||String(a.prepare||'').trim()||(a.requirements||[]).some(r=>String(r?.gap||'').trim()));
-      if(!hasGap){ctx.toast('마지막으로 GAP Match 결과를 반영한 뒤 STEP 6로 이동해 주세요.');openAnalysisBlock('08');return}
+      // STEP 6 reports unfilled items as pending rather than inventing values.
+      if(!gapResultPresent(a)){persist(target,a);ctx.toast('마지막으로 GAP Match 결과를 반영한 뒤 STEP 6로 이동해 주세요.');openAnalysisBlock('08');return}
       persist(target,a,true);ctx.navigate(5)
     });
   }
@@ -164,20 +172,40 @@ export async function render(ctx){
     const ready=specReady(a)&&jobTableReady(a);
     const info=document.getElementById('specReady');
     if(info){info.className='callout '+(specReady(a)?'good':'warn');info.innerHTML=specReady(a)?'<b>GAP 분석 준비 완료</b><br>입력한 스펙과 STEP 3 경험만 사용합니다.':'<b>GAP 분석 전 확인 필요</b><br>자격증·어학·도구/기술을 모두 입력하세요. 해당 사항이 없으면 ‘없음’이라고 적으세요.'}
-    const copyBtn=document.getElementById('copyDeepPrompt'),importBtn=document.getElementById('importDeepAi');if(copyBtn)copyBtn.disabled=!ready;if(importBtn)importBtn.disabled=!ready;
+    const copyBtn=document.getElementById('copyDeepPrompt'),importBtn=document.getElementById('importDeepAi');if(copyBtn)copyBtn.disabled=!ready;if(importBtn)importBtn.disabled=false;
     const p=document.getElementById('deepPrompt');if(p)p.value=buildPrompt(ctx.getState(),target,a);
   }
 
+  function announceGap(message){const el=document.getElementById('status');if(el)el.textContent=message;ctx.toast(message)}
+  function gapResultPresent(a){return !!(String(a.have||'').trim()||String(a.verify||'').trim()||String(a.prepare||'').trim()||(a.requirements||[]).some(r=>String(r?.gap||'').trim()))}
+  function applyGapDraft(a,showError=true){
+    const raw=document.getElementById('deepAiImport')?.value||a.gapAiDraft||'';
+    if(!raw.trim()){if(showError)announceGap('AI GAP 분석 결과를 먼저 붙여넣어 주세요.');return false}
+    a.gapAiDraft=raw;
+    const x=parseGapBullet(raw);
+    if(!x.have&&!x.verify&&!x.gaps.length&&!x.actions.length){
+      if(showError)announceGap('GAP 결과 원문은 저장했습니다. [내가 가진 것] 등 4개 영역의 제목을 확인해 주세요.');
+      return false;
+    }
+    // Preserve all prior saved GAP content absent from the new AI answer.
+    if(x.have)a.have=x.have;
+    if(x.verify)a.verify=x.verify;
+    if(x.actions.length)a.prepare=x.actions.join(' / ');
+    if(x.gaps.length){
+      a.conclusion='핵심 GAP '+x.gaps.length+'개 확인';
+      const originalRequirements=(a.requirements||[]).filter(r=>!String(r?.id||'').startsWith('gap_ai_'));
+      a.requirements=[...originalRequirements,...x.gaps.map((g,i)=>({id:'gap_ai_'+i,name:g,type:'기타',status:'준비 필요',evidence:'',gap:g}))];
+    }
+    return true;
+  }
   function importDeepAi(target,a){
     captureJobTable(a);captureSpec(a);
-    if(!jobTableReady(a)){ctx.toast('직무분석표의 핵심 5개 항목을 먼저 확인하세요.');return}
-    if(!specReady(a)){ctx.toast("내 스펙을 먼저 확인하세요. 빈칸은 ‘없음’이 아니라 미확인입니다.");return}
-    const raw=v('deepAiImport');if(!raw){ctx.toast('AI GAP 분석 결과를 먼저 붙여넣어 주세요.');return}
-    const x=parseGapBullet(raw);
-    if(!x.have&&!x.verify&&!x.gaps.length&&!x.actions.length){ctx.toast('개조식 GAP 결과를 읽지 못했습니다. [내가 가진 것] 등 제목 형식을 확인해 주세요.');return}
-    a.have=x.have;a.verify=x.verify;a.prepare=x.actions.join(' / ');a.conclusion=x.gaps.length?'핵심 GAP '+x.gaps.length+'개 확인':'추가 확인 필요';
-    a.requirements=x.gaps.slice(0,3).map((g,i)=>({id:'gap_ai_'+Date.now()+'_'+i,name:g,type:'기타',status:'준비 필요',evidence:'',gap:g}));
-    persist(target,a,true);paint();ctx.toast('GAP 결과를 반영했습니다. 입력한 스펙과 STEP 3 경험 기준으로 확인하세요.');
+    const applied=applyGapDraft(a,true);
+    persist(target,a,applied);
+    if(!applied)return;
+    paint();
+    queueMicrotask(()=>openAnalysisBlock('08'));
+    ctx.toast('GAP 결과를 반영했습니다. 입력한 스펙과 STEP 3 경험 기준으로 확인하세요.');
   }
   function renderSources(target,a){
     const box=document.getElementById('sourceList');if(!box)return;
@@ -399,12 +427,30 @@ function parseJobAnalysisBullet(raw=''){
 function jobTableReady(a){const x=a?.jobTable||{};return [x.customerKpi,x.tasks,x.challenge,x.method,x.competencies].every(v=>String(v||'').trim())}
 function specReady(a){const x=a?.studentSpec||{};return [x.certificates,x.language,x.tools].every(v=>String(v||'').trim())}
 
-function parseGapBullet(raw=''){
-  const text=String(raw||'').replace(/```[a-z]*|```/gi,'').trim();
-  const have=cleanBulletBlock(sectionText(text,'내가 가진 것',['확인 필요','핵심 GAP','3개월 행동']));
-  const verify=cleanBulletBlock(sectionText(text,'확인 필요',['핵심 GAP','3개월 행동']));
-  const gaps=String(sectionText(text,'핵심 GAP',['3개월 행동'])||'').split(/\r?\n/).map(v=>v.trim().replace(/^[-*•]\s*/,'' ).replace(/^GAP\s*\d+\s*:\s*/i,'')).filter(Boolean).slice(0,3);
-  const actions=String(sectionText(text,'3개월 행동',[])||'').split(/\r?\n/).map(v=>v.trim().replace(/^[-*•]\s*/,'' )).filter(Boolean).slice(0,3);
+export function parseGapBullet(raw=''){
+  // Supports bracketed headings, numbered headings and Markdown formatting.
+  // Only extract recognized sections, without generating missing content.
+  const sections={'내가 가진 것':[],'확인 필요':[],'핵심 GAP':[],'3개월 행동':[]};
+  let active='';
+  for(const line of String(raw||'').replace(/\r\n?/g,'\n').split('\n')){
+    const heading=line.replace(/^[\s>]*(?:#{1,6}\s*)?/,'')
+      .replace(/^\s*(?:[①②③④]|[1-4][.)])\s*/,'')
+      .replace(/[\\*_\x60]/g,'').trim()
+      .replace(/^[\[【［]\s*/,'').replace(/\s*[\]】］]\s*[:：]?\s*$/,'')
+      .replace(/\s*[:：]\s*$/,'').trim();
+    let label='';
+    if(/^내가\s*가진\s*것$/.test(heading))label='내가 가진 것';
+    else if(/^확인\s*필요$/.test(heading))label='확인 필요';
+    else if(/^핵심\s*GAP(?:\s*\([^)]*\))?$/i.test(heading))label='핵심 GAP';
+    else if(/^3\s*개월\s*행동(?:\s*\([^)]*\))?$/.test(heading))label='3개월 행동';
+    if(label){active=label;continue}
+    if(/^\s*`{3}/.test(line))continue;
+    if(active&&line.trim())sections[active].push(line);
+  }
+  const have=cleanBulletBlock(sections['내가 가진 것'].join('\n'));
+  const verify=cleanBulletBlock(sections['확인 필요'].join('\n'));
+  const gaps=sections['핵심 GAP'].map(v=>v.trim().replace(/^[-*•]\s*/,'').replace(/^GAP\s*\d+\s*:\s*/i,'').trim()).filter(Boolean).slice(0,3);
+  const actions=sections['3개월 행동'].map(v=>v.trim().replace(/^[-*•]\s*/,'')).filter(Boolean).slice(0,3);
   return {have,verify,gaps,actions};
 }
 

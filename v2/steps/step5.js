@@ -10,14 +10,14 @@ export async function render(ctx){
 
     <div class="block"><div class="moduleHead"><span>01</span><div><h3>보고서 준비상태</h3><p>직무분석 5개 항목과 GAP 입력상태를 확인한 뒤 현재 저장된 결과로 보고서를 만듭니다.</p></div></div>${readinessHtml(s,ctx)}</div>
     <div class="hr"></div><div class="block"><div class="moduleHead"><span>02</span><div><h3>리포트 미리보기</h3><p>입력한 문장은 생략하지 않습니다. PDF 페이지 수는 내용 길이에 따라 달라질 수 있습니다.</p></div></div>
-      <div class="actions noReportPrint"><button class="btn primary" id="refreshReport">현재 내용으로 갱신</button><button class="btn secondary" id="printReport">PDF 파일 저장</button><button class="btn outline" id="backupReport">Jobfit 데이터 백업</button></div>
+      <div class="actions noReportPrint"><button class="btn primary" id="refreshReport">현재 내용으로 갱신</button><button class="btn secondary" id="printReport">PDF 파일 저장</button><button class="btn outline" id="openReportPdf">PDF 보기·파일 앱 저장</button><button class="btn outline" id="backupReport">Jobfit 데이터 백업</button></div>
       <div id="jobfitReportPrint" class="reportPreview">${reportHtml(report,ctx)}</div>
       <div class="status" id="status"></div>
     </div>
   </section>`;
   saveMeta(false);
   document.getElementById('refreshReport')?.addEventListener('click',()=>{saveMeta(true);ctx.toast('MY JOBFIT REPORT v1을 갱신했습니다.');ctx.navigate(5)});
-  const pdfExporter=import('./reportPdfMobile.js?v=1');
+  const pdfExporter=import('./reportPdfMobile.js?v=2');
   document.getElementById('printReport')?.addEventListener('click',async()=>{
     const button=document.getElementById('printReport'),status=document.getElementById('status');
     if(!button||button.disabled)return;
@@ -33,6 +33,24 @@ export async function render(ctx){
       if(status)status.textContent='직접 저장이 안 되는 브라우저입니다. 인쇄 화면이 열리면 PDF로 저장을 선택하세요.';
       window.print();
     }finally{button.disabled=false;button.textContent=label;}
+  });
+  document.getElementById('openReportPdf')?.addEventListener('click',async()=>{
+    const button=document.getElementById('openReportPdf'),status=document.getElementById('status');
+    if(!button||button.disabled)return;
+    // The viewer must be opened in this click's activation; mobile popup blockers
+    // commonly reject a tab opened after awaiting image/PDF rendering.
+    const popup=window.open('','_blank');
+    if(popup){try{popup.document.title='MY JOBFIT REPORT';popup.document.body.textContent='PDF 생성 중…';}catch{}}
+    button.disabled=true;
+    try{
+      const {showReportPdf}=await pdfExporter;
+      await showReportPdf(document.getElementById('jobfitReportPrint'),popup);
+      if(status)status.textContent='PDF 화면이 열렸습니다. 브라우저 공유·파일 저장 기능을 선택하세요.';
+    }catch(error){
+      console.error('STEP 6 PDF viewer:',error);
+      if(status)status.textContent='PDF 뷰어를 열 수 없습니다. PDF 파일 저장 또는 인쇄 메뉴를 이용해 주세요.';
+      try{popup?.close()}catch{}
+    }finally{button.disabled=false}
   });
   document.getElementById('backupReport')?.addEventListener('click',()=>ctx.downloadJSON());
 
@@ -57,7 +75,14 @@ function buildReport(s,ctx){
   const compMap=Array.isArray(s.artifacts?.competencyMap)?s.artifacts.competencyMap:[];
   const competencies=(compMap.length?compMap.map(x=>x.keyword):[...new Set(experiences.flatMap(x=>x.competencies||[]))]).filter(Boolean).slice(0,5);
   const actions=experiences.map(x=>String(x.action||'').trim()).filter(Boolean).slice(0,4);
-  const desired=(explorer.desiredActivities||[]).slice(0,5),industries=(explorer.industryInterests||[]).filter(x=>x!=='아직 잘 모르겠어요').slice(0,4);
+  const choiceSnapshot=s.artifacts?.jobExplorerChoiceSnapshot||{};
+  // The report only uses selections actually saved by the learner in STEP 4.
+  // A separately saved snapshot recovers missing selections without changing report wording.
+  const activities=Array.isArray(explorer.desiredActivities)&&explorer.desiredActivities.length
+    ?explorer.desiredActivities:choiceSnapshot.desiredActivities||[];
+  const interests=Array.isArray(explorer.industryInterests)&&explorer.industryInterests.length
+    ?explorer.industryInterests:choiceSnapshot.industryInterests||[];
+  const desired=activities.slice(0,5),industries=interests.filter(x=>x!=='아직 잘 모르겠어요').slice(0,4);
   const reqs=(analysis.requirements||[]).slice(0,5);
   const jobTable=analysis.jobTable||{};
   const studentSpec=analysis.studentSpec||{};
