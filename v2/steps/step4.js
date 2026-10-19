@@ -257,7 +257,7 @@ export async function render(ctx){
     }else box.innerHTML=readableText(raw,ctx);
   }
   function capture(a){const selected=(a.sources||[]).find(x=>x?.id===a.selectedSourceId);if(selected)a.company={name:selected.companyName||'',url:selected.companyUrl||'',source:'기업 공식자료'};a.version=VERSION;a.updatedAt=new Date().toISOString();}
-  function persist(target,a,sync=false){saved.targetAnalyses[target.id]=a;saved.analyses[target.job.id]={...a,jobTitle:target.job.title,industry:target.industry,targetId:target.id};const patch={jobDeepDive:saved};if(sync)Object.assign(patch,syncDownstream(ctx.getState(),target,a));ctx.saveState({artifacts:patch})}
+  function persist(target,a,sync=false){if(sync)saved.reportTargetId=target.id;saved.targetAnalyses[target.id]=a;saved.analyses[target.job.id]={...a,jobTitle:target.job.title,industry:target.industry,targetId:target.id};const patch={jobDeepDive:saved};if(sync)Object.assign(patch,syncDownstream(ctx.getState(),target,a));ctx.saveState({artifacts:patch})}
   function refreshPrompt(target,a){capture(a);persist(target,a);const p=document.getElementById('deepPrompt');if(p)p.value=buildPrompt(ctx.getState(),target,a)}
   function openAnalysisBlock(number){const block=[...document.querySelectorAll('.jobAnalysisInje #analysisRoot > .block')].find(b=>b.querySelector(':scope > .moduleHead > span')?.textContent?.trim()===number);if(block)window.JobfitStepAccordion?.openBlock?.(block)}
   function v(id){return document.getElementById(id)?.value?.trim()||''}function set(id,x){const el=document.getElementById(id);if(el)el.value=x}
