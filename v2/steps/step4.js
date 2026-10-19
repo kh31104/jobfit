@@ -129,10 +129,11 @@ export async function render(ctx){
       a.gapAiDraft=document.getElementById('deepAiImport')?.value||a.gapAiDraft||'';
       if(a.gapAiDraft.trim())applyGapDraft(a,false);
       const selected=(a.sources||[]).find(x=>x.id===a.selectedSourceId);
-      if(!selected){ctx.toast('STEP 6로 가기 전에 분석할 JD를 1개 선택해 주세요.');openAnalysisBlock('03');return}
-      // STEP 6 reports unfilled items as pending rather than inventing values.
-      if(!gapResultPresent(a)){persist(target,a);ctx.toast('마지막으로 GAP Match 결과를 반영한 뒤 STEP 6로 이동해 주세요.');openAnalysisBlock('08');return}
-      persist(target,a,true);ctx.navigate(5)
+      // Missing JD or GAP data is shown as pending in STEP 6; it must never block navigation.
+      // Save the current target pointer without editing any learner-authored results.
+      saved.reportTargetId=target.id;
+      persist(target,a,!!selected&&gapResultPresent(a));
+      ctx.navigate(5);
     });
   }
 
