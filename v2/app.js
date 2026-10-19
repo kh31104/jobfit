@@ -79,7 +79,7 @@ function requestBackupDownload(file,exportedAt){
   a.href=url;a.download=file.name;a.style.display='none';
   document.body.appendChild(a);
   try{a.click()}finally{a.remove();setTimeout(()=>URL.revokeObjectURL(url),120000)}
-  markBackup('download-requested',exportedAt);
+  markBackup('download',exportedAt);
   toast('백업파일 저장을 요청했습니다. 휴대폰 다운로드/파일 앱에서 파일을 확인하세요.');
   return file.name;
 }
