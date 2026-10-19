@@ -120,7 +120,8 @@ export async function render(ctx){
       a.gapAiDraft=document.getElementById('deepAiImport')?.value||a.gapAiDraft||'';
       const hasDraft=!!a.gapAiDraft.trim();
       const applied=hasDraft?applyGapDraft(a,false):false;
-      persist(target,a,true);renderGap(a);
+      // Do not rewrite downstream JD / career assets while the current GAP is incomplete.
+      persist(target,a,!!(a.sources||[]).find(x=>x.id===a.selectedSourceId)&&gapResultPresent(a));renderGap(a);
       if(hasDraft&&!applied){announceGap('AI 답변 원문은 저장했습니다. 결과가 반영되지 않아 제목 형식을 확인해 주세요.');return}
       announceGap(gapResultPresent(a)?'GAP Match를 저장했습니다.':'현재 입력을 저장했습니다. GAP 분석 결과를 붙여넣고 반영해 주세요.');
     });
