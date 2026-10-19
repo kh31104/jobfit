@@ -21,6 +21,7 @@ jobs:
         with:
           node-version: '22'
       - run: node --check donga/app.js
+      - run: node --check donga/step2/app.js
       - run: node donga/tests/smoke.mjs
   smoke:
     name: smoke
@@ -52,3 +53,7 @@ jobs:
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/donga/
         run: node donga/tests/browser.mjs
+      - name: Test DONG-A STEP 2 PC Chrome end-to-end
+        env:
+          JOBFIT_STEP2_URL: http://127.0.0.1:8765/donga/step2/
+        run: node donga/step2/tests/browser.mjs
