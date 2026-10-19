@@ -44,6 +44,14 @@ jobs:
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
         run: node v2/tests/inje-mobile-cross-browser.mjs
+      - name: Test STEP 1-12 navigation and GAP incomplete on PC iPhone Android (student root)
+        env:
+          JOBFIT_TEST_URL: http://127.0.0.1:8765/
+        run: node v2/tests/inje-step-navigation.mjs
+      - name: Test STEP 1-12 navigation and GAP incomplete on PC iPhone Android (v2)
+        env:
+          JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
+        run: node v2/tests/inje-step-navigation.mjs
       - name: Print local server errors if failed
         if: failure()
         run: cat /tmp/jobfit-mobile-server.log || true
@@ -72,6 +80,14 @@ jobs:
         env:
           JOBFIT_TEST_URL: https://kh31104.github.io/jobfit/v2/
         run: node v2/tests/inje-mobile-cross-browser.mjs
+      - name: Verify deployed STEP 1-12 and incomplete GAP on PC/iPhone/Android (student root)
+        env:
+          JOBFIT_TEST_URL: https://kh31104.github.io/jobfit/
+        run: node v2/tests/inje-step-navigation.mjs
+      - name: Verify deployed STEP 1-12 and incomplete GAP on PC/iPhone/Android (v2)
+        env:
+          JOBFIT_TEST_URL: https://kh31104.github.io/jobfit/v2/
+        run: node v2/tests/inje-step-navigation.mjs
       - name: Record production iOS Android verification on commit
         if: always()
         env:
