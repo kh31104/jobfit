@@ -25,7 +25,7 @@ function stateFor({jd=true,draft=''}={}){
       jobDeepDive:{targetAnalyses:{'target-j1':{
         sources:jd?[{id:'jd1',slot:0,name:'가상 직무공고',url:'https://example.com/jd',companyName:'가상식품기업'}]:[],
         selectedSourceId:jd?'jd1':'',
-        jobTable:{customerKpi:'검사 정확도',tasks:'시료 검사',challenge:'이상수치',method:'측정 결과 검토',competencies:'품질기초'},
+        jobTable:{customerKpi:'검사 정확도',tasks:'시료 검사',challenge:'이상수치',method:'측정 결과 검토',competencies:'품질기초',careerPlan:''},
         studentSpec:{certificates:'없음',language:'한국어 TOPIK 3급',tools:'Excel',portfolio:'과제 노트'},
         requirements:[{id:'req-original',name:'검사 업무',status:'근거 있음',evidence:'내가 수행한 검사 기록',gap:''}],
         gapAiDraft:draft
