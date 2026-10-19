@@ -6,6 +6,15 @@ let failed=false;
 for(const width of [390,320,1280]){
   const context=await browser.newContext({viewport:{width,height:900},acceptDownloads:true});
   const page=await context.newPage();
+  // Mock only the PDF engine's Blob output to test browser download behavior
+  // independent of external CDN availability; report DOM remains real.
+  await page.addInitScript(()=>{
+    window.html2pdf=()=>({
+      set(){return this},
+      from(element){window.__pdfReportText=element.textContent;return this},
+      outputPdf(){return Promise.resolve(new Blob(['%PDF-1.4\\n'],{type:'application/pdf'}))}
+    });
+  });
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   try{
     const state={
@@ -37,6 +46,14 @@ for(const width of [390,320,1280]){
     const report=(await page.locator('#jobfitReportPrint').textContent())||'';
     assert(report.includes('자료·데이터 분석하기'),'STEP 6 missing selected activity');
     assert(report.includes('유통·물류'),'STEP 6 missing selected industry');
+    assert(await page.locator('#openReportPdf').count()===1,'Mobile PDF viewer fallback is missing');
+    const [pdfDownload]=await Promise.all([
+      page.waitForEvent('download',{timeout:15000}),
+      page.locator('#printReport').click()
+    ]);
+    assert(pdfDownload.suggestedFilename()==='MY_JOBFIT_REPORT_v1.pdf','PDF file download name is wrong');
+    const pdfSource=await page.evaluate(()=>window.__pdfReportText||'');
+    assert(pdfSource.includes('자료·데이터 분석하기')&&pdfSource.includes('유통·물류'),'PDF source dropped report selections');
     // The same JSON backup must retain the complete data and snapshot.
     const [download]=await Promise.all([
       page.waitForEvent('download',{timeout:10000}),
