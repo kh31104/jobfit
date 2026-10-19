@@ -57,7 +57,14 @@ function buildReport(s,ctx){
   const compMap=Array.isArray(s.artifacts?.competencyMap)?s.artifacts.competencyMap:[];
   const competencies=(compMap.length?compMap.map(x=>x.keyword):[...new Set(experiences.flatMap(x=>x.competencies||[]))]).filter(Boolean).slice(0,5);
   const actions=experiences.map(x=>String(x.action||'').trim()).filter(Boolean).slice(0,4);
-  const desired=(explorer.desiredActivities||[]).slice(0,5),industries=(explorer.industryInterests||[]).filter(x=>x!=='아직 잘 모르겠어요').slice(0,4);
+  const choiceSnapshot=s.artifacts?.jobExplorerChoiceSnapshot||{};
+  // The report only uses selections actually saved by the learner in STEP 4.
+  // A separately saved snapshot recovers missing selections without changing report wording.
+  const activities=Array.isArray(explorer.desiredActivities)&&explorer.desiredActivities.length
+    ?explorer.desiredActivities:choiceSnapshot.desiredActivities||[];
+  const interests=Array.isArray(explorer.industryInterests)&&explorer.industryInterests.length
+    ?explorer.industryInterests:choiceSnapshot.industryInterests||[];
+  const desired=activities.slice(0,5),industries=interests.filter(x=>x!=='아직 잘 모르겠어요').slice(0,4);
   const reqs=(analysis.requirements||[]).slice(0,5);
   const jobTable=analysis.jobTable||{};
   const studentSpec=analysis.studentSpec||{};
