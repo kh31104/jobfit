@@ -10,14 +10,30 @@ export async function render(ctx){
 
     <div class="block"><div class="moduleHead"><span>01</span><div><h3>보고서 준비상태</h3><p>직무분석 5개 항목과 GAP 입력상태를 확인한 뒤 현재 저장된 결과로 보고서를 만듭니다.</p></div></div>${readinessHtml(s,ctx)}</div>
     <div class="hr"></div><div class="block"><div class="moduleHead"><span>02</span><div><h3>리포트 미리보기</h3><p>입력한 문장은 생략하지 않습니다. PDF 페이지 수는 내용 길이에 따라 달라질 수 있습니다.</p></div></div>
-      <div class="actions noReportPrint"><button class="btn primary" id="refreshReport">현재 내용으로 갱신</button><button class="btn secondary" id="printReport">PDF 저장 화면</button><button class="btn outline" id="backupReport">Jobfit 데이터 백업</button></div>
+      <div class="actions noReportPrint"><button class="btn primary" id="refreshReport">현재 내용으로 갱신</button><button class="btn secondary" id="printReport">PDF 파일 저장</button><button class="btn outline" id="backupReport">Jobfit 데이터 백업</button></div>
       <div id="jobfitReportPrint" class="reportPreview">${reportHtml(report,ctx)}</div>
       <div class="status" id="status"></div>
     </div>
   </section>`;
   saveMeta(false);
   document.getElementById('refreshReport')?.addEventListener('click',()=>{saveMeta(true);ctx.toast('MY JOBFIT REPORT v1을 갱신했습니다.');ctx.navigate(5)});
-  document.getElementById('printReport')?.addEventListener('click',()=>{saveMeta(true);window.print()});
+  const pdfExporter=import('./reportPdfMobile.js?v=1');
+  document.getElementById('printReport')?.addEventListener('click',async()=>{
+    const button=document.getElementById('printReport'),status=document.getElementById('status');
+    if(!button||button.disabled)return;
+    const label=button.textContent;
+    button.disabled=true;button.textContent='PDF 생성 중…';
+    if(status)status.textContent='보고서 내용은 그대로 두고 PDF를 생성하고 있습니다.';
+    try{
+      const {saveReportPdf}=await pdfExporter;
+      await saveReportPdf(document.getElementById('jobfitReportPrint'));
+      if(status)status.textContent='PDF 저장이 완료되었습니다. 모바일에서는 다운로드 목록 또는 파일 앱을 확인하세요.';
+    }catch(error){
+      console.error('STEP 6 PDF save:',error);
+      if(status)status.textContent='직접 저장이 안 되는 브라우저입니다. 인쇄 화면이 열리면 PDF로 저장을 선택하세요.';
+      window.print();
+    }finally{button.disabled=false;button.textContent=label;}
+  });
   document.getElementById('backupReport')?.addEventListener('click',()=>ctx.downloadJSON());
 
   function saveMeta(show){const now=new Date().toISOString();ctx.saveState({artifacts:{jobfitReportV1:{version:VERSION,generatedAt:now,pageCount:3,sectionCount:3,paginationMode:'flow',targetCount:report.targets.length}}});if(show){const el=document.getElementById('status');if(el)el.textContent='보고서 내용을 갱신했습니다. PDF 저장 화면에서 “PDF로 저장”을 선택하세요.';}}
