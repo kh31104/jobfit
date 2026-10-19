@@ -97,7 +97,8 @@ export function buildReport(s,ctx){
   const verify=analysis.verify||recoveredGap.verify||'';
   const explicitGaps=allReqs.filter(x=>String(x.gap||'').trim()).map(x=>x.gap);
   const pendingGaps=allReqs.filter(x=>x.status==='준비 필요'&&!String(x.gap||'').trim()).map(x=>x.name);
-  const gaps=[...new Set([...explicitGaps,...recoveredGap.gaps,...pendingGaps].filter(Boolean))].slice(0,3);
+  // Prefer the latest saved AI draft, then existing verified GAP fields, then pending requirements.
+  const gaps=[...new Set([...recoveredGap.gaps,...explicitGaps,...pendingGaps].filter(Boolean))].slice(0,3);
   const prepare=analysis.prepare||(recoveredGap.actions.length?recoveredGap.actions.join(' / '):reqs.filter(x=>['준비 필요','확인 필요'].includes(x.status)).map(x=>x.name).join(' · '));
   const todaySummary=makeToday(actions,targets,prepare,anchor,via);
   const competencyDetails=competencies.map(keyword=>{const linked=experiences.filter(x=>(x.competencies||[]).includes(keyword)||(x.competencyEvidence||[]).some(e=>(e.label||e.keyword)===keyword&&(!e.status||e.status==='행동 확인')));const sources=linked.flatMap(x=>{const explicit=(x.competencyEvidence||[]).filter(e=>(e.label||e.keyword)===keyword&&(!e.status||e.status==='행동 확인')&&e.evidence).map(e=>e.evidence);return [{title:x.title,text:explicit.join('\n')||x.action||'',proof:x.evidence||'',sharedAction:!explicit.length}]}).filter(x=>x.text);return {keyword,sources};});
