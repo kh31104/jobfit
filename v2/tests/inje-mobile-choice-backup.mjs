@@ -21,7 +21,7 @@ for(const width of [390,320,1280]){
       version:2.2,activeStep:3,mode:'full',
       profile:{anonCode:'JF26-CHOICETEST',courseCode:'INJE2026',major:'경영학과'},
       research:{consent:false,measurements:{pre:{},post:{}}},
-      assessments:{careerDNA:{},experienceCompetency:{experiences:[]}},
+      assessments:{careerDNA:{hypothesis:{text:'Career DNA 가설 v1. 내가 중요하게 생각하는 일의 조건은 안정성입니다. ✔ 첫 번째 경험은 자료를 비교한 일입니다. ✔ 두 번째 경험은 팀과 의견을 조정한 일입니다. (Balance Game 결과 참고)'}},experienceCompetency:{experiences:[{id:'e1',title:'브랜드 자료 조사',action:'고객 리뷰 분류',competencies:['자료정리','문제해결'],factChecked:true},{id:'e2',title:'팀 프로젝트',action:'협업 일정 조정',competencies:['협업'],factChecked:true}]}},
       artifacts:{jobExplorer:{
         candidates:[{id:'j1',title:'브랜드 마케팅',family:'마케팅',industries:['유통·물류']}],
         targetCombos:[{id:'target-j1',jobId:'j1',industry:'유통·물류',priority:1}]
@@ -31,6 +31,23 @@ for(const width of [390,320,1280]){
     await page.evaluate(value=>localStorage.setItem('jobfit:v2:learner',JSON.stringify(value)),state);
     await page.reload({waitUntil:'networkidle'});
     await page.waitForSelector('[data-choice="activity"]');
+    // The STEP 4 read-only cards must preserve every original character.
+    const dnaOriginal='Career DNA 가설 v1. 내가 중요하게 생각하는 일의 조건은 안정성입니다. ✔ 첫 번째 경험은 자료를 비교한 일입니다. ✔ 두 번째 경험은 팀과 의견을 조정한 일입니다. (Balance Game 결과 참고)';
+    const cards=page.locator('.evidenceSummaryGrid .readableCard');
+    assert(await cards.count()===3,'STEP 4 evidence must show three separate cards');
+    assert((await cards.nth(0).locator('.readablePreview').textContent())===dnaOriginal,'Career DNA content was modified by formatting');
+    assert((await cards.nth(1).locator('.readablePreview').textContent())==='브랜드 자료 조사 · 팀 프로젝트','Best Experience names or separator were modified');
+    assert((await cards.nth(2).locator('.readablePreview').textContent())==='자료정리, 문제해결, 협업','Confirmed competencies content was modified');
+    assert(await cards.nth(0).locator('.previewLine').count()>=3,'Career DNA lacks visible paragraph breaks');
+    assert(await cards.nth(2).locator('.previewLine').count()===3,'Competencies are not formatted in separate lines');
+    const layout=await page.locator('.evidenceSummaryGrid').evaluate(el=>({
+      columns:getComputedStyle(el).gridTemplateColumns.split(' ').length,
+      cardWidth:el.firstElementChild.getBoundingClientRect().width,
+      overflow:el.scrollWidth>el.clientWidth+2
+    }));
+    assert(!layout.overflow,'STEP 4 evidence grid causes horizontal scroll');
+    assert(layout.columns===(width<=700?1:2),'STEP 4 cards do not use expected responsive columns');
+
     await page.locator('[data-choice="activity"][value="자료·데이터 분석하기"]').check();
     await page.locator('[data-choice="industry"][value="유통·물류"]').check();
     let current=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));

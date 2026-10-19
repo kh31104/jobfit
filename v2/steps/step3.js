@@ -39,10 +39,10 @@ export async function render(ctx){
     <div class="callout info"><b>여기서는 직무를 확정하지 않습니다.</b><br>STEP 5에서 실제 채용공고를 보고 확인할 Target Job만 1~3개 고릅니다.</div>
 
     ${block('01','나의 직무탐색 근거 확인','STEP 2·3 결과를 자동으로 불러옵니다. 다시 작성하지 않습니다.',`
-      <div class="grid3">
-        <div class="miniCard"><b>Career DNA</b><span>${esc(summaryCareer(dna,s.artifacts?.careerDNAProfile),ctx)}</span></div>
-        <div class="miniCard"><b>Best Experience</b><span>${esc(experienceMap.slice(0,3).map(x=>x.title||'경험').join(' · ')||'STEP 3 경험을 먼저 정리하세요.',ctx)}</span></div>
-        <div class="miniCard"><b>확인된 역량</b><span>${esc(summaryCompetencies(exp,experienceMap),ctx)}</span></div>
+      <div class="evidenceSummaryGrid">
+        <div class="miniCard readableCard"><b>Career DNA</b><div class="readablePreview">${formatPreviewText(summaryCareer(dna,s.artifacts?.careerDNAProfile),ctx,'career')}</div></div>
+        <div class="miniCard readableCard"><b>Best Experience</b><div class="readablePreview">${formatPreviewText(experienceMap.slice(0,3).map(x=>x.title||'경험').join(' · ')||'STEP 3 경험을 먼저 정리하세요.',ctx,'experience')}</div></div>
+        <div class="miniCard readableCard"><b>확인된 역량</b><div class="readablePreview">${formatPreviewText(summaryCompetencies(exp,experienceMap),ctx,'competencies')}</div></div>
       </div>
       <div class="evidenceGrid" style="margin-top:10px">${actions.length?actions.map(x=>`<div class="actionEvidence">${esc(x,ctx)}</div>`).join(''):'<div class="placeholder"><b>확인된 행동이 아직 없습니다.</b>STEP 3에서 행동과 Evidence를 정리하면 자동 연결됩니다.</div>'}</div>
       <div class="actions"><button class="btn primary" id="confirmSelf">확인했어요, 다음</button><button class="btn outline" id="backStep2">STEP 3 경험·역량 수정</button></div>`)}
@@ -199,6 +199,20 @@ export async function render(ctx){
 function buildIndustryCompany(state,data){const old=structuredClone(state.artifacts?.industryCompany||{industries:[],targetIndustries:[],companies:[],targetCompanies:[],notes:''}),manual=(old.industries||[]).filter(x=>x.generatedBy!=='step3-v3');const generated=(data.targetCombos||[]).map((c,i)=>({id:`ind_${c.jobId}_${slug(c.industry)}_${i+1}`,name:c.industry,jobId:c.jobId,sourceType:'STEP 4 탐색',source:'',url:'',checkedAt:'',jobLink:'',difference:'',generatedBy:'step3-v3'}));const targetIndustries=generated.map(x=>x.id);return {...old,industries:[...manual,...generated],targetIndustries:targetIndustries.length?targetIndustries:(old.targetIndustries||[]),companies:old.companies||[],targetCompanies:old.targetCompanies||[]}}
 function legacyCombos(data){return (data.targets||[]).map((id,i)=>({id:`legacy_${id}_${i+1}`,jobId:id,industry:'산업 미정',priority:i+1}))}
 function confirmedActions(map){const out=[];for(const x of map||[]){const a=String(x.action||'').trim();if(a&&!out.includes(a))out.push(a);for(const ce of x.competencyEvidence||[]){const e=String(ce?.evidence||'').trim();if(e&&!out.includes(e))out.push(e)}if(out.length>=6)break}return out.slice(0,6)}
+// Only insert visual wrappers. Their concatenated textContent equals the original input exactly.
+function formatPreviewText(value,ctx,kind='career'){
+  const text=String(value??'');
+  const breaks=kind==='competencies' ? /,\s+/g :
+    kind==='experience' ? /\s+·\s+/g :
+    /[.!?](?=\s+(?:[가-힣A-Za-z0-9✔✓]))|\s+(?=✔️?|✓|[①②③④⑤⑥⑦⑧⑨⑩])/g;
+  const parts=[];let from=0;
+  for(const hit of text.matchAll(breaks)){
+    const boundary=hit.index+(/[.!?,]/.test(hit[0][0])?1:0);
+    if(boundary>from){parts.push(text.slice(from,boundary));from=boundary;}
+  }
+  if(from<text.length)parts.push(text.slice(from));
+  return parts.map(part=>'<span class="previewLine">'+esc(part,ctx)+'</span>').join('');
+}
 function summaryCareer(dna,profile){const h=profile?.hypothesis?.text||dna.hypothesis?.text||'',values=profile?.valueClues||[];return [h,values.length?`가치: ${values.slice(0,3).join(', ')}`:''].filter(Boolean).join(' / ')||'STEP 2 결과를 확인하세요.'}
 function summaryCompetencies(exp,map){const src=map.length?map:(exp.experiences||[]).filter(x=>x?.factChecked),comps=[...new Set(src.flatMap(x=>x.competencies||[]))];return comps.slice(0,8).join(', ')||'STEP 3에서 경험기반 역량을 확인하세요.'}
 function buildPrompt(s,data,map){const evidence=(map||[]).slice(0,5).map((x,i)=>`${i+1}. ${x.title||'경험'}\n- 행동: ${x.action||'미입력'}\n- 결과: ${x.result||'미입력'}\n- 역량: ${(x.competencies||[]).join(', ')||'미입력'}`).join('\n'),dna=s.assessments?.careerDNA||{},profile=s.artifacts?.careerDNAProfile||{},values=[...new Set(profile.valueClues||((dna.balance?.answers||[]).filter(Boolean).map(x=>x.value)))].slice(0,5),anchors=(profile.careerAnchorTop||dna.careerAnchor?.ranking||[]).slice(0,3).map(x=>x.name||x.code).filter(Boolean),via=(profile.viaTop5||dna.viaTop5||[]).slice(0,5),hypothesis=profile.hypothesis?.text||dna.hypothesis?.text||'';return `당신은 대학생의 직무탐색을 돕는 조력자다. 최종 직무를 대신 결정하지 말고, 학생의 실제 경험과 관심 업무를 근거로 탐색할 직무 후보를 만들어라.
@@ -327,6 +341,14 @@ function slug(x=''){return String(x).trim().replace(/[^0-9A-Za-z가-힣]+/g,'-')
 function esc(x,ctx){return ctx.escapeHtml(String(x??''))}
 async function copy(text,ctx){try{await navigator.clipboard.writeText(text);ctx.toast('프롬프트를 복사했습니다.')}catch{ctx.toast('복사하지 못했습니다.')}}
 function styleBlock(){return `<style>
+.jobExplorerV3 .evidenceSummaryGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.jobExplorerV3 .evidenceSummaryGrid>.readableCard:first-child{grid-column:1/-1}
+.jobExplorerV3 .readableCard{min-width:0;padding:16px;border:1px solid #e3e8f2;border-radius:14px;background:#fff;overflow-wrap:anywhere;word-break:keep-all}
+.jobExplorerV3 .readableCard>b{display:block;margin:0 0 10px;font-size:15px;font-weight:800;line-height:1.5;color:#243047}
+.jobExplorerV3 .readablePreview{display:block;min-width:0;font-size:14px;line-height:1.8;color:#475467;white-space:normal;overflow-wrap:anywhere;word-break:keep-all}
+.jobExplorerV3 .readablePreview .previewLine{display:block;max-width:100%;overflow-wrap:anywhere;word-break:keep-all}
+.jobExplorerV3 .readablePreview .previewLine+.previewLine{margin-top:9px}
+@media(max-width:700px){.jobExplorerV3 .evidenceSummaryGrid{grid-template-columns:minmax(0,1fr);gap:10px}.jobExplorerV3 .readableCard{padding:14px 13px}.jobExplorerV3 .readablePreview{font-size:14px;line-height:1.82}.jobExplorerV3 .readablePreview .previewLine+.previewLine{margin-top:10px}}
 .jobExplorerV3 .moduleHead{display:flex;gap:11px;align-items:flex-start}.jobExplorerV3 .moduleHead>span{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:#eef3ff;color:#3152c9;font-weight:950;flex:0 0 auto}.jobExplorerV3 .moduleHead h3{margin:2px 0 3px}.jobExplorerV3 .moduleHead p{margin:0;color:#667085;font-size:12px;line-height:1.5}.choiceTiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.choiceTile{display:flex;align-items:center;gap:8px;border:1px solid #e3e8f2;border-radius:13px;padding:11px;background:#fff;font-size:13px;font-weight:800}.choiceTile:has(input:checked){border-color:#8fa5ff;background:#f4f6ff;color:#244bd7}.inlineAdd{display:flex;gap:8px}.interestPill button{border:0;background:transparent;color:#98a2b3;font-size:16px}.evidenceGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.actionEvidence{border:1px solid #e3e8f2;border-radius:13px;padding:12px;background:#fbfcff;font-size:13px;line-height:1.55}.targetRow{display:grid;grid-template-columns:150px 1fr 1fr;gap:9px;align-items:center;border:1px solid #e3e8f2;border-radius:15px;padding:12px;margin:9px 0}.targetRow b,.targetRow span{display:block}.targetRow span{font-size:11px;color:#667085;margin-top:2px}@media(max-width:700px){.choiceTiles,.evidenceGrid{grid-template-columns:1fr 1fr}.targetRow{grid-template-columns:1fr}.inlineAdd{flex-direction:column}}
 .jobExplorerV3 .candidateCard{margin-top:12px;padding:16px;overflow-wrap:anywhere}
 .jobExplorerV3 .candidateCard .listHead{display:flex;align-items:flex-start;gap:14px}
