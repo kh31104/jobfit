@@ -84,7 +84,15 @@ async function test(engine,label,device){
       if(scenario==='no-jd-no-gap')assert(report.includes('STEP 5에서 분석 기준 JD를 선택하세요.'),label+': missing JD was incorrectly fabricated');
       const final=await saved();
       const before=originalFields(initial),after=originalFields(final);
-      assert(JSON.stringify(before)===JSON.stringify(after),label+': existing learner results changed during save/navigation '+scenario);
+      if(JSON.stringify(before)!==JSON.stringify(after)){
+        for(const field of Object.keys(before)){
+          if(JSON.stringify(before[field])!==JSON.stringify(after[field])){
+            throw Error(label+': learner field '+field+' differs after '+scenario+
+              '\\nBEFORE '+JSON.stringify(before[field]).slice(0,3000)+
+              '\\nAFTER  '+JSON.stringify(after[field]).slice(0,3000));
+          }
+        }
+      }
       console.log('PASS '+label+' '+scenario+': saved and entered STEP 6 with original fields intact');
     }
 
