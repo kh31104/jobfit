@@ -40,7 +40,7 @@ function loadEngine(){
   return loader;
 }
 
-export async function saveReportPdf(source){
+async function renderReportPdfBlob(source){
   if(!source||source.querySelectorAll('.reportPage').length!==3){
     throw new Error('The existing three-section report is not available.');
   }
@@ -54,15 +54,46 @@ export async function saveReportPdf(source){
   style.textContent=EXPORT_LAYOUT;
   document.head.appendChild(style);
   try{
-    await window.html2pdf().set({
+    return await window.html2pdf().set({
       margin:[14,14,16,14],
       filename:'MY_JOBFIT_REPORT_v1.pdf',
       image:{type:'jpeg',quality:0.98},
       html2canvas:{scale:Math.min(1.6,Math.max(1,window.devicePixelRatio||1.3)),useCORS:true,backgroundColor:'#ffffff',scrollX:0,scrollY:0},
       jsPDF:{unit:'mm',format:'a4',orientation:'portrait',compress:true},
       pagebreak:{mode:['css','legacy'],before:['.reportPage + .reportPage'],avoid:['.reportBox','.competencyEvidenceRow','.reportTable .tr']}
-    }).from(copy).save();
+    }).from(copy).outputPdf('blob');
   }finally{style.remove();}
+}
+
+// Mobile WebViews can ignore downloads from detached anchors or URLs revoked too soon.
+function downloadPdfBlob(blob){
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='MY_JOBFIT_REPORT_v1.pdf';a.style.display='none';
+  document.body.appendChild(a);
+  try{a.click()}finally{a.remove();setTimeout(()=>URL.revokeObjectURL(url),180000)}
+}
+export async function saveReportPdf(source){
+  const blob=await renderReportPdfBlob(source);
+  downloadPdfBlob(blob);
+}
+// Reserve a PDF viewer synchronously from the user's tap to bypass popup blocking.
+export function openReportPdfWindow(){
+  const popup=window.open('','_blank');
+  if(popup){try{popup.document.title='MY JOBFIT REPORT';popup.document.body.textContent='PDF 생성 중…';}catch{}}
+  return popup;
+}
+export async function showReportPdf(source,popup){
+  try{
+    const blob=await renderReportPdfBlob(source);
+    const url=URL.createObjectURL(blob);
+    if(popup&&!popup.closed){
+      popup.location.replace(url);
+      setTimeout(()=>URL.revokeObjectURL(url),300000);
+    }else{
+      URL.revokeObjectURL(url);
+      downloadPdfBlob(blob);
+    }
+  }catch(error){try{popup?.close()}catch{}throw error}
 }
 
 // Start loading while the student reviews the report, before tapping the download button.
