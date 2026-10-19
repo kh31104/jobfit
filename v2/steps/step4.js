@@ -61,7 +61,7 @@ export async function render(ctx){
         <textarea id="jobAiPrompt" rows="16">${esc(buildJobAnalysisPrompt(ctx.getState(),target,a),ctx)}</textarea>
         <div class="actions"><button class="btn secondary" id="refreshJobAiPrompt">현재 JD 반영</button><button class="btn primary" id="copyJobAiPrompt">직무분석 프롬프트 복사</button></div>
         <div class="field" style="margin-top:12px"><label>AI 직무분석 답변 붙여넣기</label><textarea id="jobAiImport" rows="9" placeholder="[고객·성과기준]&#10;• ...&#10;[주요 과업]&#10;• ...&#10;[주요 해결과제]&#10;• ...&#10;[해결방법]&#10;• ...&#10;[필요역량]&#10;• ...">${esc(a.jobTable?.aiResult||"",ctx)}</textarea></div>
-        <div class="actions"><button class="btn secondary" id="applyJobAi">AI 답변을 직무분석표에 반영</button></div><div class="fieldReadHint">아래는 입력 원문을 읽기 좋게 정리한 미리보기입니다. 원문은 변경하지 않습니다.</div><div id="jobAiLivePreview" class="readablePreview"></div>`)}
+        <div class="actions"><button class="btn secondary" id="applyJobAi">AI 답변을 직무분석표에 반영</button></div><details class="step5PreviewDetails" id="jobAiPreviewDetails"><summary>AI 직무분석 답변 미리보기 <span class="previewToggleText">펼쳐 보기</span></summary><div class="fieldReadHint">아래는 입력 원문을 읽기 좋게 정리한 미리보기입니다. 원문은 변경하지 않습니다.</div><div id="jobAiLivePreview" class="readablePreview"></div></details>`)}
 
       ${block('05','직무분석 테이블 완성','AI 답변을 확인하고 핵심 5개 항목만 남깁니다. 경력개발은 선택입니다.',`
         <div class="jobAnalysisFields analysisInputGrid">
@@ -91,7 +91,7 @@ export async function render(ctx){
         <textarea id="deepPrompt" rows="16">${esc(buildPrompt(ctx.getState(),target,a),ctx)}</textarea>
         <div class="actions"><button class="btn secondary" id="refreshDeepPrompt">현재 JD·직무분석·내 스펙 반영</button><button class="btn primary" id="copyDeepPrompt" ${specReady(a)&&jobTableReady(a)?'':'disabled'}>AI GAP 분석 프롬프트 복사</button></div>
         <div class="callout info" style="margin-top:12px"><b>AI 답변 붙여넣기</b><br>아래 칸에는 AI가 작성한 짧은 개조식 결과만 붙여넣으세요.</div>
-        <textarea id="deepAiImport" rows="9" placeholder="[내가 가진 것]&#10;• ...&#10;[확인 필요]&#10;• ...&#10;[핵심 GAP]&#10;• GAP 1: ...&#10;[3개월 행동]&#10;• ...">${esc(a.gapAiDraft||"",ctx)}</textarea><div id="gapAiLivePreview" class="readablePreview"></div>
+        <textarea id="deepAiImport" rows="9" placeholder="[내가 가진 것]&#10;• ...&#10;[확인 필요]&#10;• ...&#10;[핵심 GAP]&#10;• GAP 1: ...&#10;[3개월 행동]&#10;• ...">${esc(a.gapAiDraft||"",ctx)}</textarea><details class="step5PreviewDetails" id="gapAiPreviewDetails"><summary>AI GAP 답변 미리보기 <span class="previewToggleText">펼쳐 보기</span></summary><div id="gapAiLivePreview" class="readablePreview"></div></details>
         <div class="actions"><button class="btn secondary" id="importDeepAi">GAP 결과 반영</button></div>
         <div id="gapSummary" style="margin-top:12px"></div>
         <div class="actions"><button class="btn primary" id="saveDeep">GAP Match 저장</button><button class="btn secondary" id="nextStep">STEP 6 MY JOBFIT REPORT v1 →</button></div>
@@ -120,7 +120,8 @@ export async function render(ctx){
       a.gapAiDraft=document.getElementById('deepAiImport')?.value||a.gapAiDraft||'';
       const hasDraft=!!a.gapAiDraft.trim();
       const applied=hasDraft?applyGapDraft(a,false):false;
-      persist(target,a,true);renderGap(a);
+      // Do not rewrite downstream JD / career assets while the current GAP is incomplete.
+      persist(target,a,!!(a.sources||[]).find(x=>x.id===a.selectedSourceId)&&gapResultPresent(a));renderGap(a);
       if(hasDraft&&!applied){announceGap('AI 답변 원문은 저장했습니다. 결과가 반영되지 않아 제목 형식을 확인해 주세요.');return}
       announceGap(gapResultPresent(a)?'GAP Match를 저장했습니다.':'현재 입력을 저장했습니다. GAP 분석 결과를 붙여넣고 반영해 주세요.');
     });
@@ -129,10 +130,11 @@ export async function render(ctx){
       a.gapAiDraft=document.getElementById('deepAiImport')?.value||a.gapAiDraft||'';
       if(a.gapAiDraft.trim())applyGapDraft(a,false);
       const selected=(a.sources||[]).find(x=>x.id===a.selectedSourceId);
-      if(!selected){ctx.toast('STEP 6로 가기 전에 분석할 JD를 1개 선택해 주세요.');openAnalysisBlock('03');return}
-      // STEP 6 reports unfilled items as pending rather than inventing values.
-      if(!gapResultPresent(a)){persist(target,a);ctx.toast('마지막으로 GAP Match 결과를 반영한 뒤 STEP 6로 이동해 주세요.');openAnalysisBlock('08');return}
-      persist(target,a,true);ctx.navigate(5)
+      // Missing JD or GAP data is shown as pending in STEP 6; it must never block navigation.
+      // Save the current target pointer without editing any learner-authored results.
+      saved.reportTargetId=target.id;
+      persist(target,a,!!selected&&gapResultPresent(a));
+      ctx.navigate(5);
     });
   }
 
@@ -574,6 +576,16 @@ function styleBlock(){return `<style>.jobAnalysisInje .siteSection{margin-top:14
 .jobAnalysisInje .jdNoteDetails{border-top:1px solid #edf0f6;padding-top:10px;margin-top:10px}
 .jobAnalysisInje .jdNoteDetails>summary{cursor:pointer;font-size:13px;color:#3152c9;font-weight:700}
 .jobAnalysisInje .jdNoteBody{padding:6px 0}
+.jobAnalysisInje .step5PreviewDetails{margin-top:12px;border:1px solid #dfe5f2;border-radius:12px;background:#f8faff;min-width:0;overflow:hidden}
+.jobAnalysisInje .step5PreviewDetails>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;justify-content:space-between;padding:13px 14px;font-size:13px;font-weight:750;line-height:1.5;color:#263c72}
+.jobAnalysisInje .step5PreviewDetails>summary::-webkit-details-marker{display:none}
+.jobAnalysisInje .step5PreviewDetails>summary:focus-visible{outline:2px solid #315df4;outline-offset:-2px}
+.jobAnalysisInje .step5PreviewDetails .previewToggleText{flex-shrink:0;color:#315df4;font-size:12px}
+.jobAnalysisInje .step5PreviewDetails[open] .previewToggleText{font-size:0}
+.jobAnalysisInje .step5PreviewDetails[open] .previewToggleText:after{content:'접기';font-size:12px}
+.jobAnalysisInje .step5PreviewDetails>.fieldReadHint,.jobAnalysisInje .step5PreviewDetails>.readablePreview{margin:8px 14px 14px}
+.jobAnalysisInje .step5PreviewDetails>.fieldReadHint+.readablePreview{margin-top:8px}
+.jobAnalysisInje .step5PreviewDetails>.readablePreview{min-width:0;overflow-wrap:anywhere}
 .jobAnalysisInje .readablePreview{margin-top:10px}
 .jobAnalysisInje .readableEmpty{margin:0;padding:10px 2px;font-size:13px;color:#667085}
 .jobAnalysisInje .fieldReadHint{margin:10px 0 6px;font-size:12px;color:#667085;line-height:1.6}
