@@ -73,7 +73,34 @@ function makeAnonCode(){
 function backupFileName(){return `jobfit-${state.profile.anonCode||'mydata'}-${new Date().toISOString().slice(0,10)}.json`}
 function makeBackupFile(){const exportedAt=new Date().toISOString(),backup=structuredClone(state);backup.meta=backup.meta||{};backup.meta.backupExportedAt=exportedAt;return {file:new File([JSON.stringify(backup,null,2)],backupFileName(),{type:'application/json'}),exportedAt}}
 function markBackup(method,exportedAt){saveState({meta:{lastBackupAt:exportedAt,lastBackupMethod:method,backupConfirmed:false,backupConfirmedAt:null}})}
-function downloadJSON(){const {file,exportedAt}=makeBackupFile(),a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500);markBackup('download',exportedAt);toast('백업파일을 저장했습니다. 이메일·카카오톡·클라우드에도 보관하세요.');return file.name}
+function requestBackupDownload(file,exportedAt){
+  // iOS and Android may ignore clicks on detached links or lose URLs revoked too early.
+  const url=URL.createObjectURL(file),a=document.createElement('a');
+  a.href=url;a.download=file.name;a.style.display='none';
+  document.body.appendChild(a);
+  try{a.click()}finally{a.remove();setTimeout(()=>URL.revokeObjectURL(url),120000)}
+  markBackup('download-requested',exportedAt);
+  toast('백업파일 저장을 요청했습니다. 휴대폰 다운로드/파일 앱에서 파일을 확인하세요.');
+  return file.name;
+}
+function downloadJSON(){
+  const {file,exportedAt}=makeBackupFile();
+  const mobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    ||(navigator.maxTouchPoints>1&&window.innerWidth<800);
+  // Native file-sharing is the most reliable Save to Files path on supported phones.
+  // Call navigator.share immediately from the tap, without prior awaits.
+  if(mobile&&navigator.share&&navigator.canShare?.({files:[file]})){
+    navigator.share({title:'Jobfit 학습 백업',text:'Jobfit JSON 백업을 파일 앱 또는 개인 저장소에 보관하세요.',files:[file]})
+      .then(()=>{markBackup('native-share',exportedAt);toast('백업 공유를 완료했습니다. 선택한 저장 위치에서 파일을 확인하세요.')})
+      .catch(error=>{
+        if(error?.name==='AbortError'){toast('백업 공유를 취소했습니다. 다시 눌러 저장할 수 있습니다.');return}
+        console.warn('Jobfit native backup share:',error);
+        requestBackupDownload(file,exportedAt);
+      });
+    return file.name;
+  }
+  return requestBackupDownload(file,exportedAt);
+}
 function downloadResearchJSON(){
   if(!state.profile?.anonCode){toast('익명코드를 먼저 생성해 주세요.');return null}
   const completedSteps=STEPS.map((_,i)=>i).filter(i=>isStepComplete(i,state));
