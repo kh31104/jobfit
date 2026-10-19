@@ -79,7 +79,7 @@ export async function render(ctx){
       <div class="actions"><button class="btn primary" id="saveTargets">Target Job 저장</button><button class="btn secondary" id="nextStep">STEP 5 실제 JD 확인 →</button></div>
       <div class="status" id="targetStatus"></div>`)}
   </section>`;
-  if(needsRepair||restoredChoices)persist(false);
+  if(needsRepair||restoredChoices||(!s.artifacts?.jobExplorerChoiceSnapshot&&(data.desiredActivities.length||data.industryInterests.length)))persist(false);
   renderInterests();renderCandidates();renderCompare();renderTargets();bindChoices();
   document.getElementById('confirmSelf')?.addEventListener('click',()=>openBlock(1));
   document.getElementById('backStep2')?.addEventListener('click',()=>ctx.navigate(2));
