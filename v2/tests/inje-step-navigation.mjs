@@ -103,8 +103,9 @@ async function test(engine,label,device){
       await page.waitForFunction(index=>{
         const active=document.querySelector('.stepBtn.active');
         const root=document.getElementById('stepRoot');
-        return active?.dataset.step===String(index)&&root?.querySelector('.sectionHead')&&!root.textContent.includes('불러오는 중');
+        return active?.dataset.step===String(index)&&!!root?.querySelector('.sectionHead')&&!root?.querySelector(':scope > .card.placeholder');
       },n,{timeout:45000});
+      console.log('NAV '+label+' STEP '+(n+1)+' loaded');
       const text=await page.locator('#stepRoot').textContent();
       assert(!text.includes('선택한 모듈 화면을 불러오지 못했습니다.'),label+': unable to render STEP '+(n+1));
     }
