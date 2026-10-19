@@ -1,0 +1,60 @@
+import { chromium } from "playwright";
+import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+
+const url = process.env.JOBFIT_STEP2_URL || "http://127.0.0.1:8765/donga/step2/";
+const browser = await chromium.launch({headless:true});
+const page = await browser.newPage({acceptDownloads:true});
+page.on("dialog", async d=>d.accept());
+try{
+  await page.goto(url,{waitUntil:"networkidle"});
+  assert.equal(await page.locator("#stepNav .stepBtn").count(),4,"only 4 selected FLEX modules");
+  const labels=await page.locator("#stepNav .stepText").allTextContents();
+  assert.deepEqual(labels.map(s=>s.split(/\s+/)[0]),["Target","Find","Choose","GAP"]);
+  assert(!labels.join(" ").includes("Portfolio") && !labels.join(" ").includes("My Evidence"),"excluded steps absent");
+  await page.evaluate(()=>{
+    localStorage.setItem("jobfit:donga:step1:v1","step1-safe");
+    localStorage.setItem("jobfit:flexlab:job-analysis:v1","flex-safe");
+  });
+  await page.locator('[data-path="target.industry"]').fill("제조업");
+  await page.locator('[data-path="target.job"]').fill("품질관리");
+  await page.locator('[data-path="student.major"]').fill("산업공학");
+  await page.locator('[data-next="2"]').click();
+  await page.locator('[data-path="step2Search.company"]').fill("테스트 제조");
+  await page.locator('[data-path="step2Search.title"]').fill("품질관리 신입");
+  await page.locator('[data-path="step2Search.facts"]').fill("품질 데이터 집계\\n불량 원인 분석");
+  await page.locator("#useStep2JobBtn").click();
+  assert.match(await page.locator("#stepRoot").innerText(),/3 Ways/);
+  await page.locator('[data-path="jobTable.tasks"]').fill("품질 기록, 공정 데이터 정리");
+  await page.locator('[data-path="jobTable.competencies"]').fill("데이터 해석, 품질 지표 이해");
+  await page.locator('[data-next="4"]').click();
+  assert.match(await page.locator("#stepRoot h2").innerText(),/GAP/);
+  assert(await page.locator('[data-path="student.majorEvidence"]').isVisible(),"standalone evidence input");
+  await page.locator('[data-path="student.certificates"]').fill("품질경영기사 준비 중");
+  await page.locator('[data-path="student.majorEvidence"]').fill("통계 수업에서 불량률 데이터 분석");
+  await page.locator('[data-path="fit.gaps"]').fill("품질 실무 데이터 분석 근거 보완");
+  await page.locator('[data-path="fit.actions"]').fill("3개월 내 공정 데이터 분석 사례 1개 작성");
+  let saved=await page.evaluate(()=>{
+    const x=JSON.parse(localStorage.getItem("jobfit:donga:step2:v1"));
+    return {x,step1:localStorage.getItem("jobfit:donga:step1:v1"),flex:localStorage.getItem("jobfit:flexlab:job-analysis:v1")};
+  });
+  assert.equal(saved.x.app,"JOBFIT_DONGA_STEP2");
+  assert.equal(saved.x.currentStep,4);
+  assert.equal(saved.x.fit.gaps,"품질 실무 데이터 분석 근거 보완");
+  assert.equal(saved.step1,"step1-safe");
+  assert.equal(saved.flex,"flex-safe");
+  const [download]=await Promise.all([page.waitForEvent("download"),page.locator("#exportJsonBtn").click()]);
+  const backup=JSON.parse(await fs.readFile(await download.path(),"utf8"));
+  assert.equal(backup.app,"JOBFIT_DONGA_STEP2");
+  await page.reload({waitUntil:"networkidle"});
+  assert.equal(await page.locator('[data-path="fit.gaps"]').inputValue(),"품질 실무 데이터 분석 근거 보완");
+  await page.evaluate(()=>localStorage.removeItem("jobfit:donga:step2:v1"));
+  await page.reload({waitUntil:"networkidle"});
+  assert.equal(await page.locator('[data-path="target.job"]').inputValue(),"");
+  await page.locator("#importFile").setInputFiles({name:"donga-step2-backup.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(backup))});
+  await page.locator('[data-step="4"]').click();
+  assert.equal(await page.locator('[data-path="fit.gaps"]').inputValue(),"품질 실무 데이터 분석 근거 보완");
+  assert.equal(await page.evaluate(()=>localStorage.getItem("jobfit:donga:step1:v1")),"step1-safe");
+  assert.equal(await page.evaluate(()=>localStorage.getItem("jobfit:flexlab:job-analysis:v1")),"flex-safe");
+  console.log("DONG-A STEP 2: 4 modules, progression, student input, GAP, autosave, reload, JSON backup/restore and isolation PASS");
+}finally{await browser.close();}
