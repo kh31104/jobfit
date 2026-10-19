@@ -1,4 +1,4 @@
-// Read only: checks bytes served from GitHub Pages without touching learner storage.
+// Read only: checks deployed bytes; the workflow reports verification to the tested commit.
 const root='https://kh31104.github.io/jobfit/';
 const files=[
   ['',text=>text.includes('./v2/bootstrap.js?v=38')],
