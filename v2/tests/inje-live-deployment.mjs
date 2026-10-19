@@ -1,10 +1,10 @@
 // Read only: checks deployed bytes; the workflow reports verification to the tested commit.
 const root='https://kh31104.github.io/jobfit/';
 const files=[
-  ['',text=>text.includes('./v2/bootstrap.js?v=39')],
-  ['v2/index.html',text=>text.includes('./bootstrap.js?v=39')],
-  ['v2/bootstrap.js',text=>text.includes("./app.js?v=42")],
-  ['v2/app.js',text=>text.includes('physical===3?35:physical===4?36:physical===5?33')],
+  ['',text=>text.includes('./v2/bootstrap.js?v=40')],
+  ['v2/index.html',text=>text.includes('./bootstrap.js?v=40')],
+  ['v2/bootstrap.js',text=>text.includes("./app.js?v=43")],
+  ['v2/app.js',text=>text.includes('physical===3?35:physical===4?37:physical===5?33')],
   ['v2/steps/step5.js',text=>text.includes('const recoveredGap=parseGapBullet')&&text.includes('const explicitGaps=')]
 ];
 for(let attempt=1;attempt<=45;attempt++){
