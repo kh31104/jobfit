@@ -67,6 +67,19 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  assert.equal(await page.locator("#leftEditors .editItem").count(),3,label+" before editors");
  assert.equal(await page.locator("#rightEditors .editItem").count(),4,label+" after editors");
  assert.equal(await page.locator("#paper .roadItem").count(),7,label+" both career maps");
+
+ const preview=await page.evaluate(()=>{
+  const view=document.querySelector(".paperViewport").getBoundingClientRect();
+  const paper=document.querySelector("#paper").getBoundingClientRect();
+  const right=document.querySelector(".right.roadmap").getBoundingClientRect();
+  return {view:[view.left,view.right],paper:[paper.left,paper.right],right:[right.left,right.right]};
+ });
+ assert(preview.paper[0]>=preview.view[0]-2&&preview.paper[1]<=preview.view[1]+2,label+" whole page fits preview");
+ assert(preview.right[1]<=preview.view[1]+2,label+" right roadmap visible in preview");
+ await page.locator("#previewZoom").click();
+ assert.equal(await page.locator("#previewZoom").getAttribute("aria-pressed"),"true",label+" preview zoom enabled");
+ await page.locator("#previewZoom").click();
+ assert.equal(await page.locator("#previewZoom").getAttribute("aria-pressed"),"false",label+" preview fit restored");
  await page.locator("#makeArtPrompt").click();
  const art=await page.locator("#artPrompt").inputValue();
  assert.match(art,/A4 가로형 297 × 210mm/,label+" A4 layout");
@@ -83,6 +96,8 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  assert.equal(await page.evaluate(()=>localStorage.getItem("jobfit:donga:step1:v1")),"step1-untouched",label+" STEP 1 untouched");
  assert.equal((await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step2:v1")))).target.job,"품질관리",label+" STEP 2 untouched");
  if(label==="Desktop Chrome"){
+   await page.emulateMedia({media:"print"});
+   assert.equal(await page.locator("#paper").evaluate(el=>getComputedStyle(el).transform),"none",label+" print scaling reset");
    const metrics=await page.evaluate(()=>{
  const paper=document.querySelector("#paper");
  const titles=[...paper.querySelectorAll(".note")].map(el=>({client:el.clientHeight,scroll:el.scrollHeight}));
@@ -98,6 +113,16 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  const pdf=await page.pdf({preferCSSPageSize:true,printBackground:true});
    assert.equal((pdf.toString("latin1").match(/\/Type\s*\/Page\b/g)||[]).length,1,"A4 landscape one page");
  }
+
+ const flowPage=await context.newPage();
+ await flowPage.goto(url.replace(/step3\/?$/,""),{waitUntil:"domcontentloaded"});
+ assert.equal(await flowPage.locator("#dongaSide1 .donga-stepbtn").count(),7,label+" STEP 1 sidebar 7");
+ await flowPage.locator("#dongaSide1 .donga-stepbtn").nth(2).click();
+ assert.equal(await flowPage.locator("#step3").evaluate(x=>x.open),true,label+" STEP1 accordion opens");
+ await flowPage.goto(url.replace(/step3\/?$/,"step2/"),{waitUntil:"domcontentloaded"});
+ assert.equal(await flowPage.locator("#stepNav .stepBtn").count(),4,label+" STEP2 sidebar 4");
+ assert.equal(await flowPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+3),true,label+" STEP2 no horizontal overflow");
+ await flowPage.close();
  assert.deepEqual(errors,[],label+" errors");
  await context.close();await browser.close();console.log("PASS",label);
 }
