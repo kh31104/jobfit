@@ -22,3 +22,9 @@
 @media(max-width:800px){.donga-layout{display:block!important}.donga-side{position:static;margin-bottom:12px}.donga-nav-card{border-radius:17px;padding:11px}.donga-menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px}.donga-stepbtn{min-height:56px;padding:8px 7px}.donga-steplabel b{font-size:12px}.donga-steplabel small{font-size:10px}.donga-topbar{align-items:flex-start;flex-direction:column;padding:10px}.donga-links{width:100%}}
 @media(max-width:420px){.donga-menu{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media print{.donga-side,.donga-topbar{display:none!important}.donga-layout{display:block!important}.donga-main{display:block!important}.donga-screen{display:block!important}}
+
+/* STEP 1 originally used a full-width banner. Match STEP 2 and STEP 3's contained hero layout. */
+.donga-topbar + header{max-width:1148px;margin:0 auto 18px;border-radius:24px;padding:26px 30px;box-shadow:0 16px 36px rgba(25,51,83,.13)}
+.donga-topbar + header>div{max-width:none}
+.donga-topbar + header>div>div:first-child{display:none}
+@media(max-width:800px){.donga-topbar + header{margin:0 10px 13px;border-radius:19px;padding:22px 17px}}
