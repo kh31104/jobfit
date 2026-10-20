@@ -1,0 +1,45 @@
+/* STEP 1: AI confirmation checkbox + compact CAREER DNA display.
+   Does not modify existing data. Screen only; do not affect print. */
+@media screen{
+ #step6 label.field.checkboxLine, #step7 label.field.checkboxLine {
+  display:flex!important;
+  flex-direction:row!important;
+  flex-wrap:nowrap!important;
+  align-items:flex-start!important;
+  justify-content:flex-start;
+  gap:10px!important;
+  margin:12px 0!important;
+  line-height:1.55;
+  font-size:13px;
+  font-weight:500;
+  cursor:pointer;
+ }
+ #step6 label.field.checkboxLine input[type=checkbox],
+ #step7 label.field.checkboxLine input[type=checkbox]{
+  flex:0 0 18px!important;
+  width:18px!important;
+  min-width:18px!important;
+  height:18px!important;
+  min-height:18px!important;
+  padding:0!important;
+  margin:1px 0 0!important;
+  box-shadow:none!important;
+  accent-color:#3862c9;
+ }
+ #step6 #aiscratch, #step7 #dnafields textarea{
+  line-height:1.48!important;
+  font-size:14px!important;
+ }
+ #step7 #dnapreview{
+  white-space:pre-line;
+  line-height:1.5;
+ }
+ #step1 .actions .btn, #step6 .actions .btn{
+  flex:0 1 auto;
+ }
+}
+@media screen and (max-width:650px){
+ #step1 .actions .btn, #step6 .actions .btn{
+   flex:1 1 calc(50% - 8px);
+ }
+}
