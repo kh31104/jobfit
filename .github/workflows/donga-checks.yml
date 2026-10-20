@@ -57,3 +57,7 @@ jobs:
         env:
           JOBFIT_STEP2_URL: http://127.0.0.1:8765/donga/step2/
         run: node donga/step2/tests/browser.mjs
+      - name: Test DONG-A STEP 3 PDF and Android/iPhone browsers
+        env:
+          JOBFIT_STEP3_URL: http://127.0.0.1:8765/donga/step3/
+        run: node donga/step3/tests/browser.mjs
