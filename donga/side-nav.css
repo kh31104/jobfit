@@ -1,0 +1,24 @@
+/* JOBFIT DONG-A unified step sidebar. Visual only; does not read/write learner data. */
+.donga-topbar{max-width:1180px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;color:#203957}
+.donga-brand{display:flex;gap:10px;align-items:center}
+.donga-logo{width:42px;height:42px;display:grid;place-items:center;border-radius:13px;color:#fff;background:linear-gradient(135deg,#193353,#3862c9);font-size:23px;font-weight:950}
+.donga-brand-lines b{display:block;font-size:15px}.donga-brand-lines small{font-size:12px;color:#65758a;font-weight:750}
+.donga-links{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.donga-links a,.donga-links strong{border:1px solid #dbe4f2;background:#fff;border-radius:10px;padding:8px 11px;color:#385372;text-decoration:none;font-size:12px;font-weight:800}
+.donga-links strong{background:#193353;border-color:#193353;color:white}
+.donga-layout{display:grid!important;grid-template-columns:270px minmax(0,1fr);align-items:start;gap:18px;max-width:1180px!important}
+.donga-side{position:sticky;top:14px;align-self:start;min-width:0}
+.donga-nav-card{border:1px solid #dde5f0;border-radius:22px;padding:14px;background:#fff;box-shadow:0 12px 32px rgba(30,55,105,.08)}
+.donga-nav-title{font-size:12px;color:#65758a;font-weight:900;letter-spacing:.03em;margin:4px 8px 10px}
+.donga-menu{display:grid;gap:3px}
+.donga-stepbtn{font-family:inherit;width:100%;border:0;background:transparent;display:flex;align-items:center;text-align:left;gap:9px;padding:10px 11px;border-radius:12px;color:#48546c;cursor:pointer;font-size:14px;font-weight:500;min-height:52px}
+.donga-stepbtn:hover{background:#f7f9fd}.donga-stepbtn[aria-current="step"]{background:#edf4ff;color:#3862c9;font-weight:900}
+.donga-stepnum{width:31px;height:31px;border-radius:10px;background:#eef1f6;display:grid;place-items:center;flex:0 0 auto;font-size:12px;font-weight:900;color:#556680}
+.donga-stepbtn[aria-current="step"] .donga-stepnum{background:linear-gradient(135deg,#3862c9,#4a71d4);color:#fff}
+.donga-steplabel{line-height:1.2;min-width:0;overflow-wrap:anywhere}.donga-steplabel b{display:block;font-size:14px;font-weight:inherit}.donga-steplabel small{display:block;color:#8899b0;font-size:10px;font-weight:650;margin-top:3px}
+.donga-stepbtn[aria-current="step"] .donga-steplabel small{color:#3862c9}
+.donga-main{min-width:0}
+.donga-main > .card:first-child,.donga-main > .donga-screen:first-child{margin-top:0}
+@media(max-width:800px){.donga-layout{display:block!important}.donga-side{position:static;margin-bottom:12px}.donga-nav-card{border-radius:17px;padding:11px}.donga-menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px}.donga-stepbtn{min-height:56px;padding:8px 7px}.donga-steplabel b{font-size:12px}.donga-steplabel small{font-size:10px}.donga-topbar{align-items:flex-start;flex-direction:column;padding:10px}.donga-links{width:100%}}
+@media(max-width:420px){.donga-menu{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media print{.donga-side,.donga-topbar{display:none!important}.donga-layout{display:block!important}.donga-main{display:block!important}.donga-screen{display:block!important}}
