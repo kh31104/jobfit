@@ -65,7 +65,7 @@ function anchorDone(){return data.anchor.answers.every(function(n){return Number
 function done(n){if(n===1)return !!data.valuesSaved&&allFields(FIELDS,data.values);if(n===2)return anchorDone();if(n===3)return data.strengths.length===5;if(n===4)return data.via.top.every(filled)&&data.via.low.every(filled);if(n===5)return allFields(COMP,data.compare);if(n===6)return !!data.aiReviewed;if(n===7)return !!data.dnaSaved&&allFields(DNA,data.dna)}
 function ranking(){return Object.keys(TYPES).map(function(code){var score=0;ITEMS.forEach(function(q,i){if(q[0]===code){score+=Number(data.anchor.answers[i]||0);if(data.anchor.bonus.includes(i))score+=4}});return{code:code,name:TYPES[code],score:score}}).sort(function(a,b){return b.score-a.score||a.code.localeCompare(b.code)})}
 function refresh(){var count=0;for(var n=1;n<=7;n++){var b=$('tag'+n);if(done(n)){count++;b.textContent='완료';b.className='tag done'}else{b.textContent='진행 중';b.className='tag'}}$('meter').style.width=(count/7*100)+'%';$('progress').textContent=count+' / 7 완료';renderComparePreview();renderDnaPreview()}
-function fields(target,list,key,obj,multi){$(target).innerHTML=list.map(function(item){var v=obj[item[0]]||'';var useArea=multi||(key==='val'&&item[0]==='top5');return '<label class="field"><span>'+esc(item[1])+'</span>'+(useArea?'<textarea data-'+key+'="'+esc(item[0])+'" placeholder="'+esc(item[1])+'">'+esc(v)+'</textarea>':'<input type="text" data-'+key+'="'+esc(item[0])+'" value="'+esc(v)+'" placeholder="'+esc(item[1])+'">')+'</label>'}).join('')}
+function fields(target,list,key,obj,multi){$(target).innerHTML=list.map(function(item){var v=obj[item[0]]||'';if(key==='dna')v=compactText(v);var useArea=multi||(key==='val'&&item[0]==='top5');return '<label class="field"><span>'+esc(item[1])+'</span>'+(useArea?'<textarea data-'+key+'="'+esc(item[0])+'" placeholder="'+esc(item[1])+'">'+esc(v)+'</textarea>':'<input type="text" data-'+key+'="'+esc(item[0])+'" value="'+esc(v)+'" placeholder="'+esc(item[1])+'">')+'</label>'}).join('')}
 function syncFields(key,obj){document.querySelectorAll('[data-'+key+']').forEach(function(i){obj[i.getAttribute('data-'+key)]=i.value.trim()})}
 function copy(s){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(s).then(function(){toast('복사했습니다.')},function(){legacyCopy(s)})}else legacyCopy(s)}
 function legacyCopy(s){var a=document.createElement('textarea');a.value=s;document.body.appendChild(a);a.select();var success=false;try{success=document.execCommand('copy')}catch(e){}a.remove();toast(success?'복사했습니다.':'복사를 허용하지 않습니다. 텍스트를 직접 복사하세요.')}
@@ -114,14 +114,14 @@ COMP.map(function(x){return x[1]+': '+(data.compare[x[0]]||'미작성')}).join('
 '구체적인 경험 근거가 없으면 [확인 필요]라고 쓰고, 결과보다 강한 결론을 내리지 않는다.',
 '다음 네 섹션만 아래 순서로 출력한다.',
 '1. [핵심 가치와 직업 선택 기준] — 자료로 확인되는 내용 2줄',
-'2. [강점과 보완할 행동] — 강점의 일치·차이와 과잉사용 주의점 각 1줄. 강점을 실제로 사용한 상황은 작성하지 않는다.',
+'2. [강점과 보완할 행동] — 강점의 일치·차이와 과잉사용 주의점을 각 1줄로 제시한다.',
 '3. [SWOT 요약] — S, W, O, T를 각 1줄씩. 근거가 없는 O/T는 확인 필요라고 기재한다.',
 '4. [MY CAREER DNA v1] — 반드시 다음 4개 제목만 각각 1줄로 출력한다.',
 '• 내가 확인한 핵심 가치와 선택 기준:',
 '• 가치관·커리어 기준·강점이 연결되는 부분:',
 '• 내가 확인한 보완할 행동 또는 강점 과잉 사용:',
 '• 다음 실제 경험에서 검증할 질문:',
-'강점을 사용한 상황을 별도 항목으로 만들지 않는다. 모든 문장은 확인된 근거 또는 [AI 가설] 여부를 표시한다.'
+'모든 문장은 확인된 근거 또는 [AI 가설] 여부를 표시한다.'
 ];
 analysisPrompt=references.join('\n');$('analysispreview').textContent=analysisPrompt;toast('간결한 Career DNA 분석 프롬프트를 만들었습니다.');
 }
