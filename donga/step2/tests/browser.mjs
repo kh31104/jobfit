@@ -20,10 +20,22 @@ try{
   await page.locator('[data-path="target.job"]').fill("품질관리");
   await page.locator('[data-path="student.major"]').fill("산업공학");
   await page.locator('[data-next="2"]').click();
+  assert.equal(await page.locator("#copySearchPromptBtn").count(),1,"Find JD prompt copy button");
+  const aiFind=page.locator("#copySearchPromptBtn").locator("xpath=..");
+  assert.equal(await aiFind.locator("[data-ai-provider]").count(),3,"Find JD offers ChatGPT, Gemini and Claude");
+  for(const [name,domain] of [["ChatGPT","chatgpt.com"],["Gemini","gemini.google.com"],["Claude","claude.ai"]]){
+    assert.match(await aiFind.locator('[data-ai-provider="'+name+'"]').getAttribute("href"),new RegExp(domain),"correct "+name+" URL");
+  }
+
   await page.locator('[data-path="step2Search.company"]').fill("테스트 제조");
   await page.locator('[data-path="step2Search.title"]').fill("품질관리 신입");
   await page.locator('[data-path="step2Search.facts"]').fill("품질 데이터 집계\\n불량 원인 분석");
   await page.locator("#useStep2JobBtn").click();
+  const analysisCopy=page.locator("#copyReviewedJobPromptBtn");
+  if(await analysisCopy.count()){
+    assert.equal(await analysisCopy.locator("xpath=..").locator("[data-ai-provider]").count(),3,"Job analysis prompt links");
+  }
+
   assert.match(await page.locator("#stepRoot").innerText(),/3 Ways/);
   await page.locator('[data-path="jobTable.tasks"]').fill("품질 기록, 공정 데이터 정리");
   await page.locator('[data-path="jobTable.competencies"]').fill("데이터 해석, 품질 지표 이해");
