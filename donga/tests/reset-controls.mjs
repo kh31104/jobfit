@@ -5,7 +5,7 @@ const source=fs.readFileSync(new URL("../reset-controls.js",import.meta.url),"ut
 const html=fs.readFileSync(new URL("../index.html",import.meta.url),"utf8");
 const css=fs.readFileSync(new URL("../reset-controls.css",import.meta.url),"utf8");
 assert.match(html,/anchor-score-grid/,"Career Anchor guide before questions");
-const anchorIndex=html.indexOf("anchor-score-grid");
+const anchorIndex=html.indexOf('<div class="anchor-score-grid">');
 assert(anchorIndex>html.indexOf('id="step2"') && anchorIndex<html.indexOf('id="qarea"'),"scoring guide comes before 40 questionnaire");
 assert.match(html,/3개를 선택/,"3 bonus questions guide");
 assert.match(css,/@media\(max-width:650px\)/,"mobile support");
