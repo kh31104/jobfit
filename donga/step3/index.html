@@ -40,6 +40,35 @@ main{max-width:none!important;margin:0!important;padding:0!important}.top,.hero,
 .donga-main .card:first-child{margin-top:0}.donga-main select{display:block;width:100%;padding:10px;border:1px solid #cbd7e6;border-radius:9px;font:inherit;color:#203957;background:white;margin-top:7px}
 .donga-screen[hidden]{display:none!important}.donga-main{min-width:0}
 @media print{.donga-layout .donga-screen{display:none!important}.donga-layout #dongaPanel5{display:block!important}.donga-layout #dongaPanel5 .editCard,.donga-layout #dongaPanel5 .actionCard,.donga-layout #dongaPanel5 .artCard{display:none!important}.donga-layout #dongaPanel5 .previewCard{display:block!important}}
+
+/* STUDENT UX / PDF: scrapbook texture, legibility, and whole-page preview */
+@media screen {
+ .paperViewport{display:flex;justify-content:center;align-items:flex-start;overflow-x:auto;min-height:250px}
+ .paperSizer{position:relative;flex:0 0 auto;width:1122px;height:794px}
+ .paperSizer .paper{transform-origin:top left}
+}
+.roadmap{position:relative}
+.roadTrack{position:relative}
+.roadTrack:before{content:"";position:absolute;z-index:0;left:17px;top:22px;bottom:22px;border-left:2px dashed rgba(105,130,182,.3);transform:rotate(-1deg)}
+.right .roadTrack:before{border-color:rgba(94,161,132,.33)}
+.roadItem{z-index:1}
+.nodeIcon{color:#3e6090;box-shadow:1px 2px 0 rgba(62,91,140,.12)}
+.right .nodeIcon{color:#357f68}
+.note{position:relative;padding:9px 12px;border-radius:11px 9px 13px 10px}
+.note:before{content:"";position:absolute;right:12px;top:-5px;width:27px;height:9px;border-radius:1px;background:rgba(237,196,116,.24);transform:rotate(8deg)}
+.right .note:before{background:rgba(137,211,175,.24)}
+.left .roadItem:nth-child(2) .note{background:#fffdf5}
+.right .roadItem:nth-child(2) .note{background:#f9fffc}
+.right .roadItem:nth-child(4) .note{background:#fffdf8}
+.note p{font-size:13.6px;line-height:1.43}
+.noteHead strong{font-size:25px}
+@media print{
+ .paperViewport{display:block!important;min-height:0!important}
+ .paperSizer{width:297mm!important;height:210mm!important;margin:0!important;padding:0!important;overflow:visible!important}
+ .paperSizer .paper{transform:none!important;transform-origin:top left!important}
+ .note p{font-size:13.3px;line-height:1.39}
+}
+
 </style>
 </head>
 <body>
@@ -72,15 +101,15 @@ main{max-width:none!important;margin:0!important;padding:0!important}.top,.hero,
 <label class="promptLabel" for="artPrompt">A4 가로 · 왼쪽 세로형 + 오른쪽 세로형 · 1쪽</label><textarea id="artPrompt" class="promptArea" rows="8" readonly placeholder="단계별 계획을 확인한 뒤 ‘최종 그림 프롬프트 생성’을 눌러 주세요."></textarea>
 <p class="hint">이 버튼은 ChatGPT 이미지 생성에 사용할 프롬프트를 제공합니다. 아래 PDF 버튼은 잡핏 자체 로드맵을 저장하며, ChatGPT에서 생성한 이미지를 자동으로 PDF에 삽입하지는 않습니다. 이미지 속 한글은 직접 확인해 주세요.</p>
 </section><section class="card previewCard"><div class="sectionHead"><span class="count">05</span><div><h2>A4 가로형 · 1페이지 미리보기</h2><p>두 그림을 왼쪽·오른쪽에 나란히 배치했습니다. 모바일에서는 미리보기를 좌우로 움직여 보세요.</p></div></div>
-<div class="buttons"><button id="pdf" class="btn primary">A4 가로 PDF 저장 / 인쇄</button><button id="export" class="btn light">STEP 3 백업 저장</button><button id="import" class="btn light">STEP 3 백업 불러오기</button><input type="file" id="importFile" accept=".json,application/json" hidden></div><p class="hint" id="saveState" role="status">STEP 3 전용 데이터로 자동 저장됩니다.</p>
-<div class="paperViewport"><div class="paper" id="paper">
+<div class="buttons"><button id="pdf" class="btn primary">A4 가로 PDF 저장 / 인쇄</button><button type="button" id="previewZoom" class="btn light" aria-pressed="false">확대 보기</button><button id="export" class="btn light">STEP 3 백업 저장</button><button id="import" class="btn light">STEP 3 백업 불러오기</button><input type="file" id="importFile" accept=".json,application/json" hidden></div><p class="hint" id="saveState" role="status">STEP 3 전용 데이터로 자동 저장됩니다.</p>
+<div class="paperViewport"><div class="paperSizer" id="paperSizer"><div class="paper" id="paper">
 <div class="paperHead"><div><small>MY CAREER DEVELOPMENT PLAN ✦</small><h2>나의 커리어 준비와 성장 로드맵</h2><p id="paperJob">희망 직무를 입력해 주세요</p></div>
 <svg class="doodle" viewBox="0 0 150 85" role="img" aria-label="손으로 그린 별과 연필"><path d="M5 38 Q35 5 58 35 T104 22" fill="none" stroke="#a398de" stroke-width="4" stroke-linecap="round" stroke-dasharray="6 7"/><path d="M96 4l4 12 13 1-10 8 4 12-11-7-11 7 4-12-10-8 13-1z" fill="#ffdb7d" stroke="#3a5874" stroke-width="2"/><path d="M114 39l16 10-30 33-17 1 2-16z" fill="#b9dfd4" stroke="#3a5874" stroke-width="2"/></svg></div>
 <div class="paperGrid">
 <article class="roadmap left"><div class="mapTitle"><span class="headIcon">✎</span><div><small>BEFORE WORK</small><h3>① 취업 전 커리어 준비계획</h3></div></div><div class="roadTrack" id="leftRoad"></div><div class="mapTail">나의 속도에 맞춰 한 걸음씩! ☆</div></article>
 <article class="roadmap right"><div class="mapTitle"><span class="headIcon">✧</span><div><small>AFTER WORK</small><h3>② 취업 후 장기 경력개발계획</h3></div></div><div class="roadTrack" id="rightRoad"></div><div class="mapTail">나만의 경력 방향을 그려요! ♡</div></article>
 </div><div class="paperFooter"><span>JOBFIT DONG-A · CAREER ROADMAP</span><span id="paperNotice">※ 일반 CDP 예시는 실제 기업·직무에 따라 달라질 수 있습니다.</span></div>
-</div></div>
+</div></div></div>
 <p class="hint">PC/Android: 인쇄 창에서 ‘PDF로 저장’을 선택하세요. iPhone: 인쇄 미리보기에서 공유 후 PDF를 저장할 수 있습니다. 인쇄 설정은 A4·가로·1쪽을 확인하세요.</p>
 </section></div>
 </div></div>
@@ -132,12 +161,39 @@ sales:[
 [["영업·고객관리 채용공고 비교","고객·매출·채널 업무 파악"],["고객분석·제안서 실습","니즈·자료·근거 정리"],["설득·고객응대 경험 정리","과정·성과 설명 준비"]],
 [["상품·고객·CRM 기초 숙지","문의·계약 절차 파악"],["담당 거래처·고객 관리","목표·고객반응 분석"],["주요 고객군·영업전략 운영","수익성·협상 경험 확대"],["영업 전문가·관리자 경로 검토","판매 방식에 따라 다름"]]]
 };
+
+/* Long-term fallback examples match 5/10/15-year headings. These are suggestions only. */
+const longTermExamples={
+ general:[["담당 직무의 주요 업무를 독립적으로 수행","성과·개선 사례를 근거와 함께 기록"],["복잡한 과제를 해결하고 실무 경험 확장","협업·문제해결 범위 확대"],["직무 전문가 또는 관리 역할 선택 검토","심화 경험·책임 범위 확인"],["내가 원하는 경력 목표 구체화","실제 조직 경로와 기회를 확인"]],
+ marketing:[["브랜드 캠페인의 주요 업무 수행","고객·성과지표 기반 개선 경험"],["캠페인 전략과 채널 운영 개선 담당","브랜드·예산·파트너 협업 경험"],["브랜드 전략 전문성 또는 조직 운영 심화","브랜드 포트폴리오·성과 책임 검토"],["브랜드 전략 전문가 등 경로 선택","업종·기업별 역할 차이 확인"]],
+ hr:[["담당 인사제도와 운영 업무 수행","채용·교육·평가 중 전문 분야 심화"],["인사기획·제도 개선 과제 담당","구성원 데이터·노동법·조직 이해"],["인사전문가 또는 조직 운영 역할 검토","제도 설계·리더십 경험 확장"],["희망 인사 전문 분야와 최종 역할 선택","기업별 경력경로 확인"]],
+ quality:[["품질개선 실무 및 문제 원인분석 수행","측정 데이터·공정 개선 사례 축적"],["품질시스템 개선과 주요 품질문제 해결","품질 지표·협력부서 개선과제 경험"],["품질전략 전문성 또는 조직 운영 역할 확대","전사적 품질관리 경험 검토"],["품질부문 책임자 또는 전문 컨설턴트 검토","내가 원하는 최종 경력목표 선택"]],
+ production:[["생산계획·현장지표 개선 업무 수행","납기·안전·품질·원가 조정 경험"],["공정개선·생산성 향상 과제 주도","부서 협업과 성과관리 경험"],["생산전략 전문가 또는 운영관리 역할 확장","현장·설비·인력 운영 범위 확인"],["생산전략 전문가 또는 운영 책임 경로 검토","사업장과 업종의 차이 확인"]],
+ env:[["시설·환경 지표 관리와 개선 업무 수행","법규·안전·측정 데이터 기반 판단"],["수질·환경시설 개선 프로젝트 담당","운영효율·법적 기준·기술 분석 심화"],["환경기술 전문가 또는 시설 운영 리더 경로 검토","설비·정책·조직 운영 이해 확장"],["환경기술 전문가 또는 운영 책임 경로 선택","기관·시설 유형별 조건 확인"]],
+ finance:[["결산·재무보고 등 담당 업무 독립 수행","회계기준·정확성·검증 사례 축적"],["재무분석·업무 프로세스 개선 담당","예산·자금·경영계획과 연결"],["회계·재무 전문가 또는 관리 역할 심화","조직 차원의 재무 의사결정 이해"],["재무 전문가 또는 조직 관리 경로 선택","실제 기업별 경력경로 확인"]],
+ tech:[["서비스 기능·시스템 개발 독립 수행","코드 품질·테스트·장애 대응 경험"],["시스템 설계·성능 개선과제 담당","보안·운영·협업 의사결정 심화"],["기술 전문가 또는 개발조직 리더 경로 검토","기술 설계·후배 지원 경험 확장"],["기술 전문가·테크 리드 등 목표 선택","조직 규모·기술환경에 맞게 수정"]],
+ sales:[["주요 고객·거래처 영업업무 수행","고객관계·계약·성과관리 경험"],["고객군·채널 영업전략 수립 참여","수익성·영업데이터·협상 전문성"],["전략영업 전문가 또는 조직 관리 역할 검토","거래처 포트폴리오·팀 운영 경험"],["영업 전략 전문가 또는 관리자 경로 선택","판매 형태와 조직 환경 확인"]]
+};
+
 function parts(text){return String(text||"").split(/\r?\n|[;；]/).map(s=>s.trim().replace(/^[-*•\d.)\s]+/,"")).filter(Boolean)}
 function lane(text,unknown,templates,labels){const entries=unknown?[]:parts(text);return labels.map((label,i)=>{const remaining=i===labels.length-1?entries.slice(i+1).join(" / "):"";const one=(entries[i]||"")+(remaining?" / "+remaining:"");return {label,one:one||templates[i][0],two:one?"구체적인 실행·확인 내용을 직접 적어 주세요":templates[i][1],origin:one?"mine":"cdp"}})}
-function build(){collect();const q=data.question;if(!q.job.trim()){notify("희망 직무를 먼저 입력해 주세요.");$("job").focus();return}if(!q.pre.trim()&&!q.preUnknown){notify("취업 전 계획을 쓰거나 ‘아직 계획이 없어요’를 선택해 주세요.");return}if(!q.post.trim()&&!q.postUnknown){notify("취업 후 목표를 쓰거나 ‘아직 계획이 없어요’를 선택해 주세요.");return}if((data.left.some(x=>x.one)||data.right.some(x=>x.one))&&!confirm("현재 단계별 수정 초안을 새로 만들까요? 질문 원문은 그대로 보존됩니다."))return;const p=plans[family(q.job)];data.left=lane(q.pre,q.preUnknown,p[0],LL);data.right=lane(q.post,q.postUnknown,p[1],RR);save();editors();draw();$("leftEditors").scrollIntoView({behavior:"smooth",block:"start"});notify("로드맵 초안이 완성됐습니다. 예시는 검토 후 수정하세요.")}
+function build(){collect();const q=data.question;if(!q.job.trim()){notify("희망 직무를 먼저 입력해 주세요.");$("job").focus();return}if(!q.pre.trim()&&!q.preUnknown){notify("취업 전 계획을 쓰거나 ‘아직 계획이 없어요’를 선택해 주세요.");return}if(!q.post.trim()&&!q.postUnknown){notify("취업 후 목표를 쓰거나 ‘아직 계획이 없어요’를 선택해 주세요.");return}if((data.left.some(x=>x.one)||data.right.some(x=>x.one))&&!confirm("현재 단계별 수정 초안을 새로 만들까요? 질문 원문은 그대로 보존됩니다."))return;const p=plans[family(q.job)];data.left=lane(q.pre,q.preUnknown,p[0],LL);data.right=lane(q.post,q.postUnknown,longTermExamples[family(q.job)]||longTermExamples.general,RR);save();editors();draw();document.querySelectorAll("#dongaStep3Nav .donga-stepbtn")[2]?.click();notify("로드맵 초안이 완성됐습니다. AI 취업 전 계획을 확인해 주세요.")}
 function titleOf(origin){return origin==="mine"?"내 계획":origin==="modified"?"직접 수정":origin==="cdp"?"일반 CDP 예시":origin==="ai"?"AI 초안 · 확인 필요":"작성 전"}
 function editors(){[["left",LL],["right",RR]].forEach(([side,labels])=>{const root=$(side+"Editors");root.replaceChildren();data[side].forEach((s,i)=>{const item=document.createElement("div");item.className="editItem";const top=document.createElement("div");top.className="editTitle";const st=document.createElement("strong");st.textContent=(i+1)+". "+labels[i];const tag=document.createElement("span");tag.className="badge "+(s.origin||"empty");tag.textContent=titleOf(s.origin);top.append(st,tag);item.append(top);[["one",side==="left"?"목표 · 준비활동":"담당업무 · 역할"],["two",side==="left"?"실행방법 · 체크포인트":"필요역량 · 성장목표"]].forEach(([field,label])=>{const box=document.createElement("label");box.textContent=label;const textarea=document.createElement("textarea");textarea.value=s[field];textarea.rows=2;textarea.placeholder="내 계획을 직접 적어 주세요";textarea.addEventListener("input",()=>{s[field]=textarea.value;s.origin="modified";tag.className="badge modified";tag.textContent="직접 수정";save();draw()});box.append(textarea);item.append(box)});root.append(item)})})}
-function makeNode(s,i,side){const item=document.createElement("div");item.className="roadItem";const pic=document.createElement("div");pic.className="nodeIcon";pic.textContent=(side==="left"?["⌕","✎","✓"]:["✿","♧","★","⚑"])[i];const note=document.createElement("div");note.className="note";const head=document.createElement("div");head.className="noteHead";const b=document.createElement("strong");b.textContent=s.label;const badge=document.createElement("span");badge.className="badge "+(s.origin||"empty");badge.textContent=titleOf(s.origin);head.append(b,badge);note.append(head);[["one",side==="left"?"계획":"업무"],["two",side==="left"?"실행":"성장"]].forEach(([key,name])=>{const p=document.createElement("p");const keyNode=document.createElement("b");keyNode.textContent=name+" · ";p.append(keyNode,document.createTextNode(s[key]||"직접 작성해 주세요"));note.append(p)});item.append(pic,note);return item}
+const paperDoodleIcons={
+ left:[
+ '<path d="M4 10a6 6 0 1 1 12 0 6 6 0 0 1-12 0ZM15 15l6 6M8 8l2-2"/>',
+ '<path d="M4 5q4-2 8 1v14q-4-3-8-1V5Zm8 1q4-3 8-1v14q-4-2-8 1M12 6v14M6 8l3 1M15 9l3-1"/>',
+ '<path d="M5 21V3m0 2q6-3 11 1l4-1v11q-8-3-15 1M5 19h10"/>'
+ ],
+ right:[
+ '<rect x="3" y="8" width="18" height="12" rx="2"/><path d="M8 8V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v3M3 12q9 7 18 0M11 14h2"/>',
+ '<path d="M3 20h18M5 18V12h4v6M11 18V7h4v11M17 18V4h3v14M5 8l4-3 4 1 6-4"/>',
+ '<path d="M12 3 14 8 19 8l-4 4 2 6-5-3-5 3 2-6-4-4h5zM4 22l4-4m12 4-4-4"/>',
+ '<path d="M5 21V3m0 2q7-3 13 1l-3 5 4 4q-7-2-14 1M3 21h10"/>'
+ ]
+};
+function makeNode(s,i,side){const item=document.createElement("div");item.className="roadItem";const pic=document.createElement("div");pic.className="nodeIcon";pic.innerHTML='<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+paperDoodleIcons[side][i]+'</svg>';const note=document.createElement("div");note.className="note";const head=document.createElement("div");head.className="noteHead";const b=document.createElement("strong");b.textContent=s.label;const badge=document.createElement("span");badge.className="badge "+(s.origin||"empty");badge.textContent=titleOf(s.origin);head.append(b,badge);note.append(head);[["one",side==="left"?"계획":"업무"],["two",side==="left"?"실행":"성장"]].forEach(([key,name])=>{const p=document.createElement("p");const keyNode=document.createElement("b");keyNode.textContent=name+" · ";p.append(keyNode,document.createTextNode(s[key]||"직접 작성해 주세요"));note.append(p)});item.append(pic,note);return item}
 function draw(){$("paperJob").textContent=data.question.job.trim()?"희망 직무  ·  "+data.question.job.trim():"희망 직무를 입력해 주세요";["left","right"].forEach(side=>{$(side+"Road").replaceChildren(...data[side].map((s,i)=>makeNode(s,i,side)))});$("paperNotice").textContent=[...data.left,...data.right].some(s=>s.origin==="cdp")?"※ 일반 CDP 예시 포함 · 기업과 직무에 따라 실제 경력 경로는 다를 수 있습니다.":"※ 학생이 작성·확인한 계획입니다."}
 
 
@@ -284,7 +340,7 @@ function makeArtPrompt(){
     notify("희망 직무와 로드맵의 모든 단계를 작성한 뒤 그림 프롬프트를 생성해 주세요.");return;
  }
  const lines=(stages,names)=>stages.map((x,i)=>[
-   String(i+1)+". "+names[i],
+   String(i+1)+". "+(x.label||names[i]),
    "목표·업무: "+x.one,
    "실행·필요역량: "+x.two,
    "출처 구분: "+titleOf(x.origin)
@@ -336,6 +392,28 @@ function backup(){collect();save();const blob=new Blob([JSON.stringify(data,null
 function restore(file){if(!file)return;if(file.size>1024*1024){notify("1MB 이하 STEP 3 백업만 불러올 수 있습니다.");return}const reader=new FileReader();reader.onload=()=>{try{const x=JSON.parse(reader.result);if(x.app!==APP||!Array.isArray(x.left)||!Array.isArray(x.right))throw Error("wrong");if(!confirm("현재 STEP 3 내용만 백업 파일 내용으로 교체할까요? STEP 1·2에는 영향을 주지 않습니다."))return;data={app:APP,version:1,question:{...init().question,...(x.question||{})},left:safeStages(x.left,LL),right:safeStages(x.right,RR),action:{...init().action,...(x.action||{})},drafts:{aiAnswer:String(x.drafts?.aiAnswer||""),postAnswer:String(x.drafts?.postAnswer||"")},updatedAt:""};save();refresh();notify("STEP 3 백업을 불러왔습니다.")}catch{notify("올바른 잡핏동아 STEP 3 백업이 아닙니다.")}};reader.onerror=()=>notify("파일을 읽을 수 없습니다.");reader.readAsText(file)}
 function printPDF(){collect();save();draw();const all=[...data.left,...data.right];if(!data.question.job.trim()||all.some(s=>!s.one.trim()||!s.two.trim())){notify("희망 직무와 모든 단계의 2개 항목을 작성해 주세요.");return}if(data.question.job.length>60||all.some(s=>s.one.length>75||s.two.length>75)){notify("문장이 너무 길어 1쪽을 넘을 수 있습니다. 단계별 내용을 줄여 주세요. 원문은 유지됩니다.");return}const old=document.title;document.title="JOBFIT_DONGA_STEP3_Career_Roadmap";window.print();setTimeout(()=>document.title=old,5000)}
 refresh();
+
+/* Scaled thumbnail shows both drawings together; full-size mode scrolls horizontally.
+   Print media cancels the thumbnail transform and prints a full A4 page. */
+let previewFullSize=false;
+function resizePaperPreview(){
+ const view=document.querySelector(".paperViewport"),sizer=$("paperSizer"),paper=$("paper");
+ if(!view||!sizer||!paper)return;
+ const available=Math.max(0,view.clientWidth-5);
+ if(!available)return;
+ const factor=previewFullSize?1:Math.min(1,available/1122);
+ sizer.style.width=Math.round(1122*factor)+"px";
+ sizer.style.height=Math.round(794*factor)+"px";
+ paper.style.transform="scale("+factor+")";
+ view.scrollLeft=0;
+ $("previewZoom").textContent=previewFullSize?"전체 보기":"확대 보기";
+ $("previewZoom").setAttribute("aria-pressed",String(previewFullSize));
+}
+$("previewZoom").addEventListener("click",()=>{previewFullSize=!previewFullSize;resizePaperPreview()});
+window.addEventListener("resize",resizePaperPreview);
+document.querySelector("#dongaStep3Nav")?.addEventListener("click",()=>setTimeout(resizePaperPreview,0));
+setTimeout(resizePaperPreview,0);
+
 $("loadStep2").addEventListener("click",sync);
 $("build").addEventListener("click",build);
 ["job","prePlan","postPlan","preUnknown","postUnknown"].forEach(id=>{["input","change"].forEach(evt=>$(id).addEventListener(evt,()=>{collect();save();draw()}))});
