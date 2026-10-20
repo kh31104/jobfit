@@ -1,3 +1,5 @@
+import {readableHTML, renderStep2Report} from "./report-view.js?v=1";
+
 const STORAGE_KEY = "jobfit:donga:step2:v1";
 
 const steps = [
@@ -566,6 +568,7 @@ function save(){
   const el=document.getElementById("saveState");
   if(el)el.textContent="저장됨 "+new Date().toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"});
   progress();
+  syncStep2ReportPreview();
 }
 
 function h(v=""){return String(v).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
@@ -1673,9 +1676,12 @@ function requirementRows(){
   ensureRequirements();
   syncRequirementEvidence();
   return state.requirements.map((r,i)=>'<div class="requirementRow">'+
-    '<div class="field"><label>공고·직무 조건 '+(i+1)+'</label><div class="selectedEvidence requirementSource"><b>'+h(r.condition||"원문 확인 필요")+'</b></div></div>'+
+    '<div class="field"><label>공고·직무 조건 '+(i+1)+'</label><div class="selectedEvidence requirementSource">'+readableHTML(r.condition,{dense:true,empty:"원문 확인 필요"})+'</div></div>'+
     '<div class="field"><label>내 현재 상태</label><select class="input" data-req="'+i+'" data-reqkey="status"><option value="">선택</option><option value="충족" '+(r.status==="충족"?"selected":"")+'>충족</option><option value="일부 준비" '+(r.status==="일부 준비"?"selected":"")+'>일부 준비</option><option value="현재 GAP" '+(r.status==="현재 GAP"?"selected":"")+'>현재 GAP</option><option value="원문 확인 필요" '+(r.status==="원문 확인 필요"?"selected":"")+'>원문 확인 필요</option></select></div>'+
-    '<div class="field"><label>내 근거 <span class="hint">(자동 불러오기 · 필요시 수정)</span></label><input class="input" data-req="'+i+'" data-reqkey="note" value="'+h(r.note)+'" placeholder="예: TOEIC 820 / 전기기사 준비 중 / 관련 경험 없음" /></div>'+
+    '<div class="field"><label>내 근거 <span class="hint">(자동 불러오기 · 필요시 수정)</span></label>'+
+      '<div class="donga-evidence-readable" data-evidence-preview="'+i+'">'+readableHTML(r.note,{dense:true,empty:"입력된 근거가 없습니다."})+'</div>'+
+      '<details class="donga-evidence-edit"'+(filled(r.note)?"":" open")+'><summary>내 근거 입력·수정</summary>'+
+      '<textarea class="input donga-note-input" rows="3" data-req="'+i+'" data-reqkey="note" placeholder="예: TOEIC 820 / 전기기사 준비 중 / 관련 경험 없음">'+h(r.note)+'</textarea></details></div>'+
   '</div>').join("");
 }
 
@@ -1858,6 +1864,39 @@ function derivedGapAssets(){
   return base.join(" / ");
 }
 
+function step2ReportSnapshot(){
+  const j=selectedJob();
+  return {
+    target:{company:j?.company||state.target.company||"",role:j?.role||state.target.job||"",
+      title:j?.title||"",sourceUrl:j?.sourceUrl||""},
+    student:{major:state.student.major,majorEvidence:state.student.majorEvidence,
+      certificates:state.student.certificates,language:state.student.language,tools:state.student.tools},
+    jobTable:{...state.jobTable},
+    requirements:state.requirements.map(r=>({...r})),
+    fit:{...state.fit}
+  };
+}
+function syncStep2ReportPreview(){
+  const el=document.getElementById("step2Report");
+  if(el)el.innerHTML=renderStep2Report(step2ReportSnapshot());
+}
+function step2ReportBlock(){
+  return '<section id="step2ReportBlock" class="block donga-report-block">'+
+    '<div class="donga-report-control"><h3>⑤ STEP 2 직무분석 결과 PDF</h3>'+
+    '<p>선택 직무·직무분석표·공고조건별 비교·GAP·3개월 행동계획을 A4 세로 PDF로 저장합니다. 미입력 항목은 미입력으로 표시하며, 저장된 원문은 바꾸지 않습니다.</p>'+
+    '<div class="donga-report-actions"><button type="button" class="btn primary" id="step2PdfBtn">PDF 저장 / 인쇄</button>'+
+    '<button type="button" class="btn secondary" id="step2ReportRefreshBtn">현재 입력값으로 미리보기 갱신</button></div>'+
+    '<p class="help">PC·Android: 인쇄 대상에서 PDF로 저장을 선택하세요. iPhone: 인쇄 미리보기에서 공유 메뉴로 PDF를 저장할 수 있습니다.</p></div>'+
+    '<article id="step2Report" aria-label="STEP 2 직무분석 및 GAP PDF 미리보기">'+renderStep2Report(step2ReportSnapshot())+'</article>'+
+    '</section>';
+}
+function printStep2Pdf(){
+  syncStep2ReportPreview();
+  document.body.classList.add("donga-report-print");
+  window.print();
+}
+window.addEventListener("afterprint",()=>document.body.classList.remove("donga-report-print"));
+
 function step5(){
   return shell(4,"JD Requirements × My Spec → GAP","공고 요구조건과 내가 실제로 입력한 스펙을 한 화면에서 비교하고, 준비할 GAP을 정합니다.",
     step5TargetPicker()+
@@ -1885,7 +1924,7 @@ function step5(){
       '<div class="grid2">'+
         field("fit.gaps","우선 보완할 GAP","AI 결과를 보고 최대 3개만 남기세요.")+
         field("fit.actions","3개월 행동계획","무엇을 언제까지 어떤 결과물로 만들 것인가?")+
-      '</div></div>');
+      '</div></div>'+step2ReportBlock());
 }
 
 function portfolio(){
@@ -2401,6 +2440,10 @@ function bind(){
           if(note)note.value=state.requirements[i].note;
         }
       }
+      if(k==="note"){
+        const preview=document.querySelector('[data-evidence-preview="'+i+'"]');
+        if(preview)preview.innerHTML=readableHTML(e.value,{dense:true,empty:"입력된 근거가 없습니다."});
+      }
       refreshStep5Derived();
       save();
     };
@@ -2416,6 +2459,8 @@ function bind(){
   document.getElementById("applyJobTableAiBtn")?.addEventListener("click",applyJobTableAi);
   document.getElementById("copyKeywordPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("keywordPromptPreview")?.value||competencyKeywordPrompt(),"내 역량분석 프롬프트를 복사했습니다."));
   document.getElementById("applyCompetencySummaryBtn")?.addEventListener("click",applyCompetencySummary);
+  document.getElementById("step2PdfBtn")?.addEventListener("click",printStep2Pdf);
+  document.getElementById("step2ReportRefreshBtn")?.addEventListener("click",()=>{syncStep2ReportPreview();toast("현재 저장된 결과로 미리보기를 갱신했습니다.");});
   document.getElementById("copyGapPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("gapPromptPreview")?.value||gapPrompt(),"내 GAP 분석 프롬프트를 복사했습니다."));
   document.getElementById("applyGapResultBtn")?.addEventListener("click",applyGapResult);
   document.getElementById("refreshSelfIntroPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("selfIntroPromptPreview"),v=selfIntroPrompt();if(e)e.value=v;updatePromptDraft("selfIntro",v);toast("현재 입력을 자기소개서 프롬프트에 반영했습니다.");});
@@ -2474,6 +2519,7 @@ function render(){
 }
 
 function go(n){
+  document.body.classList.remove("donga-report-print");
   save();
   state.currentStep=Math.max(1,Math.min(4,n));
   save();render();
