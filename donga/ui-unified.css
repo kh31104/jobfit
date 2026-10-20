@@ -54,6 +54,11 @@
     color:#203957;
   }
   body textarea,
+  body .field textarea,
+  body #stepRoot textarea,
+  body .question textarea,
+  body .editItem textarea,
+  body .donga-screen textarea,
   body .promptArea {
     box-sizing:border-box;
     min-height:88px;
