@@ -2393,11 +2393,37 @@ function bind(){
   });
 }
 
+function addProviderLinks(){
+  // A prompt may be in STEP2 Find JD, Choose JD, GAP or interview sections.
+  // Inject ordinary external links only; never send form data automatically.
+  const copyButtons=[
+    "copySearchPromptBtn","copyReviewedJobPromptBtn","copyKeywordPromptBtn",
+    "copyGapPromptBtn","copySelfIntroPromptBtn","copyInterviewPromptBtn"
+  ];
+  const services=[
+    ["ChatGPT","https://chatgpt.com/"],
+    ["Gemini","https://gemini.google.com/app"],
+    ["Claude","https://claude.ai/new"]
+  ];
+  for(const id of copyButtons){
+    const action=document.getElementById(id)?.closest(".actions");
+    if(!action||action.querySelector("[data-ai-provider]"))continue;
+    for(const [name,url] of services){
+      const link=document.createElement("a");
+      link.className="btn secondary aiProviderLink";
+      link.href=url;link.target="_blank";link.rel="noopener noreferrer";
+      link.dataset.aiProvider=name;
+      link.textContent=name+" 열기 ↗";
+      action.appendChild(link);
+    }
+  }
+}
+
 function render(){
   nav();
   const pages=[null,step1,step2,step3,step5];
   document.getElementById("stepRoot").innerHTML=pages[state.currentStep]();
-  bind();progress();
+  bind();addProviderLinks();progress();
 }
 
 function go(n){

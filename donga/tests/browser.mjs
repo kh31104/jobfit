@@ -42,10 +42,69 @@ for(const [label,browserType,device] of [['Android Chrome',chromium,devices['Pix
  for(let i=0;i<3;i++)await page.locator('#vialow input').nth(i).fill('하위강점'+(i+1));
  await select(5);
  assert.equal(await page.locator('#backup').isVisible(),false,label+' backup hidden before 07');
+
  await select(6);
  assert.equal(await page.locator('#backup').isVisible(),false,label+' backup hidden on 06');
+ await page.locator('#makeanalysis').click();
+ const aiPrompt=await page.locator('#analysispreview').innerText();
+ assert.match(aiPrompt,/600자 이내/,label+' short AI analysis');
+ assert.match(aiPrompt,/SWOT 요약/,label+' concise SWOT');
+ assert.doesNotMatch(aiPrompt,/강점을 사용한 상황/,label+' removed field absent in generated AI prompt');
+ for(const service of ["ChatGPT","Gemini","Claude"]){
+   assert.equal(await page.locator('#step6 .actions a').filter({hasText:service}).count(),1,label+' AI provider '+service);
+ }
+ const scratch=page.locator('#aiscratch');
+ await scratch.fill("기존 메모");
+ await scratch.evaluate(el=>{
+   el.setSelectionRange(el.value.length,el.value.length);
+   const dt=new DataTransfer();dt.setData("text","\n\n[핵심 가치]\n\n\n신중함\n\n[가설]\n실제 경험 확인 필요");
+   el.dispatchEvent(new ClipboardEvent("paste",{bubbles:true,cancelable:true,clipboardData:dt}));
+ });
+ assert.doesNotMatch(await scratch.inputValue(),/\n\s*\n/,label+' no extra newlines in 06 pasted memo');
+ const check6=await page.locator('#aireview').evaluate(el=>({
+   width:Math.round(el.getBoundingClientRect().width),
+   height:Math.round(el.getBoundingClientRect().height),
+   label:getComputedStyle(el.closest('label')).display,
+   direction:getComputedStyle(el.closest('label')).flexDirection
+ }));
+ assert.equal(check6.direction,"row",label+' STEP6 checkbox horizontally aligned');
+ assert(check6.width<=20&&check6.height<=20,label+' STEP6 checkbox proper size');
+ await page.locator('#aireview').check();
+
+ await page.evaluate(()=>{
+   const key="jobfit:donga:step1:v1";
+   const data=JSON.parse(localStorage.getItem(key));data.dna.strengths="과거 저장된 강점 설명 — 삭제 금지";
+   localStorage.setItem(key,JSON.stringify(data));
+ });
+ await page.reload({waitUntil:'networkidle'});
  await select(7);
  assert.equal(await page.locator('#backup').isVisible(),true,label+' backup visible only on 07');
+ assert.equal(await page.locator('#dnafields textarea').count(),4,label+' STEP7 exactly four DNA fields');
+ assert.equal(await page.locator('[data-dna="strengths"]').count(),0,label+' removed strengths situation field hidden');
+ for(const [i,key] of ["values","fit","caution","next"].entries()){
+   const el=page.locator('[data-dna="'+key+'"]');
+   await el.fill("기존 내용 "+i);
+   await el.evaluate(input=>{
+     input.setSelectionRange(input.value.length,input.value.length);
+     const dt=new DataTransfer();
+     dt.setData("text","\n\n[AI 가설]\n\n\n확인할 내용 "+input.dataset.dna);
+     input.dispatchEvent(new ClipboardEvent("paste",{bubbles:true,cancelable:true,clipboardData:dt}));
+   });
+   assert.doesNotMatch(await el.inputValue(),/\n\s*\n/,label+' STEP7 pasted value no blank lines '+key);
+ }
+ const check7=await page.locator('#confirmdna').evaluate(el=>({
+   width:Math.round(el.getBoundingClientRect().width),
+   direction:getComputedStyle(el.closest('label')).flexDirection
+ }));
+ assert.equal(check7.direction,"row",label+' STEP7 checkbox horizontally aligned');
+ assert(check7.width<=20,label+' STEP7 checkbox proper size');
+ await page.locator('#confirmdna').check();
+ await page.locator('#savedna').click();
+ assert.match(await page.locator('#dnapreview').innerText(),/저장 완료/,label+' four fields saved');
+ assert.doesNotMatch(await page.locator('#dnapreview').innerText(),/내가 확인한 강점과 강점을 사용한 상황/,label+' removed legacy result not printed');
+ const legacy=await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step1:v1")).dna.strengths);
+ assert.equal(legacy,"과거 저장된 강점 설명 — 삭제 금지",label+' old data preserved');
+
  await select(1);
  assert.equal(await page.locator('#backup').isVisible(),false,label+' backup hidden again');
  await page.reload({waitUntil:'networkidle'});

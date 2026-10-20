@@ -43,6 +43,9 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  assert.equal(data.left[0].label,"탐색기",label+" before labels");
  assert.equal(data.right[0].label,"5년 차",label+" final stages default");
  await go(3);
+ assert.equal(await page.locator("#dongaPanel3 .buttons a[href*=\"chatgpt.com\"]").count(),1,label+" STEP3 ChatGPT in prep");
+ assert.equal(await page.locator("#dongaPanel3 .buttons a[href*=\"gemini.google.com\"]").count(),1,label+" STEP3 Gemini in prep");
+ assert.equal(await page.locator("#dongaPanel3 .buttons a[href*=\"claude.ai\"]").count(),1,label+" STEP3 Claude in prep");
  await page.locator("#makeAiPrompt").click();
  const prePrompt=await page.locator("#aiPrompt").inputValue();
  assert.match(prePrompt,/희망 직무: 품질관리/,label+" career plan job");
@@ -53,6 +56,8 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  page.once("dialog",d=>d.accept());
  await page.locator("#applyAi").click();
  await go(4);
+ assert.equal(await page.locator("#dongaPanel4 .buttons a[href*=\"gemini.google.com\"]").count(),1,label+" STEP3 Gemini in career");
+ assert.equal(await page.locator("#dongaPanel4 .buttons a[href*=\"claude.ai\"]").count(),1,label+" STEP3 Claude in career");
  await page.locator("#careerTrack").selectOption("전문가형");
  await page.locator("#makePostPrompt").click();
  const postPrompt=await page.locator("#postPrompt").inputValue();
@@ -83,6 +88,8 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  await page.locator("#previewZoom").click();
  assert.equal(await page.locator("#previewZoom").getAttribute("aria-pressed"),"false",label+" preview fit restored");
  await page.locator("#makeArtPrompt").click();
+ assert.equal(await page.locator(".artCard .buttons a[href*=\"gemini.google.com\"]").count(),1,label+" STEP3 Gemini in illustration");
+ assert.equal(await page.locator(".artCard .buttons a[href*=\"claude.ai\"]").count(),1,label+" STEP3 Claude in illustration");
  const art=await page.locator("#artPrompt").inputValue();
  assert.match(art,/A4 가로형 297 × 210mm/,label+" A4 layout");
  assert.match(art,/품질 채용공고 비교/,label+" left AI content");
