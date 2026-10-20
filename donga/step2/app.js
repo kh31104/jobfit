@@ -2341,8 +2341,7 @@ function bind(){
   document.querySelectorAll("[data-path]").forEach(e=>{
     const handler=()=>{
       set(e.dataset.path,e.value);
-      const preview=document.querySelector('[data-preview="'+e.dataset.path+'"]');
-      if(preview)preview.innerHTML=readableResult(e.value);
+      document.querySelectorAll('[data-preview="'+e.dataset.path+'"]').forEach(preview=>{preview.innerHTML=readableResult(e.value)});
       const path=e.dataset.path||"";
       if(path==="student.majorEvidence"||path.startsWith("star."))refreshStep4Prompt();
       if(["student.certificates","student.language","student.tools","student.majorEvidence"].includes(path))refreshStep5Derived();
