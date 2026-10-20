@@ -1,0 +1,81 @@
+/* JD Requirements read-only presentation and printable STEP 2 report */
+.donga-readable-list{display:grid;gap:6px;min-width:0}
+.donga-readable-line{display:grid;grid-template-columns:12px minmax(0,1fr);gap:7px;align-items:start;line-height:1.65;min-width:0}
+.donga-readable-bullet{color:#4067b8;font-weight:900;line-height:1.65}
+.donga-readable-text{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;min-width:0}
+.donga-readable-heading .donga-readable-text{font-weight:800;color:#2c4977}
+.donga-pdf-empty{color:#8a95a4;font-weight:400;font-style:italic}
+.requirementRow .requirementSource{display:block;background:#f7faff;padding:12px;border-color:#d9e4f4}
+.requirementRow .requirementSource b{display:block;font-weight:500;line-height:1.6;overflow-wrap:anywhere}
+.requirementRow .donga-readable-list{font-size:13px}
+.requirementRow .donga-readable-line{margin:0}
+#step2ReportBlock{margin-top:25px;padding-top:20px;border-top:2px solid #d7e3f5}
+#step2ReportBlock .donga-report-control{padding:16px;background:#eff5ff;border:1px solid #d5e3fb;border-radius:15px;margin-bottom:14px}
+#step2ReportBlock .donga-report-control h3{font-size:19px;margin:0 0 6px}
+#step2ReportBlock .donga-report-control p{color:#4f6384;font-size:13px;margin:0 0 12px}
+#step2ReportBlock .donga-report-actions{display:flex;gap:8px;flex-wrap:wrap}
+#step2ReportBlock .donga-report-actions button{min-height:43px}
+#step2Report{background:white;border:1px solid #e0e7f1;border-radius:13px;padding:22px;box-shadow:0 4px 15px #183c6410;line-height:1.55;max-width:100%;min-width:0;color:#1f2e42}
+.donga-report-doc{font-family:"Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;font-size:12px}
+.donga-report-head{border-bottom:2px solid #2e537e;padding-bottom:12px;margin-bottom:14px}
+.donga-report-head>p{letter-spacing:1px;font-size:11px;font-weight:850;color:#5277ac;margin:0 0 4px}
+.donga-report-head h2{font-size:23px;letter-spacing:.15px;margin:0 0 3px;line-height:1.25;color:#223b5c}
+.donga-report-head>div{font-size:12px;color:#60738d}
+.donga-report-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:11px;background:#f5f8fd;border:1px solid #e0e8f3;border-radius:9px}
+.donga-report-meta-cell{min-width:0;display:flex;gap:7px;line-height:1.55;overflow-wrap:anywhere}
+.donga-report-meta-cell>span{flex:0 0 60px;color:#61718a;font-weight:750}
+.donga-report-meta-cell>b{min-width:0;font-weight:650}
+.donga-report-section{margin:20px 0 0;min-width:0}
+.donga-report-section h3{font-size:16px;line-height:1.35;margin:0 0 9px;color:#203d62;padding-left:8px;border-left:4px solid #3766b0}
+.donga-report-section-intro{margin:0 0 10px;color:#66758d;font-size:11px}
+.donga-job-table{width:100%;min-width:0;border-collapse:collapse;table-layout:fixed}
+.donga-job-table .donga-report-labelcol{width:28%}
+.donga-job-table th,.donga-job-table td{border:1px solid #d8e1ed;vertical-align:top;text-align:left;padding:10px;font-size:12px;line-height:1.62;overflow-wrap:anywhere}
+.donga-job-table th{background:#eff4fb;color:#284c79;font-weight:800}
+.donga-job-table td{background:white;color:#263548}
+.donga-report-req{border:1px solid #dce4ef;border-radius:9px;margin:9px 0;overflow:hidden;break-inside:avoid}
+.donga-report-req-head{display:flex;justify-content:space-between;align-items:center;gap:9px;padding:8px 11px;background:#edf3fa}
+.donga-report-req-head b{color:#284568}
+.donga-report-req-head span{border-radius:20px;background:#fff;border:1px solid #d5e0ec;color:#385d88;padding:2px 9px;white-space:nowrap;font-size:11px;font-weight:750}
+.donga-report-req-body{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:12px;padding:11px}
+.donga-report-req-body>div{min-width:0;overflow-wrap:anywhere}
+.donga-report-req-body small{display:block;color:#6a7790;margin:0 0 6px;font-size:11px;font-weight:800}
+.donga-report-note{border:1px solid #dce4ef;border-radius:9px;padding:12px;background:#fff}
+.donga-report-foot{border-top:1px solid #dbe4f0;margin-top:20px;padding-top:9px;color:#66758d;font-size:10px;overflow-wrap:anywhere}
+.donga-report-foot p{margin:4px 0}
+.donga-report-foot a{color:#315ca2;text-decoration:underline;overflow-wrap:anywhere}
+@media(max-width:680px){
+ .requirementRow .requirementSource{padding:11px}
+ #step2Report{padding:12px}
+ .donga-report-meta{grid-template-columns:1fr}
+ .donga-report-req-body{grid-template-columns:1fr;gap:9px}
+ .donga-job-table th,.donga-job-table td{padding:8px;font-size:11px}
+ .donga-job-table .donga-report-labelcol{width:34%}
+}
+@page{size:A4 portrait;margin:12mm}
+@media print{
+ body.donga-report-print,body.donga-report-print html{background:white!important;margin:0!important;padding:0!important;overflow:visible!important}
+ body.donga-report-print .wrap{padding:0!important;max-width:none!important;margin:0!important}
+ body.donga-report-print .topbar,
+ body.donga-report-print .hero,
+ body.donga-report-print .side,
+ body.donga-report-print #toast,
+ body.donga-report-print .donga-reset-panel{display:none!important}
+ body.donga-report-print .shell{display:block!important;margin:0!important}
+ body.donga-report-print #stepRoot>.stepCard{display:block!important;padding:0!important;margin:0!important;border:0!important;box-shadow:none!important}
+ body.donga-report-print #stepRoot>.stepCard>*:not(#step2ReportBlock){display:none!important}
+ body.donga-report-print #step2ReportBlock{display:block!important;border:0!important;padding:0!important;margin:0!important}
+ body.donga-report-print #step2ReportBlock .donga-report-control{display:none!important}
+ body.donga-report-print #step2Report{display:block!important;border:0!important;border-radius:0!important;padding:0!important;box-shadow:none!important}
+ body.donga-report-print .donga-report-doc{font-size:10pt;color:#111}
+ body.donga-report-print .donga-report-head{margin-bottom:9mm}
+ body.donga-report-print .donga-report-section{margin-top:7mm;break-inside:auto}
+ body.donga-report-print .donga-report-section h3{break-after:avoid;page-break-after:avoid}
+ body.donga-report-print .donga-job-table th,
+ body.donga-report-print .donga-job-table td{font-size:9pt;padding:2.6mm 2.8mm;border-color:#c9d5e2}
+ body.donga-report-print .donga-job-table tr{break-inside:avoid-page;page-break-inside:avoid}
+ body.donga-report-print .donga-report-req{break-inside:avoid-page;page-break-inside:avoid}
+ body.donga-report-print .donga-report-note{break-inside:auto}
+ body.donga-report-print .donga-readable-line{break-inside:avoid}
+ body.donga-report-print .donga-report-foot{break-inside:avoid-page}
+}
