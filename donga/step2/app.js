@@ -1008,6 +1008,8 @@ function refreshStep5Derived(){
   state.requirements.forEach((r,i)=>{
     const note=document.querySelector('[data-req="'+i+'"][data-reqkey="note"]');
     if(note&&note.value!==r.note)note.value=r.note||"";
+    const preview=document.querySelector('[data-evidence-preview="'+i+'"]');
+    if(preview)preview.innerHTML=readableHTML(r.note,{dense:true,empty:"입력된 근거가 없습니다."});
   });
   const assets=document.getElementById("derivedGapAssetsPreview");
   if(assets)assets.textContent=derivedGapAssets()||"아직 입력된 스펙·충족 근거가 없습니다.";
