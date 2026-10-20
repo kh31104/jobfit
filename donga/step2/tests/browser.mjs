@@ -30,6 +30,8 @@ try{
   await page.locator('[data-path="step2Search.company"]').fill("테스트 제조");
   await page.locator('[data-path="step2Search.title"]').fill("품질관리 신입");
   await page.locator('[data-path="step2Search.facts"]').fill("품질 데이터 집계\\n불량 원인 분석");
+  assert.equal(await page.locator("#useStep2JobBtn").innerText(),"이 공고로 03 직무분석하기","STEP2 02 button is labelled 03");
+  assert.match(await page.locator("#stepRoot").innerText(),/03에서는 수업용 예시로 한국에너지공단과 HD현대일렉트릭/,"STEP2 example notice refers to 03");
   await page.locator("#useStep2JobBtn").click();
   const analysisCopy=page.locator("#copyReviewedJobPromptBtn");
   if(await analysisCopy.count()){
