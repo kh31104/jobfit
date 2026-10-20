@@ -129,6 +129,11 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  const flowPage=await context.newPage();
  await flowPage.goto(url.replace(/step3\/?$/,""),{waitUntil:"domcontentloaded"});
  const font1=await flowPage.evaluate(()=>getComputedStyle(document.body).fontFamily);
+ const nav1=await flowPage.locator("#dongaSide1 .donga-steplabel b").first().evaluate(el=>getComputedStyle(el).fontSize);
+ const subtitle1=await flowPage.locator("#dongaSide1 .donga-steplabel small").first().evaluate(el=>getComputedStyle(el).fontSize);
+ const section1=await flowPage.locator("#step1 .heading b").evaluate(el=>getComputedStyle(el).fontSize);
+ const hero1=await flowPage.locator("header h1").evaluate(el=>getComputedStyle(el).fontSize);
+
  const headerWeight1=await flowPage.locator("header h1").evaluate(el=>getComputedStyle(el).fontWeight);
  assert.equal(await flowPage.locator('details.step:visible').count(),1,label+" STEP1 only one section visible");
 
@@ -138,13 +143,39 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  await flowPage.goto(url.replace(/step3\/?$/,"step2/"),{waitUntil:"domcontentloaded"});
  const font2=await flowPage.evaluate(()=>getComputedStyle(document.body).fontFamily);
  const headerWeight2=await flowPage.locator(".hero h1").evaluate(el=>getComputedStyle(el).fontWeight);
+ const nav2=await flowPage.locator("#stepNav .stepText").first().evaluate(el=>getComputedStyle(el).fontSize);
+ const subtitle2=await flowPage.locator("#stepNav .stepText small").first().evaluate(el=>getComputedStyle(el).fontSize);
+ const section2=await flowPage.locator("#stepRoot .stepCard .sectionHead h2").evaluate(el=>getComputedStyle(el).fontSize);
+ const hero2=await flowPage.locator(".hero h1").evaluate(el=>getComputedStyle(el).fontSize);
+ assert.equal(await flowPage.locator(".main > .progressCard").count(),0,label+" STEP2 top progress moved away");
+ assert.equal(await flowPage.locator(".side .donga-step2-progress").isVisible(),true,label+" STEP2 progress in sidebar");
+ assert.equal(await flowPage.locator(".stepCard .sectionHead .kicker").first().innerText(),"01",label+" STEP2 compact 01 title");
+ assert.equal(nav2,nav1,label+" STEP2 sidebar title font matches STEP1");
+ assert.equal(subtitle2,subtitle1,label+" STEP2 sidebar subtitle font matches STEP1");
+ assert.equal(section2,section1,label+" STEP2 section title size matches STEP1");
+ assert.equal(hero2,hero1,label+" STEP2 hero title size matches STEP1");
+ if(label==="Desktop Chrome"){
+   const snap=await flowPage.locator(".stepCard .sectionHead").screenshot({type:"jpeg",quality:45});
+   console.log("DONGA_STEP2_HEADER_VISUAL_START:"+snap.toString("base64")+":DONGA_STEP2_HEADER_VISUAL_END");
+ }
+
  assert.equal(font2,font1,label+" identical UI font STEP1/2");
  assert.equal(headerWeight2,headerWeight1,label+" identical title weight STEP1/2");
 
  assert.equal(await flowPage.locator("#stepNav .stepBtn").count(),4,label+" STEP2 sidebar 4");
  assert.equal(await flowPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+3),true,label+" STEP2 no horizontal overflow");
 
+ await page.emulateMedia({media:"screen"});
  const font3=await page.evaluate(()=>getComputedStyle(document.body).fontFamily);
+ const nav3=await page.locator("#dongaStep3Nav .donga-steplabel b").first().evaluate(el=>getComputedStyle(el).fontSize);
+ const subtitle3=await page.locator("#dongaStep3Nav .donga-steplabel small").first().evaluate(el=>getComputedStyle(el).fontSize);
+ const section3=await page.locator("#dongaPanel5 .sectionHead h2").first().evaluate(el=>getComputedStyle(el).fontSize);
+ const hero3=await page.locator(".hero h1").evaluate(el=>getComputedStyle(el).fontSize);
+ assert.equal(nav3,nav1,label+" STEP3 sidebar title font matches STEP1");
+ assert.equal(subtitle3,subtitle1,label+" STEP3 sidebar subtitle font matches STEP1");
+ assert.equal(section3,section1,label+" STEP3 section heading matches STEP1");
+ assert.equal(hero3,hero1,label+" STEP3 hero title size matches STEP1");
+
  const headerWeight3=await page.locator(".hero h1").evaluate(el=>getComputedStyle(el).fontWeight);
  assert.equal(font3,font1,label+" identical UI font STEP1/3");
  assert.equal(headerWeight3,headerWeight1,label+" identical title weight STEP1/3");

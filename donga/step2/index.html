@@ -10,7 +10,7 @@
   <title>잡핏동아 STEP 2 | JOB ANALYSIS</title>
   <link rel="stylesheet" href="../theme.css?v=1" />
   <link rel="stylesheet" href="./styles.css?v=2" />
-  <link rel="stylesheet" href="../typography.css?v=1" />
+  <link rel="stylesheet" href="../typography.css?v=2" />
 </head>
 <body>
   <div class="wrap">
@@ -32,15 +32,17 @@
       <div class="heroChips"><span>01 Target Job</span><span>02 Find JD</span><span>03 Choose JD</span><span>GAP 분석</span></div>
     </section>
     <div class="shell">
-      <aside class="side"><nav class="card navCard" id="stepNav"></nav></aside>
-      <main class="main">
-        <div class="card progressCard">
+      <aside class="side">
+        <nav class="card navCard" id="stepNav"></nav>
+        <div class="donga-step2-progress" role="status" aria-label="STEP 2 진행 상황">
           <div class="progressTop">
             <div class="progressNow"><b id="progressLabel">진행 0%</b><strong id="currentStepLabel" class="mobileStepLabel">01 · Target Job</strong></div>
-            <span class="progressHelp">01~04 실습 · 입력 즉시 저장 · JSON 백업 가능</span>
+            <span class="progressHelp">입력 즉시 자동 저장 · STEP 2 전용</span>
           </div>
           <div class="progress"><span id="progressBar"></span></div>
         </div>
+      </aside>
+      <main class="main">
         <div id="stepRoot"></div>
       </main>
     </div>
