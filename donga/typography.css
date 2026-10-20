@@ -26,3 +26,12 @@ html,body,button,input,select,textarea{
 .donga-nav-status{display:grid;gap:2px;border-top:1px solid #edf1f6;margin:10px 7px 0;padding:11px 4px 2px;color:#506685}
 .donga-nav-status b{font-size:12px;font-weight:800;color:#3857ac}
 .donga-nav-status small{font-size:11px;line-height:1.5}
+
+/* Equal weight and size for primary titles across the three apps. */
+body{font-size:15px;line-height:1.65}
+body header h1,body .hero h1{font-weight:800}
+body .navTitle,body .donga-nav-title{font-weight:800}
+body .stepBtn.active{font-weight:800}
+body .donga-steplabel b,body .stepText{font-weight:500}
+body .donga-stepbtn[aria-current="step"] .donga-steplabel b,
+body .stepBtn.active .stepText{font-weight:800}
