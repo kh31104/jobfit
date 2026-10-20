@@ -1,4 +1,4 @@
-import { chromium } from "playwright";
+import { chromium, webkit, devices } from "playwright";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 
@@ -88,5 +88,26 @@ try{
   assert.equal(await page.locator('[data-path="fit.gaps"]').inputValue(),"품질 실무 데이터 분석 근거 보완");
   assert.equal(await page.evaluate(()=>localStorage.getItem("jobfit:donga:step1:v1")),"step1-safe");
   assert.equal(await page.evaluate(()=>localStorage.getItem("jobfit:flexlab:job-analysis:v1")),"flex-safe");
+
+  for(const [deviceName,type,profile] of [
+    ["Android Chrome",chromium,devices["Pixel 7"]],
+    ["iPhone Safari",webkit,devices["iPhone 13"]]
+  ]){
+    const mobileBrowser=await type.launch({headless:true});
+    try{
+      const mobilePage=await mobileBrowser.newPage(profile);
+      await mobilePage.goto(url,{waitUntil:"domcontentloaded"});
+      await mobilePage.evaluate(saved=>localStorage.setItem("jobfit:donga:step2:v1",JSON.stringify(saved)),backup);
+      await mobilePage.reload({waitUntil:"domcontentloaded"});
+      await mobilePage.locator('[data-step="3"]').click();
+      assert.equal(await mobilePage.locator(".jobSummaryCard").count(),5,deviceName+" job analysis cards");
+      assert.equal(await mobilePage.locator('.jobSummaryCard [data-preview="jobTable.tasks"] .readableItem').count(),3,deviceName+" multiline bullet display");
+      assert.equal(await mobilePage.locator(".jobSummaryGrid").evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(" ").length),1,deviceName+" stacked one-column cards");
+      await mobilePage.locator('[data-step="4"]').click();
+      assert.equal(await mobilePage.locator('[data-preview="ai.gapResult"] .readableHeading').count(),2,deviceName+" GAP headings");
+      assert.equal(await mobilePage.locator('[data-preview="ai.gapResult"] .readableItem').count(),4,deviceName+" GAP bullet list");
+      assert.equal(await mobilePage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+4),true,deviceName+" no horizontal overflow");
+    }finally{await mobileBrowser.close()}
+  }
   console.log("DONG-A STEP 2: 4 modules, progression, student input, GAP, autosave, reload, JSON backup/restore and isolation PASS");
 }finally{await browser.close();}
