@@ -18,7 +18,16 @@ for(const [label,browserType,device] of [['Android Chrome',chromium,devices['Pix
  };
  for(const [k,v] of Object.entries(value))await page.locator('[data-val="'+k+'"]').fill(v);
  await page.locator('#savevalue').click();
- await page.locator('#step2 > summary').click();
+ // STEP 1 now shows only the chosen left-nav section.
+ const nav=page.locator('#dongaSide1 .donga-stepbtn');
+ assert.equal(await nav.count(),7,label+' seven sidebar buttons');
+ const select=async(n)=>{
+   await nav.nth(n-1).click();
+   assert.equal(await page.locator('#step'+n).isVisible(),true,label+' selected panel '+n);
+   assert.equal(await page.locator('details.step:visible').count(),1,label+' exactly one visible panel');
+   assert.equal(await nav.nth(n-1).getAttribute('aria-current'),'step',label+' selected sidebar highlight');
+ };
+ await select(2);
  for(let i=0;i<40;i++){
    await page.locator('input[name="q'+i+'"][value="4"]').check();
    if(i!==39&&i%10===9)await page.locator('#qnext').click();
@@ -26,12 +35,21 @@ for(const [label,browserType,device] of [['Android Chrome',chromium,devices['Pix
  assert.equal(await page.locator('#bonusarea').evaluate(el=>el.classList.contains('hidden')),false,label+' bonus');
  for(let i=0;i<3;i++)await page.locator('input[data-bonus="'+i+'"]').check();
  assert.equal(await page.locator('#anchorresult').getByText('Career Anchor 결과').count(),1,label+' anchor result');
- await page.locator('#step3 > summary').click();
+ await select(3);
  for(const k of ['감사','공감','도전','계획','분석력'])await page.locator('#strengtharea button[data-strength="'+k+'"]').click();
- await page.locator('#step4 > summary').click();
+ await select(4);
  for(let i=0;i<5;i++)await page.locator('#viatop input').nth(i).fill('상위강점'+(i+1));
  for(let i=0;i<3;i++)await page.locator('#vialow input').nth(i).fill('하위강점'+(i+1));
+ await select(5);
+ assert.equal(await page.locator('#backup').isVisible(),false,label+' backup hidden before 07');
+ await select(6);
+ assert.equal(await page.locator('#backup').isVisible(),false,label+' backup hidden on 06');
+ await select(7);
+ assert.equal(await page.locator('#backup').isVisible(),true,label+' backup visible only on 07');
+ await select(1);
+ assert.equal(await page.locator('#backup').isVisible(),false,label+' backup hidden again');
  await page.reload({waitUntil:'networkidle'});
+ assert.equal(await page.locator('details.step:visible').count(),1,label+' 01 only after reload');
  const d=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:donga:step1:v1')));
  assert.equal(d.values.top5,value.top5,label+' saved multiline');
  assert.equal(d.valuesSaved,true,label+' value profile confirmed');
