@@ -25,7 +25,7 @@ for(const [label,type,device] of [
  const aiPrompt=await page.locator("#aiPrompt").inputValue();
  assert.match(aiPrompt,/Q1 희망 직무: 품질관리/,label+" AI prompt job");
  assert.match(aiPrompt,/Q2 취업 전 준비계획: 채용공고 비교/,label+" AI prompt student plan");
- assert.match(aiPrompt,/학생이 입력한 담당업무/,label+" AI prompt STEP 2 facts heading");
+ assert.match(aiPrompt,/학생이 STEP 2에서 입력한 담당업무/,label+" AI prompt STEP 2 facts heading");
  await page.locator("#build").click();
  assert.equal(await page.locator("#leftEditors .editItem").count(),3,label+" left stages");
  assert.equal(await page.locator("#rightEditors .editItem").count(),4,label+" right stages");
