@@ -83,7 +83,19 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  assert.equal(await page.evaluate(()=>localStorage.getItem("jobfit:donga:step1:v1")),"step1-untouched",label+" STEP 1 untouched");
  assert.equal((await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step2:v1")))).target.job,"품질관리",label+" STEP 2 untouched");
  if(label==="Desktop Chrome"){
-   const pdf=await page.pdf({preferCSSPageSize:true,printBackground:true});
+   const metrics=await page.evaluate(()=>{
+ const paper=document.querySelector("#paper");
+ const titles=[...paper.querySelectorAll(".note")].map(el=>({client:el.clientHeight,scroll:el.scrollHeight}));
+ const cols=[...paper.querySelectorAll(".roadmap")].map(el=>{const r=el.getBoundingClientRect();return {x:Math.round(r.x),y:Math.round(r.y),width:Math.round(r.width),height:Math.round(r.height)}});
+ return {paper:{width:paper.clientWidth,height:paper.clientHeight},columns:cols,overflows:titles.filter(x=>x.scroll>x.client+3)};
+ });
+ console.log("PDF_LAYOUT_METRICS",JSON.stringify(metrics));
+ assert.equal(metrics.columns.length,2,"exactly two graphic columns");
+ assert(metrics.columns[0].x<metrics.columns[1].x,"left and right illustrations");
+ assert.equal(metrics.overflows.length,0,"visible text must not be clipped");
+ const snap=await page.locator("#paper").screenshot({type:"jpeg",quality:22,animations:"disabled"});
+ console.log("JOBFIT_PDF_VISUAL_START:"+snap.toString("base64")+":JOBFIT_PDF_VISUAL_END");
+ const pdf=await page.pdf({preferCSSPageSize:true,printBackground:true});
    assert.equal((pdf.toString("latin1").match(/\/Type\s*\/Page\b/g)||[]).length,1,"A4 landscape one page");
  }
  assert.deepEqual(errors,[],label+" errors");
