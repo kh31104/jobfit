@@ -49,6 +49,8 @@ for(const [label,browserType,device] of [['Android Chrome',chromium,devices['Pix
  const aiPrompt=await page.locator('#analysispreview').innerText();
  assert.match(aiPrompt,/STEP 07에 붙여넣을 Career DNA v1/,label+' mapped STEP07 output block');
  assert.match(aiPrompt,/한 줄에 한 문장씩/,label+' each idea easy to copy');
+ assert.match(aiPrompt,/일반 텍스트로만 작성한다/,label+' plain text output required');
+ assert.match(aiPrompt,/마크다운 서식 기호를 사용하지 않는다/,label+' Markdown decorations forbidden');
  assert.match(aiPrompt,/다른 항목으로 넘어갈 때만 빈 줄을 한 번/,label+' controlled paragraph spacing');
  assert.doesNotMatch(aiPrompt,/600자 이내/,label+' remove former over-short limit');
  for(const field of ["내가 확인한 핵심 가치와 선택 기준","가치관·커리어 기준·강점이 연결되는 부분","내가 확인한 보완할 행동 또는 강점 과잉 사용","다음 실제 경험에서 검증할 질문"]){
@@ -66,6 +68,17 @@ for(const [label,browserType,device] of [['Android Chrome',chromium,devices['Pix
    el.dispatchEvent(new ClipboardEvent("paste",{bubbles:true,cancelable:true,clipboardData:dt}));
  });
  assert.doesNotMatch(await scratch.inputValue(),/\n\s*\n/,label+' no extra newlines in 06 pasted memo');
+
+ await scratch.fill("");
+ await scratch.evaluate(el=>{
+   const clip=new DataTransfer();
+   clip.setData("text","### 핵심 가치\n\n**신중함**과 __학습 지향__이 나타남.\n- [AI 가설] 실제 경험 확인 필요");
+   el.dispatchEvent(new ClipboardEvent("paste",{bubbles:true,cancelable:true,clipboardData:clip}));
+ });
+ const scratchPlain=await scratch.inputValue();
+ assert.match(scratchPlain,/^핵심 가치\n신중함과 학습 지향이 나타남\.\n\[AI 가설\] 실제 경험 확인 필요$/,label+" AI memo clean plain text");
+ assert.doesNotMatch(scratchPlain,/###|\*\*|__/,label+" AI memo no format symbols");
+
  const check6=await page.locator('#aireview').evaluate(el=>({
    width:Math.round(el.getBoundingClientRect().width),
    height:Math.round(el.getBoundingClientRect().height),
@@ -96,6 +109,15 @@ for(const [label,browserType,device] of [['Android Chrome',chromium,devices['Pix
      input.dispatchEvent(new ClipboardEvent("paste",{bubbles:true,cancelable:true,clipboardData:dt}));
    });
    assert.doesNotMatch(await el.inputValue(),/\n\s*\n/,label+' STEP7 pasted value no blank lines '+key);
+
+   await el.fill("");
+   await el.evaluate(input=>{
+     const clip=new DataTransfer();
+     clip.setData("text","## "+input.dataset.dna+"\n\n**원문 내용 유지**\n- [확인 필요] 실제 경험");
+     input.dispatchEvent(new ClipboardEvent("paste",{bubbles:true,cancelable:true,clipboardData:clip}));
+   });
+   assert.equal(await el.inputValue(),key+"\n원문 내용 유지\n[확인 필요] 실제 경험",label+" STEP7 paste cleans decoration only "+key);
+
  }
  const check7=await page.locator('#confirmdna').evaluate(el=>({
    width:Math.round(el.getBoundingClientRect().width),

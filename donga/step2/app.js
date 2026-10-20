@@ -734,8 +734,8 @@ function step2(){
       '<div class="field span2"><label>공고 주소 <span class="hint">(선택)</span></label><input class="input" data-path="step2Search.sourceUrl" value="'+h(state.step2Search.sourceUrl||"")+'" placeholder="https://..." /></div>'+
       field("step2Search.facts","담당업무·직무소개 <span class=\"hint\">(가능하면 붙여넣기)</span>","공고의 담당업무·직무소개를 그대로 붙여넣으면 STEP 3에서 다시 입력하지 않아도 됩니다.")+
       field("step2Search.memo","검색 메모 <span class=\"hint\">(선택)</span>","어떤 검색어를 썼는지, 왜 적절한 공고를 찾기 어려웠는지 간단히 적어도 됩니다.")+
-    '</div><div class="actions compactActions"><button class="btn primary" id="useStep2JobBtn">이 공고로 STEP 3 직무분석하기</button></div></div>'+step2SearchPromptBox()+
-    '<div class="callout info"><b>공고가 없어도 수업은 계속됩니다.</b> STEP 3에서는 수업용 예시로 한국에너지공단과 HD현대일렉트릭의 2026년 신입 채용을 제공합니다.</div>');
+    '</div><div class="actions compactActions"><button class="btn primary" id="useStep2JobBtn">이 공고로 03 직무분석하기</button></div></div>'+step2SearchPromptBox()+
+    '<div class="callout info"><b>공고가 없어도 수업은 계속됩니다.</b> 03에서는 수업용 예시로 한국에너지공단과 HD현대일렉트릭의 2026년 신입 채용을 제공합니다.</div>');
 }
 
 function postingLines(text=""){
