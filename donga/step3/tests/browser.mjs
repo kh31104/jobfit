@@ -128,6 +128,18 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
 
  const flowPage=await context.newPage();
  await flowPage.goto(url.replace(/step3\/?$/,""),{waitUntil:"domcontentloaded"});
+ const uiStep1=await flowPage.evaluate(()=>{
+   const cs=sel=>getComputedStyle(document.querySelector(sel));
+   return {tagVisible:cs("#step1 .tag").display,plusVisible:cs("#step1 .plus").display,
+    progressVisible:cs("#dongaSide1 .donga-nav-status").display,
+    buttonHeight:cs(".donga-main .btn").minHeight,buttonFont:cs(".donga-main .btn").fontSize,
+    inputHeight:cs(".donga-main input:not([type=checkbox]):not([type=radio])").minHeight,
+    inputFont:cs(".donga-main input:not([type=checkbox]):not([type=radio])").fontSize,
+    cardRadius:cs(".donga-main .card").borderRadius};
+ });
+ assert.equal(uiStep1.tagVisible,"none",label+" STEP1 status badge hidden");
+ assert.equal(uiStep1.plusVisible,"none",label+" STEP1 redundant plus hidden");
+ assert.equal(uiStep1.progressVisible,"none",label+" STEP1 progress widget hidden");
  const font1=await flowPage.evaluate(()=>getComputedStyle(document.body).fontFamily);
  const nav1=await flowPage.locator("#dongaSide1 .donga-steplabel b").first().evaluate(el=>getComputedStyle(el).fontSize);
  const subtitle1=await flowPage.locator("#dongaSide1 .donga-steplabel small").first().evaluate(el=>getComputedStyle(el).fontSize);
@@ -141,6 +153,21 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  await flowPage.locator("#dongaSide1 .donga-stepbtn").nth(2).click();
  assert.equal(await flowPage.locator("#step3").evaluate(x=>x.open),true,label+" STEP1 accordion opens");
  await flowPage.goto(url.replace(/step3\/?$/,"step2/"),{waitUntil:"domcontentloaded"});
+ const uiStep2=await flowPage.evaluate(()=>{
+   const cs=sel=>getComputedStyle(document.querySelector(sel));
+   return {progressVisible:cs(".donga-step2-progress").display,
+    badgeVisible:cs(".stepCard .sectionHead > .badge").display,
+    buttonHeight:cs(".stepCard .btn").minHeight,buttonFont:cs(".stepCard .btn").fontSize,
+    inputHeight:cs(".stepCard .input").minHeight,inputFont:cs(".stepCard .input").fontSize,
+    cardRadius:cs(".stepCard").borderRadius};
+ });
+ assert.equal(uiStep2.progressVisible,"none",label+" STEP2 redundant progress card hidden");
+ assert.equal(uiStep2.badgeVisible,"none",label+" STEP2 redundant practice badge hidden");
+ assert.equal(uiStep2.buttonHeight,uiStep1.buttonHeight,label+" STEP1/2 button sizes");
+ assert.equal(uiStep2.buttonFont,uiStep1.buttonFont,label+" STEP1/2 button fonts");
+ assert.equal(uiStep2.inputHeight,uiStep1.inputHeight,label+" STEP1/2 input heights");
+ assert.equal(uiStep2.inputFont,uiStep1.inputFont,label+" STEP1/2 input fonts");
+ assert.equal(uiStep2.cardRadius,uiStep1.cardRadius,label+" STEP1/2 cards");
  const font2=await flowPage.evaluate(()=>getComputedStyle(document.body).fontFamily);
  const headerWeight2=await flowPage.locator(".hero h1").evaluate(el=>getComputedStyle(el).fontWeight);
  const nav2=await flowPage.locator("#stepNav .stepText").first().evaluate(el=>getComputedStyle(el).fontSize);
@@ -166,6 +193,17 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  assert.equal(await flowPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+3),true,label+" STEP2 no horizontal overflow");
 
  await page.emulateMedia({media:"screen"});
+ const uiStep3=await page.evaluate(()=>{
+   const cs=sel=>getComputedStyle(document.querySelector(sel));
+   return {buttonHeight:cs(".donga-screen .btn").minHeight,buttonFont:cs(".donga-screen .btn").fontSize,
+    inputHeight:cs("#job").minHeight,inputFont:cs("#job").fontSize,
+    cardRadius:cs(".donga-screen .card").borderRadius};
+ });
+ assert.equal(uiStep3.buttonHeight,uiStep1.buttonHeight,label+" STEP1/3 button sizes");
+ assert.equal(uiStep3.buttonFont,uiStep1.buttonFont,label+" STEP1/3 button fonts");
+ assert.equal(uiStep3.inputHeight,uiStep1.inputHeight,label+" STEP1/3 input heights");
+ assert.equal(uiStep3.inputFont,uiStep1.inputFont,label+" STEP1/3 input fonts");
+ assert.equal(uiStep3.cardRadius,uiStep1.cardRadius,label+" STEP1/3 cards");
  const font3=await page.evaluate(()=>getComputedStyle(document.body).fontFamily);
  const nav3=await page.locator("#dongaStep3Nav .donga-steplabel b").first().evaluate(el=>getComputedStyle(el).fontSize);
  const subtitle3=await page.locator("#dongaStep3Nav .donga-steplabel small").first().evaluate(el=>getComputedStyle(el).fontSize);
