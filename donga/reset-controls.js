@@ -68,7 +68,7 @@ function mount(){
  '<button type="button" data-reset-action="backup-all">1~3 전체 백업</button>'+
  '<button type="button" class="donga-reset-warning" data-reset-action="reset-one">현재 STEP만 초기화</button>'+
  '<button type="button" class="donga-reset-danger" data-reset-action="reset-all">새 학생 시작 · 1~3 전체 초기화</button>'+
- '</div><label class="donga-reset-import">통합 백업 복원 <input type="file" accept=".json,application/json"></label>'+
+ '<button type="button" class="donga-reset-restore-btn" data-reset-action="restore-all">통합 백업 불러오기</button></div>'+
  '<p class="donga-reset-explain">초기화는 이 브라우저의 잡핏동아 저장값만 삭제합니다. AI 채팅 기록이나 다운로드 파일은 삭제하지 않습니다. 다른 학생이 같은 기기를 쓰기 전에는 전체 초기화를 권장합니다.</p>'+
  '<p id="dongaResetStatus" role="status" aria-live="polite"></p></div>';
  let container,anchor;
@@ -81,9 +81,16 @@ function mount(){
  const a=btn.dataset.resetAction;
  if(a==="backup-one")backupCurrent();if(a==="backup-all")backupAll();
  if(a==="reset-one")reset(false);if(a==="reset-all")reset(true);
+ if(a==="restore-all"){
+   const input=document.createElement("input");
+   input.type="file";input.accept=".json,application/json";input.style.display="none";
+   document.body.appendChild(input);
+   input.addEventListener("change",e=>{
+     const f=e.target.files?.[0];if(f)restoreAll(f);input.remove();
+   });
+   input.click();
+ }
  });
- const input=panel.querySelector("input[type=file]");
- input.addEventListener("change",e=>{const f=e.target.files?.[0];if(f)restoreAll(f);e.target.value="";});
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",mount);else mount();
 })();
