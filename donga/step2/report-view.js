@@ -73,7 +73,7 @@ export function renderStep2Report(snapshot){
   ).join("");
   return '<div class="donga-report-doc">'+
     '<header class="donga-report-head"><p>JOBFIT DONG-A · STEP 2</p>'+
-    '<h2>MY JOB ANALYSIS &amp; GAP</h2><div>직무분석 결과 · 공고 요구조건 비교 · 취업준비 계획</div></header>'+
+    '<div class="donga-report-title" role="heading" aria-level="2">MY JOB ANALYSIS &amp; GAP</div><div>직무분석 결과 · 공고 요구조건 비교 · 취업준비 계획</div></header>'+
     '<section class="donga-report-meta">'+
     labelValue("기업",target.company)+labelValue("선택 직무",target.role)+
     labelValue("채용공고",target.title)+labelValue("전공",student.major)+
