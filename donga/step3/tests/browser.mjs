@@ -20,6 +20,8 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  await page.goto(url,{waitUntil:"domcontentloaded"});
  await page.evaluate(()=>{
    localStorage.setItem("jobfit:donga:step1:v1","step1-untouched");
+   localStorage.setItem("jobfit:v2:learner","INJE_DO_NOT_TOUCH");
+   localStorage.setItem("jobfit:flexlab:job-analysis:v1","FLEX_DO_NOT_TOUCH");
    localStorage.setItem("jobfit:donga:step2:v1",JSON.stringify({app:"JOBFIT_DONGA_STEP2",target:{job:"품질관리"}}));
  });
  await page.reload({waitUntil:"domcontentloaded"});
@@ -95,6 +97,18 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  assert.equal(data.question.pre,"채용공고 비교\n측정 데이터 실습\n성과 사례 정리",label+" raw student answer persistence");
  assert.equal(await page.evaluate(()=>localStorage.getItem("jobfit:donga:step1:v1")),"step1-untouched",label+" STEP 1 untouched");
  assert.equal((await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step2:v1")))).target.job,"품질관리",label+" STEP 2 untouched");
+ assert.equal(await page.evaluate(()=>localStorage.getItem("jobfit:v2:learner")),"INJE_DO_NOT_TOUCH",label+" INJE protected");
+ assert.equal(await page.evaluate(()=>localStorage.getItem("jobfit:flexlab:job-analysis:v1")),"FLEX_DO_NOT_TOUCH",label+" FLEX protected");
+ if(label==="Desktop Chrome"){
+   const saved=await page.evaluate(()=>localStorage.getItem("jobfit:donga:step3:v1"));
+   const [download]=await Promise.all([page.waitForEvent("download"),page.locator("#export").click()]);
+   assert.match(download.suggestedFilename(),/JOBFIT_DONGA_STEP3_backup/,label+" backup filename");
+   await page.locator("#monthActions").fill("임시 수정");
+   page.once("dialog",dialog=>dialog.accept());
+   await page.locator("#importFile").setInputFiles({name:"JOBFIT_DONGA_STEP3_backup.json",mimeType:"application/json",buffer:Buffer.from(saved)});
+   await page.waitForFunction(()=>document.querySelector("#monthActions").value.startsWith("1. JD 검토"));
+   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step3:v1")).action.month),"1. JD 검토\n2. 분석 프로젝트\n3. 포트폴리오",label+" restored backup");
+ }
  if(label==="Desktop Chrome"){
    await page.emulateMedia({media:"print"});
    assert.equal(await page.locator("#paper").evaluate(el=>getComputedStyle(el).transform),"none",label+" print scaling reset");
@@ -108,8 +122,6 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  assert.equal(metrics.columns.length,2,"exactly two graphic columns");
  assert(metrics.columns[0].x<metrics.columns[1].x,"left and right illustrations");
  assert.equal(metrics.overflows.length,0,"visible text must not be clipped");
- const snap=await page.locator("#paper").screenshot({type:"jpeg",quality:22,animations:"disabled"});
- console.log("JOBFIT_PDF_VISUAL_START:"+snap.toString("base64")+":JOBFIT_PDF_VISUAL_END");
  const pdf=await page.pdf({preferCSSPageSize:true,printBackground:true});
    assert.equal((pdf.toString("latin1").match(/\/Type\s*\/Page\b/g)||[]).length,1,"A4 landscape one page");
  }
@@ -123,6 +135,23 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  assert.equal(await flowPage.locator("#stepNav .stepBtn").count(),4,label+" STEP2 sidebar 4");
  assert.equal(await flowPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+3),true,label+" STEP2 no horizontal overflow");
  await flowPage.close();
+
+ const fallbackContext=await browser.newContext({...(device||{})});
+ const fallback=await fallbackContext.newPage();
+ await fallback.goto(url,{waitUntil:"domcontentloaded"});
+ assert.match(await fallback.locator("#starting1").innerText(),/미입력/,label+" missing STEP1 data is not invented");
+ await fallback.locator("#dongaStep3Nav .donga-stepbtn").nth(1).click();
+ await fallback.locator("#job").fill("품질관리");
+ await fallback.locator("#preUnknown").check();
+ await fallback.locator("#postUnknown").check();
+ await fallback.locator("#build").click();
+ assert.equal(await fallback.locator("#dongaPanel3").isVisible(),true,label+" after build navigates to career plan");
+ const fallbackData=await fallback.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step3:v1")));
+ assert.equal(fallbackData.right[0].label,"5년 차",label+" fallback 5y heading");
+ assert.match(fallbackData.right[0].one,/품질개선 실무/,label+" 5y fallback not entry level");
+ assert.equal(fallbackData.right[0].origin,"cdp",label+" fallback explicitly marked");
+ assert.equal(fallbackData.question.post,"",label+" original student input preserved");
+ await fallbackContext.close();
  assert.deepEqual(errors,[],label+" errors");
  await context.close();await browser.close();console.log("PASS",label);
 }
