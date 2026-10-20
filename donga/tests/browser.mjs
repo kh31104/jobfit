@@ -47,9 +47,14 @@ for(const [label,browserType,device] of [['Android Chrome',chromium,devices['Pix
  assert.equal(await page.locator('#backup').isVisible(),false,label+' backup hidden on 06');
  await page.locator('#makeanalysis').click();
  const aiPrompt=await page.locator('#analysispreview').innerText();
- assert.match(aiPrompt,/600자 이내/,label+' short AI analysis');
- assert.match(aiPrompt,/SWOT 요약/,label+' concise SWOT');
- assert.doesNotMatch(aiPrompt,/강점을 사용한 상황/,label+' removed field absent in generated AI prompt');
+ assert.match(aiPrompt,/STEP 07에 붙여넣을 Career DNA v1/,label+' mapped STEP07 output block');
+ assert.match(aiPrompt,/한 줄에 한 문장씩/,label+' each idea easy to copy');
+ assert.match(aiPrompt,/다른 항목으로 넘어갈 때만 빈 줄을 한 번/,label+' controlled paragraph spacing');
+ assert.doesNotMatch(aiPrompt,/600자 이내/,label+' remove former over-short limit');
+ for(const field of ["내가 확인한 핵심 가치와 선택 기준","가치관·커리어 기준·강점이 연결되는 부분","내가 확인한 보완할 행동 또는 강점 과잉 사용","다음 실제 경험에서 검증할 질문"]){
+  assert.match(aiPrompt,new RegExp(field),label+' exact STEP07 heading '+field);
+ }
+ assert.match(aiPrompt,/별도의 "강점을 사용한 상황" 항목은 만들지 마라/,label+' forbidden legacy input is not requested as an output');
  for(const service of ["ChatGPT","Gemini","Claude"]){
    assert.equal(await page.locator('#step6 .actions a').filter({hasText:service}).count(),1,label+' AI provider '+service);
  }
