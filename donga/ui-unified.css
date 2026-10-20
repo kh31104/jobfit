@@ -1,0 +1,133 @@
+/* JOBFIT DONG-A · STEP 1–3 interface harmonization.
+   Screen only. Do not change learner data, generated text, or print/PDF layouts. */
+@media screen {
+  /* Redundant statuses are hidden, but their DOM IDs remain for existing save logic. */
+  #dongaSide1 .donga-nav-status,
+  #dongaSide1 ~ .donga-nav-status,
+  .donga-step2-progress,
+  .donga-main details.step > summary .tag,
+  .donga-main details.step > summary .plus,
+  #stepRoot > .stepCard > .sectionHead > .badge {
+    display:none!important;
+  }
+
+  /* Primary controls: equal visual height and typography across all three STEP pages. */
+  body .btn,
+  body a.btn,
+  body label.btn,
+  #stepRoot button.btn,
+  .donga-main button.btn,
+  .donga-screen button.btn {
+    box-sizing:border-box;
+    min-height:44px;
+    padding:10px 14px;
+    border-radius:10px;
+    font-family:var(--donga-ui-font);
+    font-size:13px;
+    font-weight:800;
+    line-height:1.4;
+    letter-spacing:0;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    gap:7px;
+    white-space:normal;
+  }
+  /* Keep the step navigator compact: it is not an action button. */
+  .donga-stepbtn,
+  #stepNav .stepBtn{
+    box-sizing:border-box;
+    min-height:52px;
+  }
+  body input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]):not([type="button"]):not([type="submit"]),
+  body select {
+    box-sizing:border-box;
+    min-height:44px;
+    padding:10px 12px;
+    border-radius:10px;
+    border:1px solid #cad5e7;
+    font-family:var(--donga-ui-font);
+    font-size:14px;
+    font-weight:400;
+    line-height:1.5;
+    color:#203957;
+  }
+  body textarea,
+  body .field textarea,
+  body #stepRoot textarea,
+  body .question textarea,
+  body .editItem textarea,
+  body .donga-screen textarea,
+  body .promptArea {
+    box-sizing:border-box;
+    min-height:88px;
+    padding:10px 12px;
+    border-radius:10px;
+    border:1px solid #cad5e7;
+    font-family:var(--donga-ui-font);
+    font-size:14px;
+    font-weight:400;
+    line-height:1.5;
+    color:#203957;
+    resize:vertical;
+  }
+  /* Long answer and AI prompt areas keep room for their contents. */
+  body textarea[rows="7"], body textarea[rows="8"],
+  body .promptArea {min-height:120px;}
+
+  /* Labels and groups: common 8/14/16px rhythm. */
+  body .field > label,
+  body .field > span,
+  body .question > label:first-child,
+  body .editItem > label,
+  body .promptLabel {
+    font-family:var(--donga-ui-font);
+    font-size:13px;
+    font-weight:700;
+    line-height:1.5;
+    margin-bottom:8px;
+  }
+  body .field{gap:8px;margin-bottom:14px;}
+  body .question{margin-bottom:16px;}
+  body .actions,
+  body .buttons,
+  body .stepFooter {
+    column-gap:8px;
+    row-gap:8px;
+    margin-top:14px;
+  }
+  body .card:not(.navCard):not(.progressCard),
+  body .donga-screen .card{
+    padding:18px;
+    border-radius:18px;
+    border:1px solid var(--donga-line,#dde5f0);
+    box-shadow:0 5px 16px rgba(30,55,105,.055);
+  }
+  body .donga-main details.step {
+    margin:0 0 14px;
+    border-radius:18px;
+    border:1px solid var(--donga-line,#dde5f0);
+    box-shadow:0 5px 16px rgba(30,55,105,.055);
+  }
+  body .donga-main details.step > summary{padding:16px 14px;}
+  body .donga-main details.step .inside{padding:0 18px 18px;}
+  body .donga-screen .card,
+  body #stepRoot .stepCard{margin-bottom:14px;}
+  body .sectionHead{margin-bottom:13px;}
+
+  /* Step 2 has no separate progress card, just like STEP 1 and STEP 3. */
+  .donga-step2-progress{visibility:hidden;}
+}
+@media screen and (max-width:650px) {
+  body .btn,body a.btn,body label.btn,
+  #stepRoot button.btn,.donga-main button.btn,.donga-screen button.btn{
+    min-height:42px;
+    padding:9px 12px;
+    font-size:13px;
+  }
+  body .card:not(.navCard):not(.progressCard),
+  body .donga-screen .card{padding:16px;}
+  body .donga-main details.step > summary{padding:14px 12px;}
+  body .donga-main details.step .inside{padding:0 14px 16px;}
+}
