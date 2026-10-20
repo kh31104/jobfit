@@ -23,6 +23,8 @@ jobs:
       - run: node --check donga/app.js
       - run: node --check donga/step2/app.js
       - run: node donga/tests/smoke.mjs
+      - run: node --check donga/reset-controls.js
+      - run: node donga/tests/reset-controls.mjs
   smoke:
     name: smoke
     runs-on: ubuntu-latest
