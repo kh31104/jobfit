@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#203957"><title>잡핏동아 STEP 3 | 커리어 로드맵</title>
+<link rel="stylesheet" href="../theme.css?v=1">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap');
+:root{--ink:#203957;--blue:#3862c9;--line:#dce4f0;--muted:#63758b}
+*{box-sizing:border-box}body{margin:0;background:#f6f9fd;color:var(--ink);font:15px/1.6 "Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif}button,input,textarea{font:inherit}button{cursor:pointer}a{text-decoration:none;color:inherit}
+main{max-width:1160px;margin:0 auto;padding:17px 14px 58px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:15px}.brand{display:flex;gap:11px;align-items:center}.logo{width:42px;height:42px;background:linear-gradient(130deg,#193353,#3862c9);display:grid;place-items:center;color:white;font-size:23px;font-weight:900;border-radius:12px}.brand b,.brand small{display:block}.brand small{font-size:12px;color:var(--muted)}
+.top nav{display:flex;gap:7px}.top nav a,.top nav strong{border:1px solid var(--line);background:white;padding:8px 12px;border-radius:9px;font-size:12px}.top nav strong{background:#203957;color:white}
+.hero{background:linear-gradient(110deg,#193353,#33598e);color:white;border-bottom:5px solid #ffc929;border-radius:21px;padding:25px 28px}.hero h1{font-size:clamp(26px,4vw,40px);line-height:1.3;margin:5px 0}.hero p{margin:0;color:#edf2ff}.hero>small{color:#ffe099;letter-spacing:.8px;font-weight:900}.chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:15px}.chips span{font-size:12px;padding:5px 9px;background:#ffffff22;border:1px solid #ffffff44;border-radius:30px}
+.card{border:1px solid var(--line);border-radius:18px;background:white;padding:23px;margin-top:16px;box-shadow:0 5px 21px #233e620a}.sectionHead{display:flex;align-items:start;gap:10px;padding-bottom:13px;border-bottom:1px solid #edf1f7}.count{font-size:13px;font-weight:900;padding:8px 10px;background:#ecf2ff;color:#3559b1;border-radius:10px}.sectionHead h2{margin:0;font-size:20px}.sectionHead p{margin:3px 0;color:var(--muted);font-size:13px}
+.question{padding:13px 15px;background:#fbfcff;border:1px solid #e2e9f4;border-radius:12px;margin:13px 0}.question>label:first-child{font-weight:800;display:block;margin-bottom:8px}.question textarea,.question input:not([type=checkbox]){width:100%;padding:10px 11px;border:1px solid #cad5e7;border-radius:8px;outline-color:#8babef;background:white;color:var(--ink)}textarea{resize:vertical;min-height:73px}.inputRow{display:flex;gap:9px}.inputRow input{min-width:0;flex:1}.check{display:flex;align-items:center;gap:7px;font-size:13px;margin-top:9px;color:#405c7e}.check input{accent-color:#3862c9;width:16px;height:16px}
+.btn{padding:10px 14px;border:1px solid #3862c9;border-radius:9px;font-weight:800;font-size:13px;min-height:43px}.primary{background:#3862c9;color:#fff}.light{background:white;color:#335aaa;border-color:#b5c7eb}.buttons{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:14px 0}.hint{font-size:12px;color:var(--muted);line-height:1.65}.badge{font-size:10px;border-radius:16px;padding:3px 7px;white-space:nowrap;font-weight:800}.mine{background:#dff3e7;color:#19734f}.cdp{background:#fff0d1;color:#9a6900}.modified{background:#e9e6fc;color:#6554a8}.empty{background:#edf1f7;color:#71809a}
+.editorGrid{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:14px}.editorColumn{padding:13px;border-radius:13px;background:#f8faff;border:1px solid #dfe7f3}.editorColumn h3{font-size:16px;margin:0 0 12px}.editorColumn h3 small{display:block;font-size:12px;font-weight:400;color:#647993}.editItem{border:1px solid #e1e7f0;background:white;margin-bottom:10px;border-radius:11px;padding:11px}.editTitle{display:flex;justify-content:space-between;gap:7px;align-items:center;font-size:13px}.editItem label{display:block;font-size:11px;font-weight:700;color:#6b7b8b;margin-top:7px}.editItem textarea{width:100%;min-height:60px;padding:7px;border:1px solid #cbd7e9;border-radius:7px;color:#203957;font-size:13px;line-height:1.45}
+.paperViewport{background:#e9eef5;padding:12px;border:1px solid #d9e3ee;border-radius:11px;max-width:100%;overflow-x:auto;overflow-y:hidden}.paper{position:relative;overflow:hidden;display:flex;flex-direction:column;flex-shrink:0;width:1122px;height:794px;background:#fffef9;padding:28px 32px 16px;color:#2b435e;border:1px solid #e7dccd;box-shadow:0 4px 16px #1c335b20;font-family:"Apple SD Gothic Neo","Malgun Gothic",sans-serif}.paper:before{content:"";position:absolute;inset:0;background:radial-gradient(#ded8c9 .7px,transparent .8px) 0 0/18px 18px;opacity:.18;pointer-events:none}.paperHead,.paperGrid,.paperFooter{z-index:1;position:relative}
+.paperHead{display:flex;align-items:start;justify-content:space-between;height:108px;flex-shrink:0}.paperHead small{font-weight:900;letter-spacing:1.1px;color:#6c61b4;font-size:14px}.paperHead h2{font-family:"Nanum Pen Script","Apple SD Gothic Neo",sans-serif;font-size:42px;line-height:1.1;margin:1px 0}.paperHead p{font-size:13px;font-weight:850;margin:0;color:#536f90}.doodle{width:140px;height:83px}
+.paperGrid{display:grid;grid-template-columns:1fr 1fr;gap:17px;flex:1;min-height:0}
+.roadmap{display:flex;flex-direction:column;min-height:0;border:2px solid #cbdcf4;border-radius:16px 20px 15px 18px;background:linear-gradient(145deg,#edf2ff,#fff 65%);padding:12px 16px 7px;box-shadow:4px 5px 0 #b5c6e020}.roadmap.right{border-color:#c3e5d8;background:linear-gradient(145deg,#e9f8ee,#fff 65%)}
+.mapTitle{display:flex;align-items:center;gap:9px;border-bottom:2px dashed #c0cee0;padding-bottom:9px}.headIcon{background:#ffefb8;border:2px solid #e4cf8b;width:42px;height:42px;display:grid;place-items:center;border-radius:50% 40% 55% 43%;transform:rotate(-8deg);font-size:29px}.right .headIcon{background:#fbded9;border-color:#e5bbbc}.mapTitle small{font-size:9px;letter-spacing:1px;font-weight:900;color:#7083a0}.mapTitle h3{font-family:"Nanum Pen Script","Apple SD Gothic Neo",sans-serif;font-size:29px;line-height:1.1;margin:0}
+.roadTrack{display:flex;flex-direction:column;flex:1;min-height:0;gap:5px;justify-content:space-evenly;padding:8px 2px}.roadItem{display:grid;grid-template-columns:32px 1fr;gap:6px;align-items:center;flex:1;min-height:0;position:relative}.roadItem:not(:last-child):after{content:"↓";position:absolute;left:9px;bottom:-13px;color:#859dc0;font-size:15px;font-weight:850;z-index:2}.nodeIcon{width:28px;height:28px;display:grid;place-items:center;border-radius:49% 39% 52% 44%;transform:rotate(-8deg);border:2px solid #829bbf;background:#fff1c2;font-size:17px}.right .nodeIcon{border-color:#82b79c;background:#daf3e2}.note{padding:7px 11px;background:white;border:1px solid #d8e2f1;border-radius:9px 13px 10px 11px;box-shadow:2px 3px 0 #6b91b00b;overflow-wrap:anywhere;min-height:0}.right .note{border-color:#cce7d8}
+.noteHead{display:flex;align-items:center;gap:7px;margin-bottom:3px}.noteHead strong{font:normal 24px/1 "Nanum Pen Script","Apple SD Gothic Neo",sans-serif;color:#253b6a}.note p{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.37;margin:1px 0}.note p b{color:#5b7495}.mapTail{font:normal 21px/1.15 "Nanum Pen Script","Apple SD Gothic Neo",sans-serif;text-align:right;color:#8377b3;flex-shrink:0}.paperFooter{display:flex;justify-content:space-between;align-items:end;gap:10px;height:24px;flex-shrink:0;font-size:10px;color:#667486}
+.toast{display:none;position:fixed;left:50%;bottom:17px;transform:translateX(-50%);z-index:10;color:white;background:#213954;border-radius:9px;padding:10px 15px;font-size:13px;max-width:92vw}footer{color:#708197;text-align:center;margin:20px 0;font-size:12px}
+@media(max-width:720px){main{padding:10px 10px 40px}.top{align-items:start;flex-direction:column}.hero{padding:22px 17px}.card{padding:16px 12px}.inputRow{flex-direction:column}.editorGrid{grid-template-columns:1fr}.buttons .btn{flex:1}.paperViewport{padding:6px}}
+@page{size:A4 landscape;margin:0}
+@media print{html,body{width:297mm!important;height:210mm!important;margin:0!important;padding:0!important;overflow:hidden!important;background:#fff!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+main{max-width:none!important;margin:0!important;padding:0!important}.top,.hero,.formCard,.editCard,.previewCard>.sectionHead,.previewCard>.buttons,.previewCard>.hint,footer,.toast{display:none!important}.previewCard{padding:0!important;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important}.paperViewport{padding:0!important;margin:0!important;overflow:visible!important;border:0!important;background:none!important}.paper{width:297mm!important;height:210mm!important;padding:7.4mm 8.5mm 4.2mm!important;border:0!important;box-shadow:none!important;break-inside:avoid!important;page-break-inside:avoid!important}.paperHead{height:28.5mm}.paperGrid{gap:4.5mm}.roadmap{padding:3.2mm 4.3mm 2mm}.paperFooter{height:6mm}}
+</style>
+</head>
+<body>
+<main>
+<header class="top"><div class="brand"><span class="logo">J</span><div><b>JOBFIT DONG-A</b><small>STEP 3 · CAREER DEVELOPMENT PLAN</small></div></div><nav><a href="../">STEP 1</a><a href="../step2/">STEP 2</a><strong>STEP 3</strong></nav></header>
+<section class="hero"><small>JOBFIT DONG-A · STEP 3</small><h1>나의 커리어 준비와<br>성장 로드맵 만들기</h1><p>먼저 내가 생각한 계획을 적어 보세요. 계획을 모르겠다면 직무별 일반 경력개발경로(CDP)를 예시로 제공합니다.</p><div class="chips"><span>01 학생 질문 3개</span><span>02 로드맵 직접 수정</span><span>03 A4 가로 1페이지 PDF</span></div></section>
+<section class="card formCard">
+<div class="sectionHead"><span class="count">01</span><div><h2>먼저 나의 생각을 적어 주세요</h2><p>직무·취업 전 준비·취업 후 목표를 확인합니다. 저장된 입력 원문은 임의로 수정하지 않습니다.</p></div></div>
+<div class="question"><label for="job">Q1. 희망 직무는 무엇인가요?</label><div class="inputRow"><input id="job" placeholder="예: 브랜드 마케팅, 생산관리, 환경관리"><button id="loadStep2" class="btn light">STEP 2 직무 불러오기</button></div><p id="step2Info" class="hint">STEP 2의 희망 직무만 읽어옵니다.</p></div>
+<div class="question"><label for="prePlan">Q2. 취업 전 어떤 준비를 해야 한다고 생각하나요?</label><textarea id="prePlan" rows="3" placeholder="예: 공고 비교&#10;프로젝트 경험 쌓기&#10;포트폴리오 정리"></textarea><label class="check"><input id="preUnknown" type="checkbox">아직 계획이 없어요. 일반적인 CDP 예시로 작성해 주세요.</label></div>
+<div class="question"><label for="postPlan">Q3. 취업 후 어떤 사람으로 일하고 싶나요?</label><textarea id="postPlan" rows="3" placeholder="예: 실무 적응&#10;혼자 캠페인을 운영하는 마케터&#10;브랜드 전략 전문가"></textarea><label class="check"><input id="postUnknown" type="checkbox">아직 계획이 없어요. 일반적인 CDP 예시로 작성해 주세요.</label></div>
+<div class="buttons"><button id="build" class="btn primary">내 로드맵 만들기</button><span class="hint">한 줄에 한 계획을 적으면 단계별로 배치하기 쉽습니다.</span></div>
+</section>
+<section class="card editCard"><div class="sectionHead"><span class="count">02</span><div><h2>로드맵 단계별로 확인하기</h2><p>내 계획을 우선 적용합니다. 나머지 단계의 CDP 예시는 내가 수정할 수 있습니다.</p></div></div>
+<div class="buttons"><span class="badge mine">내 계획</span><span class="badge cdp">일반 CDP 예시</span><span class="badge modified">직접 수정</span></div>
+<div class="editorGrid"><div class="editorColumn"><h3>① 취업 전 커리어 준비계획 <small>탐색기 → 준비기 → 실행기</small></h3><div id="leftEditors"></div></div><div class="editorColumn"><h3>② 취업 후 장기 경력개발계획 <small>입사 초기 → 3년 차 → 5년 차 → 장기 목표</small></h3><div id="rightEditors"></div></div>
+<p class="hint">일반 CDP는 참고용입니다. 기업의 공식 승진 기준이나 실제 연차별 직급을 뜻하지 않습니다. STEP 1·2 저장값은 변경하지 않습니다.</p>
+</section>
+<section class="card previewCard"><div class="sectionHead"><span class="count">03</span><div><h2>A4 가로형 · 1페이지 미리보기</h2><p>두 그림을 왼쪽·오른쪽에 나란히 배치했습니다. 모바일에서는 미리보기를 좌우로 움직여 보세요.</p></div></div>
+<div class="buttons"><button id="pdf" class="btn primary">A4 가로 PDF 저장 / 인쇄</button><button id="export" class="btn light">STEP 3 백업 저장</button><button id="import" class="btn light">STEP 3 백업 불러오기</button><input type="file" id="importFile" accept=".json,application/json" hidden></div><p class="hint" id="saveState" role="status">STEP 3 전용 데이터로 자동 저장됩니다.</p>
+<div class="paperViewport"><div class="paper" id="paper">
+<div class="paperHead"><div><small>MY CAREER DEVELOPMENT PLAN ✦</small><h2>나의 커리어 준비와 성장 로드맵</h2><p id="paperJob">희망 직무를 입력해 주세요</p></div>
+<svg class="doodle" viewBox="0 0 150 85" role="img" aria-label="손으로 그린 별과 연필"><path d="M5 38 Q35 5 58 35 T104 22" fill="none" stroke="#a398de" stroke-width="4" stroke-linecap="round" stroke-dasharray="6 7"/><path d="M96 4l4 12 13 1-10 8 4 12-11-7-11 7 4-12-10-8 13-1z" fill="#ffdb7d" stroke="#3a5874" stroke-width="2"/><path d="M114 39l16 10-30 33-17 1 2-16z" fill="#b9dfd4" stroke="#3a5874" stroke-width="2"/></svg></div>
+<div class="paperGrid">
+<article class="roadmap left"><div class="mapTitle"><span class="headIcon">✎</span><div><small>BEFORE WORK</small><h3>① 취업 전 커리어 준비계획</h3></div></div><div class="roadTrack" id="leftRoad"></div><div class="mapTail">나의 속도에 맞춰 한 걸음씩! ☆</div></article>
+<article class="roadmap right"><div class="mapTitle"><span class="headIcon">✧</span><div><small>AFTER WORK</small><h3>② 취업 후 장기 경력개발계획</h3></div></div><div class="roadTrack" id="rightRoad"></div><div class="mapTail">나만의 경력 방향을 그려요! ♡</div></article>
+</div><div class="paperFooter"><span>JOBFIT DONG-A · CAREER ROADMAP</span><span id="paperNotice">※ 일반 CDP 예시는 실제 기업·직무에 따라 달라질 수 있습니다.</span></div>
+</div></div>
+<p class="hint">PC/Android: 인쇄 창에서 ‘PDF로 저장’을 선택하세요. iPhone: 인쇄 미리보기에서 공유 후 PDF를 저장할 수 있습니다. 인쇄 설정은 A4·가로·1쪽을 확인하세요.</p>
+</section><footer>잡핏동아 전용 저장 · AI 자동전송 없음 · 교수자 자동제출 없음</footer></main><div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+(function(){
+"use strict";
+const KEY="jobfit:donga:step3:v1",OLD="jobfit:donga:step2:v1",APP="JOBFIT_DONGA_STEP3";
+const $=id=>document.getElementById(id);
+const LL=["탐색기","준비기","실행기"],RR=["입사 초기","3년 차","5년 차","장기 목표"];
+const EMPTY=labels=>labels.map(label=>({label,one:"",two:"",origin:""}));
+const init=()=>({app:APP,version:1,question:{job:"",pre:"",post:"",preUnknown:false,postUnknown:false},left:EMPTY(LL),right:EMPTY(RR),updatedAt:""});
+function read(key){try{return JSON.parse(localStorage.getItem(key)||"null")}catch{return null}}
+function safeStages(xs,labels){return labels.map((label,i)=>{const x=(xs||[])[i]||{};return {label,one:String(x.one||""),two:String(x.two||""),origin:["mine","cdp","modified"].includes(x.origin)?x.origin:""}})}
+function load(){const x=read(KEY);if(!x||x.app!==APP)return init();return {app:APP,version:1,question:{...init().question,...(x.question||{})},left:safeStages(x.left,LL),right:safeStages(x.right,RR),updatedAt:x.updatedAt||""}}
+let data=load(),timer;
+function notify(s){const n=$("toast");n.textContent=s;n.style.display="block";clearTimeout(timer);timer=setTimeout(()=>n.style.display="none",3200)}
+function save(){try{data.updatedAt=new Date().toISOString();localStorage.setItem(KEY,JSON.stringify(data));$("saveState").textContent="STEP 3 자동 저장 완료 · "+new Date().toLocaleString("ko-KR");return true}catch{$("saveState").textContent="저장 실패: 브라우저 저장 공간을 확인하세요";notify("자동 저장에 실패했습니다.");return false}}
+function collect(){data.question.job=$("job").value;data.question.pre=$("prePlan").value;data.question.post=$("postPlan").value;data.question.preUnknown=$("preUnknown").checked;data.question.postUnknown=$("postUnknown").checked}
+function step2Job(){const x=read(OLD);if(!x||x.app!=="JOBFIT_DONGA_STEP2")return "";return String((x.target&&x.target.job)||(x.curatedSelection&&x.curatedSelection.role)||(x.customJob&&x.customJob.role)||"").trim()}
+function sync(){const job=step2Job();if(!job){notify("STEP 2에 저장한 직무가 없습니다.");return}if(data.question.job.trim()&&data.question.job.trim()!==job&&!confirm("STEP 3 희망 직무만 STEP 2 내용으로 교체할까요? 나머지 답변은 유지됩니다."))return;data.question.job=job;$("job").value=job;save();draw();notify("직무만 불러왔습니다. STEP 2 원본은 그대로입니다.")}
+function family(job){if(/마케팅|콘텐츠|브랜드|홍보|광고/.test(job))return "marketing";if(/인사|채용|HR/.test(job))return "hr";if(/품질|QA|QC/.test(job))return "quality";if(/생산|공정|제조|SCM/.test(job))return "production";if(/수질|수처리|환경|안전|ESG/.test(job))return "env";if(/재무|회계|세무/.test(job))return "finance";if(/개발|소프트웨어|데이터|IT/.test(job))return "tech";if(/영업|고객관리/.test(job))return "sales";return "general"}
+const plans={
+general:[
+[["관심 직무 채용공고 3개 비교","공통 업무·조건 정리"],["직무와 연결되는 실습·프로젝트","작업물과 기여도 기록"],["지원서·면접 사례 준비","채용요건과 경험 비교"]],
+[["직무 기본 업무와 절차 이해","실무·협업 방식 익히기"],["맡은 업무를 독립적으로 수행","성과·개선 사례 축적"],["업무 범위를 넓혀 전문성 축적","복잡한 과제 해결 경험"],["직무 전문가·리더 경로 탐색","회사·직무에 따라 다름"]]],
+marketing:[
+[["마케팅 채용공고·캠페인 비교","채널 운영·고객 조사 업무 정리"],["고객분석·콘텐츠 프로젝트 수행","작업물과 성과 지표 기록"],["캠페인 포트폴리오 정리","기획 의도·성과 근거 준비"]],
+[["채널 운영·캠페인 실행 지원","일정·고객 반응 지표 익히기"],["캠페인 일부 기획·운영","성과 분석·개선 제안"],["브랜드 캠페인 성과 관리","예산과 채널 전략 이해"],["브랜드 전략 전문가 등 검토","회사·직무에 따라 다름"]]],
+hr:[
+[["인사·채용 JD 비교","채용·교육·인사운영 구분"],["인사 데이터·문서 실습","기초 법규·엑셀 확인"],["인사 관련 활동·성과 기록","정확성·개인정보 기준 점검"]],
+[["인사행정·채용 운영 보조","규정·시스템·문서 절차 익히기"],["담당 인사 일정·업무 운영","구성원 문의·자료 처리"],["인사제도 개선 과제 참여","데이터·노동법 이해 확대"],["인사기획·전문가 경로 검토","회사 규모·조직에 따라 다름"]]],
+quality:[
+[["품질 JD와 지표 파악","검사·보증·개선 업무 구분"],["측정·데이터 분석 실습","불량원인·개선과정 기록"],["품질 문제해결 사례 정리","기준·도구·결과 설명 준비"]],
+[["품질 검사·기록 절차 익히기","안전·기준 준수"],["불량 분석·개선 과제 참여","원인분석 도구 활용"],["품질시스템 운영·개선 참여","공정·협력사 협업 이해"],["품질 전문가·관리 경로 검토","업종·현장마다 다름"]]],
+production:[
+[["생산관리 채용공고 조사","생산량·납기·재고 지표 확인"],["공정·데이터 분석 실습","병목 개선 과정 정리"],["생산계획 관련 경험 정리","안전·품질·원가 연결 점검"]],
+[["생산실적·설비·현장 파악","안전·품질 기준 숙지"],["생산 일정·계획 일부 운영","재고·불량 지표 분석"],["공정개선·부서 협업 참여","생산성·원가 이해 확대"],["생산기획 전문가 등 검토","사업장·업종에 따라 다름"]]],
+env:[
+[["환경·수질 직무기술서 검토","법규·측정·시설 업무 파악"],["측정·실험·현장 실습","기록 정확성·안전기준 점검"],["자격·전공 실습 사례 정리","법규·설비 이해 설명 준비"]],
+[["시설·측정·점검 절차 익히기","안전·법적 기준 숙지"],["담당 설비·지표 관리 참여","점검자료·이상원인 분석"],["시설개선·보고서 작성 참여","운영·법규 연계 이해"],["환경기술 전문가 등 검토","기관·시설마다 다름"]]],
+finance:[
+[["회계·재무 직무공고 비교","전표·결산·예산 업무 구분"],["회계 도구·엑셀 실습","증빙·오류 검증 기록"],["재무자료 분석 사례 정리","자격·정확성 기준 확인"]],
+[["전표·증빙·마감 절차 습득","회계기준·규정 익히기"],["담당 계정·결산 업무 수행","오류검토·대사 능력 축적"],["재무분석·업무개선 참여","수치·일정·부서협업 이해"],["회계·재무 전문가 경로 검토","조직 규모에 따라 다름"]]],
+tech:[
+[["개발·데이터 기술요건 비교","언어·도구·협업 방식 확인"],["작은 프로젝트 직접 구현","코드·테스트·오류 해결 기록"],["Git 저장소·포트폴리오 정리","역할·기여도·결과 설명"]],
+[["코드베이스·제품 구조 익히기","리뷰·테스트·배포 절차 습득"],["기능·분석 과제 독립 수행","운영지표·품질 개선 경험"],["설계·기술 의사결정 참여","문제해결·협업 범위 확대"],["기술 전문가·리드 경로 검토","조직·기술환경 따라 다름"]]],
+sales:[
+[["영업·고객관리 채용공고 비교","고객·매출·채널 업무 파악"],["고객분석·제안서 실습","니즈·자료·근거 정리"],["설득·고객응대 경험 정리","과정·성과 설명 준비"]],
+[["상품·고객·CRM 기초 숙지","문의·계약 절차 파악"],["담당 거래처·고객 관리","목표·고객반응 분석"],["주요 고객군·영업전략 운영","수익성·협상 경험 확대"],["영업 전문가·관리자 경로 검토","판매 방식에 따라 다름"]]]
+};
+function parts(text){return String(text||"").split(/\r?\n|[;；]/).map(s=>s.trim().replace(/^[-*•\d.)\s]+/,"")).filter(Boolean)}
+function lane(text,unknown,templates,labels){const entries=unknown?[]:parts(text);return labels.map((label,i)=>{const remaining=i===labels.length-1?entries.slice(i+1).join(" / "):"";const one=(entries[i]||"")+(remaining?" / "+remaining:"");return {label,one:one||templates[i][0],two:one?"구체적인 실행·확인 내용을 직접 적어 주세요":templates[i][1],origin:one?"mine":"cdp"}})}
+function build(){collect();const q=data.question;if(!q.job.trim()){notify("희망 직무를 먼저 입력해 주세요.");$("job").focus();return}if(!q.pre.trim()&&!q.preUnknown){notify("취업 전 계획을 쓰거나 ‘아직 계획이 없어요’를 선택해 주세요.");return}if(!q.post.trim()&&!q.postUnknown){notify("취업 후 목표를 쓰거나 ‘아직 계획이 없어요’를 선택해 주세요.");return}if((data.left.some(x=>x.one)||data.right.some(x=>x.one))&&!confirm("현재 단계별 수정 초안을 새로 만들까요? 질문 원문은 그대로 보존됩니다."))return;const p=plans[family(q.job)];data.left=lane(q.pre,q.preUnknown,p[0],LL);data.right=lane(q.post,q.postUnknown,p[1],RR);save();editors();draw();$("leftEditors").scrollIntoView({behavior:"smooth",block:"start"});notify("로드맵 초안이 완성됐습니다. 예시는 검토 후 수정하세요.")}
+function titleOf(origin){return origin==="mine"?"내 계획":origin==="modified"?"직접 수정":origin==="cdp"?"일반 CDP 예시":"작성 전"}
+function editors(){[["left",LL],["right",RR]].forEach(([side,labels])=>{const root=$(side+"Editors");root.replaceChildren();data[side].forEach((s,i)=>{const item=document.createElement("div");item.className="editItem";const top=document.createElement("div");top.className="editTitle";const st=document.createElement("strong");st.textContent=(i+1)+". "+labels[i];const tag=document.createElement("span");tag.className="badge "+(s.origin||"empty");tag.textContent=titleOf(s.origin);top.append(st,tag);item.append(top);[["one",side==="left"?"목표 · 준비활동":"담당업무 · 역할"],["two",side==="left"?"실행방법 · 체크포인트":"필요역량 · 성장목표"]].forEach(([field,label])=>{const box=document.createElement("label");box.textContent=label;const textarea=document.createElement("textarea");textarea.value=s[field];textarea.rows=2;textarea.placeholder="내 계획을 직접 적어 주세요";textarea.addEventListener("input",()=>{s[field]=textarea.value;s.origin="modified";tag.className="badge modified";tag.textContent="직접 수정";save();draw()});box.append(textarea);item.append(box)});root.append(item)})})}
+function makeNode(s,i,side){const item=document.createElement("div");item.className="roadItem";const pic=document.createElement("div");pic.className="nodeIcon";pic.textContent=(side==="left"?["⌕","✎","✓"]:["✿","♧","★","⚑"])[i];const note=document.createElement("div");note.className="note";const head=document.createElement("div");head.className="noteHead";const b=document.createElement("strong");b.textContent=s.label;const badge=document.createElement("span");badge.className="badge "+(s.origin||"empty");badge.textContent=titleOf(s.origin);head.append(b,badge);note.append(head);[["one",side==="left"?"계획":"업무"],["two",side==="left"?"실행":"성장"]].forEach(([key,name])=>{const p=document.createElement("p");const keyNode=document.createElement("b");keyNode.textContent=name+" · ";p.append(keyNode,document.createTextNode(s[key]||"직접 작성해 주세요"));note.append(p)});item.append(pic,note);return item}
+function draw(){$("paperJob").textContent=data.question.job.trim()?"희망 직무  ·  "+data.question.job.trim():"희망 직무를 입력해 주세요";["left","right"].forEach(side=>{$(side+"Road").replaceChildren(...data[side].map((s,i)=>makeNode(s,i,side)))});$("paperNotice").textContent=[...data.left,...data.right].some(s=>s.origin==="cdp")?"※ 일반 CDP 예시 포함 · 기업과 직무에 따라 실제 경력 경로는 다를 수 있습니다.":"※ 학생이 작성·확인한 계획입니다."}
+function refresh(){const q=data.question;$("job").value=q.job;$("prePlan").value=q.pre;$("postPlan").value=q.post;$("preUnknown").checked=q.preUnknown;$("postUnknown").checked=q.postUnknown;$("step2Info").textContent=step2Job()?"STEP 2 희망 직무를 불러올 수 있습니다. STEP 2 내용은 변경하지 않습니다.":"STEP 2에 희망 직무가 없으면 직접 입력해 주세요.";editors();draw();if(data.updatedAt)$("saveState").textContent="마지막 STEP 3 저장 · "+new Date(data.updatedAt).toLocaleString("ko-KR")}
+function backup(){collect();save();const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="JOBFIT_DONGA_STEP3_backup.json";document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);notify("STEP 3 JSON 백업을 저장했습니다.")}
+function restore(file){if(!file)return;if(file.size>1024*1024){notify("1MB 이하 STEP 3 백업만 불러올 수 있습니다.");return}const reader=new FileReader();reader.onload=()=>{try{const x=JSON.parse(reader.result);if(x.app!==APP||!Array.isArray(x.left)||!Array.isArray(x.right))throw Error("wrong");if(!confirm("현재 STEP 3 내용만 백업 파일 내용으로 교체할까요? STEP 1·2에는 영향을 주지 않습니다."))return;data={app:APP,version:1,question:{...init().question,...(x.question||{})},left:safeStages(x.left,LL),right:safeStages(x.right,RR),updatedAt:""};save();refresh();notify("STEP 3 백업을 불러왔습니다.")}catch{notify("올바른 잡핏동아 STEP 3 백업이 아닙니다.")}};reader.onerror=()=>notify("파일을 읽을 수 없습니다.");reader.readAsText(file)}
+function printPDF(){collect();save();draw();const all=[...data.left,...data.right];if(!data.question.job.trim()||all.some(s=>!s.one.trim()||!s.two.trim())){notify("희망 직무와 모든 단계의 2개 항목을 작성해 주세요.");return}if(data.question.job.length>60||all.some(s=>s.one.length>75||s.two.length>75)){notify("문장이 너무 길어 1쪽을 넘을 수 있습니다. 단계별 내용을 줄여 주세요. 원문은 유지됩니다.");return}const old=document.title;document.title="JOBFIT_DONGA_STEP3_Career_Roadmap";window.print();setTimeout(()=>document.title=old,5000)}
+refresh();
+$("loadStep2").addEventListener("click",sync);
+$("build").addEventListener("click",build);
+["job","prePlan","postPlan","preUnknown","postUnknown"].forEach(id=>{["input","change"].forEach(evt=>$(id).addEventListener(evt,()=>{collect();save();draw()}))});
+$("export").addEventListener("click",backup);
+$("import").addEventListener("click",()=>$("importFile").click());
+$("importFile").addEventListener("change",e=>{restore(e.target.files[0]);e.target.value=""});
+$("pdf").addEventListener("click",printPDF);
+})();
+</script>
+</body></html>
