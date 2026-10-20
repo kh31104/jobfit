@@ -577,6 +577,7 @@ function toast(msg){const e=document.getElementById("toast");if(!e)return;e.text
 function field(path,label,ph,area=true,optional=false){
   const val=h(get(path)||"");
   const opt=optional?' <span class="hint">(선택)</span>':"";
+  if(area&&["ai.gapResult","fit.gaps","fit.actions","ai.keywordResult","ai.selfIntroResult"].includes(path))return readableField(path,label+opt,ph);
   if(area)return '<div class="field"><label>'+label+opt+'</label><textarea class="input" data-path="'+path+'" placeholder="'+h(ph)+'">'+val+'</textarea></div>';
   return '<div class="field"><label>'+label+opt+'</label><input class="input" data-path="'+path+'" value="'+val+'" placeholder="'+h(ph)+'" /></div>';
 }
@@ -621,7 +622,12 @@ function bulletOutputRules(){
     "- 한 bullet에는 핵심 내용 1개만 쓴다.",
     "- 중요 키워드는 문장 앞쪽에 배치한다.",
     "- 확인된 사실과 추론은 같은 bullet에 섞지 말고 분리한다.",
-    "- 불필요한 인사말·서론·마무리 문장은 쓰지 않는다."
+    "- 불필요한 인사말·서론·마무리 문장은 쓰지 않는다.",
+    "- 각 제목은 별도의 한 줄로 표시하고, 각 bullet도 반드시 새 줄에서 시작한다. 여러 bullet을 한 문단으로 이어 붙이지 않는다.",
+    "- 항목 안에서는 빈 줄을 넣지 않고 제목이 바뀔 때만 빈 줄 한 번을 허용한다.",
+    "- 표·마크다운 강조(**)·코드블록 등 불필요한 서식 기호를 쓰지 않는다. 단 기존 제목과 [공고근거]·[추론]·[추가 확인 필요] 등 판정표시는 유지한다.",
+    "- 한 bullet에는 구체적인 과업·근거·행동 중 하나만 담고 가능하면 한두 문장 내로 쓴다.",
+    "- Knowledge·Skill·Behavior 등 서로 다른 하위항목은 각각 다른 줄에 작성한다."
   ];
 }
 
@@ -1052,6 +1058,7 @@ function jobAnalysisPrompt(){
     "확인되지 않은 내용은 사실처럼 만들지 말고 [추론] 또는 [추가 확인 필요]라고 표시해줘.",
     "",
     "아래 핵심 5개 제목을 정확히 그대로 사용하고 각 제목 아래에 '• ' bullet 2~4개로 답해줘. 마지막 경력개발은 선택 참고정보로 짧게 작성해줘. 제목에 번호·굵게표시·이모지를 붙이지 말고, 표 형식으로 바꾸지 마.",
+    "다섯 항목은 서로 섞지 않는다. 반드시 각 제목 다음 줄부터 bullet을 하나씩 줄바꿈하여 제시한다. 한 줄에 두 개 이상의 •를 이어 쓰지 않는다.",
     "고객·KPI:",
     "• 실제 업무의 고객/이해관계자를 먼저 쓰고, KPI는 공식 자료에 없으면 [추론]으로 업무 품질·정확성·일정·성과 관점만 제시",
     "주요 과업:",
@@ -1212,26 +1219,66 @@ function customJobFields(){
   '</div>';
 }
 
-function jobTableFields(){
-  return '<div class="jobTableCards">'+
-    '<div class="jobTableItem"><span>01</span>'+field("jobTable.customerKpi","고객(KPI)","이 직무의 고객은 누구이며 성과는 무엇으로 확인할까?")+'</div>'+
-    '<div class="jobTableItem"><span>02</span>'+field("jobTable.tasks","주요 과업","실제로 반복해서 수행하는 일은 무엇인가?")+'</div>'+
-    '<div class="jobTableItem"><span>03</span>'+field("jobTable.challenge","주요 해결과제","업무에서 해결해야 하는 문제는 무엇인가?")+'</div>'+
-    '<div class="jobTableItem"><span>04</span>'+field("jobTable.method","해결방법","어떤 방법·절차·도구로 해결하는가?")+'</div>'+
-    '<div class="jobTableItem"><span>05</span>'+field("jobTable.competencies","필요역량","필요한 지식·기술·행동은 무엇인가?")+'</div>'+
-    '<details class="optionBox"><summary>경력개발 방향 보기 · 선택</summary><div class="optionBody">'+field("jobTable.careerPlan","경력개발 <span class=\"hint\">(선택)</span>","지금 준비 → 신입 초기 → 전문성 확장 방향")+'</div></details>'+
-  '</div>';
+
+/* Read-only formatting for STEP 2 AI outputs. Raw strings are kept unchanged in state. */
+function readableLines(raw){
+  const text=String(raw??"").replace(/\r\n?/g,"\n");
+  return text.split(/\n/).flatMap(line=>{
+    const trimmed=line.trim();
+    if(!trimmed)return [];
+    if(/^\[[^\]\n]{2,90}\]$/.test(trimmed))return [{type:"heading",text:trimmed}];
+    return trimmed.split(/(?:^|[ \t]*)[•●][ \t]*/g)
+      .map(item=>item.trim().replace(/^[-*][ \t]+/,""))
+      .filter(Boolean)
+      .map(item=>({type:"item",text:item}));
+  });
+}
+function readableResult(raw){
+  const lines=readableLines(raw);
+  if(!lines.length)return '<p class="readableEmpty">아직 입력된 내용이 없습니다.</p>';
+  return '<div class="readableList" role="list">'+lines.map(({type,text})=>
+    type==="heading"?'<p class="readableHeading">'+h(text)+'</p>':
+    '<div class="readableItem" role="listitem"><span class="readableDot" aria-hidden="true"></span><span>'+h(text)+'</span></div>'
+  ).join("")+'</div>';
+}
+function readableField(path,label,ph){
+  const raw=get(path)||"";
+  const open=filled(raw)?"":" open";
+  return '<div class="field readableField"><label>'+label+'</label>'+
+    '<div class="readableDisplay" data-preview="'+path+'">'+readableResult(raw)+'</div>'+
+    '<details class="readableEdit"'+open+'><summary>원문 입력·수정</summary>'+
+      '<textarea class="input" data-path="'+path+'" placeholder="'+h(ph)+'">'+h(raw)+'</textarea>'+
+    '</details></div>';
 }
 
+function jobTableInputItem(index,path,label,ph){
+  return '<div class="jobTableItem"><span class="jobItemNo">'+index+'</span>'+
+    readableField(path,label,ph)+'</div>';
+}
+function jobTableFields(){
+  return '<div class="jobTableCards">'+
+    jobTableInputItem("01","jobTable.customerKpi","고객(KPI)","이 직무의 고객은 누구이며 성과는 무엇으로 확인할까?")+
+    jobTableInputItem("02","jobTable.tasks","주요 과업","실제로 반복해서 수행하는 일은 무엇인가?")+
+    jobTableInputItem("03","jobTable.challenge","주요 해결과제","업무에서 해결해야 하는 문제는 무엇인가?")+
+    jobTableInputItem("04","jobTable.method","해결방법","어떤 방법·절차·도구로 해결하는가?")+
+    jobTableInputItem("05","jobTable.competencies","필요역량","필요한 지식·기술·행동은 무엇인가?")+
+    '<details class="optionBox"><summary>경력개발 방향 보기 · 선택</summary><div class="optionBody">'+
+      readableField("jobTable.careerPlan","경력개발 (선택)","지금 준비 → 신입 초기 → 전문성 확장 방향")+
+    '</div></details>'+
+  '</div>';
+}
 function jobTablePreview(){
   const cells=[
-    ["고객(KPI)","jobTable.customerKpi",state.jobTable.customerKpi],
-    ["과업","jobTable.tasks",state.jobTable.tasks],
-    ["주요 해결과제","jobTable.challenge",state.jobTable.challenge],
-    ["해결방법","jobTable.method",state.jobTable.method],
-    ["필요역량","jobTable.competencies",state.jobTable.competencies]
+    ["01","고객(KPI)","jobTable.customerKpi",state.jobTable.customerKpi],
+    ["02","주요 과업","jobTable.tasks",state.jobTable.tasks],
+    ["03","주요 해결과제","jobTable.challenge",state.jobTable.challenge],
+    ["04","해결방법","jobTable.method",state.jobTable.method],
+    ["05","필요역량","jobTable.competencies",state.jobTable.competencies]
   ];
-  return '<div class="tableWrap jobAnalysisPreview"><table><thead><tr>'+cells.map(x=>'<th>'+x[0]+'</th>').join("")+'</tr></thead><tbody><tr>'+cells.map(x=>'<td data-preview="'+x[1]+'">'+h(x[2]||"-")+'</td>').join("")+'</tr></tbody></table></div>';
+  return '<div class="jobSummaryGrid" aria-label="완성된 직무분석표">'+cells.map(x=>
+    '<section class="jobSummaryCard"><div class="jobSummaryHeading"><span>'+x[0]+'</span><h4>'+x[1]+'</h4></div>'+
+    '<div class="readableDisplay" data-preview="'+x[2]+'">'+readableResult(x[3])+'</div></section>'
+  ).join("")+'</div>';
 }
 
 function step3(){
@@ -1265,11 +1312,11 @@ function step3(){
       '<div class="block"><h3>③ AI에게 선택한 직무만 분석시키기</h3><p class="help">현재 선택한 기업·세부직무와 내 전공만 들어갑니다. 같은 기업의 다른 직무는 프롬프트에 섞지 않습니다.</p>'+
         '<textarea class="promptBox promptEditor shortPrompt" id="jobPromptPreview" data-prompt-key="job">'+h(promptValue("job",jobAnalysisPrompt()))+'</textarea>'+
         '<div class="actions compactActions"><button class="btn ghost" id="refreshJobPromptBtn">현재 선택 반영</button><button class="btn secondary" id="copyReviewedJobPromptBtn">내 직무분석 프롬프트 복사</button></div>'+
-        '<div class="field aiPaste"><label>AI 답변 붙여넣기 <span class="hint">(선택)</span></label><textarea class="input" data-path="jobTable.aiResult" id="jobTableAiResult" placeholder="AI 답변을 붙여넣으면 핵심 5개 항목과 선택형 경력개발로 나눕니다.">'+h(state.jobTable.aiResult||"")+'</textarea></div>'+
+        '<div class="field aiPaste"><label>AI 답변 붙여넣기 <span class="hint">(선택)</span></label><div class="readableDisplay" data-preview="jobTable.aiResult">'+readableResult(state.jobTable.aiResult)+'</div><details class="readableEdit"'+(filled(state.jobTable.aiResult)?"":" open")+'><summary>AI 답변 원문 붙여넣기·수정</summary><textarea class="input" data-path="jobTable.aiResult" id="jobTableAiResult" placeholder="AI 답변을 붙여넣으면 핵심 5개 항목과 선택형 경력개발로 나눕니다.">'+h(state.jobTable.aiResult||"")+'</textarea></details></div>'+
         '<div class="actions compactActions"><button class="btn secondary" id="applyJobTableAiBtn">AI 답변을 직무분석표에 반영</button></div>'+
       '</div>'+
       '<div class="divider"></div><div class="block"><h3>④ 직무분석 테이블 완성</h3><p class="help">이 표는 현재 선택한 세부직무의 작업공간에 따로 저장됩니다.</p>'+jobTableFields()+'</div>'+
-      '<div class="block"><h3>⑤ 완성된 직무분석표</h3><p class="help">모바일에서는 좌우로 밀어서 전체 표를 확인합니다.</p>'+jobTablePreview()+'</div>'+
+      '<div class="block"><h3>⑤ 완성된 직무분석표</h3><p class="help">핵심 내용을 항목별로 펼쳐 놓았습니다. 원문은 위에서 수정할 수 있습니다.</p>'+jobTablePreview()+'</div>'+
       sourceDetails
     : lockedFlow;
   return shell(3,"3 Ways → Job Analysis","공기업 예시, 대기업 예시, 직접 입력 중 원하는 방법을 선택하고, 그 안에서 분석할 직무 하나를 정합니다.",
@@ -1742,6 +1789,7 @@ function gapPrompt(){
     "공고에서 '우대'인 항목을 '필수'로 바꾸지 말고, 내가 준비 중인 자격은 취득한 것으로 처리하지 마.",
     "",
     "아래 제목과 순서를 그대로 사용해줘.",
+    "GAP 1~3순위, 확인된 근거, 3개월 행동은 각각 별도의 줄에 개조식으로 쓴다. 여러 조건과 행동을 한 문단에 붙여 쓰지 않는다.",
     "[1. 이 직무에서 실제로 하는 일]",
     "• 핵심업무 1",
     "• 핵심업무 2",
@@ -2293,8 +2341,7 @@ function bind(){
   document.querySelectorAll("[data-path]").forEach(e=>{
     const handler=()=>{
       set(e.dataset.path,e.value);
-      const preview=document.querySelector('[data-preview="'+e.dataset.path+'"]');
-      if(preview)preview.textContent=e.value||"-";
+      document.querySelectorAll('[data-preview="'+e.dataset.path+'"]').forEach(preview=>{preview.innerHTML=readableResult(e.value)});
       const path=e.dataset.path||"";
       if(path==="student.majorEvidence"||path.startsWith("star."))refreshStep4Prompt();
       if(["student.certificates","student.language","student.tools","student.majorEvidence"].includes(path))refreshStep5Derived();

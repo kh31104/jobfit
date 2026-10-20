@@ -1,4 +1,4 @@
-import { chromium } from "playwright";
+import { chromium, webkit, devices } from "playwright";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 
@@ -39,14 +39,30 @@ try{
   }
 
   assert.match(await page.locator("#stepRoot").innerText(),/3 Ways/);
-  await page.locator('[data-path="jobTable.tasks"]').fill("품질 기록, 공정 데이터 정리");
-  await page.locator('[data-path="jobTable.competencies"]').fill("데이터 해석, 품질 지표 이해");
+  const jobCards=page.locator(".jobSummaryGrid .jobSummaryCard");
+  assert.equal(await jobCards.count(),5,"completed job analysis shows five readable cards");
+  assert.equal(await page.locator(".jobAnalysisPreview table").count(),0,"cramped five-column table removed");
+  const jobTasks=page.locator('[data-path="jobTable.tasks"]');
+  if(!(await jobTasks.isVisible()))await jobTasks.locator("xpath=ancestor::details[1]/summary").click();
+  const multiline="품질 기록 확인 • 불량 원인 분석 • [추론] 공정 데이터 개선";
+  await jobTasks.fill(multiline);
+  const competency=page.locator('[data-path="jobTable.competencies"]');
+  if(!(await competency.isVisible()))await competency.locator("xpath=ancestor::details[1]/summary").click();
+  await competency.fill("Knowledge: 통계기초 • Skill: 엑셀 분석 • Behavior: 신중한 기록");
+  assert.equal(await page.locator('.jobSummaryCard [data-preview="jobTable.tasks"] .readableItem').count(),3,"embedded bullet list split in final summary");
+  assert.equal(await page.locator('.jobTableItem [data-preview="jobTable.competencies"] .readableItem').count(),3,"live bullet view synchronized");
+  assert.equal(await jobTasks.inputValue(),multiline,"original typed text not overwritten");
   await page.locator('[data-next="4"]').click();
   assert.match(await page.locator("#stepRoot h2").innerText(),/GAP/);
   assert(await page.locator('[data-path="student.majorEvidence"]').isVisible(),"standalone evidence input");
   await page.locator('[data-path="student.certificates"]').fill("품질경영기사 준비 중");
   await page.locator('[data-path="student.majorEvidence"]').fill("통계 수업에서 불량률 데이터 분석");
+  const aiGap=page.locator('[data-path="ai.gapResult"]');
+  await aiGap.fill("[5. 현재 GAP · 최대 3개]\n• GAP 1: 공정 데이터 분석 경험 부족\n• GAP 2: 개선 사례 부족\n[7. 3개월 보완 행동]\n• 불량률 보고서 작성\n• 개선안 비교표 작성");
+  assert.equal(await page.locator('[data-preview="ai.gapResult"] .readableItem').count(),4,"GAP result split into four bullets");
+  assert.equal(await page.locator('[data-preview="ai.gapResult"] .readableHeading').count(),2,"GAP headings separated");
   await page.locator('[data-path="fit.gaps"]').fill("품질 실무 데이터 분석 근거 보완");
+  assert.equal(await page.locator('[data-preview="fit.gaps"] .readableItem').count(),1,"live GAP preview reflects edits");
   await page.locator('[data-path="fit.actions"]').fill("3개월 내 공정 데이터 분석 사례 1개 작성");
   let saved=await page.evaluate(()=>{
     const x=JSON.parse(localStorage.getItem("jobfit:donga:step2:v1"));
@@ -55,6 +71,8 @@ try{
   assert.equal(saved.x.app,"JOBFIT_DONGA_STEP2");
   assert.equal(saved.x.currentStep,4);
   assert.equal(saved.x.fit.gaps,"품질 실무 데이터 분석 근거 보완");
+  assert.equal(saved.x.jobTable.tasks,multiline,"saved raw job analysis remains unchanged");
+  assert.match(saved.x.ai.gapResult,/GAP 1:/,"saved raw GAP result remains unchanged");
   assert.equal(saved.step1,"step1-safe");
   assert.equal(saved.flex,"flex-safe");
   const [download]=await Promise.all([page.waitForEvent("download"),page.locator("#exportJsonBtn").click()]);
@@ -70,5 +88,26 @@ try{
   assert.equal(await page.locator('[data-path="fit.gaps"]').inputValue(),"품질 실무 데이터 분석 근거 보완");
   assert.equal(await page.evaluate(()=>localStorage.getItem("jobfit:donga:step1:v1")),"step1-safe");
   assert.equal(await page.evaluate(()=>localStorage.getItem("jobfit:flexlab:job-analysis:v1")),"flex-safe");
+
+  for(const [deviceName,type,profile] of [
+    ["Android Chrome",chromium,devices["Pixel 7"]],
+    ["iPhone Safari",webkit,devices["iPhone 13"]]
+  ]){
+    const mobileBrowser=await type.launch({headless:true});
+    try{
+      const mobilePage=await mobileBrowser.newPage(profile);
+      await mobilePage.goto(url,{waitUntil:"domcontentloaded"});
+      await mobilePage.evaluate(saved=>localStorage.setItem("jobfit:donga:step2:v1",JSON.stringify(saved)),backup);
+      await mobilePage.reload({waitUntil:"domcontentloaded"});
+      await mobilePage.locator('[data-step="3"]').click();
+      assert.equal(await mobilePage.locator(".jobSummaryCard").count(),5,deviceName+" job analysis cards");
+      assert.equal(await mobilePage.locator('.jobSummaryCard [data-preview="jobTable.tasks"] .readableItem').count(),3,deviceName+" multiline bullet display");
+      assert.equal(await mobilePage.locator(".jobSummaryGrid").evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(" ").length),1,deviceName+" stacked one-column cards");
+      await mobilePage.locator('[data-step="4"]').click();
+      assert.equal(await mobilePage.locator('[data-preview="ai.gapResult"] .readableHeading').count(),2,deviceName+" GAP headings");
+      assert.equal(await mobilePage.locator('[data-preview="ai.gapResult"] .readableItem').count(),4,deviceName+" GAP bullet list");
+      assert.equal(await mobilePage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+4),true,deviceName+" no horizontal overflow");
+    }finally{await mobileBrowser.close()}
+  }
   console.log("DONG-A STEP 2: 4 modules, progression, student input, GAP, autosave, reload, JSON backup/restore and isolation PASS");
 }finally{await browser.close();}

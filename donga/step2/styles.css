@@ -292,3 +292,43 @@ body{background:var(--donga-page,#f6f9fd)}
 .badge{background:var(--donga-soft,#edf4ff);border-color:var(--donga-line,#dde5f0)}
 .input:focus,textarea:focus{border-color:var(--donga-brand-blue,#3862c9);box-shadow:0 0 0 4px var(--donga-soft,#edf4ff)}
 .btn.primary:hover,.btn.ghost:hover,.stepBtn:hover{filter:brightness(.97)}
+
+
+/* STEP 2 result readability: presentation only, no mutations to saved raw text. */
+.readableDisplay{min-width:0}
+.readableList{display:grid;gap:7px;overflow-wrap:anywhere;word-break:keep-all}
+.readableItem{display:grid;grid-template-columns:7px minmax(0,1fr);align-items:start;gap:8px;font-size:13px;line-height:1.6;color:#263b52;padding:1px 0}
+.readableDot{width:5px;height:5px;border-radius:50%;background:#5375ae;margin-top:8px}
+.readableHeading{margin:7px 0 3px;padding:6px 9px;border-left:3px solid #5b83c9;background:#f0f5ff;color:#26476c;font-size:12px;font-weight:800;line-height:1.45}
+.readableEmpty{margin:0;font-size:12px;color:#8391a5;line-height:1.5}
+.readableEdit{margin-top:12px;border-top:1px dashed #d4e0ed;padding-top:8px}
+.readableEdit > summary{font-size:12px;color:#355eb0;font-weight:800;cursor:pointer;padding:7px 2px;list-style:none;display:flex;align-items:center;gap:6px}
+.readableEdit > summary:before{content:"✎";font-size:14px}
+.readableEdit[open] > summary{margin-bottom:6px}
+.readableEdit > summary::-webkit-details-marker{display:none}
+.readableEdit textarea{min-height:145px;max-height:none;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}
+.jobTableItem{background:#fff;min-width:0;padding:15px 14px 15px 48px}
+.jobTableItem .field{margin:0}
+.jobTableItem .field > label{font-size:14px;color:#183957;font-weight:800;margin-bottom:9px}
+.jobTableItem .readableDisplay{margin-top:4px}
+.jobSummaryGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.jobSummaryCard{min-width:0;border:1px solid #dce5f1;border-radius:15px;background:#fff;padding:15px 16px}
+.jobSummaryCard:last-child{grid-column:1/-1}
+.jobSummaryHeading{display:flex;gap:8px;align-items:center;margin-bottom:12px;padding-bottom:9px;border-bottom:1px solid #e8edf5}
+.jobSummaryHeading span{display:grid;place-items:center;flex:none;background:#e8f0ff;color:#3556a1;width:29px;height:29px;border-radius:9px;font-size:12px;font-weight:900}
+.jobSummaryHeading h4{margin:0;font-size:14px;color:#243c55;line-height:1.45}
+.readableField > .readableDisplay{background:#f7faff;border:1px solid #e0e9f5;border-radius:11px;padding:11px 13px}
+.jobTableItem .readableField > .readableDisplay{background:#fff;border:0;padding:0}
+.jobSummaryCard .readableDisplay{background:transparent;border:0;padding:0}
+.jobSummaryCard .readableItem{font-size:13px}
+@media(max-width:850px){
+  .jobTableCards,.jobSummaryGrid{grid-template-columns:1fr}
+  .jobSummaryCard:last-child{grid-column:auto}
+}
+@media print{
+  .readableEdit{display:none!important}
+  .jobTableCards,.jobSummaryGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .jobSummaryCard:last-child{grid-column:1/-1}
+  .readableItem{break-inside:avoid}
+  .jobSummaryCard{break-inside:avoid}
+}
