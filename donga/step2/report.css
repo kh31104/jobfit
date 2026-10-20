@@ -79,3 +79,12 @@
  body.donga-report-print .donga-readable-line{break-inside:avoid}
  body.donga-report-print .donga-report-foot{break-inside:avoid-page}
 }
+
+/* STEP 04: full source is stored unmodified; the adjacent preview is presentation only. */
+.requirementRow .donga-evidence-readable{background:#f7faff;border:1px solid #d9e4f3;border-radius:11px;padding:11px;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+.requirementRow .donga-evidence-edit{margin-top:8px;border:1px solid #dae3f0;border-radius:10px;background:white;overflow:hidden}
+.requirementRow .donga-evidence-edit>summary{cursor:pointer;list-style:none;padding:9px 11px;color:#385a88;font-size:12px;font-weight:800}
+.requirementRow .donga-evidence-edit>summary::after{content:" ✎"}
+.requirementRow .donga-evidence-edit>summary::-webkit-details-marker{display:none}
+.requirementRow .donga-note-input{min-height:90px;width:100%;border-radius:0;font-size:13px;line-height:1.65;white-space:pre-wrap}
+@media(max-width:760px){.requirementRow .donga-evidence-readable{font-size:13px}.requirementRow .donga-evidence-edit>summary{min-height:42px}}
