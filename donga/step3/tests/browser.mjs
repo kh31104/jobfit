@@ -175,7 +175,7 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  const section2=await flowPage.locator("#stepRoot .stepCard .sectionHead h2").evaluate(el=>getComputedStyle(el).fontSize);
  const hero2=await flowPage.locator(".hero h1").evaluate(el=>getComputedStyle(el).fontSize);
  assert.equal(await flowPage.locator(".main > .progressCard").count(),0,label+" STEP2 top progress moved away");
- assert.equal(await flowPage.locator(".side .donga-step2-progress").isVisible(),true,label+" STEP2 progress in sidebar");
+ assert.equal(await flowPage.locator(".side .donga-step2-progress").isVisible(),false,label+" STEP2 progress box hidden");
  assert.equal(await flowPage.locator(".stepCard .sectionHead .kicker").first().innerText(),"01",label+" STEP2 compact 01 title");
  assert.equal(nav2,nav1,label+" STEP2 sidebar title font matches STEP1");
  assert.equal(subtitle2,subtitle1,label+" STEP2 sidebar subtitle font matches STEP1");
