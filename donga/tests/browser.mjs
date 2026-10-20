@@ -71,15 +71,16 @@ for(const [label,browserType,device] of [['Android Chrome',chromium,devices['Pix
  assert(check6.width<=20&&check6.height<=20,label+' STEP6 checkbox proper size');
  await page.locator('#aireview').check();
 
- await select(7);
- assert.equal(await page.locator('#backup').isVisible(),true,label+' backup visible only on 07');
- assert.equal(await page.locator('#dnafields textarea').count(),4,label+' STEP7 exactly four DNA fields');
- assert.equal(await page.locator('[data-dna="strengths"]').count(),0,label+' removed strengths situation field hidden');
  await page.evaluate(()=>{
    const key="jobfit:donga:step1:v1";
    const data=JSON.parse(localStorage.getItem(key));data.dna.strengths="과거 저장된 강점 설명 — 삭제 금지";
    localStorage.setItem(key,JSON.stringify(data));
  });
+ await page.reload({waitUntil:'networkidle'});
+ await select(7);
+ assert.equal(await page.locator('#backup').isVisible(),true,label+' backup visible only on 07');
+ assert.equal(await page.locator('#dnafields textarea').count(),4,label+' STEP7 exactly four DNA fields');
+ assert.equal(await page.locator('[data-dna="strengths"]').count(),0,label+' removed strengths situation field hidden');
  for(const [i,key] of ["values","fit","caution","next"].entries()){
    const el=page.locator('[data-dna="'+key+'"]');
    await el.fill("기존 내용 "+i);
