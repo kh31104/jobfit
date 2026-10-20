@@ -131,7 +131,7 @@ function compactPaste(el,done){el.addEventListener('paste',function(e){var raw=e
 $('makeanalysis').onclick=analysis;$('copyanalysis').onclick=function(){if(!analysisPrompt)analysis();copy(analysisPrompt)};
 $('aireview').checked=!!data.aiReviewed;$('aireview').onchange=function(e){data.aiReviewed=e.target.checked;persist()};
 fields('dnafields',DNA,'dna',data.dna,true);
-$('dnafields').querySelectorAll('textarea').forEach(function(t){compactPaste(t)});compactPaste($('aiscratch'));
+document.querySelectorAll('#dnafields textarea').forEach(function(t){compactPaste(t)});compactPaste($('aiscratch'));
 
 $('dnafields').addEventListener('input',function(e){var k=e.target.getAttribute('data-dna');if(k){data.dna[k]=e.target.value;data.dnaSaved=false;$('confirmdna').checked=false;persist()}});
 $('savedna').onclick=function(){syncFields('dna',data.dna);if(!allFields(DNA,data.dna)){toast('Career DNA의 4개 항목을 모두 작성하세요.');return}if(!$('confirmdna').checked){toast('본인이 검토했다는 확인란에 체크하세요.');return}data.dnaSaved=true;persist();toast('MY CAREER DNA v1을 저장했습니다.')};
