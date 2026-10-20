@@ -58,7 +58,7 @@ try{
   await page.locator('[data-path="student.certificates"]').fill("품질경영기사 준비 중");
   await page.locator('[data-path="student.majorEvidence"]').fill("통계 수업에서 불량률 데이터 분석");
   const aiGap=page.locator('[data-path="ai.gapResult"]');
-  await aiGap.fill("[5. 현재 GAP · 최대 3개]\\n• GAP 1: 공정 데이터 분석 경험 부족\\n• GAP 2: 개선 사례 부족\\n[7. 3개월 보완 행동]\\n• 불량률 보고서 작성\\n• 개선안 비교표 작성");
+  await aiGap.fill("[5. 현재 GAP · 최대 3개]\n• GAP 1: 공정 데이터 분석 경험 부족\n• GAP 2: 개선 사례 부족\n[7. 3개월 보완 행동]\n• 불량률 보고서 작성\n• 개선안 비교표 작성");
   assert.equal(await page.locator('[data-preview="ai.gapResult"] .readableItem').count(),4,"GAP result split into four bullets");
   assert.equal(await page.locator('[data-preview="ai.gapResult"] .readableHeading').count(),2,"GAP headings separated");
   await page.locator('[data-path="fit.gaps"]').fill("품질 실무 데이터 분석 근거 보완");
