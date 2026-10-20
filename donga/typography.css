@@ -1,0 +1,28 @@
+/* JOBFIT DONG-A shared interface typography · STEP 1, STEP 2, STEP 3 */
+:root{
+  --donga-ui-font:"Pretendard Variable","Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,-apple-system,sans-serif;
+}
+html,body,button,input,select,textarea{
+  font-family:var(--donga-ui-font)!important;
+}
+:where(h1,h2,h3,h4,.heading b,.sectionHead h2,.navTitle,.donga-nav-title,.mapHead){
+  letter-spacing:-.02em;
+}
+:where(h1,.hero h1){font-weight:800}
+:where(h2,.sectionHead h2,.stepCard h2){font-weight:800}
+:where(h3,.stepCard h3){font-weight:700}
+:where(.navTitle,.donga-nav-title){font-size:12px;font-weight:800}
+:where(.donga-stepbtn,.stepBtn){font-weight:500}
+.donga-stepbtn .donga-steplabel b{font-weight:500}
+.donga-stepbtn[aria-current="step"] .donga-steplabel b{font-weight:800}
+.stepBtn.active .stepText{font-weight:800}
+:where(.donga-steplabel small,.stepText small){font-weight:600}
+:where(.btn,.button){font-weight:800}
+/* Hand-lettering belongs only to the designed A4 illustration, not the app interface. */
+.paper :where(.note,.note p,.paperFooter,.paperHead p){font-family:var(--donga-ui-font)}
+/* STEP 1 navigation: only active accordion visible; old storage and form DOM retained. */
+.donga-main > details.step[hidden],
+.donga-main > .card[hidden]{display:none!important}
+.donga-nav-status{display:grid;gap:2px;border-top:1px solid #edf1f6;margin:10px 7px 0;padding:11px 4px 2px;color:#506685}
+.donga-nav-status b{font-size:12px;font-weight:800;color:#3857ac}
+.donga-nav-status small{font-size:11px;line-height:1.5}
