@@ -128,12 +128,26 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
 
  const flowPage=await context.newPage();
  await flowPage.goto(url.replace(/step3\/?$/,""),{waitUntil:"domcontentloaded"});
+ const font1=await flowPage.evaluate(()=>getComputedStyle(document.body).fontFamily);
+ const headerWeight1=await flowPage.locator("header h1").evaluate(el=>getComputedStyle(el).fontWeight);
+ assert.equal(await flowPage.locator('details.step:visible').count(),1,label+" STEP1 only one section visible");
+
  assert.equal(await flowPage.locator("#dongaSide1 .donga-stepbtn").count(),7,label+" STEP 1 sidebar 7");
  await flowPage.locator("#dongaSide1 .donga-stepbtn").nth(2).click();
  assert.equal(await flowPage.locator("#step3").evaluate(x=>x.open),true,label+" STEP1 accordion opens");
  await flowPage.goto(url.replace(/step3\/?$/,"step2/"),{waitUntil:"domcontentloaded"});
+ const font2=await flowPage.evaluate(()=>getComputedStyle(document.body).fontFamily);
+ const headerWeight2=await flowPage.locator(".hero h1").evaluate(el=>getComputedStyle(el).fontWeight);
+ assert.equal(font2,font1,label+" identical UI font STEP1/2");
+ assert.equal(headerWeight2,headerWeight1,label+" identical title weight STEP1/2");
+
  assert.equal(await flowPage.locator("#stepNav .stepBtn").count(),4,label+" STEP2 sidebar 4");
  assert.equal(await flowPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+3),true,label+" STEP2 no horizontal overflow");
+
+ const font3=await page.evaluate(()=>getComputedStyle(document.body).fontFamily);
+ const headerWeight3=await page.locator(".hero h1").evaluate(el=>getComputedStyle(el).fontWeight);
+ assert.equal(font3,font1,label+" identical UI font STEP1/3");
+ assert.equal(headerWeight3,headerWeight1,label+" identical title weight STEP1/3");
  await flowPage.close();
 
  const fallbackContext=await browser.newContext({...(device||{})});
