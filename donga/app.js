@@ -140,13 +140,30 @@ COMP.map(function(x){return x[1]+': '+(data.compare[x[0]]||'미작성')}).join('
 '기존처럼 읽기 좋은 문장형 결과를 유지하라. 지나치게 짧은 키워드 나열이나 기계적인 한 줄 요약으로 바꾸지 마라.',
 '각 제목과 바로 아래 문장 사이에는 빈 줄을 넣지 않는다. 같은 항목 안에서는 문장 사이에 빈 줄을 넣지 않는다.',
 '다른 항목으로 넘어갈 때만 빈 줄을 한 번 넣는다. 공백만 있는 줄, 불필요한 줄바꿈, 표, 불릿 기호, 중복 요약은 금지한다.',
+'출력은 복사·붙여넣기에 적합한 일반 텍스트로만 작성한다. 제목 앞의 #·###, 글자 양쪽의 **·__, 글머리표 -·*·•, 코드블록 표시 등 마크다운 서식 기호를 사용하지 않는다.',
+'제목은 제목 글자만 독립된 한 줄로 쓰고, 그 아래에 내용 문장을 그대로 쓴다. 인용문·꾸밈선·목록 번호를 붙이지 않는다.',
 '각 문장 앞에 [확인]을 반복하지 않는다. 학생 자기보고·검사점수는 자료상 근거로 설명하고, AI 추론은 [AI 가설], 빠진 사실은 [확인 필요]로 표시하라.',
 '학생이 STEP 07에 붙여넣기 전에 읽고 동의 여부를 결정할 수 있도록 지나친 단정과 일반적인 칭찬을 피하라.'
 ];
 analysisPrompt=references.join('\n');$('analysispreview').textContent=analysisPrompt;toast('STEP 07 네 항목과 연결된 Career DNA 분석 프롬프트를 만들었습니다.');
 }
 function compactText(value){return txt(value).replace(/\r\n?/g,'\n').replace(/[\u00a0\u200b]/g,' ').replace(/[ \t]+\n/g,'\n').replace(/\n[ \t]*\n+/g,'\n').trim()}
-function compactPaste(el,done){el.addEventListener('paste',function(e){var raw=e.clipboardData&&e.clipboardData.getData('text');if(!raw)return;var normalized=compactText(raw);if(normalized===raw)return;e.preventDefault();var start=el.selectionStart,end=el.selectionEnd;el.setRangeText(normalized,start,end,'end');el.dispatchEvent(new Event('input',{bubbles:true}));if(done)done()})}
+function plainPasteText(value){
+  // Remove presentation-only Markdown from newly pasted text.
+  // Preserve substantive words and evidence labels: [AI 가설], [확인 필요].
+  var lines=compactText(value).split('\n').map(function(line){
+    return line.replace(/^[ \t]{0,3}#{1,6}[ \t]+/,'')
+      .replace(/^[ \t]{0,3}>[ \t]?/,'')
+      .replace(/^[ \t]{0,3}[-*•][ \t]+/,'')
+      .replace(/\*\*([^*\n]+)\*\*/g,'$1')
+      .replace(/__([^_\n]+)__/g,'$1')
+      .replace(/~~([^~\n]+)~~/g,'$1')
+      .replace(/\x60([^\x60\n]+)\x60/g,'$1')
+      .replace(/^[ \t]{0,3}(?:[1-4][.)][ \t]+)(?=(?:내가 확인한 핵심 가치와 선택 기준|가치관·커리어 기준·강점이 연결되는 부분|내가 확인한 보완할 행동 또는 강점 과잉 사용|다음 실제 경험에서 검증할 질문)(?::|$))/,'');
+  });
+  return compactText(lines.join('\n'));
+}
+function compactPaste(el,done){el.addEventListener('paste',function(e){var raw=e.clipboardData&&e.clipboardData.getData('text');if(!raw)return;var normalized=plainPasteText(raw);if(normalized===raw)return;e.preventDefault();var start=el.selectionStart,end=el.selectionEnd;el.setRangeText(normalized,start,end,'end');el.dispatchEvent(new Event('input',{bubbles:true}));if(done)done()})}
 
 $('makeanalysis').onclick=analysis;$('copyanalysis').onclick=function(){if(!analysisPrompt)analysis();copy(analysisPrompt)};
 $('aireview').checked=!!data.aiReviewed;$('aireview').onchange=function(e){data.aiReviewed=e.target.checked;persist()};
