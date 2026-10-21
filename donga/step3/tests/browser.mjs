@@ -29,6 +29,35 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  assert.equal(await nav.count(),5,label+" five left navigation buttons");
  assert.equal(await page.locator("#dongaPanel1").isVisible(),true,label+" starting point first");
  assert.match(await page.locator("#starting2").innerText(),/품질관리/,label+" STEP 2 read-only");
+
+ // G/FORE response supplied as one paragraph: four distinct tasks and three GAPs.
+ const priorStep2=await page.evaluate(()=>localStorage.getItem("jobfit:donga:step2:v1"));
+ await page.evaluate(()=>{
+   const key="jobfit:donga:step2:v1",x=JSON.parse(localStorage.getItem(key));
+   x.target.industry="패션·의류 / 패션 브랜드·온라인 유통";
+   x.target.job="브랜드 마케팅 / SNS 콘텐츠 마케팅";
+   x.jobTable={tasks:"[공고근거] 브랜드 운영: 마케팅팀 사무 업무와 브랜드 촬영을 보조한다. [공고근거] SNS 마케팅: 공식 SNS 콘텐츠를 기획·제작하고 한국·중국·일본 채널 운영을 지원한다. [공고근거] 인플루언서 마케팅: 실행을 지원하고 명단을 관리한다. [공고근거] 외부 협업·협찬: 외부 파트너와 소통하고 제품 발송을 관리한다.&#x20;"};
+   x.fit={gaps:"1. 필수 학력조건 미충족 — 현재 2학년으로 졸업 또는 졸업예정자 자격을 갖추지 못함. GAP 2: SNS 콘텐츠 제작 근거 부족 — 제작 결과물이 없음. GAP 3: 마케팅 운영 경험 근거 부족 — 인플루언서 협업 경험 확인 필요. [6. 우선순위] 1순위: 학력조건 [7. 3개월 보완 행동] GAP 1 → 확인표 작성."};
+   localStorage.setItem(key,JSON.stringify(x));
+ });
+ const sourceBefore=await page.evaluate(()=>localStorage.getItem("jobfit:donga:step2:v1"));
+ await page.reload({waitUntil:"domcontentloaded"});
+ const work=page.locator("#starting2 .startingTaskList .startingEntry");
+ const gap=page.locator("#starting2 .startingGapList .startingEntry");
+ assert.equal(await work.count(),4,label+" four task cards");
+ assert.equal(await gap.count(),3,label+" GAP 1-3 individual cards");
+ assert.match(await work.nth(1).innerText(),/SNS 마케팅/,label+" task detail retained");
+ assert.match(await gap.nth(2).innerText(),/마케팅 운영 경험/,label+" GAP detail retained");
+ assert.match(await page.locator("#starting2 .startingSummaryGrid").innerText(),/패션·의류/,label+" industry retained");
+ const visible=await page.locator("#starting2").innerText();
+ assert(!visible.includes("[6. 우선순위]")&&!visible.includes("3개월 보완 행동"),label+" unrelated priority/actions suppressed from summary");
+ assert(!visible.includes("&#x20;"),label+" escaped space artifact removed");
+ assert.equal(await page.evaluate(()=>localStorage.getItem("jobfit:donga:step2:v1")),sourceBefore,label+" STEP2 source unchanged by rendering");
+ assert.equal(await page.locator("#starting2").evaluate(el=>el.scrollWidth<=el.clientWidth+3),true,label+" no summary horizontal overflow");
+ await page.evaluate(value=>localStorage.setItem("jobfit:donga:step2:v1",value),priorStep2);
+ await page.reload({waitUntil:"domcontentloaded"});
+ assert.match(await page.locator("#starting2").innerText(),/품질관리/,label+" original JD restored");
+
  const go=async n=>{await nav.nth(n-1).click();assert.equal(await page.locator("#dongaPanel"+n).isVisible(),true,label+" panel "+n)};
  await go(2);
  await page.locator("#loadStep2").click();
