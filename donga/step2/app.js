@@ -10,6 +10,7 @@ const steps = [
 ];
 
 const emptyPosting=()=>({company:"",title:"",sourceUrl:"",text:"",notes:"",tasks:"",required:"",preferred:"",other:""});
+const emptyStep2Search=()=>({company:"",title:"",sourceUrl:"",facts:"",memo:""});
 const emptyExperience=()=>({title:"",type:"",summary:""});
 const emptyMatch=()=>({requirement:"",evidence:"",status:"",note:""});
 const emptyJobTable=()=>({customerKpi:"",tasks:"",challenge:"",method:"",competencies:"",careerPlan:"",aiResult:""});
@@ -403,7 +404,9 @@ const defaults=()=>({
   version:11,app:"JOBFIT_DONGA_STEP2",currentStep:1,updatedAt:"",
   target:{industry:"",job:"",company:"",initialView:""},
   student:{major:"",majorEvidence:"",certificates:"",language:"",tools:"",otherSpec:""},
-  step2Search:{company:"",title:"",sourceUrl:"",facts:"",memo:""},
+  step2Search:emptyStep2Search(),
+  step2SearchMore:[emptyStep2Search(),emptyStep2Search()],
+  selectedSearchIndex:0,
   sampleJobId:"",
   curatedSelection:emptyCuratedSelection(),
   customJob:emptyCustomJob(),
@@ -494,6 +497,8 @@ function load(){
       target:{...b.target,...(x.target||{})},
       student:{...b.student,...(x.student||{})},
       step2Search:{...b.step2Search,...(x.step2Search||{})},
+      step2SearchMore:[0,1].map(i=>({...emptyStep2Search(),...(x.step2SearchMore?.[i]||{})})),
+      selectedSearchIndex:Math.max(0,Math.min(2,Number(x.selectedSearchIndex)||0)),
       sampleJobId:["komipo-2026-3","skenergy-2026-clx","hdoilbank-2026-h2"].includes(x.sampleJobId)?"":(x.sampleJobId||""),
       curatedSelection:{
         ...emptyCuratedSelection(),
@@ -587,7 +592,7 @@ function field(path,label,ph,area=true,optional=false){
 
 function done(n){
   if(n===1)return filled(state.target.job)&&filled(state.student.major);
-  if(n===2)return filled(state.step2Search.company)||filled(state.step2Search.title)||filled(state.step2Search.memo);
+  if(n===2)return [0,1,2].some(i=>{const x=step2SearchEntry(i);return filled(x.company)||filled(x.title)||filled(x.memo);});
   if(n===3)return filled(state.sampleJobId)&&filled(state.jobTable.tasks)&&filled(state.jobTable.competencies);
   if(n===4)return filled(state.fit.gaps)||state.requirements.some(r=>filled(r.condition)&&filled(r.status));
   return false;
@@ -727,23 +732,41 @@ function step2SearchPromptBox(){
     '<div class="actions compactActions"><button class="btn secondary" id="copySearchPromptBtn">내 검색 프롬프트 복사</button></div></div></details>';
 }
 
+function step2SearchEntry(index=state.selectedSearchIndex||0){
+  if(index===0)return state.step2Search||emptyStep2Search();
+  return state.step2SearchMore?.[index-1]||emptyStep2Search();
+}
+
+function step2SearchCard(index){
+  const x=step2SearchEntry(index);
+  const path=index===0?"step2Search":"step2SearchMore."+(index-1);
+  const hasValues=Object.values(x).some(filled);
+  const open=index===0||index===state.selectedSearchIndex||hasValues;
+  const label="검색 결과 "+(index+1);
+  return '<details class="optionBox"'+(open?' open':'')+'><summary>'+label+
+    (filled(x.company)?' · '+h(x.company):' · 기업·공고 입력')+
+    (index===state.selectedSearchIndex?' · 선택된 공고':'')+'</summary><div class="optionBody">'+
+    '<div class="grid2">'+
+      field(path+".company","찾은 기업","예: 관심 기업명 / 찾지 못함",false)+
+      field(path+".title","찾은 직무·공고","예: 기술직 신입 / 현재 관련 공고 없음",false)+
+      '<div class="field span2"><label>공고 주소 <span class="hint">(선택)</span></label><input class="input" data-path="'+path+'.sourceUrl" value="'+h(x.sourceUrl||"")+'" placeholder="https://..." /></div>'+
+      field(path+".facts",'담당업무·직무소개 <span class="hint">(가능하면 붙여넣기)</span>',"공고의 담당업무·직무소개를 그대로 붙여넣으면 STEP 3에서 다시 입력하지 않아도 됩니다.")+
+      field(path+".memo",'검색 메모 <span class="hint">(선택)</span>',"검색어 또는 공고를 찾기 어려웠던 이유를 간단히 입력하세요.")+
+    '</div><div class="actions compactActions"><button class="btn primary" data-use-search-index="'+index+'">이 공고로 03 직무분석하기</button></div>'+
+    '</div></details>';
+}
+
 function step2(){
   return shell(2,"Find JD","먼저 내가 관심 있는 산업의 최근 채용공고를 직접 찾아봅니다. 공고가 없거나 마감되어 있어도 괜찮습니다.",
     '<div class="block"><h3>① 실제 공고 한번 찾아보기</h3><p class="help">공고가 있으면 기록하고, 없으면 “현재 찾지 못함”이라고 적고 STEP 3으로 이동합니다.</p><div class="siteSection"><b>민간기업</b><div class="jobSiteGrid">'+
       jobSite("사람인","https://www.saramin.co.kr/","민간기업 신입 공고")+
       jobSite("잡코리아","https://www.jobkorea.co.kr/","대기업·공채")+
-      jobSite("고용24","https://www.work24.go.kr/","정부 통합 채용정보")+
+      jobSite("링커리어","https://linkareer.com/recruit-home","대학생 신입·인턴 채용공고")+
     '</div></div><div class="siteSection"><b>공공기관</b><div class="jobSiteGrid">'+
       jobSite("잡알리오","https://job.alio.go.kr/","국가 공공기관")+
       jobSite("클린아이 잡플러스","https://job.cleaneye.go.kr/","지방공공기관")+
     '</div></div></div>'+
-    '<div class="block"><h3>② 검색 결과 한 줄만 기록</h3><div class="grid2">'+
-      field("step2Search.company","찾은 기업","예: 관심 기업명 / 찾지 못함",false)+
-      field("step2Search.title","찾은 직무·공고","예: 기술직 신입 / 현재 관련 공고 없음",false)+
-      '<div class="field span2"><label>공고 주소 <span class="hint">(선택)</span></label><input class="input" data-path="step2Search.sourceUrl" value="'+h(state.step2Search.sourceUrl||"")+'" placeholder="https://..." /></div>'+
-      field("step2Search.facts","담당업무·직무소개 <span class=\"hint\">(가능하면 붙여넣기)</span>","공고의 담당업무·직무소개를 그대로 붙여넣으면 STEP 3에서 다시 입력하지 않아도 됩니다.")+
-      field("step2Search.memo","검색 메모 <span class=\"hint\">(선택)</span>","어떤 검색어를 썼는지, 왜 적절한 공고를 찾기 어려웠는지 간단히 적어도 됩니다.")+
-    '</div><div class="actions compactActions"><button class="btn primary" id="useStep2JobBtn">이 공고로 03 직무분석하기</button></div></div>'+step2SearchPromptBox()+
+    '<div class="block"><h3>② 검색 결과 최대 3개 기록</h3><p class="help">최대 3개까지 각각 기록할 수 있습니다. 분석할 공고의 버튼을 누르면 해당 공고가 03으로 연결됩니다. 1개만 입력해도 됩니다.</p>'+[0,1,2].map(step2SearchCard).join("")+'</div>'+step2SearchPromptBox()+
     '<div class="callout info"><b>공고가 없어도 수업은 계속됩니다.</b> 03에서는 수업용 예시로 한국에너지공단과 HD현대일렉트릭의 2026년 신입 채용을 제공합니다.</div>');
 }
 
@@ -906,7 +929,7 @@ function hdElectricRecruitmentContext(roleData){
 }
 
 function searchedJob(){
-  const x=state.step2Search||{};
+  const x=step2SearchEntry();
   const ready=filled(x.company)&&filled(x.title)&&(filled(x.sourceUrl)||filled(x.facts)||filled(x.memo));
   if(!ready)return null;
   return {
@@ -2245,7 +2268,7 @@ function syncSelectedPosting(){
 }
 
 function step2CuratedMatch(){
-  const x=state.step2Search||{};
+  const x=step2SearchEntry();
   const company=String(x.company||"").replace(/\s/g,"").toLowerCase();
   const target=String(state.target.job||"").trim();
   for(const job of CURATED_JOBS){
@@ -2261,10 +2284,12 @@ function step2CuratedMatch(){
   return null;
 }
 
-function useStep2JobInStep3(){
-  const x=state.step2Search||{};
-  if(!filled(x.company)||!filled(x.title)){toast("STEP 2에서 찾은 기업과 공고명을 먼저 입력해 주세요.");return;}
+function useStep2JobInStep3(index=state.selectedSearchIndex||0){
+  if(!Number.isInteger(index)||index<0||index>2)return;
+  const x=step2SearchEntry(index);
+  if(!filled(x.company)||!filled(x.title)){toast("선택한 검색 결과에 기업과 공고명을 먼저 입력해 주세요.");return;}
   snapshotActiveCase();
+  state.selectedSearchIndex=index;
   const matched=step2CuratedMatch();
   if(matched){
     state.sampleJobId=matched.id;
@@ -2397,7 +2422,7 @@ function bind(){
   document.querySelectorAll("[data-analysis-method]").forEach(e=>e.onclick=()=>selectAnalysisMethod(e.dataset.analysisMethod));
   document.querySelectorAll("[data-curated-group]").forEach(e=>e.onchange=()=>selectCuratedGroup(e.dataset.curatedGroup,e.value));
   document.querySelectorAll("[data-curated-role]").forEach(e=>e.onchange=()=>selectCuratedRole(e.dataset.curatedRole,e.value));
-  document.getElementById("useStep2JobBtn")?.addEventListener("click",useStep2JobInStep3);
+  document.querySelectorAll("[data-use-search-index]").forEach(e=>e.addEventListener("click",()=>useStep2JobInStep3(Number(e.dataset.useSearchIndex))));
   document.getElementById("useCustomJobBtn")?.addEventListener("click",useCustomJob);
   document.querySelectorAll("[data-customjob]").forEach(e=>{
     const handler=()=>{
