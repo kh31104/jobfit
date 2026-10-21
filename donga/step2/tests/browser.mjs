@@ -59,9 +59,35 @@ try{
   }
 
   assert.match(await page.locator("#stepRoot").innerText(),/3 Ways/);
-  const jobCards=page.locator(".jobSummaryGrid .jobSummaryCard");
-  assert.equal(await jobCards.count(),5,"completed job analysis shows five readable cards");
-  assert.equal(await page.locator(".jobAnalysisPreview table").count(),0,"cramped five-column table removed");
+  assert.equal(await page.locator(".jobTableCards .jobTableItem").count(),5,"only five editable job analysis areas displayed");
+  assert.equal((await page.locator("#stepRoot").innerText()).includes("⑤ 완성된 직무분석표"),false,"duplicate result section removed");
+  assert.equal(await page.locator(".jobSummaryGrid").count(),0,"duplicate job summary grid removed");
+
+  const sampleAnalysis=[
+    "### 1. 고객(KPI):",
+    "• [추론] 현장 품질관리 담당자 / 데이터 집계의 정확성",
+    "**2. 주요 과업:**",
+    "• [공고근거] 품질 데이터를 집계한다",
+    "[3. 주요 해결과제]",
+    "• [추론] 불량 원인 분석 기준을 확인한다",
+    "4) 해결방법:",
+    "• [추론] 불량 기록 검토 후 원인별로 분류한다",
+    "필요역량:",
+    "• [추론] Knowledge: 품질 기초",
+    "• [추론] Skill: 자료 정리",
+    "• [추론] Behavior: 기록 정확성",
+    "[추가 확인 질문]",
+    "• 품질 성과지표는 무엇인지 확인할까요?"
+  ].join("\n");
+  await page.locator("#jobTableAiResult").fill(sampleAnalysis);
+  await page.locator("#applyJobTableAiBtn").click();
+  const fromAI=await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step2:v1")).jobTable);
+  for(const key of ["customerKpi","tasks","challenge","method","competencies"]){
+    assert(fromAI[key]?.length>0,"AI paste populates field "+key);
+  }
+  assert(!fromAI.competencies.includes("확인할까요"),"follow-up questions are not merged into competencies");
+  assert.match(await page.locator("#stepRoot").innerText(),/필수 5개 항목 중 5개 입력/);
+  assert.equal(await page.locator(".jobAnalysisPreview table").count(),0,"cramped table not used");
   const jobTasks=page.locator('[data-path="jobTable.tasks"]');
   if(!(await jobTasks.isVisible()))await jobTasks.locator("xpath=ancestor::details[1]/summary").click();
   const multiline="품질 기록 확인 • 불량 원인 분석 • [추론] 공정 데이터 개선";
@@ -69,7 +95,6 @@ try{
   const competency=page.locator('[data-path="jobTable.competencies"]');
   if(!(await competency.isVisible()))await competency.locator("xpath=ancestor::details[1]/summary").click();
   await competency.fill("Knowledge: 통계기초 • Skill: 엑셀 분석 • Behavior: 신중한 기록");
-  assert.equal(await page.locator('.jobSummaryCard [data-preview="jobTable.tasks"] .readableItem').count(),3,"embedded bullet list split in final summary");
   assert.equal(await page.locator('.jobTableItem [data-preview="jobTable.competencies"] .readableItem').count(),3,"live bullet view synchronized");
   assert.equal(await jobTasks.inputValue(),multiline,"original typed text not overwritten");
   await page.locator('[data-next="4"]').click();
@@ -120,9 +145,9 @@ try{
       await mobilePage.evaluate(saved=>localStorage.setItem("jobfit:donga:step2:v1",JSON.stringify(saved)),backup);
       await mobilePage.reload({waitUntil:"domcontentloaded"});
       await mobilePage.locator('[data-step="3"]').click();
-      assert.equal(await mobilePage.locator(".jobSummaryCard").count(),5,deviceName+" job analysis cards");
-      assert.equal(await mobilePage.locator('.jobSummaryCard [data-preview="jobTable.tasks"] .readableItem').count(),3,deviceName+" multiline bullet display");
-      assert.equal(await mobilePage.locator(".jobSummaryGrid").evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(" ").length),1,deviceName+" stacked one-column cards");
+      assert.equal(await mobilePage.locator(".jobTableItem").count(),5,deviceName+" job analysis cards");
+      assert.equal(await mobilePage.locator('.jobTableItem [data-preview="jobTable.tasks"] .readableItem').count(),3,deviceName+" multiline bullet display");
+      assert.equal(await mobilePage.locator(".jobTableCards").evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(" ").length),1,deviceName+" stacked one-column cards");
       await mobilePage.locator('[data-step="4"]').click();
       assert.equal(await mobilePage.locator('[data-preview="ai.gapResult"] .readableHeading').count(),2,deviceName+" GAP headings");
       assert.equal(await mobilePage.locator('[data-preview="ai.gapResult"] .readableItem').count(),4,deviceName+" GAP bullet list");
