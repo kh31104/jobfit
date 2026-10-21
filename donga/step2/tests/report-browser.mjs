@@ -32,8 +32,9 @@ try{
  await page.locator("#step2ReportRefreshBtn").click();
  const after=await page.evaluate(()=>localStorage.getItem("jobfit:donga:step2:v1"));
  assert.equal(after,before,"refresh must not alter saved raw data");
- await page.locator(".donga-evidence-edit summary").first().click();
- await page.locator('[data-req="0"][data-reqkey="note"]').fill("직접 확인한 근거\n추가 경험");
+ const firstNote=page.locator('[data-req="0"][data-reqkey="note"]');
+ if(!(await firstNote.isVisible()))await firstNote.locator("xpath=ancestor::details[1]/summary").click();
+ await firstNote.fill("직접 확인한 근거\n추가 경험");
  const result=await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step2:v1")));
  assert.equal(result.requirements[0].note,"직접 확인한 근거\n추가 경험","editable original preserved");
  assert.equal(result.jobTable.tasks,"경쟁사 조사, SNS 콘텐츠 제작","job table original preserved");
