@@ -1,4 +1,4 @@
-import {readableHTML, renderStep2Report} from "./report-view.js?v=1";
+import {readableHTML, renderStep2Report} from "./report-view.js?v=2";
 
 const STORAGE_KEY = "jobfit:donga:step2:v1";
 
@@ -1996,7 +1996,7 @@ function step2ReportBlock(){
     '<p>선택 직무·직무분석표·공고조건별 비교·GAP·3개월 행동계획을 A4 세로 PDF로 저장합니다. 미입력 항목은 미입력으로 표시하며, 저장된 원문은 바꾸지 않습니다.</p>'+
     '<div class="donga-report-actions"><button type="button" class="btn primary" id="step2PdfBtn">PDF 저장 / 인쇄</button>'+
     '<button type="button" class="btn secondary" id="step2ReportRefreshBtn">현재 입력값으로 미리보기 갱신</button></div>'+
-    '<p class="help">PC·Android: 인쇄 대상에서 PDF로 저장을 선택하세요. iPhone: 인쇄 미리보기에서 공유 메뉴로 PDF를 저장할 수 있습니다.</p></div>'+
+    '<p class="help">PC·Android: PDF로 저장을 선택하고 ‘머리글과 바닥글’ 옵션을 끄면 날짜·URL이 출력되지 않습니다. iPhone: 인쇄 미리보기에서 공유로 PDF를 저장하세요.</p></div>'+
     '<article id="step2Report" aria-label="STEP 2 직무분석 및 GAP PDF 미리보기">'+renderStep2Report(step2ReportSnapshot())+'</article>'+
     '</section>';
 }
