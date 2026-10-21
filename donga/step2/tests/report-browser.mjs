@@ -39,6 +39,26 @@ try{
  assert.equal(result.requirements[0].note,"직접 확인한 근거\n추가 경험","editable original preserved");
  assert.equal(result.jobTable.tasks,"경쟁사 조사, SNS 콘텐츠 제작","job table original preserved");
  assert.match(await page.locator('[data-evidence-preview="0"]').innerText(),/추가 경험/,"note preview updated");
+ const pastedActions="• GAP 1 → 학사일정과 졸업예정 시기 확인 → 예상 졸업 시점 및 향후 지원자격 확인표 작성. • GAP 2 → Photoshop·Canva로 G/FORE 가상 SNS 콘텐츠 3개와 숏폼 영상 1개 제작 → 기획 의도·제작물·사용 도구를 기록한 포트폴리오 완성. • GAP 3 → 공개 SNS 자료를 활용해 인플루언서 후보 명단과 가상 협찬 발송 관리표 작성 → Excel 실습 파일 및 업무 체크리스트 완성.";
+ await page.evaluate(a=>{
+   const key="jobfit:donga:step2:v1",data=JSON.parse(localStorage.getItem(key));
+   data.fit.actions=a;localStorage.setItem(key,JSON.stringify(data));
+ },pastedActions);
+ await page.reload({waitUntil:"networkidle"});
+ const screenPlan=page.locator('[data-plan-preview="fit.actions"] .donga-action-grid');
+ const pdfPlan=page.locator('#step2Report .donga-action-grid');
+ assert.equal(await screenPlan.locator(".donga-action-item").count(),3,"screen has three GAP action cards");
+ assert.equal(await pdfPlan.locator(".donga-action-item").count(),3,"PDF preview has three GAP action cards");
+ assert.equal(await screenPlan.innerHTML(),await pdfPlan.innerHTML(),"screen and PDF use exact same markup/content");
+ const storedBeforePrint=await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step2:v1")).fit.actions);
+ assert.equal(storedBeforePrint,pastedActions,"one-line original remains intact after PDF rendering");
+ const actionEditor=page.locator('[data-path="fit.actions"]');
+ if(!(await actionEditor.isVisible()))await actionEditor.locator("xpath=ancestor::details[1]/summary").click();
+ const updatedActions="GAP 1 → 졸업예정 시점 확인 → 지원자격 확인표 작성\nGAP 2 → SNS 영상 제작 → 콘텐츠 포트폴리오 작성\nGAP 3 → 협찬 발송표 실습 → 엑셀 실습 파일 완성";
+ await actionEditor.fill(updatedActions);
+ assert.equal(await screenPlan.locator(".donga-action-item").count(),3,"live screen updates to three cards");
+ assert.equal(await screenPlan.innerHTML(),await pdfPlan.innerHTML(),"PDF updates immediately when editor changes");
+ assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step2:v1")).fit.actions),updatedActions,"edited original is saved unchanged");
  await page.emulateMedia({media:"print"});
  await page.evaluate(()=>document.body.classList.add("donga-report-print"));
  const pdf=await page.pdf({preferCSSPageSize:true,printBackground:true});
