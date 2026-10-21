@@ -21,6 +21,7 @@ export function visualLines(value,{dense=false}={}){
   if(!source)return [];
   // Normalize heading separators only when used as headings, not inside normal words.
   source=source.replace(/([^\n])(?:[ \t]+)(?=(?:필수[·/]?\s*지원자격|우대사항|핵심역량|자격요건|직무\s*필요역량)\s*[:：])/gi,"$1\n");
+  source=source.replace(/(^|\n)(필수[·/]?\s*지원자격|지원자격|우대사항|핵심역량|자격요건|직무\s*필요역량)\s*[:：][ \t]*(?=\S)/gi,"$1$2:\n");
   source=source.replace(/([^\n])(?:[ \t]+)(?=\[\s*추가\s*확인\s*질문\s*\])/gi,"$1\n");
   source=source.replace(/([^\n])[ \t]+([•●▪])[ \t]*/g,"$1\n$2 ");
   const items=source.split("\n").map(s=>s.trim()).filter(Boolean);
