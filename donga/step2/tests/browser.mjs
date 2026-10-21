@@ -87,6 +87,61 @@ try{
   }
   assert(!fromAI.competencies.includes("확인할까요"),"follow-up questions are not merged into competencies");
   assert.match(await page.locator("#stepRoot").innerText(),/필수 5개 항목 중 5개 입력/);
+  // 실제 G/FORE 답변처럼 '건수. 주요 과업:'과 '관리한다. 해결방법:'이 한 줄에 붙는 사례.
+  const pastedFromAI=[
+    "고객(KPI):",
+    "[공고근거] 내부 이해관계자: G/FORE 마케팅팀 및 브랜드 운영 담당자.",
+    "[공고근거] 외부 이해관계자: 인플루언서, 마케팅 대행사 및 외부 파트너.",
+    "[추론] 콘텐츠 대상 고객: 한국·중국·일본 공식 SNS 채널 이용자.",
+    "[추론] KPI: 콘텐츠 제작 일정 준수율, 인플루언서 명단 정확도, 협찬 제품 발송 오류 건수. 주요 과업:",
+    "[공고근거] 브랜드 운영: 마케팅팀 사무 업무와 브랜드 촬영을 보조한다.",
+    "[공고근거] SNS 마케팅: 공식 SNS 콘텐츠를 기획·제작하고 한국·중국·일본 채널 운영을 지원한다.",
+    "[공고근거] 인플루언서 마케팅: 마케팅 실행을 지원하고 인플루언서 명단을 관리한다.",
+    "[공고근거] 외부 협업·협찬: 대행사 및 외부 파트너와 소통하고 협찬 제품 발송을 관리한다.",
+    "[image](https://www.google.com/s2/favicons?domain=https://linkareer.com&sz=32)",
+    "공모전 대외활동-링커리어",
+    "주요 해결과제:",
+    "[추론] 브랜드 운영: 촬영 및 사무 지원 과정에서 업무 누락과 일정 지연을 방지해야 한다.",
+    "[추론] SNS 콘텐츠: 국가별 채널 특성에 맞는 콘텐츠를 기획하고 제작 품질을 관리해야 한다.",
+    "[추론] 인플루언서 마케팅: 협업 대상자 정보와 진행 현황의 오류를 줄여야 한다.",
+    "[추론] 외부 협업·협찬: 파트너 간 요청사항의 혼선을 줄이고 제품 발송 오류를 방지해야 한다. 해결방법:",
+    "[추론] 브랜드 운영: 촬영 일정·요청사항 확인 → 체크리스트 관리 → 업무 완료 여부 보고.",
+    "[추론] SNS 콘텐츠: 국가별 채널 특성 확인 → 콘텐츠 기획안·제작 도구 활용 → 제작물 검토.",
+    "[추론] 인플루언서 마케팅: 협업 대상 정보 확인 → 명단·진행 현황표 관리 → 누락 사항 점검.",
+    "[추론] 외부 협업·협찬: 요청사항·수령 정보 확인 → 발송 관리표 작성 → 배송 완료 여부 확인. 필요역량:",
+    "Knowledge [추론]: 패션·골프 브랜드 및 국가별 SNS 특성 이해 — 콘텐츠 기획·채널 운영 지원에 연결.",
+    "Skill [공고근거·우대]: Photoshop·Illustrator 및 숏폼 영상 제작 능력 — SNS 콘텐츠 제작에 연결.",
+    "Skill [공고근거·우대]: AI 도구 활용 및 영어·중국어·일본어 능력 — 콘텐츠 작업과 해외 SNS 운영 보조에 연결.",
+    "Behavior [공고근거·우대]: 꼼꼼한 업무 처리 — 인플루언서 명단과 협찬 제품 발송 관리에 연결. [추가 확인 질문]",
+    "[확인 필요] SNS 콘텐츠는 인턴이 직접 게시하나요?",
+    "[확인 필요] 별도로 정해진 KPI가 있나요?"
+  ].join("\n");
+  await page.locator("#jobTableAiResult").fill(pastedFromAI);
+  await page.locator("#applyJobTableAiBtn").click();
+  const realResponse=await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step2:v1")).jobTable);
+  assert.equal(realResponse.aiResult,pastedFromAI,"the pasted original response stays byte-for-byte identical");
+  for(const key of ["customerKpi","tasks","challenge","method","competencies"]){
+    assert(realResponse[key]?.trim(),"real pasted response fills field "+key);
+  }
+  assert(realResponse.customerKpi.includes("협찬 제품 발송 오류 건수"),"KPI section preserved");
+  assert(!realResponse.customerKpi.includes("주요 과업:"),"inline tasks heading separated from KPI");
+  assert(realResponse.tasks.includes("공식 SNS 콘텐츠"),"task section extracted correctly");
+  assert(!realResponse.tasks.includes("google.com"),"favicon metadata excluded from tasks");
+  assert(!realResponse.tasks.includes("링커리어"),"site label excluded from tasks");
+  assert(realResponse.challenge.includes("업무 누락과 일정 지연"),"challenge extracted");
+  assert(!realResponse.challenge.includes("해결방법:"),"inline methods heading separated");
+  assert(realResponse.method.includes("체크리스트 관리"),"method extracted");
+  assert(!realResponse.method.includes("필요역량:"),"inline competencies heading separated");
+  assert(realResponse.competencies.includes("Behavior"),"competency data extracted");
+  assert(!realResponse.competencies.includes("추가 확인 질문"),"follow-up marker excluded");
+  assert(!realResponse.competencies.includes("별도로 정해진 KPI"),"follow-up content excluded");
+  assert.match(await page.locator("#stepRoot").innerText(),/필수 5개 항목 중 5개 입력/);
+  // 재반영해도 동일 결과로, 예전의 잘못된 분배를 덮어 고친다.
+  await page.locator("#applyJobTableAiBtn").click();
+  const reapply=await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step2:v1")).jobTable);
+  for(const key of ["customerKpi","tasks","challenge","method","competencies"]){
+    assert.equal(reapply[key],realResponse[key],"re-apply remains deterministic for "+key);
+  }
   assert.equal(await page.locator(".jobAnalysisPreview table").count(),0,"cramped table not used");
   const jobTasks=page.locator('[data-path="jobTable.tasks"]');
   if(!(await jobTasks.isVisible()))await jobTasks.locator("xpath=ancestor::details[1]/summary").click();
