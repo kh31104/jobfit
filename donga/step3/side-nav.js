@@ -61,16 +61,31 @@
    return node;
  }
  function startingList(root,title,entries,kind){
-   const section=mk("section","startingSection");
-   section.append(mk("h4","startingSectionTitle",title));
+   const section=mk("section","startingSection startingSection-"+kind);
+   const head=mk("div","startingSectionHead");
+   head.append(mk("h4","startingSectionTitle",title));
+   head.append(mk("small","startingSectionCount",entries.length+"개 항목"));
+   section.append(head);
    if(!entries.length)section.append(mk("p","startingEmpty","미입력"));
    else{
      const list=mk("ul","startingEntryList "+(kind==="gap"?"startingGapList":"startingTaskList"));
      entries.forEach(entry=>{
        const li=mk("li","startingEntry");
-       if(kind==="gap")li.append(mk("span","startingEntryNumber","GAP "+entry.number));
-       else if(entry.source)li.append(mk("span","startingEntryOrigin",entry.source));
-       li.append(mk("p","startingEntryText",entry.text));
+       const top=mk("div","startingEntryTop");
+       if(kind==="gap")top.append(mk("span","startingEntryNumber","GAP "+entry.number));
+       else if(entry.source)top.append(mk("span","startingEntryOrigin",entry.source));
+       const raw=String(entry.text||"").trim();
+       const separator=kind==="gap"?raw.match(/\s+[—–]\s+/):raw.match(/[:：]\s+/);
+       const titleEnd=separator?separator.index:-1;
+       if(titleEnd>0){
+         const heading=raw.slice(0,titleEnd).trim();
+         const details=raw.slice(titleEnd+separator[0].length).trim();
+         // Only visual segmentation: every word of the student's source remains present.
+         top.append(mk("strong","startingEntryHeading",heading));
+         li.append(top,mk("p","startingEntryText",details||raw));
+       }else{
+         li.append(top,mk("p","startingEntryText",raw));
+       }
        list.append(li);
      });
      section.append(list);
@@ -85,6 +100,7 @@
      root.append(mk("p","startingEmpty","STEP 2에 저장된 직무분석이 없습니다. 미입력"));
      return;
    }
+   root.append(mk("p","startingFormatStamp","직무분석·GAP 항목별 보기"));
    const summary=mk("div","startingSummaryGrid");
    [["관심 산업",step2.target?.industry],["선택 직무",step2.target?.job||step2.curatedSelection?.role||step2.customJob?.role]].forEach(([label,value])=>{
      const box=mk("div","startingSummaryBox");
