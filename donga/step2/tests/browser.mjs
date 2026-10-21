@@ -116,7 +116,9 @@ try{
     "[확인 필요] SNS 콘텐츠는 인턴이 직접 게시하나요?",
     "[확인 필요] 별도로 정해진 KPI가 있나요?"
   ].join("\n");
-  await page.locator("#jobTableAiResult").fill(pastedFromAI);
+  const aiPasteAgain=page.locator("#jobTableAiResult");
+  if(!(await aiPasteAgain.isVisible()))await aiPasteAgain.locator("xpath=ancestor::details[1]/summary").click();
+  await aiPasteAgain.fill(pastedFromAI);
   await page.locator("#applyJobTableAiBtn").click();
   const realResponse=await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step2:v1")).jobTable);
   assert.equal(realResponse.aiResult,pastedFromAI,"the pasted original response stays byte-for-byte identical");
