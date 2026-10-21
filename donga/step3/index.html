@@ -120,6 +120,31 @@ main{max-width:none!important;margin:0!important;padding:0!important}.top,.hero,
 @media(max-width:900px){.beforeAiCards{grid-template-columns:1fr}}
 @media print{.beforeAiPreview{display:none!important}}
 
+
+
+/* STEP3 03: duration in stage heading, not attached to "목표" label. */
+.beforeAiCard h4{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.beforeAiPeriod{display:inline-block;background:#eaf2fe;border-radius:5px;padding:2px 6px;color:#385d89;font-size:11px;font-weight:750}
+.beforeAiDetail{display:grid;grid-template-columns:40px minmax(0,1fr);gap:8px;align-items:start;font-size:12px;line-height:1.7;margin:6px 0}
+.beforeAiDetailLabel{font-weight:800;color:#46698f}
+.beforeAiDetailText{overflow-wrap:break-word;word-break:keep-all;white-space:pre-wrap}
+@media(max-width:900px){.beforeAiDetail{font-size:13px}}
+
+/* STEP3-03: directly editable AI three-stage review, without overwriting the student's source. */
+.beforeAiEditableCards{grid-template-columns:repeat(3,minmax(0,1fr))}
+.beforeAiEditableCard{min-width:0}
+.beforeAiEditRow{display:grid;grid-template-columns:46px minmax(0,1fr);gap:7px;align-items:start;margin:8px 0}
+.beforeAiEditableCard .beforeAiDetailLabel{font-size:11px;margin-top:8px;line-height:1.45}
+.beforeAiInput{display:block;width:100%;min-width:0;border:1px solid #c8d7e9;border-radius:6px;background:#fff;color:#23394f;padding:7px 8px;font:inherit;font-size:12px;line-height:1.6;resize:vertical}
+.beforeAiInput:focus{outline:2px solid #95b3e7;outline-offset:1px}
+@media(max-width:900px){.beforeAiEditableCards{grid-template-columns:1fr}.beforeAiInput{font-size:14px}}
+
+/* STEP3-04 readable review of four post-work stages. */
+.afterAiCards{grid-template-columns:repeat(2,minmax(0,1fr))}
+.afterAiCard{min-width:0}
+.afterAiCard .beforeAiDetail{margin:7px 0}
+@media(max-width:900px){.afterAiCards{grid-template-columns:1fr}}
+
 </style>
 <link rel="stylesheet" href="../typography.css?v=2"><link rel="stylesheet" href="../ui-unified.css?v=1">
 <link rel="stylesheet" href="../reset-controls.css?v=1"></head>
@@ -141,9 +166,9 @@ main{max-width:none!important;margin:0!important;padding:0!important}.top,.hero,
 <label class="promptLabel" for="aiPrompt">생성된 AI 분석 프롬프트</label><textarea id="aiPrompt" class="promptArea" rows="7" readonly placeholder="희망 직무를 입력한 뒤 ‘AI 분석 프롬프트 생성’을 눌러 주세요."></textarea>
 <label class="promptLabel" for="aiAnswer">취업 전 3단계 AI 답변 붙여넣기</label><p class="hint">탐색기·성장기·도약기 내용을 그대로 붙여넣으세요. 이전 JSON 답변도 사용할 수 있습니다.</p><textarea id="aiAnswer" class="promptArea" rows="7" placeholder="탐색기&#10;기간: 0~3개월&#10;목표: ...&#10;실행: ...&#10;결과물: ...&#10;&#10;성장기&#10;기간: ..."></textarea><div id="beforeAiPreview" class="beforeAiPreview" role="status" aria-live="polite" hidden></div>
 <div class="buttons"><button type="button" id="applyAi" class="btn primary">AI 답변을 취업 전 계획에 반영</button><span class="hint">반영 전에 기존 단계별 수정값의 교체 여부를 확인합니다. 질문 원문은 유지됩니다.</span></div>
-<p class="hint">미리보기에서 3단계를 확인한 다음 ‘반영’을 누르세요. 반영 전에는 기존 계획이 유지됩니다. AI 계획은 직접 수정할 수 있고 데이터를 외부 AI에 자동 전송하지 않습니다.</p>
+<p class="hint">미리보기의 기간·목표·실행·결과물을 직접 고친 뒤 ‘반영’을 누르세요. 수정 내용은 반영할 때 저장되며, AI 원문과 기존 학생 계획은 그전까지 그대로 유지됩니다.</p>
 </section><div class="buttons"><button type="button" class="btn light" data-goto="4">취업 후 경력개발계획 →</button></div></div>
-<div class="donga-screen" id="dongaPanel4" hidden><section class="card postCard"><div class="sectionHead"><span class="count">04</span><div><h2>My Career Roadmap · 취업 후 경력개발계획</h2><p>5년 차 → 10년 차 → 15년 차 → 최종 목표를 일반적인 경력경로와 비교합니다.</p></div></div><div class="question"><label for="careerTrack">희망 경력 방향 · 선택사항</label><select id="careerTrack"><option value="미정">아직 미정 · 비교 후 선택</option><option value="전문가형">전문가형 · 전문성 심화</option><option value="관리자형">관리자형 · 팀과 조직 운영</option></select></div><div class="buttons"><button type="button" class="btn primary" id="makePostPrompt">AI 경력개발 프롬프트 생성</button><button type="button" class="btn light" id="copyPostPrompt">프롬프트 복사</button><a class="btn light" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">ChatGPT 열기 ↗</a><a class="btn light" href="https://gemini.google.com/app" target="_blank" rel="noopener noreferrer">Gemini 열기 ↗</a><a class="btn light" href="https://claude.ai/new" target="_blank" rel="noopener noreferrer">Claude 열기 ↗</a></div><label class="promptLabel" for="postPrompt">취업 후 4단계 경력개발 프롬프트</label><textarea id="postPrompt" class="promptArea" rows="8" readonly placeholder="프롬프트 생성 버튼을 눌러 주세요."></textarea><label class="promptLabel" for="postAnswer">취업 후 경력개발 AI 답변 붙여넣기</label><textarea id="postAnswer" class="promptArea" rows="7" placeholder='{"after":[{"goal":"...","action":"..."},...]} 형식'></textarea><div class="buttons"><button type="button" id="applyPost" class="btn primary">AI 답변을 취업 후 계획에 반영</button><button type="button" class="btn light" data-goto="5">최종 로드맵 확인 →</button></div><p class="hint">이 단계의 연차는 예시이며 기업별 승진 일정이나 직책을 보장하지 않습니다.</p></section></div>
+<div class="donga-screen" id="dongaPanel4" hidden><section class="card postCard"><div class="sectionHead"><span class="count">04</span><div><h2>My Career Roadmap · 취업 후 경력개발계획</h2><p>5년 차 → 10년 차 → 15년 차 → 최종 목표를 일반적인 경력경로와 비교합니다.</p></div></div><div class="question"><label for="careerTrack">희망 경력 방향 · 선택사항</label><select id="careerTrack"><option value="미정">아직 미정 · 비교 후 선택</option><option value="전문가형">전문가형 · 전문성 심화</option><option value="관리자형">관리자형 · 팀과 조직 운영</option></select></div><div class="buttons"><button type="button" class="btn primary" id="makePostPrompt">AI 경력개발 프롬프트 생성</button><button type="button" class="btn light" id="copyPostPrompt">프롬프트 복사</button><a class="btn light" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">ChatGPT 열기 ↗</a><a class="btn light" href="https://gemini.google.com/app" target="_blank" rel="noopener noreferrer">Gemini 열기 ↗</a><a class="btn light" href="https://claude.ai/new" target="_blank" rel="noopener noreferrer">Claude 열기 ↗</a></div><label class="promptLabel" for="postPrompt">취업 후 4단계 경력개발 프롬프트</label><textarea id="postPrompt" class="promptArea" rows="8" readonly placeholder="프롬프트 생성 버튼을 눌러 주세요."></textarea><label class="promptLabel" for="postAnswer">취업 후 4단계 AI 답변 붙여넣기</label><p class="hint">5년 차·10년 차·15년 차·최종 목표를 한국어로 출력한 답변을 그대로 붙여넣으세요. 이전 JSON도 사용 가능합니다.</p><textarea id="postAnswer" class="promptArea" rows="7" placeholder="5년 차&#10;목표: ...&#10;준비: ...&#10;결과물: ...&#10;&#10;10년 차&#10;목표: ..."></textarea><div id="afterAiPreview" class="beforeAiPreview" aria-live="polite" role="status" hidden></div><div class="buttons"><button type="button" id="applyPost" class="btn primary">AI 답변을 취업 후 계획에 반영</button><button type="button" class="btn light" data-goto="5">최종 로드맵 확인 →</button></div><p class="hint">이 단계의 연차는 예시이며 기업별 승진 일정이나 직책을 보장하지 않습니다.</p></section></div>
 <div class="donga-screen" id="dongaPanel5" hidden><section class="card editCard"><div class="sectionHead"><span class="count">05</span><div><h2>My Career Design v1 · 두 계획 최종 검토</h2><p>내 계획을 우선 적용합니다. 나머지 단계의 CDP 예시는 내가 수정할 수 있습니다.</p></div></div>
 <div class="buttons"><span class="badge mine">내 계획</span><span class="badge cdp">일반 CDP 예시</span><span class="badge modified">직접 수정</span></div>
 <div class="editorGrid"><div class="editorColumn"><h3>① 취업 전 커리어 준비계획 <small>탐색기 → 준비기 → 실행기</small></h3><div id="leftEditors"></div></div><div class="editorColumn"><h3>② 취업 후 장기 경력개발계획 <small>입사 초기 → 3년 차 → 5년 차 → 장기 목표</small></h3><div id="rightEditors"></div></div>
@@ -303,22 +328,53 @@ function makeSplitPrompt(kind){
    $("aiPrompt").value=common.join("\n");
   }else{
    common.push(
-     "취업 후 답변은 JSON 객체 하나만 출력하고 코드블록·추가 설명은 출력하지 않는다.",
-     "각 goal은 45자 이내, action은 55자 이내로 작성한다.",
-     "취업 후 장기 경력개발계획만 작성한다.",
+     "취업 후 4단계 경력개발계획만 작성한다.",
      "희망 경력 방향: "+(q.careerTrack||"미정"),
-     "5년 차·10년 차·15년 차·최종 목표를 기준으로 희망 역할(goal)과 전문성·경험(action)을 제안한다.",
-     "전문가형 또는 관리자형을 강요하지 말고 미정이면 가능한 선택지를 제시한다.",
-     "직무 경력 경로는 일반적인 예시이며 실제 승진 시점·직급·직책을 단정하지 마라.",
-     'JSON 형식: {"after":[{"goal":"5년 차 희망 역할","action":"필요한 전문성·경험"},{"goal":"10년 차 희망 역할","action":"필요한 전문성·경험"},{"goal":"15년 차 희망 역할","action":"필요한 전문성·경험"},{"goal":"최종 경력목표","action":"장기 경력 준비"}]}'
+     "5년 차·10년 차·15년 차·최종 목표는 단계 구분을 위한 예시이다. 실제 승진 연차·직급이나 특정 회사의 공식 경로로 단정하지 않는다.",
+     "학생이 희망하는 방향이 미정이라면 업무 전문성 축적을 중심으로 일반 CDP 예시를 작성하고, 관리자형을 강요하지 않는다.",
+     "각 목표는 45자 이내, 준비는 45자 이내, 결과물은 30자 이내로 작성한다.",
+     "역할과 실제 해야 할 업무·준비 활동을 구체적으로 쓴다. 경력 또는 성과가 이미 존재하는 것처럼 쓰지 않는다.",
+     "아래 형식 그대로 한국어 텍스트만 출력한다. JSON, 중괄호, 영문 필드명, 코드블록, Markdown 기호(#·**)는 사용하지 않는다.",
+     "5년 차",
+     "목표: (해당 시기 희망 역할과 업무)",
+     "준비: (그 역할을 위해 경험·학습할 과업)",
+     "결과물: (확인 가능한 성과·작업물 예시)",
+     "",
+     "10년 차",
+     "목표: (희망 역할)",
+     "준비: (맡아보고 싶은 업무와 학습)",
+     "결과물: (작업물 또는 성과 검증 자료 예시)",
+     "",
+     "15년 차",
+     "목표: (희망 역할)",
+     "준비: (장기적으로 수행할 업무와 준비)",
+     "결과물: (성과 검토에 쓸 자료 예시)",
+     "",
+     "최종 목표",
+     "목표: (전문가형 또는 관리자형 선택이 확정되지 않았다면 열린 경력 방향)",
+     "준비: (꾸준히 축적할 실무경험과 전문성)",
+     "결과물: (포트폴리오·사례집 등 확인 자료 예시)",
+     "네 단계 외에는 설명을 추가하지 말고, 단계명은 목표 문장 안에서 반복하지 않는다."
    );
    $("postPrompt").value=common.join("\n");
  }
  notify("학생 입력값을 바탕으로 "+(kind==="before"?"취업 전":"취업 후")+" AI 프롬프트를 만들었습니다.");
 }
 
+function cleanAiFormatting(raw){
+ // Only AI-derived plan display/parsed draft. The originally pasted answer is not modified.
+ return String(raw||"")
+  .replace(/&#(?:x([0-9a-f]+)|([0-9]+));/gi,(m,h,d)=>{
+    const code=h?parseInt(h,16):Number(d);
+    return (code===32||code===160||(code>=48&&code<=57)||code===126)?String.fromCodePoint(code):m;
+  })
+  .replace(/\\+([~*_])/g,"$1")
+  .replace(/\*\*/g,"")
+  .replace(/[\u200b\u200c\u200d]/g,"")
+  .replace(/\s+/g," ").trim();
+}
 function withoutRepeatedStage(goal,stage){
- const v=String(goal||"").trim(),rx=new RegExp("^"+stage+"\\s*(?:[(（]([^）)]+)[)）])?\\s*[:：·-]\\s*");
+ const v=cleanAiFormatting(goal),rx=new RegExp("^"+stage+"\\s*(?:[(（]([^）)]+)[)）])?\\s*[:：·-]\\s*");
  return v.replace(rx,(_,period)=>period?period.trim()+" · ":"");
 }
 function parseBeforeAiAnswer(raw){
@@ -332,7 +388,7 @@ function parseBeforeAiAnswer(raw){
    if(!Array.isArray(parsed.before)||parsed.before.length!==3)throw Error("기존 JSON에 탐색기·성장기·도약기 세 계획이 필요합니다.");
    return parsed.before.map((x,i)=>{
      if(typeof x?.goal!=="string"||typeof x?.action!=="string"||!x.goal.trim()||!x.action.trim())throw Error((i+1)+"단계 목표 또는 실행 내용이 비었습니다.");
-     const one=withoutRepeatedStage(x.goal,LL[i]),two=x.action.trim();
+     const one=withoutRepeatedStage(x.goal,LL[i]),two=cleanAiFormatting(x.action);
      if(one.length>75||two.length>75)throw Error((i+1)+"단계 문장이 A4 PDF에 비해 깁니다. 활동·결과물을 줄여 주세요.");
      return {label:LL[i],one,two,origin:"ai"};
    });
@@ -358,34 +414,146 @@ function parseBeforeAiAnswer(raw){
      if(m)values[m[1]]=m[2].trim();
    });
    if(!values["목표"]||!(values["실행"]||values["활동"]||values["실행·결과물"]||values["활동·결과물"]))throw Error(LL[i]+"에 목표와 실행 내용을 작성해 주세요.");
-   const one=(values["기간"]?values["기간"]+" · ":"")+withoutRepeatedStage(values["목표"],LL[i]);
+   const one=(values["기간"]?cleanAiFormatting(values["기간"])+" · ":"")+withoutRepeatedStage(values["목표"],LL[i]);
    const doing=values["실행"]||values["활동"]||values["실행·결과물"]||values["활동·결과물"];
-   const two=values["결과물"]?doing+" → "+values["결과물"]:doing;
+   const two=cleanAiFormatting(values["결과물"]?doing+" → "+values["결과물"]:doing);
    if(one.length>75||two.length>75)throw Error(LL[i]+" 문장이 A4 PDF에 비해 깁니다. 목표·실행·결과물을 줄여 주세요.");
+   return {label:LL[i],one,two,origin:"ai"};
+ });
+}
+let beforeAiEdits=null;
+function beforePlanParts(plan){
+ const periodGoal=plan.one.match(/^(.+?(?:개월|취업\s*전))\s*·\s*(.+)$/);
+ const parts=plan.two.split(/\s*→\s*/).filter(Boolean);
+ const outcome=parts.length>1?parts.pop():"";
+ return {
+   period:cleanAiFormatting(periodGoal?periodGoal[1]:""),
+   goal:cleanAiFormatting(periodGoal?periodGoal[2]:plan.one),
+   activity:cleanAiFormatting(outcome?parts.join(" → "):plan.two),
+   outcome:cleanAiFormatting(outcome)
+ };
+}
+function editedBeforePlans(raw){
+ if(!beforeAiEdits||beforeAiEdits.raw!==raw)return parseBeforeAiAnswer(raw);
+ return beforeAiEdits.items.map((values,i)=>{
+   const period=cleanAiFormatting(values.period),goal=cleanAiFormatting(values.goal);
+   const activity=cleanAiFormatting(values.activity),outcome=cleanAiFormatting(values.outcome);
+   if(!goal||!activity)throw Error(LL[i]+"의 목표와 실행을 입력해 주세요.");
+   const one=(period?period+" · ":"")+goal;
+   const two=activity+(outcome?" → "+outcome:"");
+   if(one.length>75||two.length>75)throw Error(LL[i]+" 문장이 길어 A4 PDF에서 잘릴 수 있습니다. 조금 줄여 주세요.");
    return {label:LL[i],one,two,origin:"ai"};
  });
 }
 function refreshBeforeAiPreview(){
  const el=$("beforeAiPreview"),raw=$("aiAnswer").value.trim();
  el.replaceChildren();
- if(!raw){el.hidden=true;return;}
+ if(!raw){el.hidden=true;beforeAiEdits=null;return;}
  el.hidden=false;
- const h=document.createElement("strong");h.textContent="취업 전 3단계 미리보기 · 아직 저장 계획에 반영되지 않음";el.append(h);
+ const h=document.createElement("strong");h.textContent="취업 전 3단계 · 미리보기에서 직접 수정 (반영 전)";el.append(h);
  try{
    const plans=parseBeforeAiAnswer(raw);
-   const grid=document.createElement("div");grid.className="beforeAiCards";
-   for(const [i,p] of plans.entries()){
-     const card=document.createElement("article");card.className="beforeAiCard";
-     const t=document.createElement("h4");t.textContent=(i+1)+". "+p.label;card.append(t);
-     for(const [label,value] of [["목표",p.one],["실행·결과물",p.two]]){
-       const line=document.createElement("p"),b=document.createElement("b");b.textContent=label+" · ";
-       line.append(b,document.createTextNode(value));card.append(line);
-     }
-     grid.append(card);
+   if(!beforeAiEdits||beforeAiEdits.raw!==raw){
+     beforeAiEdits={raw,items:plans.map(beforePlanParts)};
    }
+   const grid=document.createElement("div");grid.className="beforeAiCards beforeAiEditableCards";
+   beforeAiEdits.items.forEach((record,i)=>{
+     const card=document.createElement("article");card.className="beforeAiCard beforeAiEditableCard";
+     const title=document.createElement("h4");title.textContent=(i+1)+". "+LL[i]+" · 직접 수정";
+     card.append(title);
+     [["period","기간"],["goal","목표"],["activity","실행"],["outcome","결과물"]].forEach(([key,label])=>{
+       const id="beforeEdit-"+i+"-"+key;
+       const line=document.createElement("label");line.className="beforeAiEditRow";
+       const text=document.createElement("span");text.className="beforeAiDetailLabel";text.textContent=label;
+       const field=document.createElement(key==="period"?"input":"textarea");
+       field.className="beforeAiInput";
+       field.id=id;field.dataset.beforeIndex=String(i);field.dataset.beforeField=key;
+       field.value=record[key];
+       if(key==="period"){field.placeholder="예: 0~3개월";}
+       else if(key==="outcome"){field.rows=2;field.placeholder="남길 결과물(선택)";}
+       else {field.rows=2;}
+       field.addEventListener("input",()=>{beforeAiEdits.items[i][key]=field.value;});
+       line.append(text,field);card.append(line);
+     });
+     grid.append(card);
+   });
    el.append(grid);
  }catch(err){
-   const p=document.createElement("p");p.className="beforeAiError";p.textContent="형식 확인 필요: "+err.message;el.append(p);
+   beforeAiEdits=null;
+   const p=document.createElement("p");p.className="beforeAiError";
+   p.textContent="형식 확인 필요: "+err.message;el.append(p);
+ }
+}
+
+function parseAfterAiAnswer(raw){
+ const text=String(raw||"").trim();
+ if(!text)throw Error("취업 후 4단계 AI 답변을 먼저 붙여넣어 주세요.");
+ if(text.includes('"after"')&&text.includes("{")){
+   let obj;
+   try{obj=JSON.parse(text.slice(text.indexOf("{"),text.lastIndexOf("}")+1));}
+   catch{throw Error("JSON 형식이 불완전합니다. 전체 답변을 복사하거나 새 프롬프트를 사용해 주세요.");}
+   if(!Array.isArray(obj.after)||obj.after.length!==RR.length)throw Error("취업 후 계획은 4개 단계로 작성해야 합니다.");
+   return obj.after.map((x,i)=>{
+     const one=cleanAiFormatting(x?.goal),two=cleanAiFormatting(x?.action);
+     if(!one||!two)throw Error(RR[i]+" 목표 또는 준비 내용이 없습니다.");
+     if(one.length>100||two.length>130)throw Error(RR[i]+" 문장이 너무 깁니다.");
+     return {label:RR[i],one,two,origin:"ai"};
+   });
+ }
+ const groups=[[],[],[],[]];
+ const titleRx=/^\s*(?:#{1,3}\s*)?(?:[1-4][.)]\s*)?\[?(5년\s*차|10년\s*차|15년\s*차|최종\s*목표)\]?\s*[:：]?\s*$/;
+ let current=-1;
+ text.replace(/\r\n?/g,"\n").split("\n").forEach(rawLine=>{
+   const line=rawLine.trim().replace(/^\*\*(.*?)\*\*$/,"$1").replace(/^[•*-]\s*/,"");
+   if(!line)return;
+   const match=line.match(titleRx);
+   if(match){
+     const i=RR.indexOf(match[1].replace(/\s+/g," "));
+     if(i<current)throw Error("5년 차 → 10년 차 → 15년 차 → 최종 목표 순서로 작성하세요.");
+     current=i;return;
+   }
+   if(current>=0)groups[current].push(line);
+ });
+ if(groups.some(x=>!x.length))throw Error("5년 차·10년 차·15년 차·최종 목표 네 단계 제목이 필요합니다.");
+ return groups.map((lines,i)=>{
+   const fields={};
+   lines.forEach(line=>{
+     const match=line.match(/^(목표|준비|실행|업무|필요역량|경험|결과물)\s*[:：]\s*(.*)$/);
+     if(match)fields[match[1]]=cleanAiFormatting(match[2]);
+   });
+   const goal=fields["목표"],prepare=fields["준비"]||fields["실행"]||fields["업무"]||fields["경험"]||fields["필요역량"];
+   if(!goal||!prepare)throw Error(RR[i]+"에 목표와 준비 내용을 작성해 주세요.");
+   const one=goal.replace(new RegExp("^"+RR[i]+"\\s*[:：·-]\\s*"),"");
+   const two=prepare+(fields["결과물"]?" → "+fields["결과물"]:"");
+   if(one.length>100||two.length>130)throw Error(RR[i]+" 문장이 길어 PDF에서 잘릴 수 있습니다.");
+   return {label:RR[i],one,two,origin:"ai"};
+ });
+}
+function refreshAfterAiPreview(){
+ const el=$("afterAiPreview"),raw=$("postAnswer").value.trim();
+ el.replaceChildren();
+ if(!raw){el.hidden=true;return;}
+ el.hidden=false;
+ const head=document.createElement("strong");head.textContent="취업 후 경력개발계획 · 4단계 미리보기 (아직 반영 전)";el.append(head);
+ try{
+   const plans=parseAfterAiAnswer(raw);
+   const grid=document.createElement("div");grid.className="beforeAiCards afterAiCards";
+   plans.forEach((plan,i)=>{
+     const article=document.createElement("article");article.className="beforeAiCard afterAiCard";
+     const title=document.createElement("h4");title.textContent=(i+1)+". "+RR[i];article.append(title);
+     const parts=plan.two.split(/\s*→\s*/).filter(Boolean),outcome=parts.length>1?parts.pop():"";
+     [["목표",plan.one],["준비",outcome?parts.join(" → "):plan.two],...(outcome?[["결과물",outcome]]:[])].forEach(([name,value])=>{
+       const line=document.createElement("div");line.className="beforeAiDetail";
+       const label=document.createElement("span");label.className="beforeAiDetailLabel";label.textContent=name;
+       const content=document.createElement("span");content.className="beforeAiDetailText";content.textContent=value;
+       line.append(label,content);article.append(line);
+     });
+     grid.append(article);
+   });
+   el.append(grid);
+ }catch(err){
+   const p=document.createElement("p");p.className="beforeAiError";
+   p.textContent="형식 확인 필요: "+err.message;el.append(p);
  }
 }
 
@@ -395,18 +563,8 @@ function applySplit(kind){
  try{
    const lane=kind==="before"?"left":"right";
    let plans;
-   if(kind==="before")plans=parseBeforeAiAnswer(raw);
-   else{
-     const begin=raw.indexOf("{"),end=raw.lastIndexOf("}");
-     if(begin<0||end<=begin)throw Error("JSON을 찾지 못했습니다.");
-     const parsed=JSON.parse(raw.slice(begin,end+1)),arr=parsed.after;
-     if(!Array.isArray(arr)||arr.length!==RR.length)throw Error("단계 개수를 확인해 주세요.");
-     plans=arr.map((x,i)=>{
-       if(typeof x?.goal!=="string"||typeof x?.action!=="string"||!x.goal.trim()||!x.action.trim())throw Error((i+1)+"단계 값 누락");
-       if(x.goal.length>100||x.action.length>130)throw Error((i+1)+"단계 문장이 너무 깁니다. AI에게 짧게 다시 요청해 주세요.");
-       return {label:RR[i],one:x.goal.trim(),two:x.action.trim(),origin:"ai"};
-     });
-   }
+   if(kind==="before")plans=editedBeforePlans(raw);
+   else plans=parseAfterAiAnswer(raw);
    if(data[lane].some(x=>x.one.trim())&&!confirm("이 영역의 기존 단계별 계획을 AI 초안으로 교체할까요? 학생 질문 원문과 다른 영역의 계획은 유지됩니다."))return;
    data[lane]=plans;
    data.drafts[kind==="before"?"aiAnswer":"postAnswer"]=raw;
@@ -538,7 +696,7 @@ async function copyPrompt(id){
    notify("프롬프트를 복사했습니다. ChatGPT에 붙여넣으세요.");
  }catch{notify("자동 복사가 안 되면 프롬프트 칸을 길게 눌러 전체 복사해 주세요.")}
 }
-function refresh(){const q=data.question;$("aiAnswer").value=data.drafts.aiAnswer||"";refreshBeforeAiPreview();$("postAnswer").value=data.drafts.postAnswer||"";$("monthActions").value=data.action.month||"";$("semesterOutput").value=data.action.semester||"";$("priorityGap").value=data.action.gap||"";$("targetTime").value=q.targetTime||"미정";$("careerTrack").value=q.careerTrack||"미정";$("job").value=q.job;$("prePlan").value=q.pre;$("postPlan").value=q.post;$("preUnknown").checked=q.preUnknown;$("postUnknown").checked=q.postUnknown;$("step2Info").textContent=step2Job()?"STEP 2 희망 직무를 불러올 수 있습니다. STEP 2 내용은 변경하지 않습니다.":"STEP 2에 희망 직무가 없으면 직접 입력해 주세요.";editors();draw();if(data.updatedAt)$("saveState").textContent="마지막 STEP 3 저장 · "+new Date(data.updatedAt).toLocaleString("ko-KR")}
+function refresh(){const q=data.question;$("aiAnswer").value=data.drafts.aiAnswer||"";refreshBeforeAiPreview();$("postAnswer").value=data.drafts.postAnswer||"";refreshAfterAiPreview();$("monthActions").value=data.action.month||"";$("semesterOutput").value=data.action.semester||"";$("priorityGap").value=data.action.gap||"";$("targetTime").value=q.targetTime||"미정";$("careerTrack").value=q.careerTrack||"미정";$("job").value=q.job;$("prePlan").value=q.pre;$("postPlan").value=q.post;$("preUnknown").checked=q.preUnknown;$("postUnknown").checked=q.postUnknown;$("step2Info").textContent=step2Job()?"STEP 2 희망 직무를 불러올 수 있습니다. STEP 2 내용은 변경하지 않습니다.":"STEP 2에 희망 직무가 없으면 직접 입력해 주세요.";editors();draw();if(data.updatedAt)$("saveState").textContent="마지막 STEP 3 저장 · "+new Date(data.updatedAt).toLocaleString("ko-KR")}
 function backup(){collect();save();const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="JOBFIT_DONGA_STEP3_backup.json";document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);notify("STEP 3 JSON 백업을 저장했습니다.")}
 function restore(file){if(!file)return;if(file.size>1024*1024){notify("1MB 이하 STEP 3 백업만 불러올 수 있습니다.");return}const reader=new FileReader();reader.onload=()=>{try{const x=JSON.parse(reader.result);if(x.app!==APP||!Array.isArray(x.left)||!Array.isArray(x.right))throw Error("wrong");if(!confirm("현재 STEP 3 내용만 백업 파일 내용으로 교체할까요? STEP 1·2에는 영향을 주지 않습니다."))return;data={app:APP,version:1,question:{...init().question,...(x.question||{})},left:safeStages(x.left,LL),right:safeStages(x.right,RR),action:{...init().action,...(x.action||{})},drafts:{aiAnswer:String(x.drafts?.aiAnswer||""),postAnswer:String(x.drafts?.postAnswer||"")},updatedAt:""};save();refresh();notify("STEP 3 백업을 불러왔습니다.")}catch{notify("올바른 잡핏동아 STEP 3 백업이 아닙니다.")}};reader.onerror=()=>notify("파일을 읽을 수 없습니다.");reader.readAsText(file)}
 function printPDF(){collect();save();draw();const all=[...data.left,...data.right];if(!data.question.job.trim()||all.some(s=>!s.one.trim()||!s.two.trim())){notify("희망 직무와 모든 단계의 2개 항목을 작성해 주세요.");return}if(data.question.job.length>60||all.some(s=>s.one.length>75||s.two.length>75)){notify("문장이 너무 길어 1쪽을 넘을 수 있습니다. 단계별 내용을 줄여 주세요. 원문은 유지됩니다.");return}const old=document.title;document.title="JOBFIT_DONGA_STEP3_Career_Roadmap";window.print();setTimeout(()=>document.title=old,5000)}
@@ -578,7 +736,7 @@ $("copyArtPrompt").addEventListener("click",()=>copyPrompt("artPrompt"));
 $("makePostPrompt").addEventListener("click",()=>makeSplitPrompt("after"));
 $("copyPostPrompt").addEventListener("click",()=>copyPrompt("postPrompt"));
 $("applyPost").addEventListener("click",()=>applySplit("after"));
-$("postAnswer").addEventListener("input",()=>{data.drafts.postAnswer=$("postAnswer").value;save()});
+$("postAnswer").addEventListener("input",()=>{data.drafts.postAnswer=$("postAnswer").value;save();refreshAfterAiPreview()});
 ["targetTime","careerTrack","monthActions","semesterOutput","priorityGap"].forEach(id=>$(id).addEventListener("input",()=>{collect();save()}));
 $("export").addEventListener("click",backup);
 $("import").addEventListener("click",()=>$("importFile").click());
