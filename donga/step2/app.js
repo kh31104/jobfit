@@ -1128,8 +1128,14 @@ function parseJobTableResult(raw){
     ["careerPlan",/^(?:경력개발(?:\s*\(선택\))?|경력\s*개발|경력계획)(?=\s*[:：]|\s*$)/i]
   ];
   const out={};let current="";
-  for(const original of String(raw||"").split(/\r?\n/)){
+  // AI/메신저 복사로 두 제목이 한 줄에 붙은 경우도 별도의 영역으로 분리한다.
+  // 원본 AI 답변은 변경하지 않고 파싱에만 적용한다.
+  const inlineHeading=/[ \t]+(?=(?:(?:#{1,6}\s*|\*\*\s*)?(?:[①②③④⑤⑥]|\d{1,2}\s*[.)])?\s*)?(?:고객\s*(?:\(\s*KPI\s*\)|[·/&-]\s*KPI)|주요\s*과업|주요\s*해결과제|해결\s*방법|필요\s*역량)\s*[:：]|\[\s*추가\s*확인\s*질문\s*\]\s*[:：]?)/g;
+  const segmented=String(raw||"").replace(/\r\n?/g,"\n").replace(inlineHeading,"\n");
+  for(const original of segmented.split("\n")){
     const line=original.trim();if(!line)continue;
+    // AI 답변에 함께 복사된 채용사이트 파비콘/출처 미리보기는 직무분석 근거로 취급하지 않는다.
+    if(/^\[image\]|^!\[[^\]]*\]\(https?:|^https?:\/\/|^공모전\s+대외활동\s*[-–]\s*링커리어/i.test(line))continue;
     const normalized=line
       .replace(/^>\s*/,"")
       .replace(/^#{1,6}\s*/,"")
