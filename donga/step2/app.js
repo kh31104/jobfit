@@ -10,6 +10,7 @@ const steps = [
 ];
 
 const emptyPosting=()=>({company:"",title:"",sourceUrl:"",text:"",notes:"",tasks:"",required:"",preferred:"",other:""});
+const emptyStep2Search=()=>({company:"",title:"",sourceUrl:"",facts:"",memo:""});
 const emptyExperience=()=>({title:"",type:"",summary:""});
 const emptyMatch=()=>({requirement:"",evidence:"",status:"",note:""});
 const emptyJobTable=()=>({customerKpi:"",tasks:"",challenge:"",method:"",competencies:"",careerPlan:"",aiResult:""});
@@ -403,7 +404,9 @@ const defaults=()=>({
   version:11,app:"JOBFIT_DONGA_STEP2",currentStep:1,updatedAt:"",
   target:{industry:"",job:"",company:"",initialView:""},
   student:{major:"",majorEvidence:"",certificates:"",language:"",tools:"",otherSpec:""},
-  step2Search:{company:"",title:"",sourceUrl:"",facts:"",memo:""},
+  step2Search:emptyStep2Search(),
+  step2SearchMore:[emptyStep2Search(),emptyStep2Search()],
+  selectedSearchIndex:0,
   sampleJobId:"",
   curatedSelection:emptyCuratedSelection(),
   customJob:emptyCustomJob(),
@@ -494,6 +497,8 @@ function load(){
       target:{...b.target,...(x.target||{})},
       student:{...b.student,...(x.student||{})},
       step2Search:{...b.step2Search,...(x.step2Search||{})},
+      step2SearchMore:[0,1].map(i=>({...emptyStep2Search(),...(x.step2SearchMore?.[i]||{})})),
+      selectedSearchIndex:Math.max(0,Math.min(2,Number(x.selectedSearchIndex)||0)),
       sampleJobId:["komipo-2026-3","skenergy-2026-clx","hdoilbank-2026-h2"].includes(x.sampleJobId)?"":(x.sampleJobId||""),
       curatedSelection:{
         ...emptyCuratedSelection(),
@@ -587,7 +592,7 @@ function field(path,label,ph,area=true,optional=false){
 
 function done(n){
   if(n===1)return filled(state.target.job)&&filled(state.student.major);
-  if(n===2)return filled(state.step2Search.company)||filled(state.step2Search.title)||filled(state.step2Search.memo);
+  if(n===2)return [0,1,2].some(i=>{const x=step2SearchEntry(i);return filled(x.company)||filled(x.title)||filled(x.memo);});
   if(n===3)return filled(state.sampleJobId)&&filled(state.jobTable.tasks)&&filled(state.jobTable.competencies);
   if(n===4)return filled(state.fit.gaps)||state.requirements.some(r=>filled(r.condition)&&filled(r.status));
   return false;
@@ -727,23 +732,41 @@ function step2SearchPromptBox(){
     '<div class="actions compactActions"><button class="btn secondary" id="copySearchPromptBtn">내 검색 프롬프트 복사</button></div></div></details>';
 }
 
+function step2SearchEntry(index=state.selectedSearchIndex||0){
+  if(index===0)return state.step2Search||emptyStep2Search();
+  return state.step2SearchMore?.[index-1]||emptyStep2Search();
+}
+
+function step2SearchCard(index){
+  const x=step2SearchEntry(index);
+  const path=index===0?"step2Search":"step2SearchMore."+(index-1);
+  const hasValues=Object.values(x).some(filled);
+  const open=index===0||index===state.selectedSearchIndex||hasValues;
+  const label="검색 결과 "+(index+1);
+  return '<details class="optionBox"'+(open?' open':'')+'><summary>'+label+
+    (filled(x.company)?' · '+h(x.company):' · 기업·공고 입력')+
+    (index===state.selectedSearchIndex?' · 선택된 공고':'')+'</summary><div class="optionBody">'+
+    '<div class="grid2">'+
+      field(path+".company","찾은 기업","예: 관심 기업명 / 찾지 못함",false)+
+      field(path+".title","찾은 직무·공고","예: 기술직 신입 / 현재 관련 공고 없음",false)+
+      '<div class="field span2"><label>공고 주소 <span class="hint">(선택)</span></label><input class="input" data-path="'+path+'.sourceUrl" value="'+h(x.sourceUrl||"")+'" placeholder="https://..." /></div>'+
+      field(path+".facts",'담당업무·직무소개 <span class="hint">(가능하면 붙여넣기)</span>',"공고의 담당업무·직무소개를 그대로 붙여넣으면 STEP 3에서 다시 입력하지 않아도 됩니다.")+
+      field(path+".memo",'검색 메모 <span class="hint">(선택)</span>',"검색어 또는 공고를 찾기 어려웠던 이유를 간단히 입력하세요.")+
+    '</div><div class="actions compactActions"><button class="btn primary" data-use-search-index="'+index+'">이 공고로 03 직무분석하기</button></div>'+
+    '</div></details>';
+}
+
 function step2(){
   return shell(2,"Find JD","먼저 내가 관심 있는 산업의 최근 채용공고를 직접 찾아봅니다. 공고가 없거나 마감되어 있어도 괜찮습니다.",
     '<div class="block"><h3>① 실제 공고 한번 찾아보기</h3><p class="help">공고가 있으면 기록하고, 없으면 “현재 찾지 못함”이라고 적고 STEP 3으로 이동합니다.</p><div class="siteSection"><b>민간기업</b><div class="jobSiteGrid">'+
       jobSite("사람인","https://www.saramin.co.kr/","민간기업 신입 공고")+
       jobSite("잡코리아","https://www.jobkorea.co.kr/","대기업·공채")+
-      jobSite("고용24","https://www.work24.go.kr/","정부 통합 채용정보")+
+      jobSite("링커리어","https://linkareer.com/recruit-home","대학생 신입·인턴 채용공고")+
     '</div></div><div class="siteSection"><b>공공기관</b><div class="jobSiteGrid">'+
       jobSite("잡알리오","https://job.alio.go.kr/","국가 공공기관")+
       jobSite("클린아이 잡플러스","https://job.cleaneye.go.kr/","지방공공기관")+
     '</div></div></div>'+
-    '<div class="block"><h3>② 검색 결과 한 줄만 기록</h3><div class="grid2">'+
-      field("step2Search.company","찾은 기업","예: 관심 기업명 / 찾지 못함",false)+
-      field("step2Search.title","찾은 직무·공고","예: 기술직 신입 / 현재 관련 공고 없음",false)+
-      '<div class="field span2"><label>공고 주소 <span class="hint">(선택)</span></label><input class="input" data-path="step2Search.sourceUrl" value="'+h(state.step2Search.sourceUrl||"")+'" placeholder="https://..." /></div>'+
-      field("step2Search.facts","담당업무·직무소개 <span class=\"hint\">(가능하면 붙여넣기)</span>","공고의 담당업무·직무소개를 그대로 붙여넣으면 STEP 3에서 다시 입력하지 않아도 됩니다.")+
-      field("step2Search.memo","검색 메모 <span class=\"hint\">(선택)</span>","어떤 검색어를 썼는지, 왜 적절한 공고를 찾기 어려웠는지 간단히 적어도 됩니다.")+
-    '</div><div class="actions compactActions"><button class="btn primary" id="useStep2JobBtn">이 공고로 03 직무분석하기</button></div></div>'+step2SearchPromptBox()+
+    '<div class="block"><h3>② 검색 결과 최대 3개 기록</h3><p class="help">최대 3개까지 각각 기록할 수 있습니다. 분석할 공고의 버튼을 누르면 해당 공고가 03으로 연결됩니다. 1개만 입력해도 됩니다.</p>'+[0,1,2].map(step2SearchCard).join("")+'</div>'+step2SearchPromptBox()+
     '<div class="callout info"><b>공고가 없어도 수업은 계속됩니다.</b> 03에서는 수업용 예시로 한국에너지공단과 HD현대일렉트릭의 2026년 신입 채용을 제공합니다.</div>');
 }
 
@@ -906,7 +929,7 @@ function hdElectricRecruitmentContext(roleData){
 }
 
 function searchedJob(){
-  const x=state.step2Search||{};
+  const x=step2SearchEntry();
   const ready=filled(x.company)&&filled(x.title)&&(filled(x.sourceUrl)||filled(x.facts)||filled(x.memo));
   if(!ready)return null;
   return {
@@ -1022,7 +1045,7 @@ function jobAnalysisPrompt(){
   const custom=state.sampleJobId==="custom";
   const isKea=state.sampleJobId==="kea-2026-h2";
   const isHd=state.sampleJobId==="hdelectric-2026-h2";
-  const rd=j.roleData||{};
+  // 공식 직무자료와 직접 입력 공고만 직무분석 근거로 사용합니다.
   const keaGuide=isKea?keaRolePromptGuide(j.selectedRole):null;
   const hdGuide=isHd?hdElectricRolePromptGuide(j.selectedRole):null;
   if(!custom&&!curatedRoleReady())return "먼저 내 전공을 확인하고, 이 기업의 지원 직군과 분석할 세부직무를 하나 선택하세요.";
@@ -1052,83 +1075,109 @@ function jobAnalysisPrompt(){
     custom?"3. 공고에 직접 적힌 내용은 [공고근거], 직무 특성에서 도출한 내용은 [추론], 판단할 수 없는 내용은 [추가 확인 필요]로 표시한다.":"",
     custom?"4. 지원자격·우대사항은 직무 수행내용과 구분하며, 우대사항을 필수조건이나 실제 업무로 바꾸지 않는다.":"",
     custom?"5. 필요역량은 반드시 앞에서 정리한 과업 또는 해결과제와 연결한다. '소통·책임감·문제해결' 같은 범용어만 단독으로 쓰지 않는다.":"",
-    custom?"6. 경력개발은 공고의 업무·우대사항을 기준으로 '지금 준비 → 신입 초기 → 전문성 확장' 순서로 제시하며 회사 내부 직급·연차·승진경로는 만들지 않는다.":"",
     isKea?"한국에너지공단은 모집직무가 채용을 위한 구분이고 입사 후 순환근무가 원칙이라는 점을 별도로 표시해줘. 현재 직무분석은 내가 선택한 모집직무의 공식 NCS 직무기술서만 기준으로 해줘.":"",
     isKea?"[선택 직무 세부분석 지침] "+keaGuide.analysis:"",
     isHd?"HD현대일렉트릭은 공식 공고에서 직무소개·우대사항·근무지만 확인된다. 필요지식·기술·태도를 추가할 때는 반드시 [직무특성상 추론]으로 표시하고 공식 공고에 적힌 것처럼 쓰지 마.":"",
     isHd?"[선택 직무 세부분석 지침] "+hdGuide.analysis:"",
     isHd?"[주요 해결과제 지침] "+hdGuide.challenge:"",
     isHd?"[해결방법 지침] "+hdGuide.method:"",
-    isHd?"[경력개발 지침] "+hdGuide.career:"",
     "확인되지 않은 내용은 사실처럼 만들지 말고 [추론] 또는 [추가 확인 필요]라고 표시해줘.",
     "",
-    "아래 핵심 5개 제목을 정확히 그대로 사용하고 각 제목 아래에 '• ' bullet 2~4개로 답해줘. 마지막 경력개발은 선택 참고정보로 짧게 작성해줘. 제목에 번호·굵게표시·이모지를 붙이지 말고, 표 형식으로 바꾸지 마.",
-    "다섯 항목은 서로 섞지 않는다. 반드시 각 제목 다음 줄부터 bullet을 하나씩 줄바꿈하여 제시한다. 한 줄에 두 개 이상의 •를 이어 쓰지 않는다.",
-    "고객·KPI:",
-    "• 실제 업무의 고객/이해관계자를 먼저 쓰고, KPI는 공식 자료에 없으면 [추론]으로 업무 품질·정확성·일정·성과 관점만 제시",
-    "주요 과업:",
-    isKea
-      ?"• 공식 NCS/직무수행내용의 서로 다른 업무축을 유지해 4~6개 과업으로 작성하고, 각 bullet 끝에 '(근거: NCS/직무수행내용)'을 붙인다."
-      :"• 공식 직무수행내용/직무소개에서 3~5개 핵심 과업을 동사형으로 압축",
-    "주요 해결과제:",
-    isKea
-      ?"• 위 주요 과업 각각에서 신입이 마주칠 수 있는 판단·정확성·규정·데이터·이해관계자 문제를 연결하되, 공식 자료에 직접 없는 상황은 [추론]으로 표시"
-      :"• 각 과업에서 실제로 해결해야 하는 문제를 2~4개 도출하되 자료에 없으면 [추론] 표시",
-    "해결방법:",
-    "• 필요지식·필요기술 또는 공식 직무소개를 바탕으로 '무엇을 확인 → 어떤 기준/도구로 분석·설계·관리 → 무엇으로 검증/보고' 순서로 작성",
-    isKea?"• 한국에너지공단 공식 필요지식과 필요기술의 용어를 가능한 한 그대로 연결하고, 일반론으로 바꾸지 않는다.":"",
-    "필요역량:",
-    "• Knowledge / Skill / Behavior를 구분하고 각 역량 옆에 [공식] 또는 [추론] 표시",
-    isKea?"• Knowledge는 공식 '필요지식', Skill은 공식 '필요기술', Behavior는 공식 '직무수행태도'에서 우선 추출하고 직업공통능력은 별도 bullet로 표시한다.":"",
-    "경력개발(선택):",
-    isKea
-      ?"• 전공시험 범위("+((rd.exam)||"공고 확인")+")와 직무기술자격을 반영해 '지금 준비 → 첫 직무 → 확장 분야'를 현실적으로 제시"
-      :isHd
-        ?"• 위 [경력개발 지침]과 선택 직무 우대사항("+((rd.preferred)||"공고 확인")+")을 함께 사용해 '지금 준비 → 신입 초기 → 전문성 확장'을 제시"
-        :"• 현재 준비 → 신입 초기 → 전문성 확장 순서로 제시",
+    "[직무분석 출력 규칙]",
+    "반드시 아래 다섯 영역을 빠짐없이 작성해. 한 영역이라도 누락하면 안 된다. 이 5개 외의 직무분석 항목은 추가하지 않는다.",
+    "각 영역은 제목 1줄 + 내용 2~4줄로 작성한다. 각 내용 줄은 '• '로 시작하고 개조식으로 쓴다. 제목에 숫자, Markdown의 # 또는 **, 이모지, 표 구분선은 넣지 않는다.",
+    "공고나 NCS 문서에 직접 적힌 사실은 [공고근거], 합리적 직무 추정은 [추론], 정보가 부족한 부분은 [확인 필요]로 표시한다.",
+    "다섯 영역 모두 해당 직무에서 확인 가능한 근거를 먼저 쓴다. 자료가 불충분해도 빈칸을 두거나 지어내지 말고 '• [확인 필요] 확인되지 않은 정보: ...'로 구체적으로 기입한다.",
+    "고객(KPI): 직무가 서비스를 제공하는 대상·이해관계자를 먼저 구분한다. KPI가 자료에 명시되지 않았다면 임의 숫자를 만들지 말고 [추론] 업무의 정확성·처리시간·품질 등 측정 가능 항목만 표시한다.",
+    "주요 과업: 제공된 직무수행내용의 실제 업무를 3~5개 단위로 압축하고 동사형으로 작성한다. 서류·필기·자격요건을 주요 과업으로 바꾸지 않는다.",
+    "주요 해결과제: 주요 과업에서 발생할 수 있는 판단·품질·규정·정보·이해관계자 문제 2~4개를 구체적으로 쓴다. 공고에 직접 없는 문제는 [추론]으로 표시한다.",
+    "해결방법: 각 해결과제에 대응하는 확인자료 → 업무 기준/도구 → 검증/보고 순서가 드러나게 2~4개를 작성한다. 공개되지 않은 기업 내부 방식은 단정하지 않는다.",
+    "필요역량: Knowledge(알아야 할 것), Skill(다룰 수 있어야 할 것), Behavior(실제 행동 기준)를 각 1줄 이상 작성한다. 개별 역량은 위의 과업 또는 해결과제와 연결하고 [공고근거]/[추론]을 표시한다.",
+    isKea?"주요 과업은 한국에너지공단에서 제공된 공식 NCS 세부 업무축을 구분하고 필요지식·필요기술·직무수행태도를 우선 사용한다.":"", 
+    isHd?"HD현대일렉트릭은 공식 직무소개와 우대사항 외의 필요지식·기술·태도는 [추론]임을 명시한다.":"", 
     "",
-    "추가 분석 규칙:",
-    "- 내 전공 '"+(state.student.major||"미입력")+"'과 이 직무의 연결점을 '직접 연결 / 보완 필요 / 전공무관' 중 하나로 설명한다.",
-    isKea?"- 한국에너지공단 서류·필기·면접 정보는 직무분석의 근거로 활용하되 합격 가능성이나 확률은 계산하지 않는다.":"",
-    isKea?"- 선택 직무의 NCS 세부 업무축을 하나의 '에너지 업무'로 뭉뚱그리지 않는다. 각 bullet이 어떤 세부 업무축과 연결되는지 드러나게 쓴다.":"",
-    isHd?"- HD현대일렉트릭의 우대전공·자격·경험은 '필수'로 바꾸어 쓰지 않는다.":"",
-    "- KPI가 자료에 없으면 임의의 수치 목표를 만들지 않는다.",
-    "- 내가 제공하지 않은 기업 내부 프로세스나 수치를 만들지 않는다.",
-    "- 한 bullet은 가능한 한 1~2줄 이내로 작성한다.",
+    "[최종 답변의 제목: 아래 다섯 제목을 정확히 그대로 사용]",
+    "고객(KPI):",
+    "주요 과업:",
+    "주요 해결과제:",
+    "해결방법:",
+    "필요역량:",
+    "",
+    "각 제목 뒤에 반드시 해당 답변의 '• ' 줄을 붙여 총 다섯 영역을 완성해. 위 다섯 제목만 연속 출력하고 내용을 비워두지 않는다.",
+    "확인되지 않은 정보가 있는 경우 마지막 다섯 번째 영역을 작성한 뒤 '[추가 확인 질문]' 제목 아래 학생이 공고 원문을 보고 답할 수 있는 구체적 질문을 최대 2개 작성한다. 확인할 정보가 없으면 질문은 생략한다.",
+    "직무 적합·부적합 판정, 근거 없는 KPI 수치, 기업 내부 운영절차, 존재하지 않는 공고내용은 생성하지 않는다.",
     ...bulletOutputRules()
   ].filter(Boolean).join("\n");
 }
 
+const JOB_TABLE_REQUIRED=[
+  ["customerKpi","고객(KPI)"],
+  ["tasks","주요 과업"],
+  ["challenge","주요 해결과제"],
+  ["method","해결방법"],
+  ["competencies","필요역량"]
+];
+
 function parseJobTableResult(raw){
   const map=[
-    ["customerKpi",/^(?:고객\s*[·/&]\s*KPI|고객\s*및\s*KPI|고객|KPI)\s*[:：]?/i],
-    ["tasks",/^(?:주요\s*과업|과업|주요\s*업무)\s*[:：]?/i],
-    ["challenge",/^(?:주요\s*해결과제|해결과제|과제)\s*[:：]?/i],
-    ["method",/^(?:해결방법|해결\s*방법|방법)\s*[:：]?/i],
-    ["competencies",/^(?:필요역량|필요\s*역량|역량)\s*[:：]?/i],
-    ["careerPlan",/^(?:경력개발(?:\(선택\))?|경력\s*개발|경력계획)\s*[:：]?/i]
+    ["customerKpi",/^(?:고객\s*(?:\(\s*KPI\s*\)|[·/&-]\s*KPI|KPI|\s+및\s+(?:KPI|성과지표))?|KPI|고객\s*및\s*성과지표)(?=\s*[:：]|\s*$)/i],
+    ["tasks",/^(?:주요\s*과업|과업|주요\s*업무|핵심\s*업무)(?=\s*[:：]|\s*$)/i],
+    ["challenge",/^(?:주요\s*해결과제|해결과제|주요\s*과제|업무\s*과제)(?=\s*[:：]|\s*$)/i],
+    ["method",/^(?:해결방법|해결\s*방법|업무\s*해결방법)(?=\s*[:：]|\s*$)/i],
+    ["competencies",/^(?:필요역량|필요\s*역량|필요\s*지식[·/&]\s*기술[·/&]\s*태도)(?=\s*[:：]|\s*$)/i],
+    ["careerPlan",/^(?:경력개발(?:\s*\(선택\))?|경력\s*개발|경력계획)(?=\s*[:：]|\s*$)/i]
   ];
   const out={};let current="";
   for(const original of String(raw||"").split(/\r?\n/)){
     const line=original.trim();if(!line)continue;
     const normalized=line
-      .replace(/^(?:[-*•]\s*)/,"")
-      .replace(/^(?:#{1,6}\s*)/,"")
-      .replace(/^(?:\d+\s*[.)]\s*)/,"")
+      .replace(/^>\s*/,"")
+      .replace(/^#{1,6}\s*/,"")
       .replace(/\*\*/g,"")
       .replace(/__/g,"")
-      .replace(/^\[([^\]]+)\](?=\s*[:：]?)/,"$1")
+      .replace(/^\[([^\]]{1,90})\](?=\s*[:：]|\s*$)/,"$1")
+      .replace(/^[①②③④⑤⑥]\s*/,"")
+      .replace(/^\d{1,2}\s*[.)-]\s*/,"")
       .trim();
+    if(/^(?:\[?\s*(?:추가\s*확인\s*질문|확인\s*질문|참고\s*사항|출처)\s*\]?)\s*[:：]?\s*$/i.test(normalized)){
+      current="";continue;
+    }
     const hit=map.find(([,re])=>re.test(normalized));
     if(hit){
       current=hit[0];
-      const rest=normalized.replace(hit[1],"").trim().replace(/^[-*•]\s*/,"");
-      if(rest)out[current]=rest;
+      const rest=normalized.replace(hit[1],"").trim().replace(/^[:：]\s*/,"").replace(/^[•*-]\s*/,"").trim();
+      if(rest)out[current]=(out[current]?out[current]+"\n":"")+rest;
       continue;
     }
-    if(current)out[current]=(out[current]?out[current]+"\n":"")+line.replace(/^[-*•]\s*/,"").replace(/^\*\*(.*?)\*\*$/,"$1");
+    if(current)out[current]=(out[current]?out[current]+"\n":"")+line.replace(/^[•*-]\s*/,"").replace(/^\*\*(.*?)\*\*$/,"");
   }
   return out;
+}
+
+function jobTableCompletion(){
+  const missing=JOB_TABLE_REQUIRED.filter(([key])=>!filled(state.jobTable[key]));
+  return '<div class="callout '+(missing.length?"info":"good")+'" role="status">'+
+    '<b>직무분석 필수 5개 항목 중 '+(5-missing.length)+'개 입력</b>'+
+    (missing.length?'<p class="help">미완성: '+missing.map(([,label])=>h(label)).join(" · ")+'</p>':'<p class="help">필수 5개 항목의 입력을 확인했습니다. [확인 필요] 표시가 있는 내용은 실제 공고에서 다시 확인하세요.</p>')+
+    (missing.length?'<div class="actions compactActions"><button class="btn secondary" id="copyMissingJobTableBtn">빠진 항목 보완 질문 복사</button></div>':'')+'</div>';
+}
+
+function missingJobTablePrompt(){
+  const missing=JOB_TABLE_REQUIRED.filter(([key])=>!filled(state.jobTable[key]));
+  const job=selectedJob();
+  return [
+    "선택한 직무의 빠진 직무분석 항목을 채워줘. 자료에 없는 사실은 창작하지 마.",
+    "기업: "+(job?.company||"미입력"),
+    "직무: "+(job?.role||"미입력"),
+    "공고 담당업무·직무소개:",
+    job?.facts||"미입력",
+    "이미 확인한 분석 내용:",
+    ...JOB_TABLE_REQUIRED.filter(([key])=>filled(state.jobTable[key])).map(([key,label])=>label+":\n"+state.jobTable[key]),
+    "",
+    "지금 빠진 항목: "+missing.map(([,label])=>label).join(" · "),
+    "빠진 항목만 정확한 제목과 '• ' 줄로 채워줘. 공고근거는 [공고근거], 추정은 [추론]으로 구분해.",
+    "필요한 정보가 없으면 빈칸을 만들지 말고 해당 항목에 '• [확인 필요] 정보 부족: ...'를 적고, 마지막에 [추가 확인 질문]으로 학생에게 최대 2개 질문해줘."
+  ].join("\n");
 }
 
 function analysisMethodCards(){
@@ -1267,25 +1316,8 @@ function jobTableFields(){
     jobTableInputItem("03","jobTable.challenge","주요 해결과제","업무에서 해결해야 하는 문제는 무엇인가?")+
     jobTableInputItem("04","jobTable.method","해결방법","어떤 방법·절차·도구로 해결하는가?")+
     jobTableInputItem("05","jobTable.competencies","필요역량","필요한 지식·기술·행동은 무엇인가?")+
-    '<details class="optionBox"><summary>경력개발 방향 보기 · 선택</summary><div class="optionBody">'+
-      readableField("jobTable.careerPlan","경력개발 (선택)","지금 준비 → 신입 초기 → 전문성 확장 방향")+
-    '</div></details>'+
   '</div>';
 }
-function jobTablePreview(){
-  const cells=[
-    ["01","고객(KPI)","jobTable.customerKpi",state.jobTable.customerKpi],
-    ["02","주요 과업","jobTable.tasks",state.jobTable.tasks],
-    ["03","주요 해결과제","jobTable.challenge",state.jobTable.challenge],
-    ["04","해결방법","jobTable.method",state.jobTable.method],
-    ["05","필요역량","jobTable.competencies",state.jobTable.competencies]
-  ];
-  return '<div class="jobSummaryGrid" aria-label="완성된 직무분석표">'+cells.map(x=>
-    '<section class="jobSummaryCard"><div class="jobSummaryHeading"><span>'+x[0]+'</span><h4>'+x[1]+'</h4></div>'+
-    '<div class="readableDisplay" data-preview="'+x[2]+'">'+readableResult(x[3])+'</div></section>'
-  ).join("")+'</div>';
-}
-
 function step3(){
   const j=selectedJob();
   const isCustom=state.sampleJobId==="custom";
@@ -1309,8 +1341,7 @@ function step3(){
   const lockedFlow = state.sampleJobId&&!ready
     ? '<div class="divider"></div>'+
       '<div class="block"><h3>③ AI에게 선택한 직무만 분석시키기</h3><div class="callout info"><b>②를 먼저 완료하세요.</b> '+(isCustom?"기업명·직무·공고의 담당업무를 입력한 뒤 “② 입력 완료 → ③ AI 직무분석 열기”를 누르면":"직무군과 세부직무를 하나 선택하면")+' 이 영역이 바로 열립니다.</div></div>'+
-      '<div class="block"><h3>④ 직무분석 테이블 완성</h3><p class="help">③에서 받은 AI 답변을 붙여넣어 핵심 5개 항목을 완성합니다. 경력개발은 선택적으로 확인합니다.</p></div>'+
-      '<div class="block"><h3>⑤ 완성된 직무분석표</h3><p class="help">④에서 입력한 내용을 한 표로 확인합니다.</p></div>'
+      '<div class="block"><h3>④ 직무분석표 완성</h3><p class="help">③의 AI 답변을 반영하면 필수 5개 항목이 각각 정리됩니다. 부족한 내용은 확인 질문으로 보완합니다.</p></div>'
     : "";
   const analysisArea = j&&ready
     ? '<div class="selectedJobSummary"><b>현재 분석 대상 · '+h(j.company||"직접 입력")+" / "+h(j.role||j.title||"직무 미입력")+'</b><span>'+h(j.note||"이 분석 결과는 다른 방법과 별도로 저장됩니다.")+'</span></div>'+
@@ -1320,12 +1351,11 @@ function step3(){
         '<div class="field aiPaste"><label>AI 답변 붙여넣기 <span class="hint">(선택)</span></label><div class="readableDisplay" data-preview="jobTable.aiResult">'+readableResult(state.jobTable.aiResult)+'</div><details class="readableEdit"'+(filled(state.jobTable.aiResult)?"":" open")+'><summary>AI 답변 원문 붙여넣기·수정</summary><textarea class="input" data-path="jobTable.aiResult" id="jobTableAiResult" placeholder="AI 답변을 붙여넣으면 핵심 5개 항목과 선택형 경력개발로 나눕니다.">'+h(state.jobTable.aiResult||"")+'</textarea></details></div>'+
         '<div class="actions compactActions"><button class="btn secondary" id="applyJobTableAiBtn">AI 답변을 직무분석표에 반영</button></div>'+
       '</div>'+
-      '<div class="divider"></div><div class="block"><h3>④ 직무분석 테이블 완성</h3><p class="help">이 표는 현재 선택한 세부직무의 작업공간에 따로 저장됩니다.</p>'+jobTableFields()+'</div>'+
-      '<div class="block"><h3>⑤ 완성된 직무분석표</h3><p class="help">핵심 내용을 항목별로 펼쳐 놓았습니다. 원문은 위에서 수정할 수 있습니다.</p>'+jobTablePreview()+'</div>'+
+      '<div class="divider"></div><div class="block"><h3>④ 직무분석표 완성</h3><p class="help">AI 답변을 반영한 내용은 항목별로 표시됩니다. 수정이 필요하면 해당 항목의 ‘원문 입력·수정’을 눌러 변경하세요. 입력 원문과 기존 저장값은 유지됩니다.</p>'+jobTableCompletion()+jobTableFields()+'</div>'+
       sourceDetails
     : lockedFlow;
   return shell(3,"3 Ways → Job Analysis","공기업 예시, 대기업 예시, 직접 입력 중 원하는 방법을 선택하고, 그 안에서 분석할 직무 하나를 정합니다.",
-    '<div class="block"><h3>① 분석 방법 선택</h3><p class="help">한국에너지공단, HD현대일렉트릭, 직접 입력 모두 ② 직무선택 → ③ AI 분석 → ④ 직무분석 테이블 → ⑤ 완성표의 같은 순서로 진행합니다. 기업을 바꾸거나 같은 기업 안에서 직무를 바꿔도 각 직무의 분석표는 별도로 저장됩니다. 현재 저장된 분석: <b>'+analyzedCount+'개</b></p>'+analysisMethodCards()+'</div>'+
+    '<div class="block"><h3>① 분석 방법 선택</h3><p class="help">한국에너지공단, HD현대일렉트릭, 직접 입력 모두 ② 직무선택 → ③ AI 분석 → ④ 직무분석표 완성의 같은 순서로 진행합니다. 기업을 바꾸거나 같은 기업 안에서 직무를 바꿔도 각 직무의 분석표는 별도로 저장됩니다. 현재 저장된 분석: <b>'+analyzedCount+'개</b></p>'+analysisMethodCards()+'</div>'+
     methodSpecific+
     customEntry+
     analysisArea
@@ -2245,7 +2275,7 @@ function syncSelectedPosting(){
 }
 
 function step2CuratedMatch(){
-  const x=state.step2Search||{};
+  const x=step2SearchEntry();
   const company=String(x.company||"").replace(/\s/g,"").toLowerCase();
   const target=String(state.target.job||"").trim();
   for(const job of CURATED_JOBS){
@@ -2261,10 +2291,12 @@ function step2CuratedMatch(){
   return null;
 }
 
-function useStep2JobInStep3(){
-  const x=state.step2Search||{};
-  if(!filled(x.company)||!filled(x.title)){toast("STEP 2에서 찾은 기업과 공고명을 먼저 입력해 주세요.");return;}
+function useStep2JobInStep3(index=state.selectedSearchIndex||0){
+  if(!Number.isInteger(index)||index<0||index>2)return;
+  const x=step2SearchEntry(index);
+  if(!filled(x.company)||!filled(x.title)){toast("선택한 검색 결과에 기업과 공고명을 먼저 입력해 주세요.");return;}
   snapshotActiveCase();
+  state.selectedSearchIndex=index;
   const matched=step2CuratedMatch();
   if(matched){
     state.sampleJobId=matched.id;
@@ -2366,12 +2398,14 @@ function applyJobTableAi(){
   const parsed=parseJobTableResult(raw);
   const keys=["customerKpi","tasks","challenge","method","competencies","careerPlan"];
   const count=keys.filter(k=>filled(parsed[k])).length;
-  if(!count){toast("직무분석 제목을 찾지 못했습니다. 직접 입력해 주세요.");return;}
+  if(!count){toast("5개 항목 제목을 찾지 못했습니다. 새 프롬프트로 AI 답변을 다시 받아주세요.");return;}
   keys.forEach(k=>{if(filled(parsed[k]))state.jobTable[k]=parsed[k];});
   state.jobTable.aiResult=raw;
   state.postings[0].tasks=state.jobTable.tasks;
   state.competency.top5=state.jobTable.competencies;
-  save();render();toast("AI 답변에서 "+count+"개 항목을 직무분석표에 반영했습니다.");
+  save();render();
+  const missing=JOB_TABLE_REQUIRED.filter(([key])=>!filled(state.jobTable[key]));
+  toast(missing.length?"입력된 "+count+"개 영역을 반영했습니다. 누락된 "+missing.length+"개 항목은 보완 질문으로 확인하세요.":"필수 5개 항목을 직무분석표에 반영했습니다.");
 }
 
 function bind(){
@@ -2397,7 +2431,7 @@ function bind(){
   document.querySelectorAll("[data-analysis-method]").forEach(e=>e.onclick=()=>selectAnalysisMethod(e.dataset.analysisMethod));
   document.querySelectorAll("[data-curated-group]").forEach(e=>e.onchange=()=>selectCuratedGroup(e.dataset.curatedGroup,e.value));
   document.querySelectorAll("[data-curated-role]").forEach(e=>e.onchange=()=>selectCuratedRole(e.dataset.curatedRole,e.value));
-  document.getElementById("useStep2JobBtn")?.addEventListener("click",useStep2JobInStep3);
+  document.querySelectorAll("[data-use-search-index]").forEach(e=>e.addEventListener("click",()=>useStep2JobInStep3(Number(e.dataset.useSearchIndex))));
   document.getElementById("useCustomJobBtn")?.addEventListener("click",useCustomJob);
   document.querySelectorAll("[data-customjob]").forEach(e=>{
     const handler=()=>{
@@ -2459,6 +2493,7 @@ function bind(){
   document.getElementById("refreshJobPromptBtn")?.addEventListener("click",()=>{const e=document.getElementById("jobPromptPreview"),v=jobAnalysisPrompt();if(e)e.value=v;updatePromptDraft("job",v);toast("현재 분석 대상 정보를 프롬프트에 반영했습니다.");});
   document.getElementById("copyReviewedJobPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("jobPromptPreview")?.value||jobAnalysisPrompt(),"내 직무분석 프롬프트를 복사했습니다."));
   document.getElementById("applyJobTableAiBtn")?.addEventListener("click",applyJobTableAi);
+  document.getElementById("copyMissingJobTableBtn")?.addEventListener("click",()=>copyText(missingJobTablePrompt(),"빠진 직무분석 항목 보완 질문을 복사했습니다."));
   document.getElementById("copyKeywordPromptBtn")?.addEventListener("click",()=>copyText(document.getElementById("keywordPromptPreview")?.value||competencyKeywordPrompt(),"내 역량분석 프롬프트를 복사했습니다."));
   document.getElementById("applyCompetencySummaryBtn")?.addEventListener("click",applyCompetencySummary);
   document.getElementById("step2PdfBtn")?.addEventListener("click",printStep2Pdf);

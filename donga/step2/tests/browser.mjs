@@ -27,21 +27,67 @@ try{
     assert.match(await aiFind.locator('[data-ai-provider="'+name+'"]').getAttribute("href"),new RegExp(domain),"correct "+name+" URL");
   }
 
+  assert.equal(await page.locator('[data-use-search-index]').count(),3,"STEP2 supports 3 independent search results");
+  assert.match((await page.locator("a.jobSite").allTextContents()).join(" "),/링커리어/,"Linkareer search site displayed");
+  assert.equal(await page.locator('a.jobSite').filter({hasText:"링커리어"}).getAttribute("href"),"https://linkareer.com/recruit-home");
   await page.locator('[data-path="step2Search.company"]').fill("테스트 제조");
   await page.locator('[data-path="step2Search.title"]').fill("품질관리 신입");
-  await page.locator('[data-path="step2Search.facts"]').fill("품질 데이터 집계\\n불량 원인 분석");
-  assert.equal(await page.locator("#useStep2JobBtn").innerText(),"이 공고로 03 직무분석하기","STEP2 02 button is labelled 03");
-  assert.match(await page.locator("#stepRoot").innerText(),/03에서는 수업용 예시로 한국에너지공단과 HD현대일렉트릭/,"STEP2 example notice refers to 03");
-  await page.locator("#useStep2JobBtn").click();
+  await page.locator('[data-path="step2Search.facts"]').fill("품질 데이터 집계\n불량 원인 분석");
+  for(const [i,company] of [[0,"테스트 제조 B"],[1,"테스트 제조 C"]]){
+    const el=page.locator('[data-path="step2SearchMore.'+i+'.company"]');
+    if(!(await el.isVisible()))await el.locator("xpath=ancestor::details[1]/summary").click();
+    await el.fill(company);
+    await page.locator('[data-path="step2SearchMore.'+i+'.title"]').fill("품질관리 채용 공고 "+(i+2));
+    await page.locator('[data-path="step2SearchMore.'+i+'.sourceUrl"]').fill("https://example.com/job/"+(i+2));
+    if(i===0)await page.locator('[data-path="step2SearchMore.0.facts"]').fill("품질관리 공정 데이터 확인 및 불량 원인 분석");
+  }
+  assert.equal(await page.locator('[data-use-search-index="0"]').innerText(),"이 공고로 03 직무분석하기");
+  assert.match(await page.locator("#stepRoot").innerText(),/03에서는 수업용 예시로 한국에너지공단과 HD현대일렉트릭/);
+  await page.reload({waitUntil:"networkidle"});
+  assert.equal(await page.locator('[data-path="step2Search.company"]').inputValue(),"테스트 제조","legacy first entry retained");
+  assert.equal(await page.locator('[data-path="step2SearchMore.0.company"]').inputValue(),"테스트 제조 B","second entry autosaved");
+  assert.equal(await page.locator('[data-path="step2SearchMore.1.company"]').inputValue(),"테스트 제조 C","third entry autosaved");
+  await page.locator('[data-use-search-index="1"]').click();
+  const selectedSearch=await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step2:v1")));
+  assert.equal(selectedSearch.selectedSearchIndex,1,"chosen result index retained");
+  assert.equal(selectedSearch.customJob.company,"테스트 제조 B","only second result transferred to analysis");
+  assert.equal(selectedSearch.step2Search.company,"테스트 제조","original first result preserved");
+
   const analysisCopy=page.locator("#copyReviewedJobPromptBtn");
   if(await analysisCopy.count()){
     assert.equal(await analysisCopy.locator("xpath=..").locator("[data-ai-provider]").count(),3,"Job analysis prompt links");
   }
 
   assert.match(await page.locator("#stepRoot").innerText(),/3 Ways/);
-  const jobCards=page.locator(".jobSummaryGrid .jobSummaryCard");
-  assert.equal(await jobCards.count(),5,"completed job analysis shows five readable cards");
-  assert.equal(await page.locator(".jobAnalysisPreview table").count(),0,"cramped five-column table removed");
+  assert.equal(await page.locator(".jobTableCards .jobTableItem").count(),5,"only five editable job analysis areas displayed");
+  assert.equal((await page.locator("#stepRoot").innerText()).includes("⑤ 완성된 직무분석표"),false,"duplicate result section removed");
+  assert.equal(await page.locator(".jobSummaryGrid").count(),0,"duplicate job summary grid removed");
+
+  const sampleAnalysis=[
+    "### 1. 고객(KPI):",
+    "• [추론] 현장 품질관리 담당자 / 데이터 집계의 정확성",
+    "**2. 주요 과업:**",
+    "• [공고근거] 품질 데이터를 집계한다",
+    "[3. 주요 해결과제]",
+    "• [추론] 불량 원인 분석 기준을 확인한다",
+    "4) 해결방법:",
+    "• [추론] 불량 기록 검토 후 원인별로 분류한다",
+    "필요역량:",
+    "• [추론] Knowledge: 품질 기초",
+    "• [추론] Skill: 자료 정리",
+    "• [추론] Behavior: 기록 정확성",
+    "[추가 확인 질문]",
+    "• 품질 성과지표는 무엇인지 확인할까요?"
+  ].join("\n");
+  await page.locator("#jobTableAiResult").fill(sampleAnalysis);
+  await page.locator("#applyJobTableAiBtn").click();
+  const fromAI=await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step2:v1")).jobTable);
+  for(const key of ["customerKpi","tasks","challenge","method","competencies"]){
+    assert(fromAI[key]?.length>0,"AI paste populates field "+key);
+  }
+  assert(!fromAI.competencies.includes("확인할까요"),"follow-up questions are not merged into competencies");
+  assert.match(await page.locator("#stepRoot").innerText(),/필수 5개 항목 중 5개 입력/);
+  assert.equal(await page.locator(".jobAnalysisPreview table").count(),0,"cramped table not used");
   const jobTasks=page.locator('[data-path="jobTable.tasks"]');
   if(!(await jobTasks.isVisible()))await jobTasks.locator("xpath=ancestor::details[1]/summary").click();
   const multiline="품질 기록 확인 • 불량 원인 분석 • [추론] 공정 데이터 개선";
@@ -49,7 +95,6 @@ try{
   const competency=page.locator('[data-path="jobTable.competencies"]');
   if(!(await competency.isVisible()))await competency.locator("xpath=ancestor::details[1]/summary").click();
   await competency.fill("Knowledge: 통계기초 • Skill: 엑셀 분석 • Behavior: 신중한 기록");
-  assert.equal(await page.locator('.jobSummaryCard [data-preview="jobTable.tasks"] .readableItem').count(),3,"embedded bullet list split in final summary");
   assert.equal(await page.locator('.jobTableItem [data-preview="jobTable.competencies"] .readableItem').count(),3,"live bullet view synchronized");
   assert.equal(await jobTasks.inputValue(),multiline,"original typed text not overwritten");
   await page.locator('[data-next="4"]').click();
@@ -100,9 +145,9 @@ try{
       await mobilePage.evaluate(saved=>localStorage.setItem("jobfit:donga:step2:v1",JSON.stringify(saved)),backup);
       await mobilePage.reload({waitUntil:"domcontentloaded"});
       await mobilePage.locator('[data-step="3"]').click();
-      assert.equal(await mobilePage.locator(".jobSummaryCard").count(),5,deviceName+" job analysis cards");
-      assert.equal(await mobilePage.locator('.jobSummaryCard [data-preview="jobTable.tasks"] .readableItem').count(),3,deviceName+" multiline bullet display");
-      assert.equal(await mobilePage.locator(".jobSummaryGrid").evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(" ").length),1,deviceName+" stacked one-column cards");
+      assert.equal(await mobilePage.locator(".jobTableItem").count(),5,deviceName+" job analysis cards");
+      assert.equal(await mobilePage.locator('.jobTableItem [data-preview="jobTable.tasks"] .readableItem').count(),3,deviceName+" multiline bullet display");
+      assert.equal(await mobilePage.locator(".jobTableCards").evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(" ").length),1,deviceName+" stacked one-column cards");
       await mobilePage.locator('[data-step="4"]').click();
       assert.equal(await mobilePage.locator('[data-preview="ai.gapResult"] .readableHeading').count(),2,deviceName+" GAP headings");
       assert.equal(await mobilePage.locator('[data-preview="ai.gapResult"] .readableItem').count(),4,deviceName+" GAP bullet list");
