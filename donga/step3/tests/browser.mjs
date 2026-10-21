@@ -101,6 +101,20 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  await page.locator("#aiAnswer").fill(natural);
  assert.equal(await page.locator("#beforeAiPreview .beforeAiCard").count(),3,"plain-text AI reply shows readable three-stage preview");
  assert.match(await page.locator("#beforeAiPreview").innerText(),/가상 SNS 콘텐츠 3개/,"preview contains concrete student action");
+
+ assert.deepEqual(await page.locator("#beforeAiPreview .beforeAiPeriod").allTextContents(),["0~3개월","4~18개월","19개월~취업 전"],"durations only appear in heading badges");
+ assert.equal(await page.locator("#beforeAiPreview .beforeAiDetailLabel").first().innerText(),"목표","goal label contains no decoration");
+ assert.equal(await page.locator("#beforeAiPreview .beforeAiDetailText").first().innerText(),"SNS 콘텐츠 제작 기초 익히기","goal value contains no repeated date");
+ assert.equal(await page.locator("#beforeAiPreview .beforeAiDetail").count(),9,"goals, activities and outcomes each get separate readable rows");
+ const escaped=natural.replace("기간: 0~3개월","기간: &#x30;\\~3개월").replace("목표: SNS 콘텐츠 제작 기초 익히기","목표: **SNS 콘텐츠 제작 기초 익히기**");
+ await page.locator("#aiAnswer").fill(escaped);
+ assert.equal(await page.locator("#beforeAiPreview .beforeAiPeriod").first().innerText(),"0~3개월","numeric HTML entity and backslash cleaned for preview");
+ assert.equal(await page.locator("#beforeAiPreview .beforeAiDetailText").first().innerText(),"SNS 콘텐츠 제작 기초 익히기","copied Markdown markers hidden in preview");
+ assert(!String(await page.locator("#beforeAiPreview").innerText()).includes("&#x"),"raw HTML entities never shown in preview");
+ const escapedSaved=await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step3:v1")));
+ assert.equal(escapedSaved.drafts.aiAnswer,escaped,"pasted AI source still preserved verbatim");
+ await page.locator("#aiAnswer").fill(natural);
+
  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step3:v1")).left),previousLeft,"paste does not replace existing plans");
  page.once("dialog",d=>d.accept());
  await page.locator("#applyAi").click();
