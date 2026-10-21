@@ -70,33 +70,42 @@ function planTextOnly(raw,fromGaps=""){
   const m=String(fromGaps||"").match(/\[\s*7\.\s*3개월[^\]]*\]\s*([\s\S]*)/i);
   return m?m[1].trim():"";
 }
-function structuredItems(raw,type){
+/**
+ * One parser for STEP2 screen and PDF, accepting newlines, bullet-only AI replies,
+ * and pasted answers where "GAP 2 →" follows the previous sentence on the same line.
+ * No edits are made to source fields or localStorage.
+ */
+export function parsePlanItems(raw,type="action",fromGaps=""){
   let text=cleanOutput(raw);
   if(type==="gap")text=gapTextOnly(text);
-  if(type==="action")text=planTextOnly(text);
+  if(type==="action")text=planTextOnly(text,fromGaps);
   if(!text)return [];
-  text=text.replace(/([^\n])\s+(?=(?:GAP\s*[1-9]\s*[:：.)-]|[1-9]\s*순위\s*[:：]))/gi,"$1\n");
-  text=text.replace(/^\s*[-•●▪]\s*/gm,"");
-  const lines=text.split("\n").map(x=>x.trim()).filter(Boolean).filter(x=>!LINK_PREVIEW.test(x));
-  if(!lines.length)return [];
-  const merged=[];
-  for(const line of lines){
-    // Keep a line wrapped without a new GAP label attached to the preceding item.
-    if(merged.length&&!/^(?:GAP\s*[1-9]\s*(?:[:：.)-]|→)|[1-9]\s*순위\s*[:：])/i.test(line)&&
-      !/^(?:\[\s*.+\s*\])/.test(line)){
-      merged[merged.length-1]+=" "+line;
-    }else merged.push(line);
+  // A pasted bullet may be on the same line as the previous GAP entry.
+  text=text.replace(/[ \t]*[•●▪][ \t]*(?=(?:GAP\s*[1-9]\s*(?:→|[:：.)-])|[1-9]\s*[.)]\s+|[1-9]\s*순위\s*[:：]))/gi,"\n");
+  // A newly numbered item may follow a sentence even without a bullet.
+  text=text.replace(/([^\n])[ \t]+(?=GAP\s*[1-9]\s*(?:→|[:：.)-]))/gi,"$1\n");
+  const lines=text.split("\n").map(t=>t.trim()).filter(Boolean);
+  const marker=/^GAP\s*([1-9])\s*(?:→|[:：.)-])\s*|^([1-9])\s*[.)]\s+|^([1-9])\s*순위\s*[:：]\s*/i;
+  const items=[];
+  for(const original of lines){
+    if(/^\[\s*(?:6\.\s*우선순위|7\.\s*3개월|추가\s*확인)\s*[^\]]*\]/i.test(original))continue;
+    const isBullet=/^[•●▪*-]\s+/.test(original);
+    const line=original.replace(/^[•●▪*-]\s+/,"").trim();
+    if(!line||LINK_PREVIEW.test(line))continue;
+    const match=line.match(marker);
+    if(match){
+      const detail=line.slice(match[0].length).trim();
+      if(detail)items.push({id:Number(match[1]||match[2]||match[3]),text:detail});
+    }else if(items.length&&!isBullet){
+      items[items.length-1].text+=" "+line; // wrapped paragraph, not an independent numbered item
+    }else{
+      items.push({id:items.length+1,text:line});
+    }
   }
-  return merged.map((s,i)=>{
-    const m=s.match(/^GAP\s*([1-9])\s*(?:[:：.)-]|→)?\s*/i);
-    const rank=s.match(/^([1-9])\s*순위\s*[:：]?\s*/);
-    const id=m?Number(m[1]):rank?Number(rank[1]):i+1;
-    const text=(m?s.slice(m[0].length):rank?s.slice(rank[0].length):s).trim();
-    return {id,text};
-  }).filter(x=>x.text);
+  return items;
 }
-function renderGap(raw){
-  const items=structuredItems(raw,"gap");
+export function renderGapCards(raw){
+  const items=parsePlanItems(raw,"gap");
   if(!items.length)return '<p class="donga-pdf-empty">아직 GAP을 정리하지 않았습니다.</p>';
   return '<div class="donga-gap-grid">'+items.map(({id,text})=>{
     const parts=text.split(/\s+[—–]\s+/);
@@ -105,14 +114,16 @@ function renderGap(raw){
       '<div class="donga-gap-desc">'+(hasTitle?'<b>'+escapeHTML(parts.shift())+'</b><p>'+escapeHTML(parts.join(" — "))+'</p>':'<p>'+escapeHTML(text)+'</p>')+'</div></article>';
   }).join("")+'</div>';
 }
-function renderActions(raw,fromGaps){
-  const items=structuredItems(planTextOnly(raw,fromGaps),"action");
+export function renderActionCards(raw,fromGaps=""){
+  const items=parsePlanItems(raw,"action",fromGaps);
   if(!items.length)return '<p class="donga-pdf-empty">아직 행동계획을 정리하지 않았습니다.</p>';
   return '<div class="donga-action-grid">'+items.map(({id,text})=>{
+    // Preserve the same action wording on the screen and in the PDF.
+    // Only the final arrow becomes the outcome-column separator.
     const parts=text.split(/\s*→\s*/).map(x=>x.trim()).filter(Boolean);
     const result=parts.length>=2?parts.pop():"";
     const action=parts.join(" → ")||text;
-    return '<article class="donga-action-item"><span class="donga-plan-index">GAP '+id+'</span>'+
+    return '<article class="donga-action-item" data-gap="'+id+'"><span class="donga-plan-index">GAP '+id+'</span>'+
       '<div class="donga-action-content"><span class="donga-action-key">실행할 일</span><p>'+escapeHTML(action)+'</p></div>'+
       (result?'<div class="donga-action-outcome"><span class="donga-action-key">남길 결과물</span><p>'+escapeHTML(result)+'</p></div>':"")+
       '</article>';
@@ -160,9 +171,9 @@ export function renderStep2Report(snapshot){
     '<section class="donga-report-section"><h3>03. JD Requirements × My Spec</h3>'+
     '<p class="donga-report-section-intro">공고 원문과 학생이 입력한 근거를 나란히 비교합니다. 충족 여부는 학생의 확인이 필요합니다.</p>'+
     (req.length?req.map(requirementCard).join(""):'<p class="donga-pdf-empty">비교한 공고 요구조건이 없습니다.</p>')+'</section>'+
-    '<section class="donga-report-section"><h3>04. 우선 보완 GAP</h3>'+renderGap(fit.gaps)+'</section>'+
+    '<section class="donga-report-section"><h3>04. 우선 보완 GAP</h3>'+renderGapCards(fit.gaps)+'</section>'+
     '<section class="donga-report-section"><h3>05. 앞으로 3개월 행동계획</h3>'+
-    renderActions(fit.actions,fit.gaps)+'</section>'+
+    renderActionCards(fit.actions,fit.gaps)+'</section>'+
     '<footer class="donga-report-foot"><p><b>공고 원문·출처</b> '+safeLink(target.sourceUrl)+'</p>'+
     '<p>학생이 입력하거나 선택한 정보를 읽기 좋게 배열한 보고서입니다. 공고 내용·준비 상태의 사실 여부를 별도로 확인해야 합니다.</p></footer>'+
   '</div>';
