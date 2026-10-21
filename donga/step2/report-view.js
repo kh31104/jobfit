@@ -81,13 +81,13 @@ function structuredItems(raw,type){
   const merged=[];
   for(const line of lines){
     // Keep a line wrapped without a new GAP label attached to the preceding item.
-    if(merged.length&&!/^(?:GAP\s*[1-9]\s*[:：.)-]|[1-9]\s*순위\s*[:：])/i.test(line)&&
+    if(merged.length&&!/^(?:GAP\s*[1-9]\s*(?:[:：.)-]|→)|[1-9]\s*순위\s*[:：])/i.test(line)&&
       !/^(?:\[\s*.+\s*\])/.test(line)){
       merged[merged.length-1]+=" "+line;
     }else merged.push(line);
   }
   return merged.map((s,i)=>{
-    const m=s.match(/^GAP\s*([1-9])\s*[:：.)-]?\s*/i);
+    const m=s.match(/^GAP\s*([1-9])\s*(?:[:：.)-]|→)?\s*/i);
     const rank=s.match(/^([1-9])\s*순위\s*[:：]?\s*/);
     const id=m?Number(m[1]):rank?Number(rank[1]):i+1;
     const text=(m?s.slice(m[0].length):rank?s.slice(rank[0].length):s).trim();
