@@ -91,6 +91,21 @@ main{max-width:none!important;margin:0!important;padding:0!important}.top,.hero,
  #starting2 .startingEntryText,#starting2 .startingSummaryValue{font-size:13px;line-height:1.65}
 }
 
+
+/* Job analysis cards v3: each duty and gap gets a separate title and body. */
+#starting2 .startingFormatStamp{font-size:11px;font-weight:800;color:#365f8b;background:#eaf2ff;border:1px solid #d8e7f9;border-radius:6px;padding:6px 9px;margin:0 0 12px}
+#starting2 .startingSectionHead{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-bottom:11px}
+#starting2 .startingSectionTitle{margin:0;line-height:1.4}
+#starting2 .startingSectionCount{font-size:11px;color:#6d7f95;white-space:nowrap}
+#starting2 .startingEntryTop{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:6px;min-width:0}
+#starting2 .startingEntryTop .startingEntryOrigin,
+#starting2 .startingEntryTop .startingEntryNumber{margin-bottom:0;flex-shrink:0}
+#starting2 .startingEntryHeading{font-size:12.8px;color:#203e62;font-weight:800;line-height:1.55;overflow-wrap:break-word;word-break:keep-all}
+#starting2 .startingEntryText{font-size:12.7px;line-height:1.7}
+#starting2 .startingGapList{gap:10px}
+#starting2 .startingGapList .startingEntry{padding:11px 12px}
+@media(max-width:720px){#starting2 .startingEntryText{font-size:13px}#starting2 .startingEntryHeading{font-size:13px}}
+
 </style>
 <link rel="stylesheet" href="../typography.css?v=2"><link rel="stylesheet" href="../ui-unified.css?v=1">
 <link rel="stylesheet" href="../reset-controls.css?v=1"></head>
@@ -457,5 +472,5 @@ $("import").addEventListener("click",()=>$("importFile").click());
 $("importFile").addEventListener("change",e=>{restore(e.target.files[0]);e.target.value=""});
 $("pdf").addEventListener("click",printPDF);
 })();
-</script><script src="./side-nav.js?v=2" defer></script>
+</script><script src="./side-nav.js?v=3-20261021" defer></script>
 <script src="../reset-controls.js?v=1" data-donga-step="step3" defer></script></body></html>
