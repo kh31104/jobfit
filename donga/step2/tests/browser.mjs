@@ -209,6 +209,7 @@ try{
     localStorage.setItem(key,JSON.stringify(x));
   });
   await page.reload({waitUntil:"networkidle"});
+  await page.locator('[data-path="student.tools"]').fill("Photoshop, Canva");
   const evidenceTest=()=>page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step2:v1")).requirements);
   const startEvidence=await evidenceTest();
   assert.equal(startEvidence[0].note,"","legacy auto evidence cleared when it cannot prove graduation");
@@ -235,6 +236,7 @@ try{
     localStorage.setItem(key,JSON.stringify(x));
   });
   await page.reload({waitUntil:"networkidle"});
+  await page.locator('[data-path="student.language"]').fill("토익 620");
   assert.equal((await evidenceTest())[1].note,"","TOEIC cannot satisfy Chinese/Japanese-only condition");
   assert.equal((await evidenceTest())[2].note,"내가 직접 확인한 SNS 프로젝트 자료","reload keeps direct note intact");
 
