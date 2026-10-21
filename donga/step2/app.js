@@ -1133,11 +1133,11 @@ function parseJobTableResult(raw){
     const normalized=line
       .replace(/^>\s*/,"")
       .replace(/^#{1,6}\s*/,"")
+      .replace(/\*\*/g,"")
+      .replace(/__/g,"")
       .replace(/^\[([^\]]{1,90})\](?=\s*[:：]|\s*$)/,"$1")
       .replace(/^[①②③④⑤⑥]\s*/,"")
       .replace(/^\d{1,2}\s*[.)-]\s*/,"")
-      .replace(/\*\*/g,"")
-      .replace(/__/g,"")
       .trim();
     if(/^(?:\[?\s*(?:추가\s*확인\s*질문|확인\s*질문|참고\s*사항|출처)\s*\]?)\s*[:：]?\s*$/i.test(normalized)){
       current="";continue;
