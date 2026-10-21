@@ -45,6 +45,10 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  const work=page.locator("#starting2 .startingTaskList .startingEntry");
  const gap=page.locator("#starting2 .startingGapList .startingEntry");
  assert.equal(await work.count(),4,label+" four task cards");
+ assert.equal(await page.locator("#starting2 .startingFormatStamp").innerText(),"직무분석·GAP 항목별 보기",label+" latest card format has loaded");
+ assert.equal(await page.locator("#starting2 .startingTaskList .startingEntryHeading").count(),4,label+" four duty headings in separate cards");
+ assert.equal(await page.locator("#starting2 .startingGapList .startingEntryHeading").count(),3,label+" three GAP headings in separate cards");
+ assert.match(await page.locator("#starting2 .startingTaskList .startingEntryHeading").nth(0).innerText(),/브랜드 운영/,label+" category title extracted");
  assert.equal(await gap.count(),3,label+" GAP 1-3 individual cards");
  assert.match(await work.nth(1).innerText(),/SNS 마케팅/,label+" task detail retained");
  assert.match(await gap.nth(2).innerText(),/마케팅 운영 경험/,label+" GAP detail retained");
