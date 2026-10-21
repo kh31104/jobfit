@@ -85,6 +85,34 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  assert.match(prePrompt,/희망 취업 시점: 6개월 이내/,label+" career plan date");
  assert.match(prePrompt,/보완할 GAP/,label+" career plan GAP");
  assert.match(prePrompt,/"before"/,label+" plan response schema");
+
+ assert.match(prePrompt,/탐색기/,"new before prompt uses readable stage names");
+ assert.match(prePrompt,/기간:.*준비 기간/,"new before prompt asks for period and actions");
+ assert(!prePrompt.includes('JSON 형식: {"before"'),"new before prompt does not request JSON output");
+ const natural=[
+   "탐색기","기간: 0~3개월","목표: SNS 콘텐츠 제작 기초 익히기",
+   "실행: 가상 SNS 콘텐츠 3개·숏폼 1개 만들기","결과물: 콘텐츠 4개 포트폴리오",
+   "","성장기","기간: 4~18개월","목표: AI 콘텐츠 실습과 협찬 업무 이해",
+   "실행: 가상 릴스 제작과 인플루언서 목록 정리","결과물: 콘텐츠 분석표와 협찬 관리표",
+   "","도약기","기간: 19개월~취업 전","목표: 취업 지원에 필요한 자료 정리",
+   "실행: 어학·지원자격 확인 및 포트폴리오 보완","결과물: 최종 포트폴리오와 지원자격 확인표"
+ ].join("\n");
+ const previousLeft=await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step3:v1")).left);
+ await page.locator("#aiAnswer").fill(natural);
+ assert.equal(await page.locator("#beforeAiPreview .beforeAiCard").count(),3,"plain-text AI reply shows readable three-stage preview");
+ assert.match(await page.locator("#beforeAiPreview").innerText(),/가상 SNS 콘텐츠 3개/,"preview contains concrete student action");
+ assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step3:v1")).left),previousLeft,"paste does not replace existing plans");
+ page.once("dialog",d=>d.accept());
+ await page.locator("#applyAi").click();
+ const naturalSaved=await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step3:v1")));
+ assert.equal(naturalSaved.left[0].one,"0~3개월 · SNS 콘텐츠 제작 기초 익히기","duration and goal recorded");
+ assert.equal(naturalSaved.left[1].two,"가상 릴스 제작과 인플루언서 목록 정리 → 콘텐츠 분석표와 협찬 관리표","action/result preserved");
+ assert.equal(naturalSaved.drafts.aiAnswer,natural,"plain-language source saved verbatim");
+ assert.equal(naturalSaved.right.length,4,"after-work stages unchanged");
+ await page.locator("#aiAnswer").fill("탐색기\n목표: 준비");
+ assert.match(await page.locator("#beforeAiPreview").innerText(),/형식 확인 필요/,"invalid paste displays actionable error");
+ assert.equal((await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step3:v1")))).left[0].one,naturalSaved.left[0].one,"invalid edit does not replace plans");
+
  await page.locator("#aiAnswer").fill(JSON.stringify({before}));
  page.once("dialog",d=>d.accept());
  await page.locator("#applyAi").click();
