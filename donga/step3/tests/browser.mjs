@@ -100,7 +100,7 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  const previousLeft=await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step3:v1")).left);
  await page.locator("#aiAnswer").fill(natural);
  assert.equal(await page.locator("#beforeAiPreview .beforeAiCard").count(),3,"plain-text AI reply shows readable three-stage preview");
- assert.match(await page.locator("#beforeAiPreview").innerText(),/가상 SNS 콘텐츠 3개/,"preview contains concrete student action");
+ assert.match(await page.locator('[data-before-index="0"][data-before-field="activity"]').inputValue(),/가상 SNS 콘텐츠 3개/,"editable preview contains concrete student action");
 
  assert.deepEqual(await page.locator('[data-before-field="period"]').evaluateAll(nodes=>nodes.map(x=>x.value)),["0~3개월","4~18개월","19개월~취업 전"],"period remains editable and separated");
  assert.equal(await page.locator('[data-before-index="0"][data-before-field="goal"]').inputValue(),"SNS 콘텐츠 제작 기초 익히기","goal input has no repeated duration");
