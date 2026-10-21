@@ -1032,7 +1032,7 @@ function refreshStep5Derived(){
     const note=document.querySelector('[data-req="'+i+'"][data-reqkey="note"]');
     if(note&&note.value!==r.note)note.value=r.note||"";
     const preview=document.querySelector('[data-evidence-preview="'+i+'"]');
-    if(preview)preview.innerHTML=readableHTML(r.note,{dense:true,empty:"입력된 근거가 없습니다."});
+    if(preview)preview.innerHTML=readableHTML(r.note,{dense:true,empty:"직접 연결되는 입력 근거 없음 · 필요한 정보는 직접 입력·확인하세요."});
   });
   const assets=document.getElementById("derivedGapAssetsPreview");
   if(assets)assets.textContent=derivedGapAssets()||"아직 입력된 스펙·충족 근거가 없습니다.";
@@ -1688,38 +1688,110 @@ function ensureRequirements(){
   src.slice(0,3).forEach((line,i)=>{if(!filled(state.requirements[i]?.condition))state.requirements[i].condition=line;});
 }
 
+// 공고의 특정 조건과 학생이 실제로 입력한 정보가 겹치는 경우만 "참고 근거"로 표시한다.
+// 자동 근거는 채용요건 충족을 판정하지 않는다. 충족/일부 준비/GAP 상태는 학생이 직접 선택한다.
+const REQUIREMENT_TOOL_TERMS=[
+  ["Photoshop",/photoshop|포토샵/i],["Illustrator",/illustrator|일러스트레이터/i],
+  ["Canva",/canva|캔바/i],["Figma",/figma|피그마/i],
+  ["Excel",/\bexcel\b|엑셀/i],["PowerPoint",/powerpoint|파워포인트/i],
+  ["Python",/\bpython\b|파이썬/i],["SQL",/\bsql\b/i],["CAD",/\bcad\b|오토캐드/i],
+  ["SAP",/\bsap\b/i],["ERP",/\berp\b/i],["Photoshop",/어도비\s*포토샵/i],
+  ["ChatGPT",/chatgpt|챗gpt|챗지피티/i],["Premiere",/premiere|프리미어/i],
+  ["After Effects",/after\s*effects|애프터\s*이펙트/i],
+  ["영상편집",/영상\s*편집|동영상\s*편집/i],
+  ["AI 활용",/\bai\b|생성형\s*ai/i]
+];
+const REQUIREMENT_CERT_TERMS=[
+  /컴퓨터\s*활용\s*능력|컴활/i,/정보\s*처리\s*(?:기사|산업기사)/i,
+  /사회\s*조사\s*분석사/i,/전산\s*회계/i,/전산\s*세무/i,
+  /품질\s*경영\s*(?:기사|산업기사)/i,/한국사\s*능력/i,/운전\s*면허/i
+];
+const REQUIREMENT_DOMAINS=[
+  /sns|소셜\s*미디어/i,/콘텐츠/i,/브랜드/i,/마케팅/i,/홍보/i,
+  /인플루언서/i,/협찬/i,/영상/i,/촬영/i,/디자인/i,
+  /데이터/i,/분석/i,/품질/i,/설계/i,/생산/i,/회계/i,/재무/i,
+  /영업/i,/인사/i,/환경/i,/안전/i,/통계/i,/개발/i,/고객/i,
+  /서비스/i,/물류/i,/무역/i,/기획/i
+];
+function requirementDomainMatch(condition,evidence){
+  return REQUIREMENT_DOMAINS.some(rx=>rx.test(condition)&&rx.test(evidence));
+}
+function requirementLanguageMatch(condition,language){
+  if(!filled(language))return false;
+  const en=/(?:영어|영문|토익|toeic|opic|오픽|toefl|토플|teps|텝스|ielts)/i;
+  const cn=/(?:중국어|hsk|중문)/i;
+  const jp=/(?:일본어|jlpt|jpt|일문)/i;
+  if(en.test(condition)&&en.test(language))return true;
+  if(cn.test(condition)&&cn.test(language))return true;
+  if(jp.test(condition)&&jp.test(language))return true;
+  return /(?:어학|외국어|어학\s*성적)/i.test(condition)&&!en.test(condition)&&!cn.test(condition)&&!jp.test(condition);
+}
 function buildRequirementEvidence(condition=""){
-  const c=String(condition||"");
-  const parts=[];
-  if(/전공|학력|학사/.test(c)&&filled(state.student.major))parts.push("전공: "+state.student.major);
-  if(/어학|TOEIC|OPIc|영어|외국어/.test(c)&&filled(state.student.language))parts.push("어학: "+state.student.language);
-  if(/자격|기사|산업기사|컴퓨터활용|한국사|면허/.test(c)&&filled(state.student.certificates))parts.push("자격증: "+state.student.certificates);
-  if(/도구|기술|CAD|Python|Excel|Minitab|SAP|ERP|PLM|SQL|컴퓨터|디지털/.test(c)&&filled(state.student.tools))parts.push("도구·기술: "+state.student.tools);
-  if(/경험|업무|과업|역량|설계|품질|영업|인사|데이터|분석|개발|운영|프로젝트|인턴|교육|수상|현장|실습/.test(c)){
-    const exps=state.experiences.filter(e=>filled(e.title)||filled(e.summary)).slice(0,2).map(e=>(e.title||"경험")+(e.summary?" - "+e.summary:""));
-    if(exps.length)parts.push("경험: "+exps.join(" / "));
+  const c=String(condition||"").normalize("NFKC");
+  if(!filled(c))return "";
+  const result=[];
+  const add=(label,value)=>{if(filled(value))result.push(label+": "+value);};
+  // 학력·졸업은 전공명만으로 확인할 수 없다. 전공을 명시적으로 요구한 경우만 참고값을 표시한다.
+  if(/(?:전공\s*(?:자|자격|관련|우대|제한)|관련\s*전공|전공\s*분야|전공\s*학과)/i.test(c)){
+    add("전공(일치 여부 확인 필요)",state.student.major);
   }
-  return parts.join(" / ");
+  if(requirementLanguageMatch(c,state.student.language)){
+    add("관련 어학 입력(요구 수준 확인 필요)",state.student.language);
+  }
+  const certificates=String(state.student.certificates||"");
+  if(filled(certificates)){
+    const specific=REQUIREMENT_CERT_TERMS.filter(rx=>rx.test(c));
+    if(specific.length){
+      if(specific.some(rx=>rx.test(certificates)))add("관련 자격증 입력(등급·취득 여부 확인 필요)",certificates);
+    }else if(/(?:자격증|면허증|국가기술자격|직무\s*자격)/i.test(c)){
+      add("자격증 입력(직무 관련성 확인 필요)",certificates);
+    }
+  }
+  const tools=String(state.student.tools||"");
+  if(filled(tools)){
+    const specified=REQUIREMENT_TOOL_TERMS.filter(([,rx])=>rx.test(c));
+    const matches=[...new Set(specified.filter(([,rx])=>rx.test(tools)).map(([label])=>label))];
+    if(matches.length){
+      const actual=tools.split(/[,，;/\n]+/).map(x=>x.trim()).filter(Boolean)
+        .filter(x=>specified.some(([,rx])=>rx.test(x)));
+      add("공고와 겹치는 도구(숙련도 확인 필요)",actual.length?actual.join(", "):matches.join(", "));
+    }else if(!specified.length&&/(?:디자인\s*툴|편집\s*툴|도구\s*활용|소프트웨어\s*활용)/i.test(c)){
+      add("도구·기술 입력(요구 도구와 비교 필요)",tools);
+    }
+  }
+  if(requirementDomainMatch(c,state.student.majorEvidence||"")){
+    add("관련 수행근거(직접 확인 필요)",state.student.majorEvidence);
+  }
+  const experiences=(state.experiences||[])
+    .filter(e=>filled(e.title)||filled(e.summary))
+    .filter(e=>requirementDomainMatch(c,(e.title||"")+" "+(e.summary||"")))
+    .slice(0,2)
+    .map(e=>(e.title||"경험")+(e.summary?" · "+e.summary:""));
+  if(experiences.length)add("관련 경험(직접 확인 필요)",experiences.join(" / "));
+  return result.join("\n");
 }
 
 function syncRequirementEvidence(){
   state.requirements.forEach(r=>{
     if(!filled(r.condition))return;
     const auto=buildRequirementEvidence(r.condition);
-    if((!filled(r.note)||String(r.note).startsWith("자동 불러오기 ·"))&&filled(auto))r.note="자동 불러오기 · "+auto;
+    const old=String(r.note||"");
+    // 직접 작성한 근거는 절대로 덮어쓰지 않는다. 구버전 자동근거만 다시 계산한다.
+    if(!filled(old)||old.startsWith("자동 불러오기 ·")){
+      r.note=filled(auto)?"자동 불러오기 · "+auto:"";
+    }
   });
 }
-
 function requirementRows(){
   ensureRequirements();
   syncRequirementEvidence();
   return state.requirements.map((r,i)=>'<div class="requirementRow">'+
     '<div class="field"><label>공고·직무 조건 '+(i+1)+'</label><div class="selectedEvidence requirementSource">'+readableHTML(r.condition,{dense:true,empty:"원문 확인 필요"})+'</div></div>'+
     '<div class="field"><label>내 현재 상태</label><select class="input" data-req="'+i+'" data-reqkey="status"><option value="">선택</option><option value="충족" '+(r.status==="충족"?"selected":"")+'>충족</option><option value="일부 준비" '+(r.status==="일부 준비"?"selected":"")+'>일부 준비</option><option value="현재 GAP" '+(r.status==="현재 GAP"?"selected":"")+'>현재 GAP</option><option value="원문 확인 필요" '+(r.status==="원문 확인 필요"?"selected":"")+'>원문 확인 필요</option></select></div>'+
-    '<div class="field"><label>내 근거 <span class="hint">(자동 불러오기 · 필요시 수정)</span></label>'+
-      '<div class="donga-evidence-readable" data-evidence-preview="'+i+'">'+readableHTML(r.note,{dense:true,empty:"입력된 근거가 없습니다."})+'</div>'+
+    '<div class="field"><label>내 근거 <span class="hint">(관련 입력만 표시 · 충족 자동 판정 아님)</span></label>'+
+      '<div class="donga-evidence-readable" data-evidence-preview="'+i+'">'+readableHTML(r.note,{dense:true,empty:"직접 연결되는 입력 근거 없음 · 필요한 정보는 직접 입력·확인하세요."})+'</div>'+
       '<details class="donga-evidence-edit"'+(filled(r.note)?"":" open")+'><summary>내 근거 입력·수정</summary>'+
-      '<textarea class="input donga-note-input" rows="3" data-req="'+i+'" data-reqkey="note" placeholder="예: TOEIC 820 / 전기기사 준비 중 / 관련 경험 없음">'+h(r.note)+'</textarea></details></div>'+
+      '<textarea class="input donga-note-input" rows="3" data-req="'+i+'" data-reqkey="note" placeholder="입력된 근거 중 이 조건과 직접 관련된 내용만 기록하세요. 해당하지 않으면 비워 두세요.">'+h(r.note)+'</textarea></details></div>'+
   '</div>').join("");
 }
 
@@ -1939,7 +2011,7 @@ function step5(){
   return shell(4,"JD Requirements × My Spec → GAP","공고 요구조건과 내가 실제로 입력한 스펙을 한 화면에서 비교하고, 준비할 GAP을 정합니다.",
     step5TargetPicker()+
     '<div class="block"><h3>② 공고 요구조건 × 내 스펙 한 번에 비교</h3>'+
-      '<div class="callout info"><b>자동 연결</b> STEP 03에서 선택한 직무·공고 요구조건을 가져옵니다. 제외된 경험 단계는 필요하지 않습니다. 본인이 실제 갖춘 자격증·어학·도구·수행근거만 직접 입력하세요. 없는 스펙은 만들지 않습니다.</div>'+
+      '<div class="callout info"><b>자동 연결은 참고자료입니다.</b> 공고조건에 직접 관련된 전공·자격증·어학·도구·수행근거만 표시합니다. 전공만으로 졸업요건을 충족했다고 보지 않으며, 입력 정보가 없으면 근거를 만들지 않습니다. 각 조건의 충족 여부는 학생이 직접 확인·선택하세요.</div>'+
       '<div class="grid2 compactSpecGrid">'+
         '<div class="field"><label>내 전공 · 자동</label><input class="input" value="'+h(state.student.major||"")+'" disabled /></div>'+
         field("student.certificates","자격증 <span class=\"hint\">(없으면 비워도 됨)</span>","예: 전기기사 / 대기환경기사 준비 중",false)+
