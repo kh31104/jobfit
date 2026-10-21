@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import {visualLines,readableHTML,renderStep2Report} from "../report-view.js";
+import {visualLines,readableHTML,renderStep2Report,parsePlanItems,renderActionCards} from "../report-view.js";
 
 const raw="필수·지원자격: 스킬 Photoshop, SNS관리, 콘텐츠기획, 시장조사 핵심역량: 성실성, 창의성, 협동심";
 const preserved=raw;
@@ -55,5 +55,26 @@ assert(example.includes("영어, 중국어, 일본어"),"foreign languages stay 
 assert(example.includes("Photoshop, Canva"),"student tools stay together");
 assert(example.includes("참고 · 확인할 사항"),"AI follow-up questions appear separately from competencies");
 assert.equal(JSON.stringify(realistic),oldModel,"even messy source values are never changed");
+
+
+const screenActions="• GAP 1 → 학사일정과 졸업예정 시기 확인 → 예상 졸업 시점 및 향후 지원자격 확인표 작성. • GAP 2 → Photoshop·Canva로 G/FORE 가상 SNS 콘텐츠 3개와 숏폼 영상 1개 제작 → 기획 의도·제작물·사용 도구를 기록한 포트폴리오 완성. • GAP 3 → 공개 SNS 자료를 활용해 인플루언서 후보 명단과 가상 협찬 발송 관리표 작성 → Excel 실습 파일 및 업무 체크리스트 완성.";
+const originalActions=screenActions;
+const three=parsePlanItems(screenActions,"action");
+assert.deepEqual(three.map(x=>x.id),[1,2,3],"three inline bullet-delimited GAP actions are split by identifiers");
+assert(three[0].text.includes("지원자격 확인표 작성."),"GAP1 output is not swallowed by GAP2");
+assert(three[1].text.includes("숏폼 영상 1개 제작"),"GAP2 action present");
+assert(three[2].text.includes("Excel 실습 파일 및 업무 체크리스트 완성"),"GAP3 output present");
+assert(!three[0].text.includes("GAP 2"),"GAP2 is not merged into GAP1");
+const planMarkup=renderActionCards(screenActions);
+assert.equal((planMarkup.match(/class="donga-action-item"/g)||[]).length,3,"screen/PDF renderer creates three cards");
+assert.equal((planMarkup.match(/class="donga-action-outcome"/g)||[]).length,3,"three outcome sections are preserved");
+const examplePlan=renderStep2Report({...realistic,fit:{...realistic.fit,actions:screenActions}});
+const pdfActions=examplePlan.match(/<section class="donga-report-section"><h3>05\. 앞으로 3개월 행동계획<\/h3>([\s\S]*?)<\/section>/)?.[1]||"";
+assert.equal(pdfActions,planMarkup,"PDF's 05 section reuses the exact screen plan markup");
+assert.equal(screenActions,originalActions,"source action string not rewritten by rendering");
+const spaced="GAP 1 → 학사일정 확인 → 지원자격 확인표 작성.\nGAP 2 → SNS 콘텐츠 제작 → 포트폴리오 완성.\nGAP 3 → 협찬발송 관리 → 관리표 완성.";
+assert.deepEqual(parsePlanItems(spaced).map(x=>x.id),[1,2,3],"new-line GAP steps also split correctly");
+const directBullets="• SNS 게시물 제작\n• 제작 결과 기록";
+assert.equal(parsePlanItems(directBullets).length,2,"unnumbered separate bullet items are not merged");
 
 console.log("PASS STEP 2 read-only GAP bullets, escaped text and printable job table");

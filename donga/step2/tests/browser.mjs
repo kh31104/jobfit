@@ -164,7 +164,8 @@ try{
   assert.equal(await page.locator('[data-preview="ai.gapResult"] .readableItem').count(),4,"GAP result split into four bullets");
   assert.equal(await page.locator('[data-preview="ai.gapResult"] .readableHeading').count(),2,"GAP headings separated");
   await page.locator('[data-path="fit.gaps"]').fill("품질 실무 데이터 분석 근거 보완");
-  assert.equal(await page.locator('[data-preview="fit.gaps"] .readableItem').count(),1,"live GAP preview reflects edits");
+  assert.equal(await page.locator('[data-plan-preview="fit.gaps"] .donga-gap-item').count(),1,"live GAP cards reflect edits");
+  assert.match(await page.locator('[data-plan-preview="fit.gaps"]').innerText(),/품질 실무 데이터 분석 근거 보완/,"live GAP text synchronized with PDF");
   await page.locator('[data-path="fit.actions"]').fill("3개월 내 공정 데이터 분석 사례 1개 작성");
   let saved=await page.evaluate(()=>{
     const x=JSON.parse(localStorage.getItem("jobfit:donga:step2:v1"));

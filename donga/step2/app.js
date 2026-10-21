@@ -1,4 +1,4 @@
-import {readableHTML, renderStep2Report} from "./report-view.js?v=2";
+import {readableHTML, renderStep2Report, renderGapCards, renderActionCards} from "./report-view.js?v=3";
 
 const STORAGE_KEY = "jobfit:donga:step2:v1";
 
@@ -2007,6 +2007,26 @@ function printStep2Pdf(){
 }
 window.addEventListener("afterprint",()=>document.body.classList.remove("donga-report-print"));
 
+/* Screen/PDF share the same GAP/3-month plan renderer. Editable originals are kept intact. */
+function planReviewField(path,label,placeholder){
+  const raw=path==="fit.actions"?state.fit.actions:state.fit.gaps;
+  const rendered=path==="fit.actions"?renderActionCards(state.fit.actions,state.fit.gaps):renderGapCards(state.fit.gaps);
+  return '<div class="field readableField donga-plan-editor">'+
+    '<label>'+label+'</label>'+
+    '<div class="donga-plan-preview" data-plan-preview="'+path+'">'+rendered+'</div>'+
+    '<details class="readableEdit"'+(filled(raw)?"":" open")+'>'+
+    '<summary>원문 입력·수정</summary>'+
+    '<textarea class="input" data-path="'+path+'" placeholder="'+h(placeholder)+'">'+h(raw||"")+'</textarea>'+
+    '</details></div>';
+}
+function refreshPlanPreview(){
+  const gap=document.querySelector('[data-plan-preview="fit.gaps"]');
+  const actions=document.querySelector('[data-plan-preview="fit.actions"]');
+  if(gap)gap.innerHTML=renderGapCards(state.fit.gaps);
+  if(actions)actions.innerHTML=renderActionCards(state.fit.actions,state.fit.gaps);
+  syncStep2ReportPreview();
+}
+
 function step5(){
   return shell(4,"JD Requirements × My Spec → GAP","공고 요구조건과 내가 실제로 입력한 스펙을 한 화면에서 비교하고, 준비할 GAP을 정합니다.",
     step5TargetPicker()+
@@ -2032,8 +2052,8 @@ function step5(){
     '<div class="divider"></div><div class="block"><h3>④ 최종 GAP과 3개월 행동 · 확인·수정</h3>'+
       '<div class="selectedEvidence"><span>현재 확인된 근거</span><b id="derivedGapAssetsPreview">'+h(derivedGapAssets()||"아직 입력된 스펙·충족 근거가 없습니다.")+'</b></div>'+
       '<div class="grid2">'+
-        field("fit.gaps","우선 보완할 GAP","AI 결과를 보고 최대 3개만 남기세요.")+
-        field("fit.actions","3개월 행동계획","무엇을 언제까지 어떤 결과물로 만들 것인가?")+
+        planReviewField("fit.gaps","우선 보완할 GAP","AI 결과를 보고 최대 3개만 남기세요.")+
+        planReviewField("fit.actions","3개월 행동계획","무엇을 언제까지 어떤 결과물로 만들 것인가?")+
       '</div></div>'+step2ReportBlock());
 }
 
@@ -2496,6 +2516,7 @@ function bind(){
       set(e.dataset.path,e.value);
       document.querySelectorAll('[data-preview="'+e.dataset.path+'"]').forEach(preview=>{preview.innerHTML=readableResult(e.value)});
       const path=e.dataset.path||"";
+      if(path==="fit.gaps"||path==="fit.actions")refreshPlanPreview();
       if(path==="student.majorEvidence"||path.startsWith("star."))refreshStep4Prompt();
       if(["student.certificates","student.language","student.tools","student.majorEvidence"].includes(path))refreshStep5Derived();
       save();
