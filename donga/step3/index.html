@@ -69,6 +69,28 @@ main{max-width:none!important;margin:0!important;padding:0!important}.top,.hero,
  .note p{font-size:13.3px;line-height:1.39}
 }
 
+
+/* Starting Point: STEP 2 read-only summary, no changes to learner input. */
+#starting2.startingInfo{white-space:normal;padding:13px;line-height:1.55;font-size:13px;min-width:0}
+#starting2 .startingSummaryGrid{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:15px}
+#starting2 .startingSummaryBox{border:1px solid #e1eaf5;background:#f5f8fd;border-radius:9px;padding:10px 12px;min-width:0}
+#starting2 .startingSummaryLabel{display:block;color:#617896;font-size:11px;font-weight:750;margin-bottom:3px}
+#starting2 .startingSummaryValue{display:block;color:#233e60;font-size:13px;line-height:1.55;font-weight:750;overflow-wrap:break-word;word-break:keep-all}
+#starting2 .startingSection{border-top:1px solid #e3eaf4;padding-top:13px;margin-top:13px;min-width:0}
+#starting2 .startingSectionTitle{font-size:13px;font-weight:850;line-height:1.35;color:#254b78;margin:0 0 11px}
+#starting2 .startingEntryList{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+#starting2 .startingEntry{border:1px solid #e2e9f3;border-radius:9px;background:#fff;padding:10px 11px;min-width:0}
+#starting2 .startingTaskList .startingEntry{border-left:3px solid #8cb1df}
+#starting2 .startingGapList .startingEntry{border-left:3px solid #9aadd0;background:#f9fbfe}
+#starting2 .startingEntryOrigin,#starting2 .startingEntryNumber{display:inline-block;border-radius:5px;background:#ebf2fa;color:#365d89;font-size:10px;font-weight:800;padding:2px 7px;margin:0 0 5px;line-height:1.5}
+#starting2 .startingEntryText{margin:0;line-height:1.65;color:#293e58;font-size:12.5px;overflow-wrap:break-word;word-break:keep-all;white-space:pre-wrap}
+#starting2 .startingEmpty{margin:2px 0;color:#8a98a8;font-size:12px}
+@media(max-width:720px){
+ #starting2.startingInfo{padding:10px}
+ #starting2 .startingEntry{padding:10px}
+ #starting2 .startingEntryText,#starting2 .startingSummaryValue{font-size:13px;line-height:1.65}
+}
+
 </style>
 <link rel="stylesheet" href="../typography.css?v=2"><link rel="stylesheet" href="../ui-unified.css?v=1">
 <link rel="stylesheet" href="../reset-controls.css?v=1"></head>
@@ -77,7 +99,7 @@ main{max-width:none!important;margin:0!important;padding:0!important}.top,.hero,
 <header class="top"><div class="brand"><span class="logo">J</span><div><b>JOBFIT DONG-A</b><small>STEP 3 · CAREER DEVELOPMENT PLAN</small></div></div><nav><a href="../">STEP 1</a><a href="../step2/">STEP 2</a><strong>STEP 3</strong></nav></header>
 <section class="hero"><small>JOBFIT DONG-A · STEP 3</small><h1>나의 커리어 준비와<br>성장 로드맵 만들기</h1><p>먼저 내가 생각한 계획을 적어 보세요. 계획을 모르겠다면 직무별 일반 경력개발경로(CDP)를 예시로 제공합니다.</p><div class="chips"><span>01 학생 질문 3개</span><span>02 로드맵 직접 수정</span><span>03 A4 가로 1페이지 PDF</span></div></section>
 <div class="donga-layout"><aside class="donga-side"><nav id="dongaStep3Nav" class="donga-nav-card" aria-label="STEP 3 왼쪽 메뉴"><div class="donga-nav-title">MY CAREER DESIGN</div><div class="donga-menu"></div></nav></aside><div class="donga-main">
-<div class="donga-screen" id="dongaPanel1"><section class="card startingCard"><div class="sectionHead"><span class="count">01</span><div><h2>My Starting Point · 현재 나의 위치</h2><p>STEP 1·2 결과를 읽기 전용으로 확인하고, 필요한 부분만 참고합니다.</p></div></div><div class="editorGrid"><div class="editorColumn"><h3>STEP 1 · CAREER DNA</h3><div id="starting1" class="startingInfo"></div></div><div class="editorColumn"><h3>STEP 2 · JOB ANALYSIS</h3><div id="starting2" class="startingInfo"></div></div></div><p class="hint">없는 정보는 '미입력'으로 표시합니다. STEP 1·2 원본은 변경되지 않습니다.</p><div class="buttons"><button type="button" class="btn primary" data-goto="2">확인했어요 · 목표 설정하기 →</button></div></section></div>
+<div class="donga-screen" id="dongaPanel1"><section class="card startingCard"><div class="sectionHead"><span class="count">01</span><div><h2>My Starting Point · 현재 나의 위치</h2><p>STEP 1·2 결과를 읽기 전용으로 확인하고, 필요한 부분만 참고합니다.</p></div></div><div class="editorGrid"><div class="editorColumn"><h3>STEP 1 · CAREER DNA</h3><div id="starting1" class="startingInfo"></div></div><div class="editorColumn"><h3>STEP 2 · JOB ANALYSIS</h3><div id="starting2" class="startingInfo startingJobAnalysis"></div></div></div><p class="hint">없는 정보는 '미입력'으로 표시합니다. STEP 1·2 원본은 변경되지 않습니다.</p><div class="buttons"><button type="button" class="btn primary" data-goto="2">확인했어요 · 목표 설정하기 →</button></div></section></div>
 <div class="donga-screen" id="dongaPanel2" hidden><section class="card formCard">
 <div class="sectionHead"><span class="count">02</span><div><h2>My Career Goal · 나의 커리어 목표</h2><p>직무·취업 전 준비·취업 후 목표를 확인합니다. 저장된 입력 원문은 임의로 수정하지 않습니다.</p></div></div>
 <div class="question"><label for="job">Q1. 희망 직무는 무엇인가요?</label><div class="inputRow"><input id="job" placeholder="예: 브랜드 마케팅, 생산관리, 환경관리"><button id="loadStep2" class="btn light">STEP 2 직무 불러오기</button></div><p id="step2Info" class="hint">STEP 2의 희망 직무만 읽어옵니다.</p></div>
@@ -435,5 +457,5 @@ $("import").addEventListener("click",()=>$("importFile").click());
 $("importFile").addEventListener("change",e=>{restore(e.target.files[0]);e.target.value=""});
 $("pdf").addEventListener("click",printPDF);
 })();
-</script><script src="./side-nav.js?v=1" defer></script>
+</script><script src="./side-nav.js?v=2" defer></script>
 <script src="../reset-controls.js?v=1" data-donga-step="step3" defer></script></body></html>
