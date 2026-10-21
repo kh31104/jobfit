@@ -39,6 +39,7 @@ try{
     await el.fill(company);
     await page.locator('[data-path="step2SearchMore.'+i+'.title"]').fill("품질관리 채용 공고 "+(i+2));
     await page.locator('[data-path="step2SearchMore.'+i+'.sourceUrl"]').fill("https://example.com/job/"+(i+2));
+    if(i===0)await page.locator('[data-path="step2SearchMore.0.facts"]').fill("품질관리 공정 데이터 확인 및 불량 원인 분석");
   }
   assert.equal(await page.locator('[data-use-search-index="0"]').innerText(),"이 공고로 03 직무분석하기");
   assert.match(await page.locator("#stepRoot").innerText(),/03에서는 수업용 예시로 한국에너지공단과 HD현대일렉트릭/);
