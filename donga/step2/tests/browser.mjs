@@ -191,6 +191,53 @@ try{
   assert.equal(await page.evaluate(()=>localStorage.getItem("jobfit:donga:step1:v1")),"step1-safe");
   assert.equal(await page.evaluate(()=>localStorage.getItem("jobfit:flexlab:job-analysis:v1")),"flex-safe");
 
+  // 학생 예시: 학력 조건에 자격증을 끼워 넣지 않고, 도구/어학/수행근거를 요구조건별로 비교한다.
+  await page.evaluate(()=>{
+    const key="jobfit:donga:step2:v1";
+    const x=JSON.parse(localStorage.getItem(key));
+    x.currentStep=4;
+    x.student.major="경영학과 2학년";
+    x.student.certificates="컴퓨터활용능력 2급";
+    x.student.language="토익 620";
+    x.student.tools="Photoshop, Canva";
+    x.student.majorEvidence="교내 홍보단 SNS 운영 활동에 참여하고 콘텐츠 기획부터 결과 분석까지 포트폴리오 작성";
+    x.requirements=[
+      {condition:"필수 지원자격: 4년제 대학 졸업 또는 졸업예정자",status:"현재 GAP",note:"자동 불러오기 · 전공: 경영학과 2학년 / 자격증: 컴퓨터활용능력 2급"},
+      {condition:"우대사항: Photoshop, Illustrator, 영어·중국어·일본어 능숙자",status:"일부 준비",note:"자동 불러오기 · 어학: 토익 620"},
+      {condition:"직무 필요역량: SNS 콘텐츠 기획과 Photoshop, AI 도구 사용",status:"충족",note:"내가 직접 확인한 SNS 프로젝트 자료"}
+    ];
+    localStorage.setItem(key,JSON.stringify(x));
+  });
+  await page.reload({waitUntil:"networkidle"});
+  const evidenceTest=()=>page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step2:v1")).requirements);
+  const startEvidence=await evidenceTest();
+  assert.equal(startEvidence[0].note,"","legacy auto evidence cleared when it cannot prove graduation");
+  assert.equal(startEvidence[0].status,"현재 GAP","existing status preserved");
+  assert(startEvidence[1].note.includes("Photoshop"),"Photoshop matched to required tool");
+  assert(startEvidence[1].note.includes("토익 620"),"English test can be shown for English requirement");
+  assert(!startEvidence[1].note.includes("Canva"),"unrequested Canva not mixed into Photoshop/Illustrator evidence");
+  assert(!startEvidence[1].note.includes("컴퓨터활용능력"),"unrequested qualification not included");
+  assert.equal(startEvidence[2].note,"내가 직접 확인한 SNS 프로젝트 자료","user's manual note preserved");
+  assert.equal(startEvidence[2].status,"충족","manual classification remains unchanged");
+  const emptyNote=await page.locator('[data-evidence-preview="0"]').innerText();
+  assert.match(emptyNote,/직접 연결되는 입력 근거 없음/,"no match is clearly explained");
+  assert.equal(await page.locator('[data-req="2"][data-reqkey="note"]').inputValue(),"내가 직접 확인한 SNS 프로젝트 자료","editor retains original manual note");
+  await page.locator('[data-path="student.tools"]').fill("Canva");
+  const refreshed=await evidenceTest();
+  assert(!refreshed[1].note.includes("Photoshop"),"auto suggestion removes skill after student input changes");
+  assert(refreshed[1].note.includes("토익 620"),"unrelated language evidence remains");
+  assert.equal(refreshed[2].note,"내가 직접 확인한 SNS 프로젝트 자료","manual note still preserved after input change");
+  // 외국어 종류도 같은 어학이라는 이유만으로 충족 근거로 연결하면 안 된다.
+  await page.evaluate(()=>{
+    const key="jobfit:donga:step2:v1",x=JSON.parse(localStorage.getItem(key));
+    x.requirements[1].condition="우대사항: 중국어 HSK 또는 일본어 JLPT";
+    x.requirements[1].note="자동 불러오기 · 어학: 토익 620";
+    localStorage.setItem(key,JSON.stringify(x));
+  });
+  await page.reload({waitUntil:"networkidle"});
+  assert.equal((await evidenceTest())[1].note,"","TOEIC cannot satisfy Chinese/Japanese-only condition");
+  assert.equal((await evidenceTest())[2].note,"내가 직접 확인한 SNS 프로젝트 자료","reload keeps direct note intact");
+
   for(const [deviceName,type,profile] of [
     ["Android Chrome",chromium,devices["Pixel 7"]],
     ["iPhone Safari",webkit,devices["iPhone 13"]]
