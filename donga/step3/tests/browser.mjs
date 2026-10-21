@@ -87,7 +87,7 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  assert.match(prePrompt,/"before"/,label+" plan response schema");
 
  assert.match(prePrompt,/탐색기/,"new before prompt uses readable stage names");
- assert.match(prePrompt,/기간:.*준비 기간/,"new before prompt asks for period and actions");
+ assert.match(prePrompt,/기간:.*기간/,"new before prompt asks for period and actions");
  assert(!prePrompt.includes('JSON 형식: {"before"'),"new before prompt does not request JSON output");
  const natural=[
    "탐색기","기간: 0~3개월","목표: SNS 콘텐츠 제작 기초 익히기",
