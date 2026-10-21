@@ -102,25 +102,26 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  assert.equal(await page.locator("#beforeAiPreview .beforeAiCard").count(),3,"plain-text AI reply shows readable three-stage preview");
  assert.match(await page.locator("#beforeAiPreview").innerText(),/가상 SNS 콘텐츠 3개/,"preview contains concrete student action");
 
- assert.deepEqual(await page.locator("#beforeAiPreview .beforeAiPeriod").allTextContents(),["0~3개월","4~18개월","19개월~취업 전"],"durations only appear in heading badges");
- assert.equal(await page.locator("#beforeAiPreview .beforeAiDetailLabel").first().innerText(),"목표","goal label contains no decoration");
- assert.equal(await page.locator("#beforeAiPreview .beforeAiDetailText").first().innerText(),"SNS 콘텐츠 제작 기초 익히기","goal value contains no repeated date");
- assert.equal(await page.locator("#beforeAiPreview .beforeAiDetail").count(),9,"goals, activities and outcomes each get separate readable rows");
+ assert.deepEqual(await page.locator('[data-before-field="period"]').evaluateAll(nodes=>nodes.map(x=>x.value)),["0~3개월","4~18개월","19개월~취업 전"],"period remains editable and separated");
+ assert.equal(await page.locator('[data-before-index="0"][data-before-field="goal"]').inputValue(),"SNS 콘텐츠 제작 기초 익히기","goal input has no repeated duration");
+ assert.equal(await page.locator(".beforeAiEditableCard").count(),3,"all three pre-employment stages editable");
+ assert.equal(await page.locator(".beforeAiEditableCard .beforeAiEditRow").count(),12,"four editable fields per stage");
  const escaped=natural.replace("기간: 0~3개월","기간: &#x30;\\~3개월").replace("목표: SNS 콘텐츠 제작 기초 익히기","목표: **SNS 콘텐츠 제작 기초 익히기**");
  await page.locator("#aiAnswer").fill(escaped);
- assert.equal(await page.locator("#beforeAiPreview .beforeAiPeriod").first().innerText(),"0~3개월","numeric HTML entity and backslash cleaned for preview");
- assert.equal(await page.locator("#beforeAiPreview .beforeAiDetailText").first().innerText(),"SNS 콘텐츠 제작 기초 익히기","copied Markdown markers hidden in preview");
- assert(!String(await page.locator("#beforeAiPreview").innerText()).includes("&#x"),"raw HTML entities never shown in preview");
- const escapedSaved=await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step3:v1")));
- assert.equal(escapedSaved.drafts.aiAnswer,escaped,"pasted AI source still preserved verbatim");
+ assert.equal(await page.locator('[data-before-index="0"][data-before-field="period"]').inputValue(),"0~3개월","numeric HTML entity and backslash normalized");
+ assert.equal(await page.locator('[data-before-index="0"][data-before-field="goal"]').inputValue(),"SNS 콘텐츠 제작 기초 익히기","Markdown markers hidden in editable preview");
+ assert.equal((await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step3:v1")))).drafts.aiAnswer,escaped,"original pasted text remains intact");
  await page.locator("#aiAnswer").fill(natural);
 
  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step3:v1")).left),previousLeft,"paste does not replace existing plans");
+ await page.locator('[data-before-index="0"][data-before-field="goal"]').fill("SNS 마케팅 직무 이해와 콘텐츠 기획");
+ await page.locator('[data-before-index="1"][data-before-field="activity"]').fill("AI 릴스 제작 실습과 인플루언서 목록 정리");
+ assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step3:v1")).left),previousLeft,"inline editing leaves saved before-work stages unchanged until Apply");
  page.once("dialog",d=>d.accept());
  await page.locator("#applyAi").click();
  const naturalSaved=await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step3:v1")));
- assert.equal(naturalSaved.left[0].one,"0~3개월 · SNS 콘텐츠 제작 기초 익히기","duration and goal recorded");
- assert.equal(naturalSaved.left[1].two,"가상 릴스 제작과 인플루언서 목록 정리 → 콘텐츠 분석표와 협찬 관리표","action/result preserved");
+ assert.equal(naturalSaved.left[0].one,"0~3개월 · SNS 마케팅 직무 이해와 콘텐츠 기획","user edited goal recorded at apply");
+ assert.equal(naturalSaved.left[1].two,"AI 릴스 제작 실습과 인플루언서 목록 정리 → 콘텐츠 분석표와 협찬 관리표","user edited activity and result saved");
  assert.equal(naturalSaved.drafts.aiAnswer,natural,"plain-language source saved verbatim");
  assert.equal(naturalSaved.right.length,4,"after-work stages unchanged");
  await page.locator("#aiAnswer").fill("탐색기\n목표: 준비");
@@ -137,8 +138,27 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  await page.locator("#makePostPrompt").click();
  const postPrompt=await page.locator("#postPrompt").inputValue();
  assert.match(postPrompt,/희망 경력 방향: 전문가형/,label+" career track");
- assert.match(postPrompt,/"after"/,label+" roadmap response schema");
+ assert.match(postPrompt,/5년 차[\s\S]*10년 차[\s\S]*15년 차[\s\S]*최종 목표/,label+" human-readable roadmap response schema");
+ assert(!postPrompt.includes('JSON 형식: {"after"'),label+" post roadmap no longer requests JSON");
  assert.match(postPrompt,/15년 차/,label+" long-term years");
+ const afterText=[
+  "5년 차","목표: 브랜드 마케팅 운영 업무 이해","준비: 콘텐츠 일정 관리와 SNS 성과 분석 실습","결과물: 채널 운영·성과 분석 기록",
+  "","10년 차","목표: 브랜드 캠페인 기획 업무 확대","준비: 캠페인 기획과 대외 파트너 협업 경험","결과물: 캠페인 기획 사례집",
+  "","15년 차","목표: 브랜드 전략 수립 역량 심화","준비: 시장 분석·예산 계획·팀 운영 경험","결과물: 브랜드 전략 사례집",
+  "","최종 목표","목표: 브랜드 마케팅 분야 전문성 유지","준비: 실무 사례 점검과 신규 채널 학습","결과물: 직무 사례·업무 포트폴리오"
+ ].join("\n");
+ const rightBefore=await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step3:v1")).right);
+ await page.locator("#postAnswer").fill(afterText);
+ assert.equal(await page.locator("#afterAiPreview .afterAiCard").count(),4,"four Korean post-work preview cards");
+ assert.match(await page.locator("#afterAiPreview").innerText(),/브랜드 마케팅 운영 업무 이해/,"after preview includes desired role");
+ assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step3:v1")).right),rightBefore,"post preview does not overwrite original");
+ page.once("dialog",d=>d.accept());
+ await page.locator("#applyPost").click();
+ let postNatural=await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step3:v1")));
+ assert.equal(postNatural.right[0].one,"브랜드 마케팅 운영 업무 이해","post Korean role applied");
+ assert.equal(postNatural.right[3].two,"실무 사례 점검과 신규 채널 학습 → 직무 사례·업무 포트폴리오","post action and artifact applied");
+ assert.equal(postNatural.drafts.postAnswer,afterText,"post original answer preserved");
+ // Old JSON output remains accepted when pasted from previous ChatGPT sessions.
  await page.locator("#postAnswer").fill(JSON.stringify({after}));
  page.once("dialog",d=>d.accept());
  await page.locator("#applyPost").click();
