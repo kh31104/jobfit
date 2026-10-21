@@ -27,12 +27,31 @@ try{
     assert.match(await aiFind.locator('[data-ai-provider="'+name+'"]').getAttribute("href"),new RegExp(domain),"correct "+name+" URL");
   }
 
+  assert.equal(await page.locator('[data-use-search-index]').count(),3,"STEP2 supports 3 independent search results");
+  assert.match((await page.locator("a.jobSite").allTextContents()).join(" "),/링커리어/,"Linkareer search site displayed");
+  assert.equal(await page.locator('a.jobSite').filter({hasText:"링커리어"}).getAttribute("href"),"https://linkareer.com/recruit-home");
   await page.locator('[data-path="step2Search.company"]').fill("테스트 제조");
   await page.locator('[data-path="step2Search.title"]').fill("품질관리 신입");
-  await page.locator('[data-path="step2Search.facts"]').fill("품질 데이터 집계\\n불량 원인 분석");
-  assert.equal(await page.locator("#useStep2JobBtn").innerText(),"이 공고로 03 직무분석하기","STEP2 02 button is labelled 03");
-  assert.match(await page.locator("#stepRoot").innerText(),/03에서는 수업용 예시로 한국에너지공단과 HD현대일렉트릭/,"STEP2 example notice refers to 03");
-  await page.locator("#useStep2JobBtn").click();
+  await page.locator('[data-path="step2Search.facts"]').fill("품질 데이터 집계\n불량 원인 분석");
+  for(const [i,company] of [[0,"테스트 제조 B"],[1,"테스트 제조 C"]]){
+    const el=page.locator('[data-path="step2SearchMore.'+i+'.company"]');
+    if(!(await el.isVisible()))await el.locator("xpath=ancestor::details[1]/summary").click();
+    await el.fill(company);
+    await page.locator('[data-path="step2SearchMore.'+i+'.title"]').fill("품질관리 채용 공고 "+(i+2));
+    await page.locator('[data-path="step2SearchMore.'+i+'.sourceUrl"]').fill("https://example.com/job/"+(i+2));
+  }
+  assert.equal(await page.locator('[data-use-search-index="0"]').innerText(),"이 공고로 03 직무분석하기");
+  assert.match(await page.locator("#stepRoot").innerText(),/03에서는 수업용 예시로 한국에너지공단과 HD현대일렉트릭/);
+  await page.reload({waitUntil:"networkidle"});
+  assert.equal(await page.locator('[data-path="step2Search.company"]').inputValue(),"테스트 제조","legacy first entry retained");
+  assert.equal(await page.locator('[data-path="step2SearchMore.0.company"]').inputValue(),"테스트 제조 B","second entry autosaved");
+  assert.equal(await page.locator('[data-path="step2SearchMore.1.company"]').inputValue(),"테스트 제조 C","third entry autosaved");
+  await page.locator('[data-use-search-index="1"]').click();
+  const selectedSearch=await page.evaluate(()=>JSON.parse(localStorage.getItem("jobfit:donga:step2:v1")));
+  assert.equal(selectedSearch.selectedSearchIndex,1,"chosen result index retained");
+  assert.equal(selectedSearch.customJob.company,"테스트 제조 B","only second result transferred to analysis");
+  assert.equal(selectedSearch.step2Search.company,"테스트 제조","original first result preserved");
+
   const analysisCopy=page.locator("#copyReviewedJobPromptBtn");
   if(await analysisCopy.count()){
     assert.equal(await analysisCopy.locator("xpath=..").locator("[data-ai-provider]").count(),3,"Job analysis prompt links");
