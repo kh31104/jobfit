@@ -84,7 +84,7 @@ for(const [label,type,device] of [["Desktop Chrome",chromium,null],["Android Chr
  assert.match(prePrompt,/희망 직무: 품질관리/,label+" career plan job");
  assert.match(prePrompt,/희망 취업 시점: 6개월 이내/,label+" career plan date");
  assert.match(prePrompt,/보완할 GAP/,label+" career plan GAP");
- assert.match(prePrompt,/"before"/,label+" plan response schema");
+ assert.match(prePrompt,/탐색기[\s\S]*성장기[\s\S]*도약기/,label+" student-readable output schema");
 
  assert.match(prePrompt,/탐색기/,"new before prompt uses readable stage names");
  assert.match(prePrompt,/기간:.*기간/,"new before prompt asks for period and actions");
