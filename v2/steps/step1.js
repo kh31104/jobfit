@@ -89,9 +89,26 @@ export async function render(ctx){
   if(scale)bindAnchor();
   bindStrengths();
   ['via_0','via_1','via_2','via_3','via_4'].forEach(id=>document.getElementById(id)?.addEventListener('change',refreshCompare));
-  root.addEventListener('input',scheduleAutosave);
-  root.addEventListener('change',scheduleAutosave);
-  root.addEventListener('click',event=>{if(event.target.closest?.('.strengthPick'))scheduleAutosave()});
+  // Attach to this render only: #stepRoot is reused between SPA steps.
+  const stepSection=root.querySelector('.careerDnaStandard');
+  stepSection.addEventListener('input',event=>{
+    if(/^via_[0-4]$/.test(event.target?.id||''))flushAutosave(true);
+    else scheduleAutosave();
+  });
+  stepSection.addEventListener('change',event=>{
+    if(/^via_[0-4]$/.test(event.target?.id||''))flushAutosave(true);
+    else scheduleAutosave();
+  });
+  stepSection.addEventListener('click',event=>{if(event.target.closest?.('.strengthPick'))scheduleAutosave()});
+  // Safari can suspend timers on tab switches or when a user immediately changes STEP.
+  window.JobfitFlushPendingStep=()=>flushAutosave();
+  if(!window.__jobfitCareerDnaFlushEvents){
+    window.__jobfitCareerDnaFlushEvents=true;
+    window.addEventListener('pagehide',()=>window.JobfitFlushPendingStep?.());
+    document.addEventListener('visibilitychange',()=>{
+      if(document.visibilityState==='hidden')window.JobfitFlushPendingStep?.();
+    });
+  }
   document.getElementById('saveDNA').addEventListener('click',()=>{window.JobfitCareerDnaUx?.persistStructuredHypothesis?.();saveData(true)});
   document.getElementById('nextStep').addEventListener('click',()=>{window.JobfitCareerDnaUx?.persistStructuredHypothesis?.();saveData(false);ctx.navigate(2)});
   document.getElementById('makePrompt').addEventListener('click',()=>{window.JobfitCareerDnaUx?.persistStructuredHypothesis?.();const data=saveData(false);const prompt=buildPrompt(data,scale);const box=document.getElementById('promptBox');box.textContent=prompt;box.classList.remove('hidden');document.getElementById('copyPrompt').classList.remove('hidden')});
@@ -127,14 +144,20 @@ export async function render(ctx){
     const r=document.getElementById('anchorResult');if(r)r.innerHTML=anchorResultHtml(scale,anchorResponses,bonusItems,ctx);refreshCompare();
   }
   function bindStrengths(){root.querySelectorAll('[data-strength]').forEach(btn=>btn.addEventListener('click',()=>{const s=btn.dataset.strength,i=strengthSelection.indexOf(s);if(i>=0)strengthSelection.splice(i,1);else{if(strengthSelection.length>=5){ctx.toast('대표 강점은 5개까지 선택합니다.');return}strengthSelection.push(s)}const g=document.getElementById('strengthGrid');if(g)g.innerHTML=strengthHtml(strengthSelection,ctx);const c=document.getElementById('strengthCounter');if(c)c.textContent=`${strengthSelection.length}/5 선택`;bindStrengths();refreshCompare()}))}
-  function scheduleAutosave(){
+  let autosaveDirty=false;
+  function flushAutosave(force=false){
     clearTimeout(autosaveTimer);
-    autosaveTimer=setTimeout(()=>{
-      if(!root.querySelector('.careerDnaStandard'))return;
-      window.JobfitCareerDnaUx?.persistStructuredHypothesis?.();
-      saveData(false);
-      window.JobfitStorageContinuity?.syncNow?.();
-    },300);
+    autosaveTimer=null;
+    if(!root.querySelector('.careerDnaStandard')||(!autosaveDirty&&!force))return;
+    autosaveDirty=false;
+    window.JobfitCareerDnaUx?.persistStructuredHypothesis?.();
+    saveData(false);
+    window.JobfitStorageContinuity?.syncNow?.();
+  }
+  function scheduleAutosave(){
+    autosaveDirty=true;
+    clearTimeout(autosaveTimer);
+    autosaveTimer=setTimeout(()=>flushAutosave(),300);
   }
   function refreshCompare(){const via=readVia();const q=document.getElementById('qualSummary');if(q)q.innerHTML=qualSummaryHtml(balanceAnswers,strengthSelection,ctx);const n=document.getElementById('quantSummary');if(n)n.innerHTML=quantSummaryHtml(scale,anchorResponses,bonusItems,via,ctx)}
   function readVia(){return [0,1,2,3,4].map(i=>document.getElementById(`via_${i}`)?.value?.trim()||'').filter(Boolean)}
