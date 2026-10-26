@@ -63,14 +63,23 @@ function shouldRestore(current,mirror){
 }
 // Recovery fills genuinely absent fields without replacing newer local edits.
 // Empty arrays and strings are intentional saved values, not missing data.
-function fillMissing(current,backup){
+function fillMissing(current,backup,path=''){
   if(current===undefined||current===null)return backup;
+  if(path==='assessments.experienceCompetency.experiences'
+    &&Array.isArray(current)&&Array.isArray(backup)){
+    // Preserve intentional deletions and newly entered rows. Only fill absent
+    // properties inside still-existing experiences from the older mirror.
+    return current.map(x=>{
+      const old=backup.find(y=>x?.id&&y?.id&&x.id===y.id);
+      return old?fillMissing(x,old,path+'.item'):x;
+    });
+  }
   if(!current||typeof current!=='object'||Array.isArray(current)
     ||!backup||typeof backup!=='object'||Array.isArray(backup))return current;
   const result={...current};
   for(const [key,value] of Object.entries(backup)){
     if(['__proto__','constructor','prototype'].includes(key))continue;
-    result[key]=fillMissing(current[key],value);
+    result[key]=fillMissing(current[key],value,path?path+'.'+key:key);
   }
   return result;
 }
