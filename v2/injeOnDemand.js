@@ -166,7 +166,7 @@ export function mountInjeOnDemand(ctx,step,root){
     +area('jdTasks','직무에서 하는 일 (선택)','실제 직무소개에 적힌 업무')
     +area('jdRequirements','주요 요구사항 (선택)','원문에서 확인한 요구사항만')
     +'</div></details>':'';
-  const posting=wantPosting?'<div class="grid2">
+  const posting=wantPosting?'<div class="grid2">'
     +field('company','지원 기업','예: 관심 기업')
     +field('jdTitle','채용공고 제목 (선택)','예: 신입 마케터')
     +field('jdUrl','공고 원문 URL (선택)','https://...')
