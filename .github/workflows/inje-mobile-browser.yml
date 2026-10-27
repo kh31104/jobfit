@@ -36,6 +36,14 @@ jobs:
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/jobfit-mobile-server.log 2>&1 &
           sleep 2
           curl --fail http://127.0.0.1:8765/ >/dev/null
+      - name: Verify VIA + competency evidence persistence on PC iPhone Android (student root)
+        env:
+          JOBFIT_TEST_URL: http://127.0.0.1:8765/
+        run: node v2/tests/inje-via-evidence-continuity.mjs
+      - name: Verify VIA + competency evidence persistence on PC iPhone Android (v2)
+        env:
+          JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
+        run: node v2/tests/inje-via-evidence-continuity.mjs
       - name: Test student root URL on iPhone Safari WebKit and Android Chrome
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/

@@ -1,4 +1,4 @@
-import {restoreBeforeApp,startContinuity} from './storageContinuity.js?v=2';
+import {restoreBeforeApp,startContinuity} from './storageContinuity.js?v=3';
 
 await restoreBeforeApp();
 
@@ -20,7 +20,7 @@ if(isInjeCourse){
   }
 }
 
-await import('./app.js?v=43');
+await import('./app.js?v=44');
 startContinuity();
 await import('./injeClassroom.js?v=18');
 await import('./careerDnaUx.js?v=10');

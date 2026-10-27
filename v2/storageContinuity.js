@@ -23,7 +23,9 @@ function richness(s){
   score+=Object.values(s.profile||{}).filter(nonEmpty).length;
   score+=Object.values(s.baseline||{}).filter(nonEmpty).length*2;
   score+=Object.keys(s.artifacts||{}).length*3;
-  score+=(s.assessments?.experienceCompetency?.experiences||[]).length*3;
+  const experiences=s.assessments?.experienceCompetency?.experiences||[];
+  score+=experiences.length*3;
+  score+=experiences.reduce((n,x)=>n+(x?.competencyEvidence||[]).filter(e=>e?.evidence).length*3,0);
   const dna=s.assessments?.careerDNA||{};
   score+=(dna.balance?.answers||[]).filter(Boolean).length;
   score+=(dna.careerAnchor?.responses||[]).filter(nonEmpty).length;
@@ -59,12 +61,34 @@ function shouldRestore(current,mirror){
   if(a&&b&&a!==b)return false;
   return richness(mirror)>richness(current)+2;
 }
+// Recovery fills genuinely absent fields without replacing newer local edits.
+// Empty arrays and strings are intentional saved values, not missing data.
+function fillMissing(current,backup,path=''){
+  if(current===undefined||current===null)return backup;
+  if(path==='assessments.experienceCompetency.experiences'
+    &&Array.isArray(current)&&Array.isArray(backup)){
+    // Preserve intentional deletions and newly entered rows. Only fill absent
+    // properties inside still-existing experiences from the older mirror.
+    return current.map(x=>{
+      const old=backup.find(y=>x?.id&&y?.id&&x.id===y.id);
+      return old?fillMissing(x,old,path+'.item'):x;
+    });
+  }
+  if(!current||typeof current!=='object'||Array.isArray(current)
+    ||!backup||typeof backup!=='object'||Array.isArray(backup))return current;
+  const result={...current};
+  for(const [key,value] of Object.entries(backup)){
+    if(['__proto__','constructor','prototype'].includes(key))continue;
+    result[key]=fillMissing(current[key],value,path?path+'.'+key:key);
+  }
+  return result;
+}
 export async function restoreBeforeApp(){
   try{
     const current=parseState(localStorage.getItem(STORAGE_KEY));
     const mirror=await readMirror();
     if(shouldRestore(current,mirror)){
-      localStorage.setItem(STORAGE_KEY,JSON.stringify(mirror));
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(hasLearningData(current)?fillMissing(current,mirror):mirror));
       sessionStorage.setItem('jobfit:continuity-restored','1');
       return true;
     }

@@ -60,7 +60,22 @@ export async function render(ctx){
 
 export function buildReport(s,ctx){
   const dna=s.assessments?.careerDNA||{},profile=s.artifacts?.careerDNAProfile||{},exp=s.assessments?.experienceCompetency||{experiences:[]},map=Array.isArray(s.artifacts?.experienceMap)?s.artifacts.experienceMap.filter(x=>x?.factChecked):[];
-  const experiences=map.length?map:(exp.experiences||[]).filter(x=>x?.factChecked);
+  // Student-verified source records are authoritative; the summary map is a fallback,
+  // not a replacement. Older partial maps must never hide newer competency evidence.
+  const sourceExperiences=(Array.isArray(exp.experiences)?exp.experiences:[]).filter(x=>x?.factChecked);
+  const sameExperience=(a,b)=>a?.id&&b?.id?a.id===b.id:!!(a?.title&&a?.action&&a.title===b?.title&&a.action===b?.action);
+  const experiences=[
+    ...sourceExperiences.map(x=>{
+      const previous=map.find(y=>sameExperience(x,y))||{};
+      const rows=[...(previous.competencyEvidence||[]),...(x.competencyEvidence||[])];
+      const uniqueRows=[...new Map(rows.map(r=>[[r?.code||r?.label||r?.keyword||'',r?.evidence||'',r?.status||''].join('|'),r])).values()];
+      return {...previous,...x,action:x.action||previous.action||'',
+        evidence:x.evidence||previous.evidence||'',
+        competencies:[...new Set([...(previous.competencies||[]),...(x.competencies||[])])],
+        competencyEvidence:uniqueRows};
+    }),
+    ...map.filter(y=>!sourceExperiences.some(x=>sameExperience(x,y)))
+  ];
   const best3=exp.best3||{},repKey=exp.representativeKey||'',repSeed=repKey&&best3[repKey]?best3[repKey]:null;
   const best=(repSeed?.title?experiences.find(x=>x?.title===repSeed.title):null)||experiences[0]||repSeed||{};
   const explorer=s.artifacts?.jobExplorer||{},targets=getTargets(explorer),deep=s.artifacts?.jobDeepDive||{},targetAnalyses=deep.targetAnalyses||{};
@@ -74,11 +89,19 @@ export function buildReport(s,ctx){
   const anchorStatus=careerAnchorStatus(dna.careerAnchor);
   const anchorSource=anchorStatus.complete?(profile.careerAnchorTop||dna.careerAnchor?.ranking||[]):[];
   const anchor=anchorSource.slice(0,3).map(x=>({name:x.name||x.code||'',score:Number.isFinite(Number(x.score))?Number(x.score):null})).filter(x=>x.name&&(x.score===null||x.score>0));
-  const selfStrengths=(profile.selfStrengths||dna.selfStrengths||[]).slice(0,5);
-  const via=(profile.viaTop5||dna.viaTop5||[]).slice(0,5);
+  const selfStrengths=(Array.isArray(dna.selfStrengths)&&dna.selfStrengths.length?dna.selfStrengths:profile.selfStrengths||[]).slice(0,5);
+  // A truthy but empty/stale careerDNAProfile.viaTop5 used to mask saved STEP 1 results.
+  const via=(Array.isArray(dna.viaTop5)&&dna.viaTop5.some(x=>String(x||'').trim())?dna.viaTop5:profile.viaTop5||[])
+    .map(x=>String(x||'').trim()).filter(Boolean).slice(0,5);
   const careerText=firstText(profile.hypothesis?.text,dna.hypothesis?.text,dna.reflection?.fit,dna.reflection,dna.comparison?.repeat);
   const compMap=Array.isArray(s.artifacts?.competencyMap)?s.artifacts.competencyMap:[];
-  const competencies=(compMap.length?compMap.map(x=>x.keyword):[...new Set(experiences.flatMap(x=>x.competencies||[]))]).filter(Boolean).slice(0,5);
+  const competencies=[...new Set([
+    ...compMap.map(x=>x.keyword),
+    ...experiences.flatMap(x=>x.competencies||[]),
+    ...experiences.flatMap(x=>(x.competencyEvidence||[])
+      .filter(e=>!e.status||e.status==='행동 확인')
+      .map(e=>e.label||e.keyword||''))
+  ].filter(Boolean))];
   const actions=experiences.map(x=>String(x.action||'').trim()).filter(Boolean).slice(0,4);
   const choiceSnapshot=s.artifacts?.jobExplorerChoiceSnapshot||{};
   // The report only uses selections actually saved by the learner in STEP 4.
