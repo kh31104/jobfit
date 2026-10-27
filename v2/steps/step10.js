@@ -1,6 +1,6 @@
 import {readField,READABLE_STYLES} from './readableResults.js';
 export async function render(ctx){
-  const displayStep=ctx.displayStep??10,injeCompact=displayStep!==10,prevEvidenceStep=injeCompact?'STEP 4 GAP Match':'STEP 8';
+  const displayStep=ctx.displayStep??10,injeCompact=displayStep!==10,prevEvidenceStep=injeCompact?'STEP 5 GAP Match 또는 STEP 8 Resume Lab의 근거 카드 입력란':'STEP 8';
   const s=ctx.getState(),jd=s.artifacts?.jdAnalyzer||{postings:[],selectedId:''},posting=jd.postings?.find(x=>x.id===jd.selectedId)||jd.postings?.[0],allAssets=s.artifacts?.careerAssets?.assets||[],assets=allAssets.filter(a=>(a.evidenceLevel||legacyLevel(a.strength))!=='없음'),resume=s.artifacts?.resumeLab||{items:[]},resumeItems=(resume.items||[]).filter(x=>x.status==='final-ready'||(x.factChecked&&x.assetVerified)),experiences=s.assessments?.experienceCompetency?.experiences||[],saved=s.artifacts?.coverLetterLab||{questions:[]},data=structuredClone(saved),root=document.getElementById('stepRoot');
   data.questions=data.questions||[];
 

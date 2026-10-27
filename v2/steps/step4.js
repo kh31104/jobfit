@@ -284,7 +284,9 @@ function syncDownstream(state,target,a){
   jdOld.postings=[...(jdOld.postings||[]).filter(x=>x.id!==postingId),posting];jdOld.selectedId=postingId;
   const experiences=(state.assessments?.experienceCompetency?.experiences||[]).filter(x=>x?.factChecked);
   const assets=(a.requirements||[]).filter(r=>r.name).map((r,i)=>{const ex=findExperience(r.evidence,experiences),level=evidenceLevel(r.status),req=requirements.find(q=>q.text===r.name);return{id:'asset_step4_'+i+'_'+slug(r.name),postingId,experienceId:ex?.id||'',experienceTitle:ex?.title||'',requirementId:req?.id||'',requirement:r.name,requirementType:r.type,requirementLevel:req?.level||'',evidenceQuestion:'',proof:ex?.action||r.evidence||'',fact:r.evidence||ex?.evidence||'',gap:r.gap||'',jobLink:r.name,evidenceLevel:level,strength:level,useFor:'여러 곳',factCheck:ex?.factChecked?'검증완료':'추가확인 필요',sourceExperienceFactChecked:!!ex?.factChecked,createdAt:new Date().toISOString()}});
-  const careerAssets={...(state.artifacts?.careerAssets||{}),assets};
+  // STEP 8 '새로 시작'에서 만든 근거 카드는 GAP Match를 다시 저장해도 지우지 않는다.
+  const quickStartAssets=(state.artifacts?.careerAssets?.assets||[]).filter(x=>x?.origin==='quick-start-step8');
+  const careerAssets={...(state.artifacts?.careerAssets||{}),assets:[...assets,...quickStartAssets]};
   return {jdAnalyzer:jdOld,careerAssets,industryCompany:syncIndustryCompany(state,target,a)};
 }
 function getTargets(explorer){const combos=Array.isArray(explorer.targetCombos)&&explorer.targetCombos.length?explorer.targetCombos:(explorer.targets||[]).map((jobId,i)=>({id:'target_'+jobId+'_'+(i+1),jobId,industry:'산업 미정',priority:i+1}));return combos.map(c=>({...c,job:explorer.candidates?.find(x=>x.id===c.jobId)})).filter(x=>x.job)}
