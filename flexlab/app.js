@@ -2184,7 +2184,7 @@ function step6(){
     '</div>'+
     '<div class="callout good noPrint"><b>자동 저장</b> STEP 1~6의 입력값과 붙여넣은 AI 결과는 이 브라우저에 저장됩니다. 같은 기기·같은 브라우저로 다시 열면 이어서 사용할 수 있습니다.</div>'+
     '<div class="divider noPrint"></div><div class="exportGrid noPrint"><div class="exportCard"><b>Word용 문서</b><p>직무분석 Portfolio를 Word에서 수정합니다.</p><button class="btn primary" id="docBtn">Word 파일 저장</button></div><div class="exportCard"><b>PDF</b><p>인쇄 화면에서 PDF로 저장합니다.</p><button class="btn secondary" id="printBtn">PDF 저장 화면</button></div><div class="exportCard"><b>학습 백업</b><p>브라우저 저장과 별도로 보관할 JSON입니다.</p><button class="btn secondary" id="jsonBtn2">JSON 백업 저장</button></div></div>'+
-    '<div class="actions stepFooter noPrint"><button class="btn secondary" data-prev="5">이전</button><button class="btn secondary" id="copyBtn">Portfolio 텍스트 복사</button><button class="btn danger" id="resetBtn">FLEX 데이터 새로 시작</button></div></section>';
+    '<div class="actions stepFooter noPrint"><button class="btn secondary" data-prev="5">이전</button><button class="btn secondary" id="copyBtn">Portfolio 텍스트 복사</button><button class="btn secondary" id="resetBtn">답변 초기화 메뉴</button></div></section>';
 }
 
 async function copyText(text,msg){
@@ -2438,11 +2438,142 @@ function bind(){
   document.getElementById("printBtn")?.addEventListener("click",()=>window.print());
   document.getElementById("jsonBtn2")?.addEventListener("click",exportJson);
   document.getElementById("copyBtn")?.addEventListener("click",()=>copyText(portfolio(),"Portfolio 텍스트를 복사했습니다."));
-  document.getElementById("resetBtn")?.addEventListener("click",()=>{
-    if(confirm("Jobfit FLEX 직무분석 데이터만 새로 시작할까요? INJE Jobfit 데이터에는 영향을 주지 않습니다.")){
-      localStorage.removeItem(STORAGE_KEY);state=defaults();activePosting=0;render();toast("FLEX 데이터만 초기화했습니다.");
-    }
-  });
+  document.getElementById("resetBtn")?.addEventListener("click",openResetMenu);
+}
+
+
+// FLEX-only reset menu. Snapshot the full student state before changing anything.
+const FLEX_RESET_BACKUP_KEY = "jobfit:flexlab:reset-backup:v1";
+
+function storeResetRecovery(){
+  try{
+    save();
+    localStorage.setItem(FLEX_RESET_BACKUP_KEY,JSON.stringify({
+      createdAt:new Date().toISOString(),
+      data:state
+    }));
+    return true;
+  }catch(err){
+    alert("브라우저에 초기화 전 백업을 저장하지 못했습니다. 저장 공간을 확인한 뒤 다시 시도해 주세요.");
+    return false;
+  }
+}
+
+function clearStepAnswers(step){
+  const empty=defaults();
+  switch(step){
+    case 1:
+      state.target={...empty.target};
+      state.student.major="";
+      break;
+    case 2:
+      state.step2Search={...empty.step2Search};
+      state.promptDrafts.search="";
+      break;
+    case 3:
+      state.jobTable=emptyJobTable();
+      state.competency.top5="";
+      state.promptDrafts.job="";
+      Object.values(state.analysisCases||{}).forEach(c=>{
+        c.jobTable=emptyJobTable();
+        c.promptDrafts={...(c.promptDrafts||{}),job:""};
+      });
+      break;
+    case 4:
+      state.student.majorEvidence="";
+      state.experiences=[emptyExperience(),emptyExperience(),emptyExperience()];
+      state.selectedExperience=0;
+      state.star={...empty.star};
+      state.ai.keywordResult="";
+      state.promptDrafts.keyword="";
+      Object.values(state.analysisCases||{}).forEach(c=>{
+        c.keywordResult="";
+        c.promptDrafts={...(c.promptDrafts||{}),keyword:""};
+      });
+      break;
+    case 5:
+      state.student.certificates="";
+      state.student.language="";
+      state.student.tools="";
+      state.requirements=emptyRequirements();
+      state.matchRows=[0,1,2].map(emptyMatch);
+      state.fit=emptyFit();
+      state.ai.gapResult="";
+      state.promptDrafts.gap="";
+      Object.values(state.analysisCases||{}).forEach(c=>{
+        c.requirements=emptyRequirements();
+        c.fit=emptyFit();
+        c.gapResult="";
+        c.promptDrafts={...(c.promptDrafts||{}),gap:""};
+      });
+      break;
+    case 6:
+      state.interviewMode="6";
+      state.ai.selfIntroResult="";
+      state.ai.interviewResult="";
+      state.promptDrafts.selfIntro="";
+      state.promptDrafts.interview="";
+      Object.values(state.analysisCases||{}).forEach(c=>{
+        c.selfIntroResult="";
+        c.interviewResult="";
+        c.promptDrafts={...(c.promptDrafts||{}),selfIntro:"",interview:""};
+      });
+      break;
+    default:
+      return;
+  }
+}
+
+function resetAnswers(mode){
+  const step=state.currentStep;
+  const isAll=mode==="all";
+  const label=isAll?"STEP 1~6 전체 답변":"STEP "+String(step).padStart(2,"0")+" 답변";
+  const detail=isAll
+    ?"전체 입력과 분석 결과가 초기화됩니다. 잡핏플렉스의 이전 데이터는 '마지막 초기화 되돌리기'로 복구할 수 있습니다."
+    :"이 STEP에서 입력한 답변을 초기화합니다. 다른 STEP의 답변은 남으며, 연동된 결과는 이후 다시 확인해 주세요.";
+  if(!confirm(label+"을 초기화할까요?\n\n"+detail))return;
+  if(!storeResetRecovery())return;
+  if(isAll){
+    state=defaults();
+    activePosting=0;
+  }else{
+    clearStepAnswers(step);
+  }
+  save();
+  document.getElementById("resetMenu")?.removeAttribute("open");
+  render();
+  toast(isAll?"FLEX 전체 답변을 초기화했습니다.":"STEP "+String(step).padStart(2,"0")+" 답변을 초기화했습니다.");
+}
+
+function restoreResetRecovery(){
+  const raw=localStorage.getItem(FLEX_RESET_BACKUP_KEY);
+  if(!raw){toast("되돌릴 초기화 기록이 없습니다.");return;}
+  let backup;
+  try{
+    backup=JSON.parse(raw);
+    if(!backup?.data||typeof backup.data!=="object"||Array.isArray(backup.data))throw new Error("invalid");
+  }catch(e){
+    toast("복구 기록을 읽을 수 없습니다.");return;
+  }
+  if(!confirm("마지막 초기화 직전의 FLEX 답변으로 되돌릴까요?\n현재 입력한 FLEX 답변은 복구 기록으로 교체됩니다."))return;
+  try{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(backup.data));
+    state=load();
+    activePosting=0;
+    localStorage.removeItem(FLEX_RESET_BACKUP_KEY);
+    document.getElementById("resetMenu")?.removeAttribute("open");
+    render();
+    toast("마지막 초기화 이전의 FLEX 답변을 복구했습니다.");
+  }catch(e){
+    alert("복구 도중 저장 오류가 발생했습니다. 저장 공간을 확인해 주세요.");
+  }
+}
+
+function openResetMenu(){
+  const menu=document.getElementById("resetMenu");
+  if(!menu)return;
+  menu.open=true;
+  menu.querySelector("summary")?.focus();
 }
 
 function render(){
@@ -2483,6 +2614,10 @@ function importJson(file){
   r.onload=()=>{try{const x=JSON.parse(r.result);if(!x||typeof x!=="object")throw new Error();localStorage.setItem(STORAGE_KEY,JSON.stringify(x));state=load();render();toast("FLEX 백업을 불러왔습니다.");}catch(e){toast("Jobfit FLEX 백업파일인지 확인해 주세요.");}};
   r.readAsText(file,"utf-8");
 }
+
+document.getElementById("resetCurrentStepBtn").addEventListener("click",()=>resetAnswers("step"));
+document.getElementById("resetAllStepsBtn").addEventListener("click",()=>resetAnswers("all"));
+document.getElementById("restoreLastResetBtn").addEventListener("click",restoreResetRecovery);
 
 document.getElementById("exportJsonBtn").onclick=exportJson;
 document.getElementById("importJsonBtn").onclick=()=>document.getElementById("importFile").click();
