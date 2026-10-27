@@ -63,6 +63,7 @@ jobs:
           node --check v2/storageContinuity.js
           node --check v2/operationalSync.js
           node --check v2/app.js
+          node --check v2/quickStart.js
           node v2/tests/report-readability.mjs
           node --check v2/research.js
           node --check v2/researchBackend.js
@@ -79,6 +80,7 @@ jobs:
           node --check v2/tests/career-roadmap-week4.mjs
           node --check v2/tests/inje-step1-6-report-mobile.mjs
           node --check v2/tests/inje-step7-12-readability.mjs
+          node --check v2/tests/inje-quick-start.mjs
           node --check v2/tests/week-isolation-regression.mjs
           node --check v2/tests/live-production.mjs
           node --check v2/tests/research-measures.mjs
@@ -226,6 +228,7 @@ jobs:
           node v2/tests/inje-mobile-gap-save.mjs
           node v2/tests/inje-mobile-choice-backup.mjs
           node v2/tests/inje-step7-12-readability.mjs
+          node v2/tests/inje-quick-start.mjs
           node v2/tests/research-measures.mjs
           node v2/tests/relationship-smoke.mjs
           node v2/tests/application-flow.mjs
@@ -243,6 +246,7 @@ jobs:
           node v2/tests/inje-mobile-gap-save.mjs
           node v2/tests/inje-mobile-choice-backup.mjs
           node v2/tests/inje-step7-12-readability.mjs
+          node v2/tests/inje-quick-start.mjs
           node v2/tests/research-measures.mjs
           node v2/tests/relationship-smoke.mjs
           node v2/tests/application-flow.mjs

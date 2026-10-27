@@ -1,4 +1,5 @@
 import {readValue,readField,readCard,READABLE_STYLES} from './readableResults.js';
+import {activeTargetJobs,activeTargetCombos,quickStartActive,renderStep7QuickStart,wireStep7QuickStart} from '../quickStart.js?v=1';
 const INDUSTRY_SOURCE_TYPES=['정부·공공기관','산업협회·전문기관','공시·통계','기업 IR·사업보고서','기타 신뢰자료'];
 const COMPANY_TYPES=['대기업','중견기업','중소기업','스타트업','공공기관','외국계','기타'];
 const HIRING_EVIDENCE=['현재 채용공고 확인','최근 채용공고 확인','공식 직무소개 확인','직무 존재만 확인','아직 미확인'];
@@ -16,6 +17,7 @@ export async function render(ctx){
     <div class="sectionHead"><div><div class="kicker">STEP 7 · INDUSTRY & COMPANY ANALYSIS</div><h2>내가 지원할 산업과 기업 이해하기</h2><p>STEP 5에서 확인한 Target Job을 기준으로 <b>산업 → 기업 → 직무</b>의 연결을 확인하고, 실제 지원 준비할 기업을 구체화합니다.</p></div><span class="badge">산업·기업분석</span></div>
     <div class="progress"><span style="width:58%"></span></div>
     <div class="callout info"><b>점수로 ‘잘 맞는 기업’을 판정하지 않습니다.</b><br>실제 산업자료·기업자료·채용근거를 확인하고, 학생이 직접 더 준비할 산업과 기업을 선택합니다.</div>
+    ${renderStep7QuickStart(s,ctx)}
 
     <div class="block"><h3>01. My Target 확인</h3><p class="help">새 직무를 고르지 않습니다. STEP 5에서 분석한 직무와 JD를 기준점으로 사용합니다.</p>
       <div class="targetSummary">${targetSummaryHtml(s,ctx)}</div>
@@ -59,6 +61,7 @@ export async function render(ctx){
   document.getElementById('copyCompanyPrompt').addEventListener('click',()=>copy(document.getElementById('companyPrompt').value,ctx));
   document.getElementById('addIndustry').addEventListener('click',addIndustry);document.getElementById('addCompany').addEventListener('click',addCompany);
   document.getElementById('saveAll').addEventListener('click',saveAll);document.getElementById('nextStep').addEventListener('click',()=>{saveAll();ctx.navigate(7)});
+  wireStep7QuickStart(ctx,{onDone:()=>ctx.navigate(6)});
 
   function addIndustry(){const name=v('industryName'),jobId=v('industryJobId'),source=v('industrySource'),url=v('industryUrl');if(!name||!jobId||!source||!url){status('산업명·연결직무·자료명·URL을 입력하세요.');return;}data.industries.push({id:`ind_${Date.now()}`,name,jobId,sourceType:v('industrySourceType'),source,url,checkedAt:v('industryChecked'),business:v('industryBusiness'),change:v('industryChange'),jobLink:v('industryJobLink'),difference:v('industryDifference'),createdAt:new Date().toISOString()});clear(['industryName','industrySource','industryUrl','industryBusiness','industryChange','industryJobLink','industryDifference']);persist();renderAll();status('산업 Evidence를 추가했습니다.');}
   function addCompany(){const name=v('companyName'),industryId=v('companyIndustryId'),jobId=v('companyJobId');if(data.companies.length>=3){status('기업 후보는 최대 3개까지 분석할 수 있습니다. 기존 기업을 삭제한 뒤 추가하세요.');return;}if(!name||!industryId||!jobId){status('기업명·산업·직무 연결을 모두 선택하세요.');return;}const industry=data.industries.find(x=>x.id===industryId);if(industry?.jobId&&industry.jobId!==jobId){status('선택한 산업 Evidence와 연결된 Target Job이 다릅니다. 조합을 다시 확인하세요.');return;}data.companies.push({id:`co_${Date.now()}`,name,type:v('companyType'),industryId,jobId,industry:industry?.name||'',job:jobs.find(x=>x.id===jobId)?.title||'',source:v('companySource'),url:v('companyUrl'),checkedAt:v('companyChecked'),hiringEvidence:v('companyHiringEvidence'),jobSource:v('companyJobSource'),jobUrl:v('companyJobUrl'),business:v('companyBusiness'),direction:v('companyDirection'),role:v('companyRole'),signals:v('companySignals'),why:v('companyWhy'),unknown:v('companyUnknown'),createdAt:new Date().toISOString()});clear(['companyName','companySource','companyUrl','companyJobSource','companyJobUrl','companyBusiness','companyDirection','companyRole','companySignals','companyWhy','companyUnknown']);persist();renderAll();status('기업 Evidence를 추가했습니다.');}
@@ -97,10 +100,11 @@ export async function render(ctx){
   function persist(){ctx.saveState({artifacts:{industryCompany:data}})}function v(id){return document.getElementById(id)?.value?.trim()||''}function clear(ids){ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value=''})}function status(t){document.getElementById('status').textContent=t;ctx.toast(t)}
 }
 
-function getTargetJobs(s){const e=s.artifacts?.jobExplorer||{};return (e.targets||[]).map(id=>e.candidates?.find(x=>x.id===id)).filter(Boolean)}
+// '새로 시작' 목표가 켜져 있으면 그 직무를, 아니면 STEP 4 목표를 사용한다(v2/quickStart.js).
+function getTargetJobs(s){return activeTargetJobs(s)}
 function companyEvidenceQuality(x){if(x.url&&x.jobUrl&&['현재 채용공고 확인','최근 채용공고 확인'].includes(x.hiringEvidence))return '근거 높음';if(x.url&&(x.jobUrl||x.hiringEvidence==='공식 직무소개 확인'))return '근거 보통';return '근거 보강'}
 function buildIndustryPrompt(s){
-  const e=s.artifacts?.jobExplorer||{},jobs=getTargetJobs(s).map(x=>x.title),industries=(e.targetCombos||[]).map(x=>x.industry).filter(Boolean);
+  const jobs=getTargetJobs(s).map(x=>x.title),industries=activeTargetCombos(s).map(x=>x.industry).filter(x=>x&&x!=='산업 미정');
   return `나는 ${s.profile?.major||'전공 미입력'} 전공 대학생이고, Target Job은 ${jobs.join(', ')||'미정'}이다.
 관심 산업은 ${[...new Set(industries)].join(', ')||'미정'}이다.
 
@@ -174,12 +178,14 @@ function buildCompanyPrompt(s,data){
 - 적합도 점수나 합격 가능성을 계산하지 않는다.
 - JSON·코드블록을 사용하지 않는다.`;
 }
-function primaryTargetIndustry(s){const e=s.artifacts?.jobExplorer||{},arr=(e.targetCombos||[]).map(x=>x.industry).filter(Boolean);return arr[0]||e.industryInterests?.[0]||''}
+function primaryTargetIndustry(s){const e=s.artifacts?.jobExplorer||{},arr=activeTargetCombos(s).map(x=>x.industry).filter(x=>x&&x!=='산업 미정');return arr[0]||(quickStartActive(s)?'':e.industryInterests?.[0])||''}
 function targetSummaryHtml(s,ctx){
-  const e=s.artifacts?.jobExplorer||{},deep=s.artifacts?.jobDeepDive||{},combos=(e.targetCombos||[]).length?e.targetCombos:(e.targets||[]).map((jobId,i)=>({id:'target_'+jobId+'_'+(i+1),jobId,industry:'산업 미정'}));
-  if(!combos.length)return '<div class="callout warn">STEP 3~5에서 Target Job을 먼저 확정하세요.</div>';
+  const e=s.artifacts?.jobExplorer||{},deep=s.artifacts?.jobDeepDive||{},combos=activeTargetCombos(s),jobs=getTargetJobs(s);
+  if(!combos.length)return '<div class="callout warn">STEP 4~5에서 Target Job을 확정했거나, 위 \'새로 시작\'에서 목표 직무와 관심 산업을 입력하세요.</div>';
   return combos.map((t,i)=>{
-    const job=e.candidates?.find(x=>x.id===t.jobId),a=deep.targetAnalyses?.[t.id]||deep.analyses?.[t.jobId]||{},selected=(a.sources||[]).find(x=>x.id===a.selectedSourceId)||(a.sources||[])[0],jt=a.jobTable||{};
+    const job=jobs.find(x=>x.id===t.jobId)||e.candidates?.find(x=>x.id===t.jobId);
+    if(t.origin==='quick-start-step7')return `<div class="listCard"><div class="listHead"><div><span class="rankTag">Target ${i+1} · 새로 시작</span><h3>${esc(job?.title||'직무 미확인',ctx)} × ${esc(t.industry||'산업 미정',ctx)}</h3></div></div><div class="grid2"><div><b>출발점</b><p>STEP 5 직무분석 없이 기본 정보로 시작했습니다.</p></div><div><b>STEP 7에서 확인할 것</b><p>이 직무가 산업과 기업에 따라 어떻게 달라지는지, 실제 채용공고에서 무엇을 요구하는지 확인</p></div></div></div>`;
+    const a=deep.targetAnalyses?.[t.id]||deep.analyses?.[t.jobId]||{},selected=(a.sources||[]).find(x=>x.id===a.selectedSourceId)||(a.sources||[])[0],jt=a.jobTable||{};
     return `<div class="listCard"><div class="listHead"><div><span class="rankTag">Target ${i+1}</span><h3>${esc(job?.title||'직무 미확인',ctx)} × ${esc(t.industry||'산업 미정',ctx)}</h3></div></div><div class="grid2"><div><b>확인한 JD</b><p>${esc(selected?((selected.companyName?selected.companyName+' · ':'')+selected.name):'선택한 JD 없음',ctx)}</p></div><div><b>주요 과업</b><p>${esc(jt.tasks||'STEP 5 직무분석에서 확인 필요',ctx)}</p></div><div><b>필요역량</b><p>${esc(jt.competencies||'STEP 5 직무분석에서 확인 필요',ctx)}</p></div><div><b>STEP 7에서 확인할 것</b><p>이 직무가 산업과 기업에 따라 어떻게 달라지는지 확인</p></div></div></div>`;
   }).join('');
 }
