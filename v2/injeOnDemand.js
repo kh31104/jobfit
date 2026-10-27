@@ -60,19 +60,32 @@ export function projectInjeOnDemand(original){
   }
 
   const combos=s.artifacts.jobExplorer?.targetCombos||[];
-  const active=combos.find(c=>c.id===COMBO);
+  const active=combos[0];
   const jd=s.artifacts.jobDeepDive||{};
-  const oldA=jd.targetAnalyses?.[COMBO]||jd.analyses?.[TARGET];
-  if(active&&!oldA&&(val(d.jdTasks)||val(d.company)||val(d.jdTitle)||val(d.jdRequirements))){
+  const oldA=active&&(jd.targetAnalyses?.[active.id]||jd.analyses?.[active.jobId]);
+  if(active&&[d.jdTasks,d.company,d.jdTitle,d.jdRequirements,d.have,d.gap,d.nextAction].some(val)){
     const sourceUrl=verifiedUrl(d.jdUrl);
     const sources=sourceUrl?[{id:'inje-on-demand-source',name:val(d.jdTitle)||val(d.job),companyName:val(d.company),url:sourceUrl,checkedAt:val(d.updatedAt).slice(0,10),type:'학생 입력 · 원문 확인 필요',slot:0}]:[];
     const req=list(d.jdRequirements,8).map((name,i)=>({id:REQUIREMENT+'-'+i,name,status:'확인 필요',source:'학생 입력 · 공고 대조 필요'}));
-    const analysis={targetId:COMBO,jobTitle:val(d.job),industry:val(d.industry),
+    if(val(d.gap))req.push({id:REQUIREMENT+'-gap',name:val(d.gap),gap:val(d.gap),status:'준비 필요',source:'학생 자기평가'});
+    const job=s.artifacts.jobExplorer?.candidates?.find(x=>x.id===active.jobId);
+    const fallback={targetId:active.id,jobTitle:job?.title||val(d.job),industry:active.industry||val(d.industry),
       company:{name:val(d.company)},sources,selectedSourceId:sources[0]?.id||'',
       jobTable:{customerKpi:'',tasks:val(d.jdTasks),challenge:'',method:'',competencies:'',careerPlan:'',aiResult:''},
-      studentSpec:{certificates:'',language:'',tools:'',portfolio:''},requirements:req,origin:ORIGIN};
-    s.artifacts.jobDeepDive={...jd,targetAnalyses:{...(jd.targetAnalyses||{}),[COMBO]:analysis},
-      analyses:{...(jd.analyses||{}),[TARGET]:analysis}};
+      studentSpec:{certificates:'',language:'',tools:'',portfolio:''},
+      requirements:req,have:val(d.have),prepare:val(d.nextAction),origin:ORIGIN};
+    // Existing STEP 5 analysis wins. Only its empty fields are read from the supplement.
+    const a=oldA?{...oldA,
+      have:val(oldA.have)||fallback.have,
+      prepare:val(oldA.prepare)||fallback.prepare,
+      jobTable:{...fallback.jobTable,...(oldA.jobTable||{}),
+        tasks:val(oldA.jobTable?.tasks)||fallback.jobTable.tasks},
+      requirements:oldA.requirements?.length?oldA.requirements:req,
+      sources:oldA.sources?.length?oldA.sources:sources,
+      selectedSourceId:val(oldA.selectedSourceId)||sources[0]?.id||''
+    }:fallback;
+    s.artifacts.jobDeepDive={...jd,targetAnalyses:{...(jd.targetAnalyses||{}),[active.id]:a},
+      analyses:{...(jd.analyses||{}),[active.jobId]:a}};
   }
 
   const ja=s.artifacts.jdAnalyzer||{};
@@ -105,7 +118,7 @@ export function projectInjeOnDemand(original){
 
 function missingForStep(s,step){
   const e=s.artifacts?.jobExplorer||{},jd=s.artifacts?.jdAnalyzer||{},ca=s.artifacts?.careerAssets||{};
-  if(step===4)return !hasTarget(e);
+  if(step===3||step===4)return !hasTarget(e);
   if(step===5)return !(s.assessments?.experienceCompetency?.experiences||[]).some(x=>x?.factChecked&&val(x.action))||!hasTarget(e);
   if(step===8||step===9)return !(jd.postings||[]).length||!(ca.assets||[]).some(a=>a?.evidenceLevel&&a.evidenceLevel!=='없음');
   return false;
@@ -140,8 +153,18 @@ export function mountInjeOnDemand(ctx,step,root){
     +area('careerNote','자기이해 한 줄 (선택)','직접 확인한 나의 관심·강점')
     +field('activities','해보고 싶은 업무 (선택)','예: 자료 분석, 고객 응대')
     +field('via','VIA TOP 5 (검사 결과가 있을 때만)','쉼표로 구분해 실제 결과 5개 입력')
+    +area('have','지금 가진 직무 근거 (선택)','현재 확인한 자격·경험·기술')
+    +area('gap','핵심 부족한 점 (선택)','확인된 GAP 1개')
+    +area('nextAction','앞으로 3개월간 할 일 (선택)','실행할 행동 한 가지')
     +'</div><label class="checkRow"><input id="od-viaConfirmed" type="checkbox" '+(d.viaConfirmed===true?'checked':'')+'><span>공식 VIA 검사 결과를 보고 그대로 옮겼습니다. 검사하지 않았다면 빈칸으로 두세요.</span></label>':'';
-  const posting=wantPosting?'<div class="grid2">'
+  const reportJD=showReport?'<details class="qsDetails" style="margin-top:12px"><summary>직무분석·공고 자료도 없어졌다면 추가 입력 (선택)</summary><div class="grid2" style="margin-top:12px">'
+    +field('company','기준 기업 (선택)','예: 관심 기업')
+    +field('jdTitle','채용공고명 (선택)','예: 마케팅 직무소개')
+    +field('jdUrl','원문 URL (선택)','https://...')
+    +area('jdTasks','직무에서 하는 일 (선택)','실제 직무소개에 적힌 업무')
+    +area('jdRequirements','주요 요구사항 (선택)','원문에서 확인한 요구사항만')
+    +'</div></details>':'';
+  const posting=wantPosting?'<div class="grid2">
     +field('company','지원 기업','예: 관심 기업')
     +field('jdTitle','채용공고 제목 (선택)','예: 신입 마케터')
     +field('jdUrl','공고 원문 URL (선택)','https://...')
@@ -152,7 +175,7 @@ export function mountInjeOnDemand(ctx,step,root){
     +'.injeOd{margin:12px 0 20px}.injeOd details{border:1px solid #d5def2;border-radius:14px;padding:12px;background:#fafcff}.injeOd summary{cursor:pointer;font-weight:800;line-height:1.5}.injeOd .odBody{margin-top:12px}.injeOd .odNote{font-size:13px;line-height:1.65;color:#475467;margin:8px 0 14px}.injeOd .grid2{gap:10px}.injeOd .field{min-width:0}.injeOd .checkRow{margin:10px 0}.injeOd .actions{margin-top:14px}@media(max-width:760px){.injeOd .grid2{grid-template-columns:minmax(0,1fr)}}'
     +'</style><details '+(isMissing?'open':'')+'><summary>'+(isMissing?'앞 단계 자료가 없어도 여기서 바로 입력하기':'이 단계에서 필요한 정보만 추가하기 (선택)')+'</summary>'
     +'<div class="odBody"><p class="odNote">기존 STEP 1~6 저장값은 수정하거나 초기화하지 않습니다. 아래 내용은 별도 보완 기록으로만 저장하고, 기존 데이터가 없는 칸에만 사용합니다. 없는 경험·검사 결과를 만들어 입력하지 마세요.</p>'
-    +goal+info+posting+exp
+    +goal+info+reportJD+posting+exp
     +'<div class="actions"><button type="button" class="btn primary" id="od-save">필요한 정보만 저장하고 현재 STEP 계속하기</button>'
     +'<button type="button" class="btn secondary" id="od-backup">기존 데이터 JSON 백업</button></div>'
     +'<div class="status" id="od-status" role="status"></div></div></details></div>';
@@ -164,7 +187,7 @@ export function mountInjeOnDemand(ctx,step,root){
   node.querySelector('#od-backup')?.addEventListener('click',()=>ctx.downloadJSON());
   node.querySelector('#od-save')?.addEventListener('click',()=>{
     const fields=['job','industry','experienceTitle','experienceAction','experienceResult','competencies',
-      'careerNote','activities','via','company','jdTitle','jdUrl','jdRequirements'];
+      'careerNote','activities','via','have','gap','nextAction','company','jdTitle','jdUrl','jdTasks','jdRequirements'];
     const next={...d};
     for(const k of fields){const el=node.querySelector('#od-'+k);if(el)next[k]=val(el.value)}
     for(const k of ['experienceConfirmed','viaConfirmed']){const el=node.querySelector('#od-'+k);if(el)next[k]=el.checked}
