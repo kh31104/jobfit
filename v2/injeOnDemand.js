@@ -18,7 +18,7 @@ const hasTarget=e=>(e?.targets||[]).some(id=>(e?.candidates||[]).some(c=>c.id===
 export function projectInjeOnDemand(original){
   const d=original?.artifacts?.injeOnDemand;
   if(!d||typeof d!=='object')return original;
-  if(![d.job,d.experienceTitle,d.company,d.via,d.careerNote].some(val))return original;
+  if(!['job','industry','experienceTitle','experienceAction','experienceResult','competencies','careerNote','activities','via','have','gap','nextAction','company','jdTitle','jdUrl','jdTasks','jdRequirements'].some(k=>val(d[k])))return original;
   const s=structuredClone(original);
   s.artifacts=s.artifacts||{};
   s.assessments=s.assessments||{};
@@ -33,7 +33,7 @@ export function projectInjeOnDemand(original){
       targets:[TARGET],targetCombos:[{id:COMBO,jobId:TARGET,industry:val(d.industry)||'산업 미정',priority:1,origin:ORIGIN}]};
   }
   const explorer=s.artifacts.jobExplorer||{};
-  if(!explorer.industryInterests?.length&&val(d.industry)){
+  if((!explorer.industryInterests?.length||explorer.industryInterests.every(x=>x==='아직 잘 모르겠어요'))&&val(d.industry)){
     s.artifacts.jobExplorer={...explorer,industryInterests:list(d.industry,3)};
   }
   if(!s.artifacts.jobExplorer?.desiredActivities?.length&&val(d.activities)){
@@ -90,12 +90,14 @@ export function projectInjeOnDemand(original){
 
   const ja=s.artifacts.jdAnalyzer||{};
   const postings=Array.isArray(ja.postings)?ja.postings:[];
-  if(!postings.length&&val(d.company)&&val(d.job||d.jdTitle)){
+  const selectedJob=s.artifacts.jobExplorer?.candidates?.find(x=>x.id===s.artifacts.jobExplorer?.targets?.[0]);
+  const postingJobTitle=val(d.job)||val(selectedJob?.title)||val(d.jdTitle);
+  if(!postings.length&&val(d.company)&&postingJobTitle){
     const reqs=list(d.jdRequirements,8).map((text,i)=>({
       id:REQUIREMENT+'-'+i,text,type:'기타',level:'업무핵심',
       explicitness:'학생 입력 · 공고 대조 필요',origin:ORIGIN}));
     s.artifacts.jdAnalyzer={...ja,postings:[{id:POSTING,company:val(d.company),
-      jobTitle:val(d.job)||val(d.jdTitle),rawPosting:val(d.jdTasks),
+      jobTitle:postingJobTitle,rawPosting:val(d.jdTasks),
       source:verifiedUrl(d.jdUrl),postingUrl:verifiedUrl(d.jdUrl),
       requirements:reqs,gates:[],gateReviewed:false,origin:ORIGIN}],
       selectedId:POSTING};
