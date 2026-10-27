@@ -203,6 +203,6 @@ export function mountInjeOnDemand(ctx,step,root){
     ctx.saveState({artifacts:{injeOnDemand:next}});
     ctx.toast('보완 정보만 별도 저장했습니다. 기존 STEP 결과는 그대로 유지합니다.');
     // INJE STEP 8-10 use physical modules 9-11 in the existing navigation adapter.
-    ctx.navigate(step>=7?step+2:step);
+    ctx.navigate(step===3?4:step>=7?step+2:step);
   });
 }
