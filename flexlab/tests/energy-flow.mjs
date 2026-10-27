@@ -93,7 +93,9 @@ try{
   ].join('\n'));
   await page.locator('#applyJobTableAiBtn').click();
   assert((await page.locator('[data-path="jobTable.tasks"]').inputValue()).includes('에너지·환경'),'KEA AI result must populate role-specific job table');
-  assert(await page.locator('.jobAnalysisPreview th').count()===5,'STEP3 must render the five-column core job-analysis table');
+  assert(await page.locator('.jobAnalysisPreview thead th').count()===2,'STEP3 must render the readable two-column header');
+  assert(await page.locator('.jobAnalysisPreview tbody tr').count()===5,'STEP3 must keep all five original job analysis fields');
+  assert(await page.locator('.jobAnalysisPreview .jobPreviewList li').count()>=5,'STEP3 must render readable bullet content');
   await page.reload({waitUntil:'networkidle'});
   assert((await page.locator('[data-curated-role="kea-2026-h2"]').inputValue())==='화공·환경','STEP3 selected role must persist after reload');
   assert((await page.locator('[data-path="jobTable.tasks"]').inputValue()).includes('에너지·환경'),'STEP3 analysis answer must persist after reload');
@@ -259,6 +261,22 @@ try{
   await page.reload({waitUntil:'networkidle'});
   assert((await page.locator('[data-exp="0"][data-expkey="title"]').inputValue())==='환경데이터 캡스톤','STEP4 experience must persist after reload');
   assert((await page.locator('[data-path="ai.keywordResult"]').inputValue()).includes('데이터 해석'),'STEP4 AI result must persist after reload');
+
+  // STEP 4 portfolio summary: one bullet per competency, while retaining saved source text.
+  const portfolioBullets=[
+    '• 데이터 분석 → 측정값 정리 → 환경데이터 캡스톤 → 충분',
+    '• 비교 검토 → 기준과 결과 대조 → 실험 기록 → 일부',
+    '• 보고서 작성 → 자료 문서화 → 프로젝트 산출물 → 충분'
+  ].join('\n');
+  const priorKeyword=await page.locator('[data-path="ai.keywordResult"]').inputValue();
+  await page.locator('[data-path="ai.keywordResult"]').fill(priorKeyword+'\n\n[Portfolio용 핵심역량 요약]\n'+portfolioBullets);
+  await page.locator('#applyCompetencySummaryBtn').click();
+  assert(await page.locator('.portfolioCompetencyBullets li').count()===3,'STEP4 must display three separate competency bullets');
+  assert((await page.locator('.portfolioCompetencyBullets li').first().innerText()).includes('데이터 분석'),'STEP4 must preserve the first competency content');
+  const savedPortfolio=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:flexlab:job-analysis:v1')).star.competency);
+  assert(savedPortfolio===portfolioBullets,'STEP4 must preserve the exact saved competency summary');
+  await page.reload({waitUntil:'networkidle'});
+  assert(await page.locator('.portfolioCompetencyBullets li').count()===3,'STEP4 competency bullets must survive reload');
   await page.locator('[data-next="5"]').click();
 
   // STEP 5: auto-fill STEP3 target, but allow direct switching.
@@ -314,7 +332,12 @@ try{
   await page.locator('[data-req="1"][data-reqkey="note"]').fill('대기환경기사 준비 중');
   await page.locator('[data-req="2"][data-reqkey="status"]').selectOption('현재 GAP');
   await page.locator('[data-req="2"][data-reqkey="note"]').fill('공식 직무기술서 기반 현장형 문제풀이 경험 부족');
+  assert(await page.locator('.requirementConditionField').count()===3,'STEP5 must retain exactly three requirement conditions');
+  assert((await page.locator('.requirementConditionField .step5BulletList li').count())>=3,'STEP5 requirements must use readable bullet items');
+  assert(await page.locator('.step5NotePreview').count()===3,'STEP5 must show readable evidence for each condition');
+  assert(await page.locator('.step5NoteEditor').count()===3,'STEP5 must keep three editable evidence fields');
   assert((await page.locator('#derivedGapAssetsPreview').innerText()).includes('공통 지원자격 확인'),'STEP5 confirmed evidence must update live without a duplicate strengths input');
+  assert((await page.locator('#derivedGapAssetsPreview .step5BulletList li').count())>=1,'STEP5 confirmed evidence must render as bullet items');
   const gapPrompt=await page.locator('#gapPromptPreview').inputValue();
   assert(gapPrompt.includes('한국에너지공단'),'STEP5 GAP prompt must use restored KEA target');
   assert(gapPrompt.includes('필수적으로 부족한 정보: 없음'),'Completed STEP5 evidence must clear mandatory GAP evidence gaps');
@@ -323,11 +346,15 @@ try{
   assert(gapPrompt.includes('개조식'),'STEP5 GAP prompt must request bullet-style output');
   await page.locator('[data-path="fit.gaps"]').fill('직무기술서 기반 전문지식 보강, 현장 경험 부족');
   await page.locator('[data-path="fit.actions"]').fill('공식 직무기술서 학습과 에너지 데이터 미니 프로젝트 완성');
+  assert((await page.locator('[data-readable-path="fit.gaps"] .step5BulletList li').first().innerText()).includes('직무기술서 기반'),'STEP5 GAP preview must update as user edits');
+  assert((await page.locator('[data-readable-path="fit.actions"] .step5BulletList li').first().innerText()).includes('에너지 데이터'),'STEP5 three-month action preview must update live');
   await page.locator('[data-path="ai.gapResult"]').fill('• 우선 GAP: 직무 전문지식과 현장형 Evidence');
   await page.reload({waitUntil:'networkidle'});
   assert((await page.locator('[data-path="student.language"]').inputValue())==='TOEIC 820','STEP5 spec must persist after reload');
   assert((await page.locator('[data-path="fit.gaps"]').inputValue()).includes('현장 경험 부족'),'STEP5 GAP must persist after reload');
   assert((await page.locator('[data-path="ai.gapResult"]').inputValue()).includes('우선 GAP'),'STEP5 AI result must persist after reload');
+  assert((await page.locator('[data-readable-path="fit.gaps"] .step5BulletList li').first().innerText()).includes('직무기술서 기반'),'STEP5 readable GAP preview must persist after reload');
+  assert((await page.locator('.step5NoteEditor').first().inputValue())==='공통 지원자격 확인','STEP5 original manually edited evidence must persist');
   await page.locator('[data-next="6"]').click();
 
   // STEP 6

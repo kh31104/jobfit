@@ -50,7 +50,8 @@ try{
     '• 기계설계 기초 → 상세 구조설계·도면품질 → 설계표준·제품개발'
   ].join('\n'));
   await page.locator('#applyJobTableAiBtn').click();
-  assert(await page.locator('.jobAnalysisPreview th').count()===5,'STEP3 core table must have five essential columns');
+  assert(await page.locator('.jobAnalysisPreview thead th').count()===2,'STEP3 preview must have two readable header columns');
+  assert(await page.locator('.jobAnalysisPreview tbody tr').count()===5,'STEP3 preview must retain all five essential analysis fields');
   assert((await page.locator('#stepRoot').innerText()).includes('경력개발 방향 보기 · 선택'),'Career development must be optional');
 
   // STEP 04 · 경험근거 → 개인 역량 → 3~5개만 Portfolio 반영

@@ -1004,7 +1004,8 @@ function refreshStep5Derived(){
     if(note&&note.value!==r.note)note.value=r.note||"";
   });
   const assets=document.getElementById("derivedGapAssetsPreview");
-  if(assets)assets.textContent=derivedGapAssets()||"아직 입력된 스펙·충족 근거가 없습니다.";
+  if(assets)assets.innerHTML=step5BulletView(derivedGapAssets()||"아직 입력된 스펙·충족 근거가 없습니다.",true);
+  state.requirements.forEach((r,i)=>{const el=document.querySelector('[data-req-note-preview="'+i+'"]');if(el)el.innerHTML=step5BulletView(r.note,true);});
   syncPromptPreview("gap",gapPrompt,"gapPromptPreview");
 }
 
@@ -1226,6 +1227,21 @@ function jobTableFields(){
   '</div>';
 }
 
+// STEP 03-⑤ display only: saved jobTable values remain unchanged.
+function jobTablePreviewContent(value){
+  const raw=String(value??"");
+  if(!raw.trim())return '<span class="jobPreviewEmpty">-</span>';
+  const lines=raw.replace(/\r\n?/g,"\n")
+    .replace(/([^\n])(?=\[(?:공고근거|추론|공식|공식근거|확인필요|확인 필요)\])/g,"$1\n")
+    .replace(/([.!?。])[ \t]+(?=[가-힣A-Za-z]|\[)/g,"$1\n")
+    .replace(/([^\n])[ \t]+(?=[•●▪][ \t]+)/g,"$1\n")
+    .split(/\n+/).map(line=>line.trim()).filter(Boolean);
+  return '<ul class="jobPreviewList">'+lines.map(line=>{
+    const text=h(line.replace(/^(?:[-*•●▪][ \t]+)/,""));
+    return '<li>'+text.replace(/^(\[(?:공고근거|추론|공식|공식근거|확인필요|확인 필요)\])/, '<span class="jobPreviewSource">$1</span>')+'</li>';
+  }).join("")+'</ul>';
+}
+
 function jobTablePreview(){
   const cells=[
     ["고객(KPI)","jobTable.customerKpi",state.jobTable.customerKpi],
@@ -1234,7 +1250,9 @@ function jobTablePreview(){
     ["해결방법","jobTable.method",state.jobTable.method],
     ["필요역량","jobTable.competencies",state.jobTable.competencies]
   ];
-  return '<div class="tableWrap jobAnalysisPreview"><table><thead><tr>'+cells.map(x=>'<th>'+x[0]+'</th>').join("")+'</tr></thead><tbody><tr>'+cells.map(x=>'<td data-preview="'+x[1]+'">'+h(x[2]||"-")+'</td>').join("")+'</tr></tbody></table></div>';
+  return '<div class="tableWrap jobAnalysisPreview"><table class="jobAnalysisTable"><thead><tr><th scope="col">항목</th><th scope="col">분석 내용</th></tr></thead><tbody>'+
+    cells.map(x=>'<tr><th scope="row">'+x[0]+'</th><td data-preview="'+x[1]+'">'+jobTablePreviewContent(x[2])+'</td></tr>').join("")+
+    '</tbody></table></div>';
 }
 
 function step3(){
@@ -1272,7 +1290,7 @@ function step3(){
         '<div class="actions compactActions"><button class="btn secondary" id="applyJobTableAiBtn">AI 답변을 직무분석표에 반영</button></div>'+
       '</div>'+
       '<div class="divider"></div><div class="block"><h3>④ 직무분석 테이블 완성</h3><p class="help">이 표는 현재 선택한 세부직무의 작업공간에 따로 저장됩니다.</p>'+jobTableFields()+'</div>'+
-      '<div class="block"><h3>⑤ 완성된 직무분석표</h3><p class="help">모바일에서는 좌우로 밀어서 전체 표를 확인합니다.</p>'+jobTablePreview()+'</div>'+
+      '<div class="block"><h3>⑤ 완성된 직무분석표</h3><p class="help">입력 원문은 유지하고, 분석 내용을 항목별 글머리 기호와 줄바꿈으로 보여줍니다.</p>'+jobTablePreview()+'</div>'+
       sourceDetails
     : lockedFlow;
   return shell(3,"3 Ways → Job Analysis","공기업 예시, 대기업 예시, 직접 입력 중 원하는 방법을 선택하고, 그 안에서 분석할 직무 하나를 정합니다.",
@@ -1459,6 +1477,18 @@ function applyCompetencySummary(){
   save();render();toast("핵심역량 3~5개만 Portfolio에 반영했습니다.");
 }
 
+// STEP 04 display only: preserve the original saved competency summary verbatim.
+function portfolioCompetencyPreview(value){
+  const raw=String(value??"");
+  if(!raw.trim())return '<p class="portfolioCompetencyEmpty">아직 반영하지 않았습니다.</p>';
+  const items=raw.replace(/\r\n?/g,"\n")
+    .replace(/([^\n])[ \t]*(?=[•●▪][ \t]+)/g,"$1\n")
+    .split(/\n+/).map(x=>x.trim()).filter(Boolean);
+  return '<ul class="portfolioCompetencyBullets">'+items.map(item=>
+    '<li>'+h(item.replace(/^(?:[•●▪]|[-*])\s*/,""))+'</li>'
+  ).join("")+'</ul>';
+}
+
 function step4(){
   const e=state.experiences[state.selectedExperience]||emptyExperience();
   if(filled(e.title)&&(!filled(state.star.experience)||state.star.experience!==e.title))state.star.experience=e.title;
@@ -1485,7 +1515,7 @@ function step4(){
       '<div class="actions compactActions"><button class="btn secondary" id="copyKeywordPromptBtn">내 역량분석 프롬프트 복사</button></div>'+
       field("ai.keywordResult","AI 결과 붙여넣기 <span class=\"hint\">(선택)</span>","AI가 정리한 경험별 직무 연결과 핵심역량을 붙여넣으세요.")+
       '<div class="actions compactActions"><button class="btn secondary" id="applyCompetencySummaryBtn">핵심역량 3~5개만 Portfolio에 반영</button></div>'+
-      '<div class="selectedEvidence"><span>Portfolio에 남을 핵심역량</span><b>'+h(state.star.competency||"아직 반영하지 않았습니다.")+'</b></div>'+
+      '<div class="selectedEvidence portfolioCompetencyEvidence"><span>Portfolio에 남을 핵심역량</span>'+portfolioCompetencyPreview(state.star.competency)+'</div>'+
     '</div>'+
     '<div class="callout warn"><b>확인 원칙:</b> 내 경험·행동으로 설명할 수 없는 역량은 최종 강점에서 제외합니다.</div>');
 }
@@ -1625,13 +1655,31 @@ function syncRequirementEvidence(){
   });
 }
 
+// STEP 05 view formatter: never writes formatted text back into student data.
+function step5BulletView(value,splitSlashes=false){
+  const raw=String(value??"");
+  if(!raw.trim())return '<p class="step5BulletEmpty">아직 입력된 내용이 없습니다.</p>';
+  let display=raw.replace(/\r\n?/g,"\n")
+    .replace(/([^\n])\s+(?=\[(?:공고근거|공식|추론|확인 필요)\])/g,"$1\n")
+    .replace(/([^\n])\s+(?=(?:Knowledge|Skill|Behavior)\s*\()/gi,"$1\n")
+    .replace(/([^\n])\s+(?=[•●▪]\s*)/g,"$1\n")
+    .replace(/([^\n])\s+(?=-\s*[가-힣])/g,"$1\n");
+  if(splitSlashes)display=display.replace(/\s+\/\s+/g,"\n");
+  const items=display.split(/\n+/).map(s=>s.trim().replace(/^[•●▪*]\s*/,"").replace(/^-\s*/,"")).filter(Boolean);
+  return '<ul class="step5BulletList">'+items.map(item=>
+    '<li>'+h(item)+'</li>'
+  ).join("")+'</ul>';
+}
+
 function requirementRows(){
   ensureRequirements();
   syncRequirementEvidence();
   return state.requirements.map((r,i)=>'<div class="requirementRow">'+
-    '<div class="field"><label>공고·직무 조건 '+(i+1)+'</label><div class="selectedEvidence requirementSource"><b>'+h(r.condition||"원문 확인 필요")+'</b></div></div>'+
-    '<div class="field"><label>내 현재 상태</label><select class="input" data-req="'+i+'" data-reqkey="status"><option value="">선택</option><option value="충족" '+(r.status==="충족"?"selected":"")+'>충족</option><option value="일부 준비" '+(r.status==="일부 준비"?"selected":"")+'>일부 준비</option><option value="현재 GAP" '+(r.status==="현재 GAP"?"selected":"")+'>현재 GAP</option><option value="원문 확인 필요" '+(r.status==="원문 확인 필요"?"selected":"")+'>원문 확인 필요</option></select></div>'+
-    '<div class="field"><label>내 근거 <span class="hint">(자동 불러오기 · 필요시 수정)</span></label><input class="input" data-req="'+i+'" data-reqkey="note" value="'+h(r.note)+'" placeholder="예: TOEIC 820 / 전기기사 준비 중 / 관련 경험 없음" /></div>'+
+    '<div class="field requirementConditionField"><label>공고·직무 조건 '+(i+1)+'</label><div class="selectedEvidence requirementSource">'+step5BulletView(r.condition||"원문 확인 필요")+'</div></div>'+
+    '<div class="field requirementStatusField"><label>내 현재 상태</label><select class="input" data-req="'+i+'" data-reqkey="status"><option value="">선택</option><option value="충족" '+(r.status==="충족"?"selected":"")+'>충족</option><option value="일부 준비" '+(r.status==="일부 준비"?"selected":"")+'>일부 준비</option><option value="현재 GAP" '+(r.status==="현재 GAP"?"selected":"")+'>현재 GAP</option><option value="원문 확인 필요" '+(r.status==="원문 확인 필요"?"selected":"")+'>원문 확인 필요</option></select></div>'+
+    '<div class="field requirementEvidenceField"><label>내 근거 <span class="hint">(자동 불러오기 · 필요시 수정)</span></label>'+
+      '<div class="step5NotePreview" data-req-note-preview="'+i+'">'+step5BulletView(r.note,true)+'</div>'+
+      '<textarea class="input step5NoteEditor" rows="2" data-req="'+i+'" data-reqkey="note" placeholder="예: TOEIC 820 / 전기기사 준비 중 / 관련 경험 없음">'+h(r.note)+'</textarea></div>'+
   '</div>').join("");
 }
 
@@ -1833,10 +1881,10 @@ function step5(){
       '<div class="actions compactActions"><button class="btn secondary" id="applyGapResultBtn">GAP·3개월 행동 자동 반영</button></div>'+
     '</div>'+
     '<div class="divider"></div><div class="block"><h3>④ 최종 GAP과 3개월 행동 · 확인·수정</h3>'+
-      '<div class="selectedEvidence"><span>현재 확인된 근거</span><b id="derivedGapAssetsPreview">'+h(derivedGapAssets()||"아직 입력된 스펙·충족 근거가 없습니다.")+'</b></div>'+
-      '<div class="grid2">'+
-        field("fit.gaps","우선 보완할 GAP","AI 결과를 보고 최대 3개만 남기세요.")+
-        field("fit.actions","3개월 행동계획","무엇을 언제까지 어떤 결과물로 만들 것인가?")+
+      '<div class="selectedEvidence step5AssetEvidence"><span>현재 확인된 근거</span><div id="derivedGapAssetsPreview">'+step5BulletView(derivedGapAssets()||"아직 입력된 스펙·충족 근거가 없습니다.",true)+'</div></div>'+
+      '<div class="grid2 step5GapEditGrid">'+
+        '<div class="step5GapEdit"><strong>우선 보완할 GAP · 미리보기</strong><div data-readable-path="fit.gaps">'+step5BulletView(state.fit.gaps,true)+'</div>'+field("fit.gaps","GAP 내용 수정","AI 결과를 보고 최대 3개만 남기세요.")+'</div>'+
+        '<div class="step5GapEdit"><strong>3개월 행동계획 · 미리보기</strong><div data-readable-path="fit.actions">'+step5BulletView(state.fit.actions,true)+'</div>'+field("fit.actions","행동계획 수정","무엇을 언제까지 어떤 결과물로 만들 것인가?")+'</div>'+
       '</div></div>');
 }
 
@@ -2294,7 +2342,9 @@ function bind(){
     const handler=()=>{
       set(e.dataset.path,e.value);
       const preview=document.querySelector('[data-preview="'+e.dataset.path+'"]');
-      if(preview)preview.textContent=e.value||"-";
+      if(preview)preview.innerHTML=jobTablePreviewContent(e.value);
+      const readable=document.querySelector('[data-readable-path="'+e.dataset.path+'"]');
+      if(readable)readable.innerHTML=step5BulletView(e.value,true);
       const path=e.dataset.path||"";
       if(path==="student.majorEvidence"||path.startsWith("star."))refreshStep4Prompt();
       if(["student.certificates","student.language","student.tools","student.majorEvidence"].includes(path))refreshStep5Derived();
@@ -2354,6 +2404,8 @@ function bind(){
           if(note)note.value=state.requirements[i].note;
         }
       }
+      const notePreview=document.querySelector('[data-req-note-preview="'+i+'"]');
+      if(notePreview)notePreview.innerHTML=step5BulletView(state.requirements[i].note,true);
       refreshStep5Derived();
       save();
     };
