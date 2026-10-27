@@ -401,6 +401,61 @@ try{
   assert(saved.sampleJobId==='kea-2026-h2','Selected KEA target must persist');
   assert(saved.interviewMode==='12','Selected STEP6 interview mode must persist');
 
+  // Safe reset menu: require confirmation, preserve unaffected STEP answers,
+  // persist across reload, and restore the exact most recent pre-reset state.
+  assert(await page.locator('#resetMenu summary').count()===1,'FLEX reset menu must be available from every step');
+  await page.locator('#resetBtn').click();
+  assert(await page.locator('#resetMenu').evaluate(el=>el.open),'STEP6 legacy reset button must open the safe menu');
+  page.once('dialog',d=>d.dismiss());
+  await page.locator('#resetCurrentStepBtn').click();
+  assert((await page.locator('[data-path="ai.interviewResult"]').inputValue()).includes('실무질문 저장 테스트'),'Cancel must not delete existing student answers');
+
+  page.once('dialog',d=>d.accept());
+  await page.locator('#resetCurrentStepBtn').click();
+  assert((await page.locator('[data-path="ai.interviewResult"]').inputValue())==='','Current STEP6 reset must clear interview answer');
+  assert((await page.locator('[data-path="ai.selfIntroResult"]').inputValue())==='','Current STEP6 reset must clear self-intro answer');
+  let resetState=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:flexlab:job-analysis:v1')));
+  assert(resetState.target.job==='화공·환경','STEP6 reset must preserve STEP1 job');
+  assert(resetState.fit.gaps.includes('현장 경험 부족'),'STEP6 reset must preserve STEP5 gap');
+  assert(await page.evaluate(()=>!!localStorage.getItem('jobfit:flexlab:reset-backup:v1')),'Reset must create a recoverable local backup');
+  await page.reload({waitUntil:'networkidle'});
+  assert((await page.locator('[data-path="ai.interviewResult"]').inputValue())==='','STEP6 cleared answers must persist after reload');
+
+  await page.locator('#resetMenu summary').click();
+  page.once('dialog',d=>d.accept());
+  await page.locator('#restoreLastResetBtn').click();
+  assert((await page.locator('[data-path="ai.interviewResult"]').inputValue()).includes('실무질문 저장 테스트'),'Restore must recover deleted interview answer');
+  assert((await page.locator('#interviewModeSelect').inputValue())==='12','Restore must recover previous interview mode');
+
+  await page.locator('[data-prev="5"]').click();
+  await page.locator('#resetMenu summary').click();
+  page.once('dialog',d=>d.accept());
+  await page.locator('#resetCurrentStepBtn').click();
+  assert((await page.locator('[data-path="fit.gaps"]').inputValue())==='','STEP5 reset must clear the previous gap');
+  assert((await page.locator('[data-path="student.certificates"]').inputValue())==='','STEP5 reset must clear certificates');
+  resetState=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:flexlab:job-analysis:v1')));
+  assert(resetState.student.majorEvidence.includes('공정 데이터'),'STEP5 reset must preserve STEP4 major evidence');
+  assert(resetState.requirements.every(r=>!r.status),'STEP5 reset must clear the assessment for every requirement');
+  await page.locator('#resetMenu summary').click();
+  page.once('dialog',d=>d.accept());
+  await page.locator('#restoreLastResetBtn').click();
+  assert((await page.locator('[data-path="fit.gaps"]').inputValue()).includes('현장 경험 부족'),'Last reset undo must restore STEP5 gap');
+
+  await page.locator('#resetMenu summary').click();
+  page.once('dialog',d=>d.accept());
+  await page.locator('#resetAllStepsBtn').click();
+  assert(await page.locator('[data-path="target.job"]').count()===1,'Full reset must return to STEP1');
+  assert((await page.locator('[data-path="target.job"]').inputValue())==='','Full reset must clear former target job');
+  await page.reload({waitUntil:'networkidle'});
+  assert((await page.locator('[data-path="target.job"]').inputValue())==='','Full reset must persist after refresh');
+  await page.locator('#resetMenu summary').click();
+  page.once('dialog',d=>d.accept());
+  await page.locator('#restoreLastResetBtn').click();
+  const restored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:flexlab:job-analysis:v1')));
+  assert(restored.target.job==='화공·환경'&&restored.sampleJobId==='kea-2026-h2','Full reset undo must restore prior job and analysis');
+  assert(restored.fit.gaps.includes('현장 경험 부족'),'Full reset undo must restore GAP and saved evidence');
+  assert(await page.evaluate(()=>localStorage.getItem('jobfit:flexlab:reset-backup:v1')===null),'Successful undo must consume the recovery snapshot');
+
   console.log('FLEX role-specific KEA/HD Electric + browser persistence flow: PASS');
 }finally{
   await browser.close();
