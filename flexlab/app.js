@@ -1004,7 +1004,8 @@ function refreshStep5Derived(){
     if(note&&note.value!==r.note)note.value=r.note||"";
   });
   const assets=document.getElementById("derivedGapAssetsPreview");
-  if(assets)assets.textContent=derivedGapAssets()||"아직 입력된 스펙·충족 근거가 없습니다.";
+  if(assets)assets.innerHTML=step5BulletView(derivedGapAssets()||"아직 입력된 스펙·충족 근거가 없습니다.",true);
+  state.requirements.forEach((r,i)=>{const el=document.querySelector('[data-req-note-preview="'+i+'"]');if(el)el.innerHTML=step5BulletView(r.note,true);});
   syncPromptPreview("gap",gapPrompt,"gapPromptPreview");
 }
 
@@ -1654,13 +1655,31 @@ function syncRequirementEvidence(){
   });
 }
 
+// STEP 05 view formatter: never writes formatted text back into student data.
+function step5BulletView(value,splitSlashes=false){
+  const raw=String(value??"");
+  if(!raw.trim())return '<p class="step5BulletEmpty">아직 입력된 내용이 없습니다.</p>';
+  let display=raw.replace(/\r\n?/g,"\n")
+    .replace(/([^\n])\s+(?=\[(?:공고근거|공식|추론|확인 필요)\])/g,"$1\n")
+    .replace(/([^\n])\s+(?=(?:Knowledge|Skill|Behavior)\s*\()/gi,"$1\n")
+    .replace(/([^\n])\s+(?=[•●▪]\s*)/g,"$1\n")
+    .replace(/([^\n])\s+(?=-\s*[가-힣])/g,"$1\n");
+  if(splitSlashes)display=display.replace(/\s+\/\s+/g,"\n");
+  const items=display.split(/\n+/).map(s=>s.trim().replace(/^[•●▪*]\s*/,"").replace(/^-\s*/,"")).filter(Boolean);
+  return '<ul class="step5BulletList">'+items.map(item=>
+    '<li>'+h(item)+'</li>'
+  ).join("")+'</ul>';
+}
+
 function requirementRows(){
   ensureRequirements();
   syncRequirementEvidence();
   return state.requirements.map((r,i)=>'<div class="requirementRow">'+
-    '<div class="field"><label>공고·직무 조건 '+(i+1)+'</label><div class="selectedEvidence requirementSource"><b>'+h(r.condition||"원문 확인 필요")+'</b></div></div>'+
-    '<div class="field"><label>내 현재 상태</label><select class="input" data-req="'+i+'" data-reqkey="status"><option value="">선택</option><option value="충족" '+(r.status==="충족"?"selected":"")+'>충족</option><option value="일부 준비" '+(r.status==="일부 준비"?"selected":"")+'>일부 준비</option><option value="현재 GAP" '+(r.status==="현재 GAP"?"selected":"")+'>현재 GAP</option><option value="원문 확인 필요" '+(r.status==="원문 확인 필요"?"selected":"")+'>원문 확인 필요</option></select></div>'+
-    '<div class="field"><label>내 근거 <span class="hint">(자동 불러오기 · 필요시 수정)</span></label><input class="input" data-req="'+i+'" data-reqkey="note" value="'+h(r.note)+'" placeholder="예: TOEIC 820 / 전기기사 준비 중 / 관련 경험 없음" /></div>'+
+    '<div class="field requirementConditionField"><label>공고·직무 조건 '+(i+1)+'</label><div class="selectedEvidence requirementSource">'+step5BulletView(r.condition||"원문 확인 필요")+'</div></div>'+
+    '<div class="field requirementStatusField"><label>내 현재 상태</label><select class="input" data-req="'+i+'" data-reqkey="status"><option value="">선택</option><option value="충족" '+(r.status==="충족"?"selected":"")+'>충족</option><option value="일부 준비" '+(r.status==="일부 준비"?"selected":"")+'>일부 준비</option><option value="현재 GAP" '+(r.status==="현재 GAP"?"selected":"")+'>현재 GAP</option><option value="원문 확인 필요" '+(r.status==="원문 확인 필요"?"selected":"")+'>원문 확인 필요</option></select></div>'+
+    '<div class="field requirementEvidenceField"><label>내 근거 <span class="hint">(자동 불러오기 · 필요시 수정)</span></label>'+
+      '<div class="step5NotePreview" data-req-note-preview="'+i+'">'+step5BulletView(r.note,true)+'</div>'+
+      '<textarea class="input step5NoteEditor" rows="2" data-req="'+i+'" data-reqkey="note" placeholder="예: TOEIC 820 / 전기기사 준비 중 / 관련 경험 없음">'+h(r.note)+'</textarea></div>'+
   '</div>').join("");
 }
 
@@ -1862,10 +1881,10 @@ function step5(){
       '<div class="actions compactActions"><button class="btn secondary" id="applyGapResultBtn">GAP·3개월 행동 자동 반영</button></div>'+
     '</div>'+
     '<div class="divider"></div><div class="block"><h3>④ 최종 GAP과 3개월 행동 · 확인·수정</h3>'+
-      '<div class="selectedEvidence"><span>현재 확인된 근거</span><b id="derivedGapAssetsPreview">'+h(derivedGapAssets()||"아직 입력된 스펙·충족 근거가 없습니다.")+'</b></div>'+
-      '<div class="grid2">'+
-        field("fit.gaps","우선 보완할 GAP","AI 결과를 보고 최대 3개만 남기세요.")+
-        field("fit.actions","3개월 행동계획","무엇을 언제까지 어떤 결과물로 만들 것인가?")+
+      '<div class="selectedEvidence step5AssetEvidence"><span>현재 확인된 근거</span><div id="derivedGapAssetsPreview">'+step5BulletView(derivedGapAssets()||"아직 입력된 스펙·충족 근거가 없습니다.",true)+'</div></div>'+
+      '<div class="grid2 step5GapEditGrid">'+
+        '<div class="step5GapEdit"><strong>우선 보완할 GAP · 미리보기</strong><div data-readable-path="fit.gaps">'+step5BulletView(state.fit.gaps,true)+'</div>'+field("fit.gaps","GAP 내용 수정","AI 결과를 보고 최대 3개만 남기세요.")+'</div>'+
+        '<div class="step5GapEdit"><strong>3개월 행동계획 · 미리보기</strong><div data-readable-path="fit.actions">'+step5BulletView(state.fit.actions,true)+'</div>'+field("fit.actions","행동계획 수정","무엇을 언제까지 어떤 결과물로 만들 것인가?")+'</div>'+
       '</div></div>');
 }
 
@@ -2324,6 +2343,8 @@ function bind(){
       set(e.dataset.path,e.value);
       const preview=document.querySelector('[data-preview="'+e.dataset.path+'"]');
       if(preview)preview.innerHTML=jobTablePreviewContent(e.value);
+      const readable=document.querySelector('[data-readable-path="'+e.dataset.path+'"]');
+      if(readable)readable.innerHTML=step5BulletView(e.value,true);
       const path=e.dataset.path||"";
       if(path==="student.majorEvidence"||path.startsWith("star."))refreshStep4Prompt();
       if(["student.certificates","student.language","student.tools","student.majorEvidence"].includes(path))refreshStep5Derived();
@@ -2383,6 +2404,8 @@ function bind(){
           if(note)note.value=state.requirements[i].note;
         }
       }
+      const notePreview=document.querySelector('[data-req-note-preview="'+i+'"]');
+      if(notePreview)notePreview.innerHTML=step5BulletView(state.requirements[i].note,true);
       refreshStep5Derived();
       save();
     };
