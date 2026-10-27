@@ -361,3 +361,8 @@
   .resetMenuTrigger{min-height:40px}
 }
 @media print{.resetMenu{display:none!important}}
+
+/* Keep the reset popover above the sticky STEP navigation when opened. */
+.topbar{position:relative;z-index:80}
+.resetMenu{z-index:85}
+.resetMenuPanel{z-index:90}
