@@ -56,6 +56,7 @@ for(const width of [1280,390]){
 
   // Downstream modules consume read-only projections without forcing reentry.
   await openStep(page,8);
+  await page.waitForSelector('#requirementId');
   const reqs=await page.locator('#requirementId option').allTextContents();
   assert(reqs.some(x=>x.includes('교육자료 기획 능력')),'STEP 9 JD requirement not available');
   assert(await page.locator('[data-asset]').count()>=1,'STEP 9 missing evidence draft');
