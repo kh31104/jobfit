@@ -4,7 +4,7 @@ const base=process.env.JOBFIT_TEST_URL||'http://127.0.0.1:8765/v2/';
 const KEY='jobfit:v2:learner';
 const assert=(v,m)=>{if(!v)throw new Error(m)};
 const read=page=>page.evaluate(k=>JSON.parse(localStorage.getItem(k)||'{}'),KEY);
-async function openStep(page,n){await page.locator('.stepBtn[data-step="'+n+'"]').click();await page.waitForFunction(n=>document.querySelector('.stepBtn.active')?.dataset.step===String(n),n)}
+async function openStep(page,n){await page.locator('.stepBtn[data-step="'+n+'"]').click();await page.waitForFunction(n=>document.querySelector('.stepBtn.active')?.dataset.step===String(n),n);await page.waitForFunction(n=>(document.querySelector('#stepRoot .kicker')?.textContent||'').includes('STEP '+(n+1)),n)}
 const browser=await chromium.launch({headless:true});
 let failed=false;
 for(const width of [1280,390]){
