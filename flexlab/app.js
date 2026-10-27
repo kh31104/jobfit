@@ -1476,6 +1476,18 @@ function applyCompetencySummary(){
   save();render();toast("핵심역량 3~5개만 Portfolio에 반영했습니다.");
 }
 
+// STEP 04 display only: preserve the original saved competency summary verbatim.
+function portfolioCompetencyPreview(value){
+  const raw=String(value??"");
+  if(!raw.trim())return '<p class="portfolioCompetencyEmpty">아직 반영하지 않았습니다.</p>';
+  const items=raw.replace(/\r\n?/g,"\n")
+    .replace(/([^\n])[ \t]*(?=[•●▪][ \t]+)/g,"$1\n")
+    .split(/\n+/).map(x=>x.trim()).filter(Boolean);
+  return '<ul class="portfolioCompetencyBullets">'+items.map(item=>
+    '<li>'+h(item.replace(/^(?:[•●▪]|[-*])\s*/,""))+'</li>'
+  ).join("")+'</ul>';
+}
+
 function step4(){
   const e=state.experiences[state.selectedExperience]||emptyExperience();
   if(filled(e.title)&&(!filled(state.star.experience)||state.star.experience!==e.title))state.star.experience=e.title;
@@ -1502,7 +1514,7 @@ function step4(){
       '<div class="actions compactActions"><button class="btn secondary" id="copyKeywordPromptBtn">내 역량분석 프롬프트 복사</button></div>'+
       field("ai.keywordResult","AI 결과 붙여넣기 <span class=\"hint\">(선택)</span>","AI가 정리한 경험별 직무 연결과 핵심역량을 붙여넣으세요.")+
       '<div class="actions compactActions"><button class="btn secondary" id="applyCompetencySummaryBtn">핵심역량 3~5개만 Portfolio에 반영</button></div>'+
-      '<div class="selectedEvidence"><span>Portfolio에 남을 핵심역량</span><b>'+h(state.star.competency||"아직 반영하지 않았습니다.")+'</b></div>'+
+      '<div class="selectedEvidence portfolioCompetencyEvidence"><span>Portfolio에 남을 핵심역량</span>'+portfolioCompetencyPreview(state.star.competency)+'</div>'+
     '</div>'+
     '<div class="callout warn"><b>확인 원칙:</b> 내 경험·행동으로 설명할 수 없는 역량은 최종 강점에서 제외합니다.</div>');
 }
