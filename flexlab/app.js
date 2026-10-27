@@ -1226,6 +1226,21 @@ function jobTableFields(){
   '</div>';
 }
 
+// STEP 03-⑤ display only: saved jobTable values remain unchanged.
+function jobTablePreviewContent(value){
+  const raw=String(value??"");
+  if(!raw.trim())return '<span class="jobPreviewEmpty">-</span>';
+  const lines=raw.replace(/\r\n?/g,"\n")
+    .replace(/([^\n])(?=\[(?:공고근거|추론|공식|공식근거|확인필요|확인 필요)\])/g,"$1\n")
+    .replace(/([.!?。])[ \t]+(?=[가-힣A-Za-z]|\[)/g,"$1\n")
+    .replace(/([^\n])[ \t]+(?=[•●▪][ \t]+)/g,"$1\n")
+    .split(/\n+/).map(line=>line.trim()).filter(Boolean);
+  return '<ul class="jobPreviewList">'+lines.map(line=>{
+    const text=h(line.replace(/^(?:[-*•●▪][ \t]+)/,""));
+    return '<li>'+text.replace(/^(\[(?:공고근거|추론|공식|공식근거|확인필요|확인 필요)\])/, '<span class="jobPreviewSource">$1</span>')+'</li>';
+  }).join("")+'</ul>';
+}
+
 function jobTablePreview(){
   const cells=[
     ["고객(KPI)","jobTable.customerKpi",state.jobTable.customerKpi],
@@ -1234,7 +1249,9 @@ function jobTablePreview(){
     ["해결방법","jobTable.method",state.jobTable.method],
     ["필요역량","jobTable.competencies",state.jobTable.competencies]
   ];
-  return '<div class="tableWrap jobAnalysisPreview"><table><thead><tr>'+cells.map(x=>'<th>'+x[0]+'</th>').join("")+'</tr></thead><tbody><tr>'+cells.map(x=>'<td data-preview="'+x[1]+'">'+h(x[2]||"-")+'</td>').join("")+'</tr></tbody></table></div>';
+  return '<div class="tableWrap jobAnalysisPreview"><table class="jobAnalysisTable"><thead><tr><th scope="col">항목</th><th scope="col">분석 내용</th></tr></thead><tbody>'+
+    cells.map(x=>'<tr><th scope="row">'+x[0]+'</th><td data-preview="'+x[1]+'">'+jobTablePreviewContent(x[2])+'</td></tr>').join("")+
+    '</tbody></table></div>';
 }
 
 function step3(){
@@ -1272,7 +1289,7 @@ function step3(){
         '<div class="actions compactActions"><button class="btn secondary" id="applyJobTableAiBtn">AI 답변을 직무분석표에 반영</button></div>'+
       '</div>'+
       '<div class="divider"></div><div class="block"><h3>④ 직무분석 테이블 완성</h3><p class="help">이 표는 현재 선택한 세부직무의 작업공간에 따로 저장됩니다.</p>'+jobTableFields()+'</div>'+
-      '<div class="block"><h3>⑤ 완성된 직무분석표</h3><p class="help">모바일에서는 좌우로 밀어서 전체 표를 확인합니다.</p>'+jobTablePreview()+'</div>'+
+      '<div class="block"><h3>⑤ 완성된 직무분석표</h3><p class="help">입력 원문은 유지하고, 분석 내용을 항목별 글머리 기호와 줄바꿈으로 보여줍니다.</p>'+jobTablePreview()+'</div>'+
       sourceDetails
     : lockedFlow;
   return shell(3,"3 Ways → Job Analysis","공기업 예시, 대기업 예시, 직접 입력 중 원하는 방법을 선택하고, 그 안에서 분석할 직무 하나를 정합니다.",
@@ -2294,7 +2311,7 @@ function bind(){
     const handler=()=>{
       set(e.dataset.path,e.value);
       const preview=document.querySelector('[data-preview="'+e.dataset.path+'"]');
-      if(preview)preview.textContent=e.value||"-";
+      if(preview)preview.innerHTML=jobTablePreviewContent(e.value);
       const path=e.dataset.path||"";
       if(path==="student.majorEvidence"||path.startsWith("star."))refreshStep4Prompt();
       if(["student.certificates","student.language","student.tools","student.majorEvidence"].includes(path))refreshStep5Derived();
