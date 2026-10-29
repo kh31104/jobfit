@@ -12,6 +12,10 @@ export async function render(ctx){
   const drafts={industry:rawDraft.industry||'',company:rawDraft.company||''};
   let editingIndustryId='',editingCompanyId='',companyCandidates=[];
   const lastAutoIndustry=new Map(),lastAutoCompany=new Map();
+  const preservedIndustries=(data.industries||[]).filter(x=>x?.generatedBy==='step4-inje');
+  const preservedCompanies=(data.companies||[]).filter(x=>x?.generatedBy==='step4-inje');
+  const preservedIndustryTargets=(data.targetIndustries||[]).filter(id=>preservedIndustries.some(x=>x.id===id));
+  const preservedCompanyTargets=(data.targetCompanies||[]).filter(id=>preservedCompanies.some(x=>x.id===id));
   data.industries=(data.industries||[]).filter(x=>x?.generatedBy!=='step4-inje');
   data.companies=(data.companies||[]).filter(x=>x?.generatedBy!=='step4-inje');
   data.targetIndustries=(data.targetIndustries||[]).filter(id=>data.industries.some(x=>x.id===id));
@@ -168,7 +172,7 @@ export async function render(ctx){
   }
   // If the student edits verified content, verification must be renewed.
   for(const [kind,ids] of [['industry',industryFieldMap],['company',companyFieldMap]]){
-    for(const id of Object.values(ids))document.getElementById(id)?.addEventListener('input',()=>clearFact(kind));
+    for(const id of Object.values(ids)){document.getElementById(id)?.addEventListener('input',()=>clearFact(kind));document.getElementById(id)?.addEventListener('change',()=>clearFact(kind));}
   }
 
   if(drafts.industry)importIndustry();
@@ -264,7 +268,14 @@ export async function render(ctx){
   function saveSelections(){data.targetIndustries=currentIndustryTargets();data.targetCompanies=currentCompanyTargets();const cp=document.getElementById('companyPrompt');if(cp)cp.value=buildCompanyPrompt(ctx.getState(),data);persist();}
   function saveAll(){saveSelections();data.notes=v('notes');persist();renderCompanyGuard();status('STEP 7 산업·기업분석 결과를 저장했습니다.');}
   function currentIndustryTargets(){return [...document.querySelectorAll('[data-itarget]:checked')].map(x=>x.dataset.itarget)}function currentCompanyTargets(){return [...document.querySelectorAll('[data-ctarget]:checked')].map(x=>x.dataset.ctarget)}
-  function persist(){ctx.saveState({artifacts:{industryCompany:data}})}function v(id){return document.getElementById(id)?.value?.trim()||''}function clear(ids){ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value=''})}function status(t){document.getElementById('status').textContent=t;ctx.toast(t)}
+  function persist(){
+    // Historical STEP 4 generated records and their selections remain untouched.
+    ctx.saveState({artifacts:{industryCompany:{...data,
+      industries:[...preservedIndustries,...data.industries],
+      companies:[...preservedCompanies,...data.companies],
+      targetIndustries:[...new Set([...preservedIndustryTargets,...data.targetIndustries])],
+      targetCompanies:[...new Set([...preservedCompanyTargets,...data.targetCompanies])]}}});
+  }function v(id){return document.getElementById(id)?.value?.trim()||''}function clear(ids){ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value=''})}function status(t){document.getElementById('status').textContent=t;ctx.toast(t)}
 }
 
 // '새로 시작' 목표가 켜져 있으면 그 직무를, 아니면 STEP 4 목표를 사용한다(v2/quickStart.js).
