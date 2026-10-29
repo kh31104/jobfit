@@ -34,7 +34,7 @@ export async function render(ctx){
 
     <div class="hr"></div><div class="block"><h3>02. Industry Scan · 산업 이해하기</h3><p class="help">이 산업이 무엇으로 돈을 벌고, 누가 고객이며, 최근 무엇이 바뀌는지 확인합니다.</p>
       <textarea id="industryPrompt" rows="14">${esc(buildIndustryPrompt(s),ctx)}</textarea>
-      <div class="actions"><button class="btn secondary" id="copyIndustryPrompt">산업분석 프롬프트 복사</button></div>
+      <div class="actions"><button class="btn secondary" id="copyIndustryPrompt">산업분석 프롬프트 복사</button><button class="btn outline" type="button" id="copyIndustryFactPrompt">AI 팩트체크·수정 프롬프트 복사</button></div>
       <div class="aiImportStage" style="margin-top:14px">
         <h4>① AI 산업분석 답변 붙여넣기</h4>
         <p class="help">붙여넣으면 아래 산업분석 입력칸에 자동 분리됩니다. 기존에 작성한 값은 덮어쓰지 않으며, 모든 내용은 직접 수정할 수 있습니다.</p>
@@ -55,7 +55,7 @@ export async function render(ctx){
 
     <div class="hr"></div><div class="block"><h3>04. Find Company · 기업 후보 찾기</h3><p class="help">선택한 산업에서 Target Job이 실제로 존재하는 기업을 찾습니다. 최대 3개만 남깁니다.</p>
       <textarea id="companyPrompt" rows="14">${esc(buildCompanyPrompt(s,data),ctx)}</textarea>
-      <div class="actions"><button class="btn secondary" id="copyCompanyPrompt">기업분석 프롬프트 복사</button></div>
+      <div class="actions"><button class="btn secondary" id="copyCompanyPrompt">기업분석 프롬프트 복사</button><button class="btn outline" type="button" id="copyCompanyFactPrompt">AI 팩트체크·수정 프롬프트 복사</button></div>
       <div class="aiImportStage" style="margin-top:14px">
         <h4>① AI 기업분석 답변 붙여넣기</h4>
         <p class="help">기업 1~3의 AI 답변을 붙여넣으면 기업별로 분리됩니다. 기업을 선택해 아래 확인·수정 입력칸에 반영하세요.</p>
@@ -177,6 +177,38 @@ export async function render(ctx){
 
   if(drafts.industry)importIndustry();
   if(drafts.company)importCompany();
+  function factPrompt(kind){
+    const isIndustry=kind==='industry',original=document.getElementById(isIndustry?'industryAiImport':'companyAiImport')?.value||'';
+    const fields=isIndustry?industryFieldMap:companyFieldMap;
+    const detail=Object.entries(fields).map(([label,id])=>label+': '+(document.getElementById(id)?.value||'미입력')).join('\n');
+    return [
+      '역할: 채용준비용 산업·기업 정보의 팩트체커. 웹 검색이 가능하면 정부·공공·공시·기업 공식 원문부터 직접 확인하세요.',
+      '아래 AI 초안과 학생이 수정한 현재 입력값을 대조하십시오.',
+      '',
+      '[반드시 확인할 것]',
+      '1. 통계·정책·사업변화·실제 기업·채용 여부·직무 요구사항의 사실성',
+      '2. 원문 URL이 실제 존재하고 주장과 일치하는지, 자료명·발행일·확인일이 맞는지',
+      '3. 이미 마감된 채용공고를 모집 중이라고 표현하지 않았는지',
+      '4. 근거가 없거나 문서를 열 수 없으면 확인 필요로 표시하고 숫자·사례·URL을 임의로 만들지 마세요.',
+      '5. 실제 확인된 정보와 추정을 구분하세요.',
+      '',
+      '[AI가 작성한 원문]',
+      original||'(아직 AI 초안 없음)',
+      '',
+      '[학생이 확인·수정한 현재 입력값]',
+      detail,
+      '',
+      '[응답 형식]',
+      '먼저 [확인·정정 내역]에 오류와 추가 확인이 필요한 내용을 항목별로 짧게 정리하세요.',
+      '그다음 아래의 원래 분석 프롬프트 [출력 형식] 표제어를 그대로 유지한 수정본 전체를 출력하세요.',
+      '학생은 수정본을 STEP 7 AI 답변 칸에 다시 붙여넣고 원문 확인 후 저장합니다.',
+      '',
+      '[원래 분석 프롬프트]',
+      document.getElementById(isIndustry?'industryPrompt':'companyPrompt')?.value||''
+    ].join('\n');
+  }
+  document.getElementById('copyIndustryFactPrompt').addEventListener('click',()=>copy(factPrompt('industry'),ctx));
+  document.getElementById('copyCompanyFactPrompt').addEventListener('click',()=>copy(factPrompt('company'),ctx));
   document.getElementById('copyIndustryPrompt').addEventListener('click',()=>copy(document.getElementById('industryPrompt').value,ctx));
   document.getElementById('copyCompanyPrompt').addEventListener('click',()=>copy(document.getElementById('companyPrompt').value,ctx));
   document.getElementById('addIndustry').addEventListener('click',addIndustry);document.getElementById('addCompany').addEventListener('click',addCompany);
