@@ -301,12 +301,22 @@ export async function render(ctx){
   function saveAll(){saveSelections();data.notes=v('notes');persist();renderCompanyGuard();status('STEP 7 산업·기업분석 결과를 저장했습니다.');}
   function currentIndustryTargets(){return [...document.querySelectorAll('[data-itarget]:checked')].map(x=>x.dataset.itarget)}function currentCompanyTargets(){return [...document.querySelectorAll('[data-ctarget]:checked')].map(x=>x.dataset.ctarget)}
   function persist(){
-    // Historical STEP 4 generated records and their selections remain untouched.
+    // Preserve every preexisting record's position and value, except explicit user edits/deletes.
+    const originalOrder=(all,visible,preserved)=>{
+      const byId=new Map([...preserved,...visible].map(x=>[x.id,x]));
+      const oldIds=new Set((all||[]).map(x=>x.id));
+      return [...(all||[]).map(x=>byId.get(x.id)).filter(Boolean),...visible.filter(x=>!oldIds.has(x.id))];
+    };
+    const selectedOrder=(original,current,preserved)=>{
+      const set=new Set([...preserved,...current]);
+      const previous=(original||[]).filter(x=>set.has(x));
+      return [...previous,...current.filter(x=>!previous.includes(x))];
+    };
     ctx.saveState({artifacts:{industryCompany:{...data,
-      industries:[...preservedIndustries,...data.industries],
-      companies:[...preservedCompanies,...data.companies],
-      targetIndustries:[...new Set([...preservedIndustryTargets,...data.targetIndustries])],
-      targetCompanies:[...new Set([...preservedCompanyTargets,...data.targetCompanies])]}}});
+      industries:originalOrder(saved.industries,data.industries,preservedIndustries),
+      companies:originalOrder(saved.companies,data.companies,preservedCompanies),
+      targetIndustries:selectedOrder(saved.targetIndustries,data.targetIndustries,preservedIndustryTargets),
+      targetCompanies:selectedOrder(saved.targetCompanies,data.targetCompanies,preservedCompanyTargets)}}});
   }function v(id){return document.getElementById(id)?.value?.trim()||''}function clear(ids){ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value=''})}function status(t){document.getElementById('status').textContent=t;ctx.toast(t)}
 }
 
