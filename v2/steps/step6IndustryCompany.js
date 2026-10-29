@@ -1,4 +1,5 @@
 import {readValue,readField,readCard,READABLE_STYLES} from './readableResults.js';
+import {parseIndustryAi,parseCompanyAi,isHttpUrl} from './industryAiParser.js?v=1';
 import {activeTargetJobs,activeTargetCombos,quickStartActive,renderStep7QuickStart,wireStep7QuickStart} from '../quickStart.js?v=1';
 const INDUSTRY_SOURCE_TYPES=['정부·공공기관','산업협회·전문기관','공시·통계','기업 IR·사업보고서','기타 신뢰자료'];
 const COMPANY_TYPES=['대기업','중견기업','중소기업','스타트업','공공기관','외국계','기타'];
@@ -7,6 +8,14 @@ const HIRING_EVIDENCE=['현재 채용공고 확인','최근 채용공고 확인'
 export async function render(ctx){
   const s=ctx.getState(),jobs=getTargetJobs(s),saved=s.artifacts?.industryCompany||{industries:[],targetIndustries:[],companies:[],targetCompanies:[],notes:''};
   const root=document.getElementById('stepRoot');let data=structuredClone(saved);
+  const rawDraft=s.artifacts?.industryCompanyAiDrafts||{};
+  const drafts={industry:rawDraft.industry||'',company:rawDraft.company||''};
+  let editingIndustryId='',editingCompanyId='',companyCandidates=[];
+  const lastAutoIndustry=new Map(),lastAutoCompany=new Map();
+  const preservedIndustries=(data.industries||[]).filter(x=>x?.generatedBy==='step4-inje');
+  const preservedCompanies=(data.companies||[]).filter(x=>x?.generatedBy==='step4-inje');
+  const preservedIndustryTargets=(data.targetIndustries||[]).filter(id=>preservedIndustries.some(x=>x.id===id));
+  const preservedCompanyTargets=(data.targetCompanies||[]).filter(id=>preservedCompanies.some(x=>x.id===id));
   data.industries=(data.industries||[]).filter(x=>x?.generatedBy!=='step4-inje');
   data.companies=(data.companies||[]).filter(x=>x?.generatedBy!=='step4-inje');
   data.targetIndustries=(data.targetIndustries||[]).filter(id=>data.industries.some(x=>x.id===id));
@@ -25,10 +34,19 @@ export async function render(ctx){
 
     <div class="hr"></div><div class="block"><h3>02. Industry Scan · 산업 이해하기</h3><p class="help">이 산업이 무엇으로 돈을 벌고, 누가 고객이며, 최근 무엇이 바뀌는지 확인합니다.</p>
       <textarea id="industryPrompt" rows="14">${esc(buildIndustryPrompt(s),ctx)}</textarea>
-      <div class="actions"><button class="btn secondary" id="copyIndustryPrompt">산업분석 프롬프트 복사</button></div>
+      <div class="actions"><button class="btn secondary" id="copyIndustryPrompt">산업분석 프롬프트 복사</button><button class="btn outline" type="button" id="copyIndustryFactPrompt">AI 팩트체크·수정 프롬프트 복사</button></div>
+      <div class="aiImportStage" style="margin-top:14px">
+        <h4>① AI 산업분석 답변 붙여넣기</h4>
+        <p class="help">붙여넣으면 아래 산업분석 입력칸에 자동 분리됩니다. 기존에 작성한 값은 덮어쓰지 않으며, 모든 내용은 직접 수정할 수 있습니다.</p>
+        <textarea id="industryAiImport" rows="9" placeholder="[산업 한 줄]&#10;• ...&#10;[주요 고객·가치사슬]&#10;• ...&#10;[최근 변화]&#10;• ...&#10;[직무·채용 영향]&#10;• ...">${esc(drafts.industry,ctx)}</textarea>
+        <div id="industryAiPreview" class="callout info" role="status">AI 답변을 붙여넣으면 인식된 항목을 안내합니다.</div>
+        <div class="actions"><button class="btn outline" type="button" id="industryAiReplace">AI 내용으로 입력칸 다시 채우기</button></div>
+      </div>
+      <h4 style="margin-top:16px">② 산업분석 확인·수정 · Fact Check</h4>
       <div class="grid4" style="margin-top:14px">${txt('industryName','산업명',primaryTargetIndustry(s),'예: 뷰티·소비재')}${selectJob('industryJobId','연결 Target Job',jobs)}${sel('industrySourceType','출처 유형','',INDUSTRY_SOURCE_TYPES)}${txt('industryChecked','확인일','',today())}</div>
       <div class="grid2" style="margin-top:12px">${txt('industrySource','확인 자료','','예: 산업동향 보고서 / 협회 자료')}${txt('industryUrl','원문 URL','','https://...')}${area('industryBusiness','산업 구조·주요 고객','','무엇을 팔고 누구에게 가치를 제공하는가? 주요 기업도 함께 기록하세요.')}${area('industryChange','최근 변화','','최근 기술·고객·시장·규제 변화 중 내 직무와 관련된 것')}${area('industryJobLink','내 직무에 미치는 영향','','이 산업에서 Target Job이 어떤 업무를 하고 어떤 역량이 중요해지는가?')}${area('industryDifference','다른 산업과의 차이 · 선택','','같은 직무라도 이 산업에서 달라지는 Task·Tool·KPI')}</div>
-      <div class="actions"><button class="btn primary" id="addIndustry">산업분석 저장</button></div><div id="industryList" style="margin-top:14px"></div>
+      <label class="checkRow" style="margin-top:14px"><input type="checkbox" id="industryFactChecked"><div><b>산업자료 원문 대조 완료</b><span>아래 내용을 정부·공공기관·산업협회·기업 공식자료의 실제 원문과 비교했습니다. 검증하지 않은 답변은 '확인 필요'로 저장됩니다.</span></div></label>
+      <div class="actions"><button class="btn primary" id="addIndustry">산업분석 저장</button><button class="btn outline" type="button" id="cancelIndustryEdit" hidden>수정 취소</button></div><div id="industryList" style="margin-top:14px"></div>
     </div>
 
     <div class="hr"></div><div class="block"><h3>03. Industry × Job</h3><p class="help">관심 산업은 최대 3개까지 선택합니다. 같은 직무가 산업마다 어떻게 달라지는지 비교합니다.</p>
@@ -37,15 +55,25 @@ export async function render(ctx){
 
     <div class="hr"></div><div class="block"><h3>04. Find Company · 기업 후보 찾기</h3><p class="help">선택한 산업에서 Target Job이 실제로 존재하는 기업을 찾습니다. 최대 3개만 남깁니다.</p>
       <textarea id="companyPrompt" rows="14">${esc(buildCompanyPrompt(s,data),ctx)}</textarea>
-      <div class="actions"><button class="btn secondary" id="copyCompanyPrompt">기업분석 프롬프트 복사</button></div>
+      <div class="actions"><button class="btn secondary" id="copyCompanyPrompt">기업분석 프롬프트 복사</button><button class="btn outline" type="button" id="copyCompanyFactPrompt">AI 팩트체크·수정 프롬프트 복사</button></div>
+      <div class="aiImportStage" style="margin-top:14px">
+        <h4>① AI 기업분석 답변 붙여넣기</h4>
+        <p class="help">기업 1~3의 AI 답변을 붙여넣으면 기업별로 분리됩니다. 기업을 선택해 아래 확인·수정 입력칸에 반영하세요.</p>
+        <textarea id="companyAiImport" rows="10" placeholder="[기업 1]&#10;• 기업명: ...&#10;• Business · Customer: ...&#10;• Strategy: ...&#10;• Job Link: ...&#10;• Hiring Signal: ...">${esc(drafts.company,ctx)}</textarea>
+        <div id="companyAiPreview" class="callout info" role="status">AI 기업분석 답변을 붙여넣으세요.</div>
+        <div class="grid2" style="margin-top:10px"><div class="field"><label>분석할 기업 선택</label><select id="companyAiCandidate"><option value="">AI 답변을 먼저 붙여넣으세요</option></select></div></div>
+        <div class="actions"><button type="button" class="btn outline" id="companyAiReplace">선택 기업 AI 내용으로 다시 채우기</button></div>
+      </div>
       <div class="callout info" style="margin-top:12px"><b>기업명만 찾지 마세요.</b><br>기업 공식자료와 실제 채용공고·직무소개 URL을 함께 확인한 기업만 후보로 기록합니다.</div>
     </div>
 
     <div class="hr"></div><div class="block"><h3>05. Company Analysis · 기업을 취업 관점에서 분석하기</h3><p class="help">Business · Customer · Strategy · Job Link · Hiring Signal 다섯 가지를 확인합니다.</p>
+      <h4 style="margin-top:16px">② 기업분석 확인·수정 · Fact Check</h4>
       <div class="grid4">${txt('companyName','기업명','','예: 관심 기업')}${sel('companyType','기업유형','',COMPANY_TYPES)}${selectIndustry('companyIndustryId','연결 산업',data.industries)}${selectJob('companyJobId','연결 Target Job',jobs)}</div>
       <div class="grid3" style="margin-top:12px">${txt('companySource','기업 공식자료','','예: 사업보고서 / IR / 공식 홈페이지')}${txt('companyUrl','기업자료 URL','','https://...')}${txt('companyChecked','확인일','',today())}${sel('companyHiringEvidence','채용 근거','',HIRING_EVIDENCE)}${txt('companyJobSource','채용·직무 자료','','예: 신입 채용공고 / 공식 직무소개')}${txt('companyJobUrl','채용·직무 URL','','https://...')}</div>
       <div class="grid2" style="margin-top:12px">${area('companyBusiness','Business · Customer','','주요 사업·제품·서비스와 핵심 고객')}${area('companyDirection','Strategy','','최근 공식적으로 확인되는 사업·시장·제품 방향')}${area('companyRole','Job Link','','Target Job이 이 기업의 어떤 사업·고객·성과와 연결되는가?')}${area('companySignals','Hiring Signal','','채용공고·직무소개에서 반복되는 역량·경험·Tool')}${area('companyWhy','내가 관심을 두는 이유 · 선택','','왜 이 기업을 더 탐색하려 하는가?')}${area('companyUnknown','확인 필요','','아직 확인하지 못한 사업·직무·근무조건·채용정보')}</div>
-      <div class="actions"><button class="btn primary" id="addCompany">기업분석 저장</button></div><div id="companyList" style="margin-top:14px"></div>
+      <label class="checkRow" style="margin-top:14px"><input type="checkbox" id="companyFactChecked"><div><b>기업·채용자료 원문 대조 완료</b><span>기업 공식자료와 채용공고·공식 직무소개를 실제 원문으로 확인했습니다. 확인하지 않았다면 체크하지 마세요.</span></div></label>
+      <div class="actions"><button class="btn primary" id="addCompany">기업분석 저장</button><button class="btn outline" type="button" id="cancelCompanyEdit" hidden>수정 취소</button></div><div id="companyList" style="margin-top:14px"></div>
     </div>
 
     <div class="hr"></div><div class="block"><h3>06. My Target Company · 현재 더 준비할 기업 선택</h3><p class="help">점수순이 아닙니다. 직무 존재, 실제 업무, 내가 가진 Evidence, 핵심 GAP, 정보근거를 읽고 최대 3개를 선택합니다.</p>
@@ -57,17 +85,192 @@ export async function render(ctx){
 
   renderAll();
   if(jobs[0]?.id){const ij=document.getElementById('industryJobId'),cj=document.getElementById('companyJobId');if(ij&&!ij.value)ij.value=jobs[0].id;if(cj&&!cj.value)cj.value=jobs[0].id}
+
+  // Apply only empty or previously AI-generated, unchanged inputs. Saved records win by default.
+  const industryFieldMap={name:'industryName',sourceType:'industrySourceType',source:'industrySource',url:'industryUrl',checkedAt:'industryChecked',business:'industryBusiness',change:'industryChange',jobLink:'industryJobLink',difference:'industryDifference'};
+  const companyFieldMap={name:'companyName',type:'companyType',business:'companyBusiness',direction:'companyDirection',role:'companyRole',signals:'companySignals',source:'companySource',url:'companyUrl',jobSource:'companyJobSource',jobUrl:'companyJobUrl',hiringEvidence:'companyHiringEvidence',checkedAt:'companyChecked',why:'companyWhy',unknown:'companyUnknown'};
+  const clearFact=(kind)=>{const cb=document.getElementById(kind+'FactChecked');if(cb)cb.checked=false};
+  function autofill(values,ids,previous,{replace=false,kind='industry'}={}){
+    let applied=0,protectedCount=0;
+    for(const [key,id] of Object.entries(ids)){
+      const value=String(values?.[key]||'').trim(),el=document.getElementById(id);
+      if(!value||!el)continue;
+      const old=el.value.trim(),owned=previous.get(id);
+      if(replace||!old||(owned!==undefined&&old===owned)){
+        if(el.tagName==='SELECT'&&![...el.options].some(o=>o.value===value||o.textContent===value)){protectedCount++;continue}
+        if(old!==value){el.value=value;applied++;}previous.set(id,value);
+      }else protectedCount++;
+    }
+    if(kind==='company'){
+      const industryName=String(values?.industry||'').trim(),indEl=document.getElementById('companyIndustryId');
+      const found=data.industries.find(x=>x.name===industryName);
+      if(found&&indEl&&(replace||!indEl.value))indEl.value=found.id;
+      const jobEl=document.getElementById('companyJobId');
+      if(jobEl&&!jobEl.value&&jobs.length===1)jobEl.value=jobs[0].id;
+      if(indEl&&!indEl.value&&data.industries.length===1)indEl.value=data.industries[0].id;
+    }
+    if(applied)clearFact(kind);
+    return {applied,protectedCount};
+  }
+  function saveAiDraft(kind,raw){
+    drafts[kind]=raw;
+    ctx.saveState({artifacts:{industryCompanyAiDrafts:{...drafts}}});
+  }
+  function importIndustry({replace=false}={}){
+    const raw=document.getElementById('industryAiImport')?.value||'',p=parseIndustryAi(raw);
+    const feedback=document.getElementById('industryAiPreview');
+    if(!p.recognized){feedback.textContent=raw?'산업 항목을 인식하지 못했습니다. 프롬프트의 [제목] 형식인지 확인하세요.':'AI 답변을 붙여넣으세요.';return}
+    const r=autofill(p.fields,industryFieldMap,lastAutoIndustry,{replace,kind:'industry'});
+    const missing=['business','change','jobLink'].filter(k=>!String(p.fields[k]||'').trim());
+    feedback.textContent='산업분석 항목 '+p.recognized+'개 인식 · '+r.applied+'개 입력칸 반영'
+      +(r.protectedCount?' · 기존 값 '+r.protectedCount+'개 보호':'')
+      +(missing.length?' · 확인 필요: '+missing.join(', '):'')
+      +' · AI 내용은 검증 전 초안입니다.';
+  }
+  function importCompany({replace=false,resetSelect=false}={}){
+    const raw=document.getElementById('companyAiImport')?.value||'',p=parseCompanyAi(raw);
+    companyCandidates=p.companies;
+    const pick=document.getElementById('companyAiCandidate'),previous=resetSelect?'':pick.value;
+    pick.innerHTML='<option value="">분석할 기업 선택</option>'+companyCandidates.map((co,i)=>'<option value="'+i+'">'+esc(co.name||'기업 '+(i+1),ctx)+'</option>').join('');
+    if(companyCandidates.length){pick.value=previous&&companyCandidates[Number(previous)]?previous:'0';}
+    const feedback=document.getElementById('companyAiPreview');
+    if(!companyCandidates.length){feedback.textContent=raw?'기업분석 구조를 인식하지 못했습니다. [기업 1]과 항목명을 확인하세요.':'AI 기업분석 답변을 붙여넣으세요.';return}
+    const selected=companyCandidates[Number(pick.value)]||companyCandidates[0];
+    const r=autofill(selected,companyFieldMap,lastAutoCompany,{replace,kind:'company'});
+    feedback.textContent=companyCandidates.length+'개 기업 분석 인식 · '+r.applied+'개 항목 자동 반영'
+      +(r.protectedCount?' · 기존 내용 '+r.protectedCount+'개 보호':'')
+      +' · 원문 대조 후 수정·저장하세요.';
+  }
+  document.getElementById('industryAiImport')?.addEventListener('input',()=>{importIndustry();saveAiDraft('industry',document.getElementById('industryAiImport').value)});
+  document.getElementById('companyAiImport')?.addEventListener('input',()=>{importCompany();saveAiDraft('company',document.getElementById('companyAiImport').value)});
+  document.getElementById('industryAiReplace')?.addEventListener('click',()=>importIndustry({replace:true}));
+  document.getElementById('companyAiReplace')?.addEventListener('click',()=>importCompany({replace:true}));
+  document.getElementById('companyAiCandidate')?.addEventListener('change',()=>importCompany());
+  document.getElementById('cancelIndustryEdit')?.addEventListener('click',()=>{editingIndustryId='';document.getElementById('addIndustry').textContent='산업분석 저장';document.getElementById('cancelIndustryEdit').hidden=true;clear(Object.values(industryFieldMap));clearFact('industry');lastAutoIndustry.clear()});
+  document.getElementById('cancelCompanyEdit')?.addEventListener('click',()=>{editingCompanyId='';document.getElementById('addCompany').textContent='기업분석 저장';document.getElementById('cancelCompanyEdit').hidden=true;clear(Object.values(companyFieldMap));clearFact('company');lastAutoCompany.clear()});
+  // Loading a previously saved analysis is read-only until the user explicitly presses Save.
+  function editIndustry(id){
+    const item=data.industries.find(x=>x.id===id);if(!item)return;
+    editingIndustryId=id;lastAutoIndustry.clear();
+    for(const [key,fieldId] of Object.entries(industryFieldMap)){const el=document.getElementById(fieldId);if(el)el.value=item[key]||'';}
+    document.getElementById('industryJobId').value=item.jobId||'';
+    document.getElementById('industryFactChecked').checked=item.factCheck==='원문 대조 완료';
+    document.getElementById('addIndustry').textContent='수정한 산업분석 저장';
+    document.getElementById('cancelIndustryEdit').hidden=false;
+    document.getElementById('industryName').focus();
+  }
+  function editCompany(id){
+    const item=data.companies.find(x=>x.id===id);if(!item)return;
+    editingCompanyId=id;lastAutoCompany.clear();
+    for(const [key,fieldId] of Object.entries(companyFieldMap)){const el=document.getElementById(fieldId);if(el)el.value=item[key]||'';}
+    document.getElementById('companyIndustryId').value=item.industryId||'';
+    document.getElementById('companyJobId').value=item.jobId||'';
+    document.getElementById('companyFactChecked').checked=item.factCheck==='원문 대조 완료';
+    document.getElementById('addCompany').textContent='수정한 기업분석 저장';
+    document.getElementById('cancelCompanyEdit').hidden=false;
+    document.getElementById('companyName').focus();
+  }
+  // If the student edits verified content, verification must be renewed.
+  for(const [kind,ids] of [['industry',industryFieldMap],['company',companyFieldMap]]){
+    for(const id of Object.values(ids)){document.getElementById(id)?.addEventListener('input',()=>clearFact(kind));document.getElementById(id)?.addEventListener('change',()=>clearFact(kind));}
+  }
+
+  if(drafts.industry)importIndustry();
+  if(drafts.company)importCompany();
+  function factPrompt(kind){
+    const isIndustry=kind==='industry',original=document.getElementById(isIndustry?'industryAiImport':'companyAiImport')?.value||'';
+    const fields=isIndustry?industryFieldMap:companyFieldMap;
+    const detail=Object.entries(fields).map(([label,id])=>label+': '+(document.getElementById(id)?.value||'미입력')).join('\n');
+    return [
+      '역할: 채용준비용 산업·기업 정보의 팩트체커. 웹 검색이 가능하면 정부·공공·공시·기업 공식 원문부터 직접 확인하세요.',
+      '아래 AI 초안과 학생이 수정한 현재 입력값을 대조하십시오.',
+      '',
+      '[반드시 확인할 것]',
+      '1. 통계·정책·사업변화·실제 기업·채용 여부·직무 요구사항의 사실성',
+      '2. 원문 URL이 실제 존재하고 주장과 일치하는지, 자료명·발행일·확인일이 맞는지',
+      '3. 이미 마감된 채용공고를 모집 중이라고 표현하지 않았는지',
+      '4. 근거가 없거나 문서를 열 수 없으면 확인 필요로 표시하고 숫자·사례·URL을 임의로 만들지 마세요.',
+      '5. 실제 확인된 정보와 추정을 구분하세요.',
+      '',
+      '[AI가 작성한 원문]',
+      original||'(아직 AI 초안 없음)',
+      '',
+      '[학생이 확인·수정한 현재 입력값]',
+      detail,
+      '',
+      '[응답 형식]',
+      '먼저 [확인·정정 내역]에 오류와 추가 확인이 필요한 내용을 항목별로 짧게 정리하세요.',
+      '그다음 아래의 원래 분석 프롬프트 [출력 형식] 표제어를 그대로 유지한 수정본 전체를 출력하세요.',
+      '학생은 수정본을 STEP 7 AI 답변 칸에 다시 붙여넣고 원문 확인 후 저장합니다.',
+      '',
+      '[원래 분석 프롬프트]',
+      document.getElementById(isIndustry?'industryPrompt':'companyPrompt')?.value||''
+    ].join('\n');
+  }
+  document.getElementById('copyIndustryFactPrompt').addEventListener('click',()=>copy(factPrompt('industry'),ctx));
+  document.getElementById('copyCompanyFactPrompt').addEventListener('click',()=>copy(factPrompt('company'),ctx));
   document.getElementById('copyIndustryPrompt').addEventListener('click',()=>copy(document.getElementById('industryPrompt').value,ctx));
   document.getElementById('copyCompanyPrompt').addEventListener('click',()=>copy(document.getElementById('companyPrompt').value,ctx));
   document.getElementById('addIndustry').addEventListener('click',addIndustry);document.getElementById('addCompany').addEventListener('click',addCompany);
   document.getElementById('saveAll').addEventListener('click',saveAll);document.getElementById('nextStep').addEventListener('click',()=>{saveAll();ctx.navigate(7)});
   wireStep7QuickStart(ctx,{onDone:()=>ctx.navigate(6)});
 
-  function addIndustry(){const name=v('industryName'),jobId=v('industryJobId'),source=v('industrySource'),url=v('industryUrl');if(!name||!jobId||!source||!url){status('산업명·연결직무·자료명·URL을 입력하세요.');return;}data.industries.push({id:`ind_${Date.now()}`,name,jobId,sourceType:v('industrySourceType'),source,url,checkedAt:v('industryChecked'),business:v('industryBusiness'),change:v('industryChange'),jobLink:v('industryJobLink'),difference:v('industryDifference'),createdAt:new Date().toISOString()});clear(['industryName','industrySource','industryUrl','industryBusiness','industryChange','industryJobLink','industryDifference']);persist();renderAll();status('산업 Evidence를 추가했습니다.');}
-  function addCompany(){const name=v('companyName'),industryId=v('companyIndustryId'),jobId=v('companyJobId');if(data.companies.length>=3){status('기업 후보는 최대 3개까지 분석할 수 있습니다. 기존 기업을 삭제한 뒤 추가하세요.');return;}if(!name||!industryId||!jobId){status('기업명·산업·직무 연결을 모두 선택하세요.');return;}const industry=data.industries.find(x=>x.id===industryId);if(industry?.jobId&&industry.jobId!==jobId){status('선택한 산업 Evidence와 연결된 Target Job이 다릅니다. 조합을 다시 확인하세요.');return;}data.companies.push({id:`co_${Date.now()}`,name,type:v('companyType'),industryId,jobId,industry:industry?.name||'',job:jobs.find(x=>x.id===jobId)?.title||'',source:v('companySource'),url:v('companyUrl'),checkedAt:v('companyChecked'),hiringEvidence:v('companyHiringEvidence'),jobSource:v('companyJobSource'),jobUrl:v('companyJobUrl'),business:v('companyBusiness'),direction:v('companyDirection'),role:v('companyRole'),signals:v('companySignals'),why:v('companyWhy'),unknown:v('companyUnknown'),createdAt:new Date().toISOString()});clear(['companyName','companySource','companyUrl','companyJobSource','companyJobUrl','companyBusiness','companyDirection','companyRole','companySignals','companyWhy','companyUnknown']);persist();renderAll();status('기업 Evidence를 추가했습니다.');}
+  function addIndustry(){
+    const name=v('industryName'),jobId=v('industryJobId'),source=v('industrySource'),url=v('industryUrl');
+    if(!name||!jobId||!source||!url){status('산업명·연결 직무·확인자료명·원문 URL을 입력하세요.');return}
+    if(!isHttpUrl(url)){status('산업 원문 URL은 실제 http(s) 주소를 입력하세요.');return}
+    const confirmed=!!document.getElementById('industryFactChecked').checked;
+    const existing=data.industries.find(x=>x.id===editingIndustryId);
+    const now=new Date().toISOString();
+    const item={...(existing||{}),id:existing?.id||'ind_'+Date.now(),name,jobId,
+      sourceType:v('industrySourceType'),source,url,checkedAt:v('industryChecked'),
+      business:v('industryBusiness'),change:v('industryChange'),jobLink:v('industryJobLink'),
+      difference:v('industryDifference'),factCheck:confirmed?'원문 대조 완료':'확인 필요',
+      factCheckedAt:confirmed?now:null,
+      createdAt:existing?.createdAt||now,updatedAt:now};
+    if(existing)data.industries=data.industries.map(x=>x.id===existing.id?item:x);
+    else data.industries.push(item);
+    const modified=!!existing;
+    editingIndustryId='';lastAutoIndustry.clear();
+    clear(Object.values(industryFieldMap));clearFact('industry');
+    document.getElementById('addIndustry').textContent='산업분석 저장';
+    document.getElementById('cancelIndustryEdit').hidden=true;
+    persist();renderAll();
+    status((modified?'산업분석 수정사항':'산업분석')+'을 저장했습니다. '+(confirmed?'학생 원문 대조 완료':'출처 원문 확인 필요'));
+  }
+  function addCompany(){
+    const name=v('companyName'),industryId=v('companyIndustryId'),jobId=v('companyJobId');
+    const existing=data.companies.find(x=>x.id===editingCompanyId);
+    if(!existing&&data.companies.length>=3){status('기업 후보는 최대 3개입니다. 저장된 기업은 수정 버튼으로 바꿀 수 있습니다.');return}
+    if(!name||!industryId||!jobId){status('기업명·산업·연결 직무를 모두 선택하세요.');return}
+    const industry=data.industries.find(x=>x.id===industryId);
+    if(industry?.jobId&&industry.jobId!==jobId){status('선택한 산업과 Target Job의 연결이 다릅니다.');return}
+    const url=v('companyUrl'),jobUrl=v('companyJobUrl');
+    if((url&&!isHttpUrl(url))||(jobUrl&&!isHttpUrl(jobUrl))){status('기업자료와 채용자료 URL은 유효한 http(s) 주소를 입력하세요.');return}
+    const confirmed=!!document.getElementById('companyFactChecked').checked;
+    if(confirmed&&(!url||!jobUrl)){status('원문 대조 완료를 체크하려면 기업 공식자료 URL과 채용·직무 원문 URL을 모두 입력하세요.');return}
+    const now=new Date().toISOString();
+    const item={...(existing||{}),id:existing?.id||'co_'+Date.now(),name,type:v('companyType'),
+      industryId,jobId,industry:industry?.name||'',job:jobs.find(x=>x.id===jobId)?.title||'',
+      source:v('companySource'),url,checkedAt:v('companyChecked'),
+      hiringEvidence:v('companyHiringEvidence'),jobSource:v('companyJobSource'),jobUrl,
+      business:v('companyBusiness'),direction:v('companyDirection'),role:v('companyRole'),
+      signals:v('companySignals'),why:v('companyWhy'),unknown:v('companyUnknown'),
+      factCheck:confirmed?'원문 대조 완료':'확인 필요',
+      factCheckedAt:confirmed?now:null,createdAt:existing?.createdAt||now,updatedAt:now};
+    if(existing)data.companies=data.companies.map(x=>x.id===existing.id?item:x);
+    else data.companies.push(item);
+    const modified=!!existing;
+    editingCompanyId='';lastAutoCompany.clear();
+    clear(Object.values(companyFieldMap));clearFact('company');
+    document.getElementById('addCompany').textContent='기업분석 저장';
+    document.getElementById('cancelCompanyEdit').hidden=true;
+    persist();renderAll();
+    status((modified?'기업분석 수정사항':'기업분석')+'을 저장했습니다. '+(confirmed?'학생 원문 대조 완료':'원문 확인 필요'));
+  }
   function renderAll(){refreshCompanyIndustrySelect();renderIndustries();renderIndustryTargets();renderIndustryCompare();renderCompanies();renderCompanyTargets();renderCompanyCompare();renderCompanyGuard();}
   function refreshCompanyIndustrySelect(){const el=document.getElementById('companyIndustryId');if(!el)return;const current=el.value;el.innerHTML='<option value="">선택</option>'+data.industries.map(x=>`<option value="${esc(x.id,ctx)}">${esc(x.name,ctx)}</option>`).join('');if(data.industries.some(x=>x.id===current))el.value=current;}
-  function renderIndustries(){const box=document.getElementById('industryList');if(!data.industries.length){box.innerHTML='<div class="placeholder"><b>Industry Evidence가 없습니다.</b>Target Job이 실제로 활용되는 산업을 근거자료와 함께 추가하세요.</div>';return;}box.innerHTML=data.industries.map((x,i)=>{const job=jobs.find(j=>j.id===x.jobId);return `<div class="listCard jfResultBox"><div class="listHead"><div><span class="rankTag">산업 ${i+1}</span><h3>${esc(x.name,ctx)}</h3><div class="muted small">${esc(job?.title||'직무 미연결',ctx)} · ${esc(x.sourceType||'출처유형 미입력',ctx)} · 확인 ${esc(x.checkedAt||'미입력',ctx)}</div></div><button class="btn danger smallBtn" data-delind="${x.id}">삭제</button></div><div class="jfReadFields">${readField("구조·고객",x.business,ctx)}${readField("최근 변화",x.change,ctx)}${readField("직무 역할",x.jobLink,ctx)}${readField("산업별 차이",x.difference,ctx)}</div><div class="sourceLine"><b>근거</b> ${esc(x.source,ctx)} · <a href="${esc(x.url,ctx)}" target="_blank" rel="noopener">원문 열기 ↗</a></div></div>`}).join('');box.querySelectorAll('[data-delind]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.delind;data.industries=data.industries.filter(x=>x.id!==id);data.targetIndustries=data.targetIndustries.filter(x=>x!==id);data.companies=data.companies.filter(x=>x.industryId!==id);data.targetCompanies=data.targetCompanies.filter(id=>data.companies.some(c=>c.id===id));persist();renderAll();}));}
+  function renderIndustries(){const box=document.getElementById('industryList');if(!data.industries.length){box.innerHTML='<div class="placeholder"><b>Industry Evidence가 없습니다.</b>Target Job이 실제로 활용되는 산업을 근거자료와 함께 추가하세요.</div>';return;}box.innerHTML=data.industries.map((x,i)=>{const job=jobs.find(j=>j.id===x.jobId);return `<div class="listCard jfResultBox"><div class="listHead"><div><span class="rankTag">산업 ${i+1}</span><h3>${esc(x.name,ctx)}</h3><div class="muted small">${esc(job?.title||'직무 미연결',ctx)} · ${esc(x.sourceType||'출처유형 미입력',ctx)} · 확인 ${esc(x.checkedAt||'미입력',ctx)}</div></div><div class="actions"><button class="btn outline smallBtn" data-editind="${esc(x.id,ctx)}">수정</button><button class="btn danger smallBtn" data-delind="${esc(x.id,ctx)}">삭제</button></div></div><div class="jfReadFields">${readField("구조·고객",x.business,ctx)}${readField("최근 변화",x.change,ctx)}${readField("직무 역할",x.jobLink,ctx)}${readField("산업별 차이",x.difference,ctx)}</div><div class="sourceLine"><b>사실확인</b> ${esc(x.factCheck||"확인 필요",ctx)} · <b>근거</b> ${esc(x.source,ctx)} · <a href="${esc(x.url,ctx)}" target="_blank" rel="noopener">원문 열기 ↗</a></div></div>`}).join('');box.querySelectorAll('[data-editind]').forEach(b=>b.addEventListener('click',()=>editIndustry(b.dataset.editind)));box.querySelectorAll('[data-delind]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.delind;data.industries=data.industries.filter(x=>x.id!==id);data.targetIndustries=data.targetIndustries.filter(x=>x!==id);data.companies=data.companies.filter(x=>x.industryId!==id);data.targetCompanies=data.targetCompanies.filter(id=>data.companies.some(c=>c.id===id));persist();renderAll();}));}
   function renderIndustryTargets(){const box=document.getElementById('industryTargets');box.innerHTML=data.industries.length?data.industries.map(x=>`<label class="checkRow"><input type="checkbox" data-itarget="${x.id}" ${data.targetIndustries.includes(x.id)?'checked':''}><div><b>${esc(x.name,ctx)}</b><span>${esc(jobs.find(j=>j.id===x.jobId)?.title||'',ctx)} · ${esc(x.jobLink||'',ctx)}</span></div></label>`).join(''):'<div class="callout warn">산업 Evidence를 먼저 추가하세요.</div>';box.querySelectorAll('[data-itarget]').forEach(c=>c.addEventListener('change',()=>{const ids=[...box.querySelectorAll('[data-itarget]:checked')];if(ids.length>3){c.checked=false;ctx.toast('Target Industry는 최대 3개입니다.');}saveSelections();renderIndustryCompare();}));}
   function renderIndustryCompare(){
     const box=document.getElementById('industryCompare'),ids=currentIndustryTargets(),arr=ids.map(id=>data.industries.find(x=>x.id===id)).filter(Boolean);
@@ -79,7 +282,7 @@ export async function render(ctx){
       ['근거',x.source]
     ],ctx)).join('')+'</div>';
   }
-  function renderCompanies(){const box=document.getElementById('companyList');if(!data.companies.length){box.innerHTML='<div class="placeholder"><b>Company Evidence가 없습니다.</b>사업자료와 채용·직무 근거를 연결해 기업 후보를 추가하세요.</div>';return;}box.innerHTML=data.companies.map((x,i)=>{const ind=data.industries.find(a=>a.id===x.industryId),job=jobs.find(a=>a.id===x.jobId),quality=companyEvidenceQuality(x);return `<div class="listCard jfResultBox"><div class="listHead"><div><span class="rankTag">기업 ${i+1}</span><h3>${esc(x.name,ctx)}</h3><div class="muted small">${esc([x.type,ind?.name||x.industry,job?.title||x.job].filter(Boolean).join(' · '),ctx)}</div></div><span class="scoreChip">${quality}</span></div><div class="jfReadFields">${readField("사업·고객",x.business,ctx)}${readField("최근 방향",x.direction,ctx)}${readField("직무 연결",x.role,ctx)}${readField("채용 역량신호",x.signals,ctx)}</div><div class="sourceLine"><b>기업근거</b> ${esc(x.source||'미입력',ctx)} ${x.url?`· <a href="${esc(x.url,ctx)}" target="_blank" rel="noopener">열기</a>`:''}<br><b>채용근거</b> ${esc(x.hiringEvidence||'미확인',ctx)} ${x.jobUrl?`· <a href="${esc(x.jobUrl,ctx)}" target="_blank" rel="noopener">열기</a>`:''}</div><div class="actions"><button class="btn danger smallBtn" data-delco="${x.id}">삭제</button></div></div>`}).join('');box.querySelectorAll('[data-delco]').forEach(b=>b.addEventListener('click',()=>{data.companies=data.companies.filter(x=>x.id!==b.dataset.delco);data.targetCompanies=data.targetCompanies.filter(id=>id!==b.dataset.delco);persist();renderAll();}));}
+  function renderCompanies(){const box=document.getElementById('companyList');if(!data.companies.length){box.innerHTML='<div class="placeholder"><b>Company Evidence가 없습니다.</b>사업자료와 채용·직무 근거를 연결해 기업 후보를 추가하세요.</div>';return;}box.innerHTML=data.companies.map((x,i)=>{const ind=data.industries.find(a=>a.id===x.industryId),job=jobs.find(a=>a.id===x.jobId),quality=companyEvidenceQuality(x);return `<div class="listCard jfResultBox"><div class="listHead"><div><span class="rankTag">기업 ${i+1}</span><h3>${esc(x.name,ctx)}</h3><div class="muted small">${esc([x.type,ind?.name||x.industry,job?.title||x.job].filter(Boolean).join(' · '),ctx)}</div></div><span class="scoreChip">${quality}</span></div><div class="jfReadFields">${readField("사업·고객",x.business,ctx)}${readField("최근 방향",x.direction,ctx)}${readField("직무 연결",x.role,ctx)}${readField("채용 역량신호",x.signals,ctx)}</div><div class="sourceLine"><b>사실확인</b> ${esc(x.factCheck||"확인 필요",ctx)}<br><b>기업근거</b> ${esc(x.source||'미입력',ctx)} ${x.url?`· <a href="${esc(x.url,ctx)}" target="_blank" rel="noopener">열기</a>`:''}<br><b>채용근거</b> ${esc(x.hiringEvidence||'미확인',ctx)} ${x.jobUrl?`· <a href="${esc(x.jobUrl,ctx)}" target="_blank" rel="noopener">열기</a>`:''}</div><div class="actions"><button class="btn outline smallBtn" data-editco="${esc(x.id,ctx)}">수정</button><button class="btn danger smallBtn" data-delco="${esc(x.id,ctx)}">삭제</button></div></div>`}).join('');box.querySelectorAll('[data-editco]').forEach(b=>b.addEventListener('click',()=>editCompany(b.dataset.editco)));box.querySelectorAll('[data-delco]').forEach(b=>b.addEventListener('click',()=>{data.companies=data.companies.filter(x=>x.id!==b.dataset.delco);data.targetCompanies=data.targetCompanies.filter(id=>id!==b.dataset.delco);persist();renderAll();}));}
   function renderCompanyTargets(){const box=document.getElementById('companyTargets');box.innerHTML=data.companies.length?data.companies.map(x=>`<label class="checkRow"><input type="checkbox" data-ctarget="${x.id}" ${data.targetCompanies.includes(x.id)?'checked':''}><div><b>${esc(x.name,ctx)}</b><span>${esc([x.industry||data.industries.find(i=>i.id===x.industryId)?.name,x.job||jobs.find(j=>j.id===x.jobId)?.title,x.hiringEvidence].filter(Boolean).join(' · '),ctx)}</span></div></label>`).join(''):'<div class="callout warn">기업 Evidence를 먼저 추가하세요.</div>';box.querySelectorAll('[data-ctarget]').forEach(c=>c.addEventListener('change',()=>{const ids=[...box.querySelectorAll('[data-ctarget]:checked')];if(ids.length>3){c.checked=false;ctx.toast('Target Company는 최대 3개입니다.');}saveSelections();renderCompanyCompare();renderCompanyGuard();}));}
   function renderCompanyCompare(){
     const box=document.getElementById('companyCompare');if(!box)return;
@@ -97,7 +300,24 @@ export async function render(ctx){
   function saveSelections(){data.targetIndustries=currentIndustryTargets();data.targetCompanies=currentCompanyTargets();const cp=document.getElementById('companyPrompt');if(cp)cp.value=buildCompanyPrompt(ctx.getState(),data);persist();}
   function saveAll(){saveSelections();data.notes=v('notes');persist();renderCompanyGuard();status('STEP 7 산업·기업분석 결과를 저장했습니다.');}
   function currentIndustryTargets(){return [...document.querySelectorAll('[data-itarget]:checked')].map(x=>x.dataset.itarget)}function currentCompanyTargets(){return [...document.querySelectorAll('[data-ctarget]:checked')].map(x=>x.dataset.ctarget)}
-  function persist(){ctx.saveState({artifacts:{industryCompany:data}})}function v(id){return document.getElementById(id)?.value?.trim()||''}function clear(ids){ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value=''})}function status(t){document.getElementById('status').textContent=t;ctx.toast(t)}
+  function persist(){
+    // Preserve every preexisting record's position and value, except explicit user edits/deletes.
+    const originalOrder=(all,visible,preserved)=>{
+      const byId=new Map([...preserved,...visible].map(x=>[x.id,x]));
+      const oldIds=new Set((all||[]).map(x=>x.id));
+      return [...(all||[]).map(x=>byId.get(x.id)).filter(Boolean),...visible.filter(x=>!oldIds.has(x.id))];
+    };
+    const selectedOrder=(original,current,preserved)=>{
+      const set=new Set([...preserved,...current]);
+      const previous=(original||[]).filter(x=>set.has(x));
+      return [...previous,...current.filter(x=>!previous.includes(x))];
+    };
+    ctx.saveState({artifacts:{industryCompany:{...data,
+      industries:originalOrder(saved.industries,data.industries,preservedIndustries),
+      companies:originalOrder(saved.companies,data.companies,preservedCompanies),
+      targetIndustries:selectedOrder(saved.targetIndustries,data.targetIndustries,preservedIndustryTargets),
+      targetCompanies:selectedOrder(saved.targetCompanies,data.targetCompanies,preservedCompanyTargets)}}});
+  }function v(id){return document.getElementById(id)?.value?.trim()||''}function clear(ids){ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value=''})}function status(t){document.getElementById('status').textContent=t;ctx.toast(t)}
 }
 
 // '새로 시작' 목표가 켜져 있으면 그 직무를, 아니면 STEP 4 목표를 사용한다(v2/quickStart.js).
@@ -105,78 +325,90 @@ function getTargetJobs(s){return activeTargetJobs(s)}
 function companyEvidenceQuality(x){if(x.url&&x.jobUrl&&['현재 채용공고 확인','최근 채용공고 확인'].includes(x.hiringEvidence))return '근거 높음';if(x.url&&(x.jobUrl||x.hiringEvidence==='공식 직무소개 확인'))return '근거 보통';return '근거 보강'}
 function buildIndustryPrompt(s){
   const jobs=getTargetJobs(s).map(x=>x.title),industries=activeTargetCombos(s).map(x=>x.industry).filter(x=>x&&x!=='산업 미정');
-  return `나는 ${s.profile?.major||'전공 미입력'} 전공 대학생이고, Target Job은 ${jobs.join(', ')||'미정'}이다.
-관심 산업은 ${[...new Set(industries)].join(', ')||'미정'}이다.
-
-웹 검색이 가능하면 현재 기준의 공식·공공 자료를 우선 확인해 취업 관점에서 산업을 분석해줘.
-
-[분석할 내용]
-1. 산업 한 줄 설명: 이 산업은 무엇을 팔거나 제공하고 어떻게 수익을 만드는가
-2. 주요 고객·가치사슬: 누가 고객이고 어떤 기업들이 연결되는가
-3. 주요 기업: 대표 기업을 예시로 제시하되 확인 가능한 기업만 쓴다
-4. 최근 변화 3개: 기술·고객·시장·규제 변화 중 Target Job과 관련된 것
-5. 직무·채용 영향: 위 변화 때문에 ${jobs.join(', ')||'이 직무'}의 업무·역량·Tool이 어떻게 달라지는가
-6. 확인 출처: 정부·공공기관·산업협회·공시·기업 IR 등 원문 확인이 가능한 자료
-
-[중요 규칙]
-- 성장성이 높다, 취업이 쉽다 같은 판단을 근거 없이 하지 않는다.
-- 최신 숫자와 동향에는 확인 가능한 출처가 필요하다.
-- 직무와 관계없는 산업 일반 설명은 줄인다.
-- JSON과 코드를 사용하지 않는다.
-- 첫 줄부터 아래 제목으로 짧게 답한다.
-
-[산업 한 줄]
-• 
-
-[주요 고객·가치사슬]
-• 
-
-[주요 기업]
-• 
-
-[최근 변화]
-• 
-• 
-• 
-
-[직무·채용 영향]
-• 
-
-[확인 출처]
-• `;
+  return [
+    '당신은 한국 대학생을 위한 산업·직무 리서처입니다.',
+    '전공: '+(s.profile?.major||'미입력'), 'Target Job: '+(jobs.join(', ')||'미정'),
+    '관심 산업: '+([...new Set(industries)].join(', ')||'미정'),
+    '',
+    '[검색·사실확인 규칙]',
+    '1. 기업·정부·공공기관·공시·산업협회 등 검증 가능한 원문을 우선 검색합니다.',
+    '2. 최근 12개월의 산업 변화에 우선순위를 두되 장기 구조는 장기자료도 활용할 수 있습니다.',
+    '3. 자료명·발행기관·발행일·원문 URL을 실제 확인한 경우에만 씁니다.',
+    '4. 확인되지 않은 수치, 기업 사례, 링크를 만들지 않습니다. 불확실하면 확인 필요라고 표시합니다.',
+    '5. 산업 전체의 변화와 선택 직무의 실제 업무 변화를 구분합니다.',
+    '6. PEST(정책·경제·사회·기술) 기회·위협을 검토하고 직무 관련 변화 3가지를 우선 선정합니다.',
+    '7. 실제 채용공고에서 확인한 요구사항과 산업 변화로부터 예상한 역량은 구분합니다.',
+    '8. 본문에 확인된 근거의 문서명과 발표일을 함께 표시합니다.',
+    '9. 학생 개인의 의견이나 경험은 임의로 작성하지 않습니다.',
+    '',
+    '[출력 형식 · 제목을 그대로 지켜주세요]',
+    '[산업명]',
+    '• 관심 산업 1개. 너무 넓은 명칭이면 분석 범위를 제안',
+    '[산업 구조·주요 고객]',
+    '• 산업의 제품·서비스와 수익구조',
+    '• 주요 고객(B2B/B2C/B2G), 가치사슬, 대표 기업 3~5개',
+    '[최근 변화]',
+    '• 변화 1: PEST 유형 / 실제 변화 / 산업의 기회 또는 위협 / 확인 자료명·발행일',
+    '• 변화 2: ...',
+    '• 변화 3: ...',
+    '[내 직무에 미치는 영향]',
+    '• 각 변화에 따른 Task(업무) · Skill(역량) · Tool · KPI · 대학생 준비사항',
+    '• 실제 JD 근거가 없으면 예상이라고 표시',
+    '[다른 산업과의 차이·선택]',
+    '• 같은 직무가 존재하는 다른 산업과 Task·Tool·KPI 차이, 선택 시 고려사항',
+    '[출처 유형]',
+    '• 정부·공공기관 / 산업협회·전문기관 / 공시·통계 / 기업 IR·사업보고서 / 기타 신뢰자료 중 하나',
+    '[확인 자료]',
+    '• 가장 직접적으로 확인한 핵심 근거자료의 정확한 명칭(기관·발행일 포함)',
+    '[원문 URL]',
+    '• 위 핵심자료의 실제 원문 링크 1개. 확인되지 않으면 공란',
+    '[확인일]',
+    '• 실제 정보 확인일(YYYY-MM-DD). 확인하지 않았다면 공란',
+    '',
+    'JSON, 마크다운 표와 코드블록은 사용하지 말고 줄바꿈·개조식으로만 답변하세요.'
+  ].join('\n');
 }
 function buildCompanyPrompt(s,data){
   const inds=(data.targetIndustries||[]).map(id=>data.industries.find(x=>x.id===id)?.name).filter(Boolean),jobs=getTargetJobs(s).map(x=>x.title);
-  return `나는 ${s.profile?.major||'전공 미입력'} 전공 대학생이고, Target Job은 ${jobs.join(', ')||'미정'}이다.
-관심 산업은 ${inds.join(', ')||primaryTargetIndustry(s)||'미정'}이다.
-
-웹 검색이 가능하면 기업 공식 홈페이지·사업보고서·IR·공식 채용페이지를 우선 확인해, 이 직무를 실제로 탐색할 기업을 최대 3개 찾아줘.
-
-[검색 기준]
-- Target Job과 실제 업무가 연결되는 기업
-- 기업 공식자료를 확인할 수 있는 기업
-- 현재 또는 최근 채용공고·공식 직무소개를 확인할 수 있는 기업을 우선
-- 단순히 유명한 기업이라는 이유로 넣지 않는다.
-
-각 기업은 아래 5가지만 짧게 분석해줘.
-
-[기업 1]
-• 기업명:
-• Business · Customer: 무엇을 팔고 주요 고객은 누구인가
-• Strategy: 최근 공식자료에서 확인되는 사업·시장 방향
-• Job Link: Target Job이 어떤 사업·고객·성과와 연결되는가
-• Hiring Signal: 실제 채용공고·직무소개에서 반복되는 역량·경험·Tool
-• 기업 공식자료 URL:
-• 채용·직무 원문 URL:
-• 확인 필요:
-
-같은 형식으로 최대 3개만 작성해줘.
-
-[중요 규칙]
-- 확인되지 않은 기업·공고·URL을 만들지 않는다.
-- 오래된 공고를 현재 채용 중이라고 표현하지 않는다.
-- 적합도 점수나 합격 가능성을 계산하지 않는다.
-- JSON·코드블록을 사용하지 않는다.`;
+  return [
+    '당신은 한국 취업준비생을 위한 기업·직무 리서처입니다.',
+    '전공: '+(s.profile?.major||'미입력'),
+    'Target Job: '+(jobs.join(', ')||'미정'),
+    '관심 산업: '+(inds.join(', ')||primaryTargetIndustry(s)||'미정'),
+    '',
+    '[검색·사실확인 규칙]',
+    '1. 관심 산업에서 선택 직무가 실제 확인되는 기업 1~3개를 제시합니다.',
+    '2. 기업 공식 홈페이지, DART 사업보고서, IR, 공식 채용공고·직무소개를 우선합니다.',
+    '3. 실제 확인한 원문 URL만 적고 현재 모집 여부와 최근 참고공고를 구분합니다.',
+    '4. 최근 전략·제품·고객 변화는 발행일과 문서명을 근거로 씁니다.',
+    '5. 공식 JD에서 확인된 채용 역량신호와 일반적 직무 추론을 구분합니다.',
+    '6. 학력·규모·매출·인원·공고 접수기간은 확인하지 못했으면 확인 필요라고 씁니다.',
+    '7. 합격가능성, 기업 적합도 점수, 지원자 개인의 의견은 만들어내지 않습니다.',
+    '',
+    '[출력 형식 · 기업마다 아래 표제어 그대로 사용]',
+    '[기업 1]',
+    '• 기업명: ',
+    '• 기업유형: 대기업/중견기업/중소기업/스타트업/공공기관/외국계/기타 중 확인된 하나',
+    '• 연결 산업: ',
+    '• Business · Customer: 주 사업과 주요 고객',
+    '• Strategy: 최근 공식자료에 확인된 방향과 발표일',
+    '• Job Link: 선택 직무의 실제 업무·성과 연결',
+    '• Hiring Signal: JD에 명시된 주요 과업·역량·Tool',
+    '• 기업 공식자료: 문서명·발행기관·발행일',
+    '• 기업 공식자료 URL: 검증 가능한 실제 원문 링크',
+    '• 채용·직무 자료: 공고 또는 공식 직무소개 이름과 발표일',
+    '• 채용 근거: 현재 채용공고 확인/최근 채용공고 확인/공식 직무소개 확인/직무 존재만 확인/아직 미확인',
+    '• 채용·직무 원문 URL: 실제 원문 링크',
+    '• 확인일: YYYY-MM-DD',
+    '• 확인 필요: 검증할 부분',
+    '',
+    '[기업 2]',
+    '• 위 항목과 동일 (실제 확인된 기업이 없으면 생략)',
+    '[기업 3]',
+    '• 위 항목과 동일 (실제 확인된 기업이 없으면 생략)',
+    '',
+    '기업당 1개의 기록으로 분리할 수 있도록 줄바꿈만 사용하세요. JSON·코드블록·표는 금지합니다.'
+  ].join('\n');
 }
 function primaryTargetIndustry(s){const e=s.artifacts?.jobExplorer||{},arr=activeTargetCombos(s).map(x=>x.industry).filter(x=>x&&x!=='산업 미정');return arr[0]||(quickStartActive(s)?'':e.industryInterests?.[0])||''}
 function targetSummaryHtml(s,ctx){

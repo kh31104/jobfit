@@ -107,18 +107,20 @@ await run('INJE STEP 7 analyzes industry and up to three companies from STEP 5 t
   await addCompany('기업B',2);
   await addCompany('기업C',3);
   let stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
-  assert(stored.artifacts.industryCompany.companies.length===3,'STEP 7 must store three companies');
+  assert(stored.artifacts.industryCompany.companies.filter(x=>x.generatedBy!=='step4-inje').length===3,'STEP 7 must store three newly analyzed companies');
+  assert(stored.artifacts.industryCompany.companies.some(x=>x.id==='co_seed'&&x.generatedBy==='step4-inje'),'STEP 7 must preserve prior STEP 4 company seed');
 
   await page.locator('#companyName').fill('기업D');
   await page.locator('#addCompany').click();
   stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
-  assert(stored.artifacts.industryCompany.companies.length===3,'STEP 7 must block a fourth company');
+  assert(stored.artifacts.industryCompany.companies.filter(x=>x.generatedBy!=='step4-inje').length===3,'STEP 7 must block a fourth analyzed company while preserving prior seed');
 
   const targets=page.locator('[data-ctarget]');
   for(let i=0;i<3;i++)await targets.nth(i).check();
   await page.locator('#saveAll').click();
   stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
-  assert(stored.artifacts.industryCompany.targetCompanies.length===3,'STEP 7 must save up to three target companies');
+  assert(stored.artifacts.industryCompany.targetCompanies.filter(id=>id!=='co_seed').length===3,'STEP 7 must save up to three newly chosen target companies');
+  assert(stored.artifacts.industryCompany.targetCompanies.includes('co_seed'),'STEP 7 must retain saved STEP 4 target company selection');
   const compare=(await page.locator('#companyCompare').textContent())||'';
   for(const expected of ['기업A','기업B','기업C','사업·고객','채용 역량신호'])assert(compare.includes(expected),'Company comparison missing: '+expected);
 });

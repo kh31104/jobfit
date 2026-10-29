@@ -39,11 +39,15 @@ jobs:
       - name: Test student root URL on iPhone Safari WebKit and Android Chrome
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/
-        run: node v2/tests/inje-mobile-cross-browser.mjs
+        run: |
+          node v2/tests/inje-mobile-cross-browser.mjs
+          JOBFIT_TEST_WEBKIT=1 node v2/tests/inje-step7-ai-import.mjs
       - name: Test v2 URL on iPhone Safari WebKit and Android Chrome
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
-        run: node v2/tests/inje-mobile-cross-browser.mjs
+        run: |
+          node v2/tests/inje-mobile-cross-browser.mjs
+          JOBFIT_TEST_WEBKIT=1 node v2/tests/inje-step7-ai-import.mjs
       - name: Test STEP 1-12 navigation and GAP incomplete on PC iPhone Android (student root)
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/
@@ -83,11 +87,15 @@ jobs:
       - name: Exercise deployed student root on mobile browser engines
         env:
           JOBFIT_TEST_URL: https://kh31104.github.io/jobfit/
-        run: node v2/tests/inje-mobile-cross-browser.mjs
+        run: |
+          node v2/tests/inje-mobile-cross-browser.mjs
+          JOBFIT_TEST_WEBKIT=1 node v2/tests/inje-step7-ai-import.mjs
       - name: Exercise deployed v2 on mobile browser engines
         env:
           JOBFIT_TEST_URL: https://kh31104.github.io/jobfit/v2/
-        run: node v2/tests/inje-mobile-cross-browser.mjs
+        run: |
+          node v2/tests/inje-mobile-cross-browser.mjs
+          JOBFIT_TEST_WEBKIT=1 node v2/tests/inje-step7-ai-import.mjs
       - name: Verify deployed STEP 1-12 and incomplete GAP on PC/iPhone/Android (student root)
         env:
           JOBFIT_TEST_URL: https://kh31104.github.io/jobfit/
