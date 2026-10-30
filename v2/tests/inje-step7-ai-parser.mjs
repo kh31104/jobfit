@@ -40,6 +40,28 @@ assert.match(old.fields.business,/B2B/);
 assert.equal(old.fields.source,'공식보고서');
 assert.ok(!old.fields.url,'Do not invent a source URL');
 
+const education=String.raw`[산업명]
+• 교육
+[근무처 유형]
+• 전국 대학(국립·공립·사립·전문대) — 대학교수 — 직무 존재 공식 확인
+[대표 기관·기업군]
+• 전국 대학 (개별 대학 몇 곳으로 축소하지 않음)
+[그곳에서 하는 일]
+• 대학교수 — 교과목 강의·연구
+[진입·채용 경로]
+• 대학별 공식 교원 임용공고 및 지원자격 확인
+[산업 구조·주요 고객]
+• 고등교육 제공
+[원문 URL]
+• https://example.org/university`;
+const e=parseIndustryAi(education);
+assert.match(e.fields.workplaces,/전국 대학/);
+assert.match(e.fields.employers,/개별 대학 몇 곳/);
+assert.match(e.fields.tasks,/교과목 강의/);
+assert.match(e.fields.entry,/교원 임용공고/);
+assert.equal(e.fields.business,'고등교육 제공');
+assert.equal(e.fields.url,'https://example.org/university');
+
 const companies=String.raw`[기업 1]
 • 기업명: 기업A
 • 기업유형: 대기업
