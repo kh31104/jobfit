@@ -19,6 +19,14 @@ const seed={
  },meta:{createdAt:'2026-10-01T00:00:00.000Z',updatedAt:'2026-10-01T00:00:00.000Z'}
 };
 const read=page=>page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
+const showStep7Inputs=async(page,selector)=>{
+  await page.locator(selector).waitFor({state:'attached'});
+  if(!(await page.locator(selector).isVisible())){
+    await page.locator('[data-acc-expand]').waitFor({state:'visible'});
+    await page.locator('[data-acc-expand]').click();
+  }
+  await page.locator(selector).waitFor({state:'visible'});
+};
 const industryAi=String.raw`[산업명]
 • 교육서비스
 [근무처 유형]
@@ -78,7 +86,7 @@ for(const item of browsers){
   await page.goto(base+'?course=INJE2026&measures=false',{waitUntil:'domcontentloaded'});
   await page.evaluate(({key,seed})=>localStorage.setItem(key,JSON.stringify(seed)),{key,seed});
   await page.reload({waitUntil:'domcontentloaded'});
-  await page.waitForSelector('#industryAiImport');
+  await showStep7Inputs(page,'#industryAiImport');
   let state=await read(page);
   assert(JSON.stringify(state.artifacts.industryCompany)===JSON.stringify(seed.artifacts.industryCompany),'Simply opening STEP 7 modified existing saved data');
   // Existing manually entered content must not be silently overwritten by an AI paste.
@@ -137,7 +145,7 @@ for(const item of browsers){
   assert(state.artifacts.industryCompany.companies.find(x=>x.name==='새기업B').factCheck==='확인 필요','Company B with missing URL was incorrectly verified');
   // Existing data, and the pasted AI draft, survive reload and STEP reentry.
   await page.reload({waitUntil:'domcontentloaded'});
-  await page.waitForSelector('#companyAiImport');
+  await showStep7Inputs(page,'#companyAiImport');
   state=await read(page);
   assert(state.artifacts.industryCompanyAiDrafts.company.includes('새기업B'),'AI company paste lost on reload');
   assert(state.assessments.careerDNA.viaTop5.length===5,'STEP1 data lost');
