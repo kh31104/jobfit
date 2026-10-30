@@ -21,6 +21,16 @@ const seed={
 const read=page=>page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
 const industryAi=String.raw`[산업명]
 • 교육서비스
+[근무처 유형]
+• 교육서비스 기업 마케팅팀
+• 전국 대학 홍보팀(채용 여부 확인 필요)
+[대표 기관·기업군]
+• 민간 교육서비스 기업군
+• 전국 대학(기관 유형)
+[그곳에서 하는 일]
+• SNS 콘텐츠 기획
+[진입·채용 경로]
+• 기업 공식 채용공고 및 대학 교직원 채용게시판
 [산업 구조·주요 고객]
 • 학습자를 대상으로 교육서비스 제공
 [최근 변화]
@@ -73,13 +83,19 @@ for(const item of browsers){
   assert(JSON.stringify(state.artifacts.industryCompany)===JSON.stringify(seed.artifacts.industryCompany),'Simply opening STEP 7 modified existing saved data');
   // Existing manually entered content must not be silently overwritten by an AI paste.
   await page.fill('#industryBusiness','학생이 직접 작성한 내용');
+   await page.fill('#industryWorkplaces','학생이 직접 적은 근무처');
   await page.fill('#industryAiImport',industryAi);
   assert(await page.locator('#industryBusiness').inputValue()==='학생이 직접 작성한 내용','AI overwrote manually authored content');
+   assert(await page.locator('#industryWorkplaces').inputValue()==='학생이 직접 적은 근무처','AI overwrote student workplace text');
+   assert((await page.locator('#industryEmployers').inputValue()).includes('민간 교육서비스 기업군'),'Employer field was not auto-mapped');
+   assert((await page.locator('#industryTasks').inputValue()).includes('SNS 콘텐츠 기획'),'Task field was not auto-mapped');
+   assert((await page.locator('#industryEntry').inputValue()).includes('교직원 채용게시판'),'Entry field was not auto-mapped');
   assert(await page.locator('#industryChange').inputValue()==='AI 기반 학습 콘텐츠 확대','AI did not auto-fill the matching field');
   assert(await page.locator('#industryFactChecked').isChecked()===false,'AI was incorrectly marked fact checked');
   assert((await read(page)).artifacts.industryCompanyAiDrafts.industry.includes('교육서비스'),'AI draft not saved separately');
   await page.click('#industryAiReplace');
   assert((await page.locator('#industryBusiness').inputValue()).includes('학습자를 대상으로'),'Explicit replace did not update editable form');
+   assert((await page.locator('#industryWorkplaces').inputValue()).includes('교육서비스 기업 마케팅팀'),'Explicit replace did not update student workplace field');
   await page.click('#addIndustry');
   state=await read(page);
   assert(state.artifacts.industryCompany.industries.length===3,'Legacy, existing and new industry were not retained');
@@ -87,6 +103,10 @@ for(const item of browsers){
   assert(state.artifacts.industryCompany.industries.some(x=>x.id==='legacy-step4'),'Previously generated STEP4 industry was deleted');
   const added=state.artifacts.industryCompany.industries.find(x=>x.name==='교육서비스');
   assert(added?.factCheck==='확인 필요','Unverified AI industry marked as verified');
+   assert(added.workplaces.includes('교육서비스 기업 마케팅팀'),'Workplace field not saved');
+   assert(added.employers.includes('민간 교육서비스 기업군'),'Employer field not saved');
+   assert(added.tasks.includes('SNS 콘텐츠 기획'),'Task field not saved');
+   assert(added.entry.includes('교직원 채용게시판'),'Entry field not saved');
   await page.locator('[data-editind="'+added.id+'"]').click();
   assert((await page.locator('#industryBusiness').inputValue()).includes('학습자를 대상으로'),'Saved industry did not load for editing');
   await page.fill('#industryChange','학생이 원문에서 확인한 수정 내용');
