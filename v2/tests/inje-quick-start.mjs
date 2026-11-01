@@ -8,7 +8,7 @@ const key='jobfit:v2:learner';
 const browser=await chromium.launch({headless:true});
 const assert=(condition,message)=>{if(!condition)throw new Error(message)};
 const read=page=>page.evaluate(k=>JSON.parse(localStorage.getItem(k)||'{}'),key);
-const openStep=async(page,step)=>{await page.locator(`.stepBtn[data-step="${step}"]`).click();await page.waitForFunction(s=>document.querySelector('.stepBtn.active')?.dataset.step===String(s),step);if(step===6&&await page.locator('#jf7Legacy').count())await page.click('#jf7Legacy')};
+const openStep=async(page,step)=>{await page.locator(`.stepBtn[data-step="${step}"]`).click();await page.waitForFunction(s=>document.querySelector('.stepBtn.active')?.dataset.step===String(s),step);if(step===6){await page.locator('#jf7Legacy').waitFor();await page.click('#jf7Legacy')}};
 
 const seed={
   version:2.2,activeStep:6,mode:'full',
