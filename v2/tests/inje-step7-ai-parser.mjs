@@ -91,4 +91,36 @@ assert.equal(c.companies[1].jobUrl,undefined,'Do not fabricate a missing hiring 
 assert.equal(parseCompanyAi('이 기업은 성장 가능성이 높다').companies.length,0);
 assert.equal(isHttpUrl('javascript:alert(1)'),false);
 assert.equal(isHttpUrl('https://example.org/industry'),true);
-console.log('PASS STEP 7 industry/company source-bound parsing and no fabricated fields');
+const pest=parseIndustryAi(String.raw`[산업명]
+• 고등교육
+[Policy · 정책/법규]
+• 대학 재정지원 정책 [출처①]
+[Technology · 기술]
+• AI 교수학습 도구 [출처②]
+[1. 산업 내 경쟁 Risk]
+• 대학 간 경쟁 [출처①]
+[출처 목록]
+• [출처①] 정책자료 | 교육부 | 2026-10-01 | https://example.org/education`);
+assert.match(pest.fields.pestPolicy,/재정지원/);
+assert.match(pest.fields.pestTechnology,/AI 교수학습/);
+assert.match(pest.fields.competitionRisk,/대학 간 경쟁/);
+assert.match(pest.fields.sources,/https:\/\/example.org\/education/);
+const swot=parseCompanyAi(String.raw`[기업 1]
+• 기업명: 전국 대학
+[Product · 상품/서비스 강점]
+• 교육과정 운영
+[Financial state · 재무상태]
+• 기관별 공시 확인 필요
+[Strength · 강점]
+• 연구·교육 기능
+[Threat · 위협]
+• 학령인구 변화
+[출처 목록]
+• [출처①] 공시 | 기관 | 2026-01-01 | https://example.org/report`);
+assert.equal(swot.companies.length,1);
+assert.match(swot.companies[0].productStrength,/교육과정/);
+assert.match(swot.companies[0].financePerformance,/확인 필요/);
+assert.match(swot.companies[0].swotStrength,/연구/);
+assert.match(swot.companies[0].swotThreat,/학령인구/);
+assert.match(swot.companies[0].sources,/https:\/\/example.org\/report/);
+console.log('PASS STEP 7 legacy + PEST / five forces / SWOT source-bound parsing');
