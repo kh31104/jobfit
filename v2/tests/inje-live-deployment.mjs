@@ -1,26 +1,60 @@
-// Read only: checks deployed bytes; the workflow reports verification to the tested commit.
-const root='https://kh31104.github.io/jobfit/';
-const files=[
-  ['',text=>text.includes('./v2/bootstrap.js?v=40')],
-  ['v2/index.html',text=>text.includes('./bootstrap.js?v=40')],
-  ['v2/bootstrap.js',text=>text.includes("./app.js?v=43")],
-  ['v2/app.js',text=>text.includes('physical===3?35:physical===4?37:physical===5?33')],
-  ['v2/steps/step5.js',text=>text.includes('const recoveredGap=parseGapBullet')&&text.includes('const explicitGaps=')]
+// GitHub Pages deployment integrity check.
+// Compare deployed bytes with the checked-out commit instead of hard-coded
+// bootstrap/app version strings. This avoids false failures on version bumps.
+// Read-only: no student data or application state is modified.
+import {createHash} from 'node:crypto';
+import {readFileSync} from 'node:fs';
+
+const paths=[
+  'index.html',
+  'v2/index.html',
+  'v2/bootstrap.js',
+  'v2/app.js',
+  'v2/steps/step5.js',
+  'v2/steps/step6IndustryCompany.js',
+  'v2/steps/step7Tables.js',
+  'v2/steps/industryAiParser.js'
 ];
-for(let attempt=1;attempt<=45;attempt++){
-  const result=await Promise.all(files.map(async([path,predicate])=>{
-    try{
-      const response=await fetch(root+path+'?jobfit_verify='+Date.now(),{headers:{'Cache-Control':'no-cache'}});
-      return {path:path||'index.html',ok:response.ok&&predicate(await response.text()),status:response.status};
-    }catch(e){return {path:path||'index.html',ok:false,error:String(e)}}
-  }));
-  if(result.every(x=>x.ok)){
-    console.log('PASS GitHub Pages served updated root, v2, bootloader, app and STEP6 report for the requested mobile fix');
-    console.log(JSON.stringify(result));
+const repoRoot=new URL('../../',import.meta.url);
+const base=(process.env.JOBFIT_VERIFY_BASE||'https://kh31104.github.io/jobfit/').replace(/\/+$/,'')+'/';
+const attempts=Math.max(1,Number(process.env.JOBFIT_VERIFY_ATTEMPTS)||30);
+const intervalMs=Math.max(0,Number(process.env.JOBFIT_VERIFY_INTERVAL_MS)||10000);
+const sha=process.env.GITHUB_SHA||'local-commit';
+
+const digest=bytes=>createHash('sha256').update(bytes).digest('hex').slice(0,16);
+const expected=paths.map(path=>{
+  const bytes=readFileSync(new URL('../../'+path,import.meta.url));
+  return {path,bytes,hash:digest(bytes)};
+});
+
+async function checkFile(file,attempt){
+  const url=new URL(file.path,base);
+  url.searchParams.set('jobfit_verify',sha+'-'+attempt+'-'+file.path.replace(/\W/g,'_'));
+  try{
+    const response=await fetch(url,{
+      cache:'no-store',
+      headers:{'Cache-Control':'no-cache','Pragma':'no-cache'},
+      signal:AbortSignal.timeout(12000)
+    });
+    if(!response.ok)return {path:file.path,ok:false,status:response.status,expected:file.hash};
+    const actual=Buffer.from(await response.arrayBuffer());
+    const ok=file.bytes.equals(actual);
+    return {path:file.path,ok,status:response.status,expected:file.hash,actual:digest(actual)};
+  }catch(e){
+    return {path:file.path,ok:false,error:String(e),expected:file.hash};
+  }
+}
+
+for(let attempt=1;attempt<=attempts;attempt++){
+  const results=await Promise.all(expected.map(f=>checkFile(f,attempt)));
+  const failures=results.filter(x=>!x.ok);
+  if(!failures.length){
+    console.log('PASS deployed Pages matches the exact checked-out commit: '+sha);
+    console.log(JSON.stringify(results.map(x=>({path:x.path,sha256:x.actual}))));
     process.exit(0);
   }
-  console.log('Pages deploy not yet current, attempt '+attempt+'/45: '+JSON.stringify(result));
-  await new Promise(resolve=>setTimeout(resolve,15000));
+  console.log('Pages content mismatch attempt '+attempt+'/'+attempts+': '+JSON.stringify(failures));
+  if(attempt<attempts)await new Promise(resolve=>setTimeout(resolve,intervalMs));
 }
-console.error('FAIL GitHub Pages latest version could not be verified after retry window');
+console.error('FAIL deployed GitHub Pages content did not match the exact checked-out commit. Inspect hashes and Pages publish settings above.');
 process.exit(1);
