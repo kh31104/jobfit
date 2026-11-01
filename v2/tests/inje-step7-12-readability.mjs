@@ -53,6 +53,7 @@ for(const width of [1280,390]){
     for(const screen of screens){
       await page.evaluate(({key,step})=>{const state=JSON.parse(localStorage.getItem(key));state.activeStep=step;localStorage.setItem(key,JSON.stringify(state));},{key,step:screen.step});
       await page.reload({waitUntil:'networkidle'});
+      if(screen.step===6){await page.locator('#jf7Legacy').waitFor();await page.click('#jf7Legacy');}
       await page.waitForSelector(screen.selector,{timeout:15000});
       for(const [selector,n] of screen.checks){
         const count=await page.locator(selector).count();
