@@ -36,6 +36,11 @@ jobs:
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/jobfit-mobile-server.log 2>&1 &
           sleep 2
           curl --fail http://127.0.0.1:8765/ >/dev/null
+      - name: Test Pages integrity checker against current local commit
+        env:
+          JOBFIT_VERIFY_BASE: http://127.0.0.1:8765/
+          JOBFIT_VERIFY_ATTEMPTS: '1'
+        run: node v2/tests/inje-live-deployment.mjs
       - name: Test student root URL on iPhone Safari WebKit and Android Chrome
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/
@@ -78,7 +83,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Confirm the fixed bundle is served on GitHub Pages
+      - name: Confirm deployed Pages bytes match current commit
         run: node v2/tests/inje-live-deployment.mjs
       - name: Install Playwright and both mobile browser engines
         run: |
