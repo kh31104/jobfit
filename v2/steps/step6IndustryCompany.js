@@ -1,4 +1,5 @@
 import {readValue,readField,readCard,READABLE_STYLES} from './readableResults.js';
+import {renderInjeStep7Tables} from './step7Tables.js?v=1';
 import {parseIndustryAi,parseCompanyAi,isHttpUrl} from './industryAiParser.js?v=2';
 import {activeTargetJobs,activeTargetCombos,quickStartActive,renderStep7QuickStart,wireStep7QuickStart} from '../quickStart.js?v=1';
 const INDUSTRY_SOURCE_TYPES=['정부·공공기관','산업협회·전문기관','공시·통계','기업 IR·사업보고서','기타 신뢰자료'];
@@ -6,6 +7,10 @@ const COMPANY_TYPES=['대기업','중견기업','중소기업','스타트업','�
 const HIRING_EVIDENCE=['현재 채용공고 확인','최근 채용공고 확인','공식 직무소개 확인','직무 존재만 확인','아직 미확인'];
 
 export async function render(ctx){
+  if(ctx.courseConfig?.institution==='인제대학교' && ctx.courseConfig?.mode==='full') return renderInjeStep7Tables(ctx,()=>renderLegacy(ctx));
+  return renderLegacy(ctx);
+}
+async function renderLegacy(ctx){
   const s=ctx.getState(),jobs=getTargetJobs(s),saved=s.artifacts?.industryCompany||{industries:[],targetIndustries:[],companies:[],targetCompanies:[],notes:''};
   const root=document.getElementById('stepRoot');let data=structuredClone(saved);
   const rawDraft=s.artifacts?.industryCompanyAiDrafts||{};
