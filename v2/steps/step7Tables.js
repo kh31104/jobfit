@@ -245,6 +245,16 @@ export function renderInjeStep7Tables(ctx,openLegacy){
       const ids=refs(d[kind].fields[key]), links=ids.map(id=>d[kind].sources.find(x=>x.id===id)).filter(x=>x&&validUrl(x.url));
       links.forEach(x=>{const a=document.createElement('a');a.href=x.url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=' · '+x.id+' 원문';el.append(a)});
     });
+    // Refresh source-row links after AI import or manual source changes.
+    root.querySelectorAll('[data-open^="'+kind+'-"]').forEach(el=>{
+      const id=el.dataset.open.slice(kind.length+1),source=(d[kind].sources||[]).find(x=>x.id===id);
+      el.replaceChildren();
+      if(source&&validUrl(source.url)){
+        const anchor=document.createElement('a');
+        anchor.href=source.url;anchor.target='_blank';anchor.rel='noopener noreferrer';anchor.textContent='원문 열기';
+        el.appendChild(anchor);
+      }else el.textContent='확인 필요';
+    });
     announce(kind,statusHtml(kind,d));
   }
   function persist(message){putState(ctx,d);if(message)q('jf7Saved').textContent=message;}
