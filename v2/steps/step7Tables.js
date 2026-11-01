@@ -3,6 +3,7 @@
 import {activeTargetJobs,activeTargetCombos,renderStep7QuickStart,wireStep7QuickStart} from '../quickStart.js?v=1';
 
 const INDUSTRY = [
+  ['workplaces','직무별 근무처 유형'],['employers','대표 기관·기업군'],['jobTasks','그곳에서 하는 일'],['entryPaths','진입·채용 경로'],
   ['policy','Policy · 정책/법규'],['economy','Economy · 경제'],['society','Society · 사회/문화'],['technology','Technology · 기술'],
   ['opportunity','Opportunity · 기회'],['threat','Threat · 위협'],
   ['rivalry','1. 산업 내 경쟁'],['entrants','2. 잠재적 진입자'],['buyers','3. 구매자·공급자 교섭력'],
@@ -65,7 +66,7 @@ function makePrompt(kind,d){
     '4. 정책·통계·시장·재무·경쟁·고용 관련 주장 옆에 반드시 [S번호]를 달아 주세요.',
     '5. 자료명, 발행기관, 발행일, 실제 원문 URL을 대조하고 찾지 못한 URL이나 숫자는 만들지 마세요.',
     '6. AI가 내용을 작성한 것과 사용자가 원문을 직접 대조한 것은 다릅니다. 확인되지 않은 내용은 "확인 필요"로 표시하세요.',
-    '7. 직무가 존재하는 조직 유형을 기업뿐 아니라 공공기관·전국 대학(국공립·사립·전문대)·연구기관·비영리기관까지 탐색하세요. 실제 직무가 존재하는 범주만 적고, 특정 대학을 무리하게 열거하지 마세요.',
+    '7. [workplaces]→[employers]→[jobTasks]→[entryPaths] 순서로 근무처 유형, 전국 단위 조직군, 해당 직무의 업무, 공식 채용·임용 경로를 구분하세요. 기업뿐 아니라 공공기관·전국 대학(국공립·사립·전문대)·연구기관·비영리기관도 실제 직무가 존재하면 포함하세요. 특정 대학을 무리하게 열거하지 마세요.',
     '8. 직무 존재, 채용공고 확인, 현재 채용 중을 구분하고 공식 원문으로 확인된 것만 모집 중이라고 하세요.',
     isIndustry?'9. 기회와 위협은 PEST 근거를 토대로 해석하고, 5개 경쟁요인은 해당 산업에 적합한 범위만 설명하세요. 성장성은 자료와 시점을 근거로 서술하세요.':
       '9. Product(강점·약점), Customer, Financial(매출·영업이익·손익과 시점), Competitor, Future direction을 확인하고 SWOT는 기업 내부 S/W와 외부 O/T를 구분하세요. 대학·공공기관처럼 영리기업 지표가 맞지 않으면 재정·사업수행 자료로 바꾸고 해당 이유를 밝히세요.',
@@ -136,7 +137,8 @@ function renderPart(kind,d){
     '<div class="field jf7Paste"><label for="jf7Import-'+kind+'">AI 답변 붙여넣기 · '+(ind?'산업':'기업')+' 1회 입력</label>'+
     '<textarea id="jf7Import-'+kind+'" rows="3" placeholder="AI에서 복사한 [필드키] 형식 답변 전체를 여기에 붙여넣으세요. 내용을 인식하면 즉시 표에 적용하고 입력창은 비웁니다."></textarea></div>'+
     '<p class="jf7Status" data-feedback="'+kind+'">'+esc(statusHtml(kind,d))+'</p>'+
-    (ind?'<h4>PEST 분석</h4>'+tableHtml(kind,d,['policy','economy','society','technology'])+
+    (ind?'<h4>내 직무로 어디에서 일할 수 있나?</h4>'+tableHtml(kind,d,['workplaces','employers','jobTasks','entryPaths'])+
+      '<h4>PEST 분석</h4>'+tableHtml(kind,d,['policy','economy','society','technology'])+
       '<h4>기회·위협</h4>'+tableHtml(kind,d,['opportunity','threat'])+
       '<h4>5개 경쟁요인</h4>'+tableHtml(kind,d,['rivalry','entrants','buyers','substitutes','growth']):
       '<h4>제품·고객·재무·경쟁사·미래방향</h4>'+tableHtml(kind,d,['productStrength','customer','financePerformance','competitorAdvantage','futureGrowth'])+
@@ -179,6 +181,7 @@ function transferToLegacy(ctx,d){
   const verified=kind=>Object.values(d[kind].fields||{}).some(Boolean)&&Object.values(d[kind].fields||{}).filter(Boolean).every(v=>sourceStatus(v,d[kind])==='학생 원문 대조 완료');
   const first=kind=>(d[kind].sources||[]).find(x=>validUrl(x.url))||{};
   const i={id:industryId,generatedBy:'step7-table-v1',name:d.target.industry,jobId:origTarget.id||'',job:d.target.job,
+    workplaces:d.industry.fields.workplaces,employers:d.industry.fields.employers,tasks:d.industry.fields.jobTasks,entry:d.industry.fields.entryPaths,
     business:[d.industry.fields.policy,d.industry.fields.economy,d.industry.fields.society,d.industry.fields.technology].filter(Boolean).join('\n'),
     change:[d.industry.fields.opportunity,d.industry.fields.threat].filter(Boolean).join('\n'),
     jobLink:[d.industry.fields.rivalry,d.industry.fields.entrants,d.industry.fields.buyers,d.industry.fields.substitutes,d.industry.fields.growth].filter(Boolean).join('\n'),
