@@ -67,6 +67,7 @@ await run('INJE STEP 7 analyzes industry and up to three companies from STEP 5 t
   await page.goto(base,{waitUntil:'networkidle'});
   await page.evaluate(s=>localStorage.setItem('jobfit:v2:learner',JSON.stringify(s)),state);
   await page.reload({waitUntil:'networkidle'});
+  await page.click('#jf7Legacy');
   await page.waitForSelector('#industryPrompt');
 
   const body=(await page.locator('#stepRoot').textContent())||'';
