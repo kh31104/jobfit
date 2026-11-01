@@ -1,6 +1,6 @@
 // INJE STEP 7 · editable PEST/5-forces and company/SWOT tables.
 // Additive schema. Existing industryCompany records and localStorage keys are not migrated or erased.
-import {activeTargetJobs,activeTargetCombos} from '../quickStart.js?v=1';
+import {activeTargetJobs,activeTargetCombos,renderStep7QuickStart,wireStep7QuickStart} from '../quickStart.js?v=1';
 
 const INDUSTRY = [
   ['policy','Policy · 정책/법규'],['economy','Economy · 경제'],['society','Society · 사회/문화'],['technology','Technology · 기술'],
@@ -221,6 +221,7 @@ export function renderInjeStep7Tables(ctx,openLegacy){
   root.innerHTML='<section class="card jf7Workspace jobfitReadable">'+STYLE+
     '<div class="sectionHead"><div><div class="kicker">STEP 7 · INDUSTRY & COMPANY ANALYSIS</div><h2>내가 지원할 산업과 기업 이해하기</h2>'+
     '<p>앞 단계 데이터를 불러오거나 새로 입력한 뒤, AI 분석 결과를 표에 한 번만 반영합니다. 모든 칸을 직접 수정할 수 있습니다.</p></div></div>'+
+    renderStep7QuickStart(s,ctx)+
     '<div class="block"><h3>01. 기본 정보 확인</h3><p class="help">기존 데이터는 읽어오기만 합니다. 직접 수정해도 STEP 1~6의 원본은 바뀌지 않습니다.</p>'+
     '<div class="grid4 jf7Target">'+[['major','전공'],['job','목표 직무'],['industry','관심 산업'],['company','분석 기업·기관'],['jd','선택한 채용공고']].map(([k,label])=>
        '<div class="field"><label for="jf7-'+k+'">'+label+'</label><input id="jf7-'+k+'" class="input" data-target="'+k+'" value="'+esc(d.target[k])+'" placeholder="'+label+'을 입력하세요"></div>').join('')+'</div>'+
@@ -327,5 +328,6 @@ export function renderInjeStep7Tables(ctx,openLegacy){
     transferToLegacy(ctx,d);ctx.navigate(9);
   });
   q('jf7Legacy').addEventListener('click',()=>{if(typeof openLegacy==='function')openLegacy()});
+  wireStep7QuickStart(ctx,{onDone:()=>ctx.navigate(6)});
   setMissing();updateHints('industry');updateHints('company');
 }
