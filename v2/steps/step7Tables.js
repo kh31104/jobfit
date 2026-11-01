@@ -262,7 +262,11 @@ export function renderInjeStep7Tables(ctx,openLegacy){
     persist('기본 정보만 새로 입력할 수 있습니다. 기존 표는 유지됩니다.');setMissing();q('jf7-job').focus();
   });
   root.querySelectorAll('[data-field]').forEach(el=>{
-    el.addEventListener('input',()=>{d[el.dataset.kind].fields[el.dataset.field]=el.value;persist();updateHints(el.dataset.kind)});
+    el.addEventListener('input',()=>{const kind=el.dataset.kind;d[kind].fields[el.dataset.field]=el.value;
+      // Any change to a verified claim requires a fresh manual source crosscheck.
+      (d[kind].sources||[]).forEach(x=>{x.checked=false});
+      root.querySelectorAll('[data-kind="'+kind+'"][data-verified]').forEach(x=>{x.checked=false});
+      persist();updateHints(kind)});
     el.addEventListener('blur',()=>{const v=bullets(el.value);if(v!==el.value){el.value=v;d[el.dataset.kind].fields[el.dataset.field]=v;persist();updateHints(el.dataset.kind)}});
   });
   root.querySelectorAll('[data-source]').forEach(el=>el.addEventListener('input',()=>{
