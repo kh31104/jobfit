@@ -8,7 +8,7 @@ const key='jobfit:v2:learner';
 const browser=await chromium.launch({headless:true});
 const assert=(condition,message)=>{if(!condition)throw new Error(message)};
 const read=page=>page.evaluate(k=>JSON.parse(localStorage.getItem(k)||'{}'),key);
-const openStep=async(page,step)=>{await page.locator(`.stepBtn[data-step="${step}"]`).click();await page.waitForFunction(s=>document.querySelector('.stepBtn.active')?.dataset.step===String(s),step)};
+const openStep=async(page,step)=>{await page.locator(`.stepBtn[data-step="${step}"]`).click();await page.waitForFunction(s=>document.querySelector('.stepBtn.active')?.dataset.step===String(s),step);if(step===6&&await page.locator('#jf7Legacy').count())await page.click('#jf7Legacy')};
 
 const seed={
   version:2.2,activeStep:6,mode:'full',
@@ -45,6 +45,7 @@ for(const width of [1280,390]){
     assert((await read(page)).artifacts?.quickStart===undefined,'Quick start saved without required fields');
     await page.fill('#qs7Major','식품영양학과');await page.fill('#qs7Job','식품 품질관리');await page.fill('#qs7Industry','식품, 바이오');
     await page.click('#qs7Save');
+    await page.click('#jf7Legacy');
     await page.waitForFunction(()=>[...document.querySelectorAll('#industryJobId option')].some(o=>o.textContent.includes('식품 품질관리')));
     let st=await read(page);
     assert(/^JF26-[A-Z2-9]{6}$/.test(st.profile?.anonCode||''),'Anonymous code was not issued during quick start');
@@ -125,6 +126,7 @@ for(const width of [1280,390]){
     await page.evaluate(({key,seed})=>{localStorage.clear();localStorage.setItem(key,JSON.stringify(seed))},{key,seed});
     await page.reload({waitUntil:'networkidle'});
     await page.waitForSelector('#qsStep7');
+    await page.click('#jf7Legacy');
     assert(await page.evaluate(()=>{const d=document.querySelector('#qsStep7 .qsDetails');return !!d&&!d.open&&!document.querySelector('#qsStep7.callout')}),'STEP 7 quick start should be a closed option when targets exist');
     await openStep(page,7);await page.waitForSelector('#qsStep8');
     assert(await page.evaluate(()=>{const d=document.querySelector('#qsStep8 .qsDetails');return !!d&&!d.open&&!document.querySelector('#qsStep8.callout')}),'STEP 8 quick start should be a closed option when assets exist');
@@ -136,14 +138,14 @@ for(const width of [1280,390]){
     await openStep(page,6);await page.waitForSelector('#qsStep7');
     await page.locator('#qsStep7 .qsDetails > summary').click();
     assert(!(await page.locator('#qs7Code').count()),'Code field should be hidden when a code already exists');
-    await page.fill('#qs7Job','데이터 분석');await page.fill('#qs7Industry','IT·플랫폼');await page.click('#qs7Save');
+    await page.fill('#qs7Job','데이터 분석');await page.fill('#qs7Industry','IT·플랫폼');await page.click('#qs7Save');await page.click('#jf7Legacy');
     await page.waitForFunction(()=>[...document.querySelectorAll('#industryJobId option')].map(o=>o.textContent).join('|')==='선택|데이터 분석');
     st=await read(page);
     assert(st.profile.anonCode==='JF26-SEEDAB','Existing anonymous code changed');
     assert(JSON.stringify(st.artifacts.jobExplorer)===JSON.stringify(seed.artifacts.jobExplorer),'Quick start modified STEP 4 data');
     assert(JSON.stringify(st.artifacts.industryCompany)===JSON.stringify(seed.artifacts.industryCompany),'Quick start modified STEP 7 saved data');
     assert(await page.locator('[data-qs7-use="explorer"]').isVisible(),'Switch-back button should be visible without opening the panel');
-    await page.click('[data-qs7-use="explorer"]');
+    await page.click('[data-qs7-use="explorer"]');await page.click('#jf7Legacy');
     await page.waitForFunction(()=>[...document.querySelectorAll('#industryJobId option')].some(o=>o.textContent==='브랜드 마케팅'));
     st=await read(page);
     assert(st.artifacts.quickStart.step7.active===false,'Switching back to STEP 4 target did not persist');
