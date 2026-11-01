@@ -83,6 +83,7 @@ jobs:
           node --check v2/steps/industryAiParser.js
           node --check v2/tests/inje-step7-ai-parser.mjs
           node --check v2/tests/inje-step7-ai-import.mjs
+          node --check v2/tests/inje-step7-tables.mjs
           node v2/tests/inje-step7-ai-parser.mjs
           node --check v2/tests/inje-quick-start.mjs
           node --check v2/tests/week-isolation-regression.mjs
@@ -233,6 +234,7 @@ jobs:
           node v2/tests/inje-mobile-choice-backup.mjs
           node v2/tests/inje-step7-12-readability.mjs
           node v2/tests/inje-step7-ai-import.mjs
+          node v2/tests/inje-step7-tables.mjs
           node v2/tests/inje-quick-start.mjs
           node v2/tests/research-measures.mjs
           node v2/tests/relationship-smoke.mjs
@@ -252,6 +254,7 @@ jobs:
           node v2/tests/inje-mobile-choice-backup.mjs
           node v2/tests/inje-step7-12-readability.mjs
           node v2/tests/inje-step7-ai-import.mjs
+          node v2/tests/inje-step7-tables.mjs
           node v2/tests/inje-quick-start.mjs
           node v2/tests/research-measures.mjs
           node v2/tests/relationship-smoke.mjs
