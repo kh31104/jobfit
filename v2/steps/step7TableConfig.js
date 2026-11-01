@@ -75,7 +75,7 @@ export function renderSavedTable(kind,record,escapeHtml){
  return groups.filter(g=>g.fields.some(f=>String(record[f.key]||'').trim())).map(group=>
  '<section class="jfAnalysisTable jfSavedTable"><h4>'+esc(group.title)+'</h4><div class="jfTableScroll"><div class="jfTableGrid" style="--jf-cols:'+group.columns+'">'+
  group.fields.map(f=>'<div class="jfTableCell"><label>'+esc(f.label)+'</label><div class="jfSavedContent">'+
- (String(record[f.key]||'').trim()?String(record[f.key]).split(/\\n/).filter(Boolean).map(x=>'<div class="jfSavedBullet">'+esc(/^[•\\-]/.test(x.trim())?x.trim():'• '+x.trim())+'</div>').join(''):'<span class="muted">확인 필요</span>')+
+ (String(record[f.key]||'').trim()?String(record[f.key]).split(/\n/).filter(Boolean).map(x=>'<div class="jfSavedBullet">'+esc(/^[•-]/.test(x.trim())?x.trim():'• '+x.trim())+'</div>').join(''):'<span class="muted">확인 필요</span>')+
  '</div></div>').join('')+'</div></div></section>').join('');
 }
 export function tablePromptLines(kind){
