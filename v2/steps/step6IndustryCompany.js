@@ -396,7 +396,7 @@ ${area('industryEntry','④ 진입·채용 경로','','공식 채용게시판·�
 // '새로 시작' 목표가 켜져 있으면 그 직무를, 아니면 STEP 4 목표를 사용한다(v2/quickStart.js).
 function getTargetJobs(s){return activeTargetJobs(s)}
 function companyEvidenceQuality(x){if(x.url&&x.jobUrl&&['현재 채용공고 확인','최근 채용공고 확인'].includes(x.hiringEvidence))return '근거 높음';if(x.url&&(x.jobUrl||x.hiringEvidence==='공식 직무소개 확인'))return '근거 보통';return '근거 보강'}
-function buildIndustryPrompt(s){
+function buildIndustryPrompt(s,research={}){
   const jobs=getTargetJobs(s).map(x=>x.title),industries=activeTargetCombos(s).map(x=>x.industry).filter(x=>x&&x!=='산업 미정');
   const special=jobs.some(x=>/대학교수|교수|교원|강사/.test(x))
     ? '9. 대학교수·강의 직무는 먼저 전국 대학(국공립·사립·전문대학) 같은 근무처 유형을 제시하고, 개별 대학 몇 곳만 열거하거나 민간기업으로 대체하지 마세요. 교수 임용·강사 채용·교육기획 채용을 구별합니다.'
@@ -404,8 +404,13 @@ function buildIndustryPrompt(s){
   return [
     '당신은 한국 대학생을 위한 산업·직무 리서처입니다.',
     '전공: '+(s.profile?.major||'미입력'),
-    'Target Job: '+(jobs.join(', ')||'미정'),
-    '관심 산업: '+([...new Set(industries)].join(', ')||'미정'),
+    'Target Job: '+(research.job||jobs.join(', ')||'미정'),
+    '관심 산업: '+(research.industry||[...new Set(industries)].join(', ')||'미정'),
+    '',
+    '[추가 질문 규칙]',
+    '직무·산업이 미입력 또는 모호하거나 분석 범위가 불분명하면 결과를 작성하기 전에 질문을 한 번에 하나씩 하고 학생 답변을 기다리세요(최대 3개).',
+    '확인할 정보: Target Job, 산업 범위, 필요할 때 근무처 유형·지역·조직 범위. 이미 입력한 정보는 다시 묻지 마세요.',
+    '학생의 답변에 없는 사실을 추정하거나 임의로 채우지 마세요.',
     '',
     '[핵심 질문]',
     '학생이 산업분석 결과만 보고 “내가 선택한 직무로 어디에서 일할 수 있는가?”를 한눈에 파악하도록 작성합니다.',
@@ -450,6 +455,7 @@ function buildIndustryPrompt(s){
     '• 변화에 따른 Task·Skill·Tool·KPI 및 대학생 준비사항. 공식 채용근거와 예상 구분',
     '[다른 산업과의 차이·선택]',
     '• 같은 직무의 타 산업 대비 주요 업무·도구·성과기준 차이',
+    ...tablePromptLines('industry'),
     '[출처 유형]',
     '• 정부·공공기관 / 산업협회·전문기관 / 공시·통계 / 기업 IR·사업보고서 / 기타 신뢰자료 중 하나',
     '[확인 자료]',
@@ -459,6 +465,7 @@ function buildIndustryPrompt(s){
     '[확인일]',
     '• 실제 확인일(YYYY-MM-DD). 확인하지 않았다면 공란',
     '',
+    '각 PEST 및 위험요인 칸에 1~3개 핵심 내용을 개조식·줄바꿈으로 작성하고, 주장 끝에 [출처①] 등 출처번호를 붙이세요.',
     '반드시 줄바꿈과 개조식으로 답변하세요. JSON·마크다운 표·코드블록은 사용하지 마세요.'
   ].join('\n');
 }
@@ -468,19 +475,26 @@ function industryWorkplaceSummary(x,ctx){
     return '<div class="jfWorkplaceNote">기존 산업분석 기록입니다. ‘수정’에서 근무처 정보를 추가할 수 있습니다.</div>';
   return '<div class="jfWorkplaceTitle">내 직무로 일할 수 있는 곳</div>'+fields.map(([label,value])=>readField(label,value,ctx)).join('');
 }
-function buildCompanyPrompt(s,data){
+function buildCompanyPrompt(s,data,research={}){
   const inds=(data.targetIndustries||[]).map(id=>data.industries.find(x=>x.id===id)?.name).filter(Boolean),jobs=getTargetJobs(s).map(x=>x.title);
   return [
     '당신은 한국 취업준비생을 위한 기업·직무 리서처입니다.',
     '전공: '+(s.profile?.major||'미입력'),
-    'Target Job: '+(jobs.join(', ')||'미정'),
-    '관심 산업: '+(inds.join(', ')||primaryTargetIndustry(s)||'미정'),
+    'Target Job: '+(research.job||jobs.join(', ')||'미정'),
+    '관심 산업: '+(research.industry||inds.join(', ')||primaryTargetIndustry(s)||'미정'),
+    '집중 기업·기관: '+(research.company||'미정 (실제 근거 있는 후보 1~3곳 조사)'),
+    '',
+    '[추가 질문 규칙]',
+    '직무·산업이 미입력·모호하면 결과를 작성하기 전 필요한 질문을 한 번에 하나씩 하고 답변을 기다리세요(최대 3개).',
+    '기업·기관을 특정했으면 해당 1곳을 우선 분석하고 특정하지 않았으면 Target Job이 공식적으로 확인된 조직 1~3곳을 조사하세요.',
+    '이미 제공된 전공·직무·산업·기업 정보는 다시 묻지 마세요.',
     '',
     '[검색·사실확인 규칙]',
-    '1. 관심 산업에서 선택 직무가 실제 확인되는 기업 1~3개를 제시합니다.',
+    '1. 관심 산업에서 선택 직무가 실제 확인되는 기업·기관 1~3곳을 제시합니다. 대학·공공기관도 직무가 있으면 포함합니다.',
     '2. 기업 공식 홈페이지, DART 사업보고서, IR, 공식 채용공고·직무소개를 우선합니다.',
     '3. 실제 확인한 원문 URL만 적고 현재 모집 여부와 최근 참고공고를 구분합니다.',
-    '4. 최근 전략·제품·고객 변화는 발행일과 문서명을 근거로 씁니다.',
+    '4. 최근 전략·제품·고객 변화는 발행일과 문서명을 근거로 씁니다. SWOT 기회·위협은 PEST 산업분석의 확인된 근거와 연결합니다.',
+    '4-1. 재무상태(매출·영업이익·순이익·재무비율)는 공시 확인 시 기준연도·단위와 비교시점을 명시합니다. 비영리기관의 미공개 수치는 만들어내지 마세요.',
     '5. 공식 JD에서 확인된 채용 역량신호와 일반적 직무 추론을 구분합니다.',
     '6. 학력·규모·매출·인원·공고 접수기간은 확인하지 못했으면 확인 필요라고 씁니다.',
     '7. 합격가능성, 기업 적합도 점수, 지원자 개인의 의견은 만들어내지 않습니다.',
@@ -502,11 +516,13 @@ function buildCompanyPrompt(s,data){
     '• 확인일: YYYY-MM-DD',
     '• 확인 필요: 검증할 부분',
     '',
+    ...tablePromptLines('company'),
     '[기업 2]',
     '• 위 항목과 동일 (실제 확인된 기업이 없으면 생략)',
     '[기업 3]',
     '• 위 항목과 동일 (실제 확인된 기업이 없으면 생략)',
     '',
+    '각 기업마다 모든 5관점·SWOT 항목과 [출처 목록]을 반복하세요. 항목당 핵심 사실 1~3개를 개조식·줄바꿈으로 작성하고, 문장 끝 [출처①]처럼 출처를 붙이세요.',
     '기업당 1개의 기록으로 분리할 수 있도록 줄바꿈만 사용하세요. JSON·코드블록·표는 금지합니다.'
   ].join('\n');
 }
