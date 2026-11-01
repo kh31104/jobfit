@@ -47,6 +47,14 @@ const industryAi=String.raw`[산업명]
 • 콘텐츠 기획·자료 분석
 [다른 산업과의 차이·선택]
 • 서비스업은 성과기준이 다름
+[Policy · 정책/법규]
+• 교육정책 변경 [출처①]
+[Technology · 기술]
+• AI 학습서비스 [출처①]
+[1. 산업 내 경쟁 Risk]
+• 경쟁 심화 가능성 [출처①]
+[출처 목록]
+• [출처①] 공개 보고서 | 정부 | 2026-10-29 | https://example.org/education
 [출처 유형]
 • 정부·공공기관
 [확인 자료]
@@ -69,6 +77,12 @@ const companyAi=String.raw`[기업 1]
 • 채용 근거: 공식 직무소개 확인
 • 채용·직무 원문 URL: https://example.org/a/jobs
 • 확인 필요: 실제 공고 마감일
+[Product · 상품/서비스 강점]
+• 교육서비스 운영 [출처①]
+[Strength · 강점]
+• 서비스 운영 경험 [출처①]
+[출처 목록]
+• [출처①] 사업보고서 | 기관 | 2026-10-29 | https://example.org/a
 [기업 2]
 • 기업명: 새기업B
 • 연결 산업: 교육서비스
@@ -99,6 +113,9 @@ for(const item of browsers){
    assert((await page.locator('#industryTasks').inputValue()).includes('SNS 콘텐츠 기획'),'Task field was not auto-mapped');
    assert((await page.locator('#industryEntry').inputValue()).includes('교직원 채용게시판'),'Entry field was not auto-mapped');
   assert(await page.locator('#industryChange').inputValue()==='AI 기반 학습 콘텐츠 확대','AI did not auto-fill the matching field');
+  assert((await page.locator('#industryPestPolicy').inputValue()).includes('• 교육정책 변경'),'PEST table did not auto-fill with bullets');
+  assert((await page.locator('#industryCompetitionRisk').inputValue()).includes('• 경쟁 심화'),'Threat table did not auto-fill');
+  assert((await page.locator('#industrySources').inputValue()).includes('https://example.org/education'),'Source ledger not imported');
   assert(await page.locator('#industryFactChecked').isChecked()===false,'AI was incorrectly marked fact checked');
   assert((await read(page)).artifacts.industryCompanyAiDrafts.industry.includes('교육서비스'),'AI draft not saved separately');
   await page.click('#industryAiReplace');
@@ -115,6 +132,10 @@ for(const item of browsers){
    assert(added.employers.includes('민간 교육서비스 기업군'),'Employer field not saved');
    assert(added.tasks.includes('SNS 콘텐츠 기획'),'Task field not saved');
    assert(added.entry.includes('교직원 채용게시판'),'Entry field not saved');
+  assert(added.pestPolicy.includes('교육정책'),'PEST field was not saved');
+  assert(added.competitionRisk.includes('경쟁 심화'),'Threat table field was not saved');
+  assert(added.sources.includes('https://example.org/education'),'Source ledger was not saved');
+  assert((await page.locator('#industryList .jfSavedTable').count())>0,'Saved industry not displayed as a table');
   await page.locator('[data-editind="'+added.id+'"]').click();
   assert((await page.locator('#industryBusiness').inputValue()).includes('학습자를 대상으로'),'Saved industry did not load for editing');
   await page.fill('#industryChange','학생이 원문에서 확인한 수정 내용');
@@ -129,12 +150,17 @@ for(const item of browsers){
   assert(await page.locator('#companyAiCandidate option').count()===3,'Multi-company options not created');
   assert(await page.locator('#companyName').inputValue()==='새기업A','Company 1 did not auto-apply');
   assert(await page.locator('#companySignals').inputValue()==='콘텐츠 제작','Hiring Signal did not map');
+  assert((await page.locator('#companyProductStrength').inputValue()).includes('• 교육서비스 운영'),'Company product table not auto-filled');
+  assert((await page.locator('#companySwotStrength').inputValue()).includes('• 서비스 운영 경험'),'SWOT table not auto-filled');
   assert(!await page.locator('#companyFactChecked').isChecked(),'Company AI was automatically verified');
   await page.check('#companyFactChecked');
   await page.click('#addCompany');
   state=await read(page);
   const a=state.artifacts.industryCompany.companies.find(x=>x.name==='새기업A');
   assert(a?.factCheck==='원문 대조 완료','Verified company not saved');
+  assert(a.productStrength.includes('교육서비스 운영')&&a.swotStrength.includes('서비스 운영 경험'),'Company table values not saved');
+  assert(a.sources.includes('https://example.org/a'),'Company source ledger not saved');
+  assert((await page.locator('#companyList .jfSavedTable').count())>0,'Saved company not displayed as a table');
   assert(JSON.stringify(state.artifacts.industryCompany.companies.find(x=>x.id==='original-co'))===JSON.stringify(seed.artifacts.industryCompany.companies[0]),'Original company overwritten');
   await page.selectOption('#companyAiCandidate','1');
   assert(await page.locator('#companyName').inputValue()==='새기업B','Selecting next AI company did not populate form');
