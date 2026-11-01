@@ -51,6 +51,8 @@ export const TABLE_CSS=[
 '.industryCompanyInje .jfTableCell label{display:block;min-height:64px;padding:12px 10px;background:#b7d6ff;color:#172b49;font-weight:750;line-height:1.5;overflow-wrap:anywhere}',
 '.industryCompanyInje .jfTableCell textarea{display:block;width:100%;min-height:145px;padding:13px;border:0;border-top:1px solid #dbe6f4;border-radius:0;background:#fff;line-height:1.7;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere;resize:vertical;box-sizing:border-box}',
 '.industryCompanyInje .jfTableCell textarea:focus{outline:2px solid #4d84ee;outline-offset:-2px}',
+'.industryCompanyInje .jfSavedContent{padding:12px;min-height:75px;font-size:14px;line-height:1.75;overflow-wrap:anywhere}',
+'.industryCompanyInje .jfSavedBullet{white-space:pre-wrap;margin-bottom:7px}',
 '.industryCompanyInje .jfSourcesField textarea{width:100%;min-height:125px;line-height:1.75;box-sizing:border-box;white-space:pre-wrap;overflow-wrap:anywhere}',
 '.industryCompanyInje .jfResearchInputs{padding:14px;margin:12px 0;background:#f4f8ff;border:1px solid #dce7f6;border-radius:12px}',
 '.industryCompanyInje .jfRecordLinks{line-height:1.75;overflow-wrap:anywhere}',
@@ -65,6 +67,16 @@ export function renderAnalysisTable(kind){
  const groups=kind==='industry'?INDUSTRY_GROUPS:COMPANY_GROUPS;
  return groups.map(group=>'<section class="jfAnalysisTable"><h4>'+htmlEsc(group.title)+'</h4><p class="help">'+htmlEsc(group.subtitle)+'</p><div class="jfTableScroll"><div class="jfTableGrid" style="--jf-cols:'+group.columns+'">'+group.fields.map(f=>'<div class="jfTableCell"><label for="'+kind+f.key.charAt(0).toUpperCase()+f.key.slice(1)+'">'+htmlEsc(f.label)+'</label><textarea id="'+kind+f.key.charAt(0).toUpperCase()+f.key.slice(1)+'" rows="5" placeholder="'+htmlEsc(f.hint)+'"></textarea></div>').join('')+'</div></div></section>').join('')+
  '<div class="field jfSourcesField"><label for="'+kind+'Sources">출처 목록 · 학생 교차검증용</label><textarea id="'+kind+'Sources" placeholder="• [출처①] 자료명 | 발행기관 | 발행일 | https://원문주소&#10;• [출처②] 자료명 | 발행기관 | 발행일 | https://원문주소&#10;• 확인 못한 항목: 확인 필요"></textarea><p class="help">표의 각 주장 끝에 [출처①]처럼 번호를 붙이고, 이 목록에서 실제 원문을 확인하세요. URL이 없는 주장은 확인 필요로 남깁니다.</p></div>';
+}
+// Saved results use the exact same grid as the editor. Do not mutate record data.
+export function renderSavedTable(kind,record,escapeHtml){
+ const groups=kind==='industry'?INDUSTRY_GROUPS:COMPANY_GROUPS;
+ const esc=escapeHtml||htmlEsc;
+ return groups.filter(g=>g.fields.some(f=>String(record[f.key]||'').trim())).map(group=>
+ '<section class="jfAnalysisTable jfSavedTable"><h4>'+esc(group.title)+'</h4><div class="jfTableScroll"><div class="jfTableGrid" style="--jf-cols:'+group.columns+'">'+
+ group.fields.map(f=>'<div class="jfTableCell"><label>'+esc(f.label)+'</label><div class="jfSavedContent">'+
+ (String(record[f.key]||'').trim()?String(record[f.key]).split(/\\n/).filter(Boolean).map(x=>'<div class="jfSavedBullet">'+esc(/^[•\\-]/.test(x.trim())?x.trim():'• '+x.trim())+'</div>').join(''):'<span class="muted">확인 필요</span>')+
+ '</div></div>').join('')+'</div></div></section>').join('');
 }
 export function tablePromptLines(kind){
  const groups=kind==='industry'?INDUSTRY_GROUPS:COMPANY_GROUPS;
