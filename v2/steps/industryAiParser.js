@@ -8,6 +8,17 @@ function matchKey(key, aliases){
   return Object.entries(aliases).find(([,variants])=>variants.some(a=>normalize(a)===norm))?.[0]||'';
 }
 const industryKeys={
+ pestPolicy:['Policy · 정책/법규','Policy(정책/법규)','Policy','정책·법규'],
+ pestEconomy:['Economy · 거시/미시경제','Economy(거시/미시 경제)','Economy','거시/미시 경제'],
+ pestSociety:['Society · 사회/문화','Society(사회/문화)','Society','사회·문화'],
+ pestTechnology:['Technology · 기술','Technology(기술)','Technology','기술 변화'],
+ opportunity:['기회요인 · 근거와 직무 영향','기회요인','Opportunity · 기회요인','Opportunity'],
+ competitionRisk:['1. 산업 내 경쟁 Risk','산업 내 경쟁 Risk','산업내 경쟁','산업 경쟁 위험'],
+ entrantRisk:['2. 잠재적 경쟁 Risk','잠재적 경쟁 Risk','잠재적 경쟁자'],
+ buyerRisk:['3. 구매자·공급자 Risk','구매자·공급자 Risk','구매자 공급자 교섭력'],
+ substituteRisk:['4. 대체재 Risk','대체재 Risk','대체재 위험'],
+ growthRisk:['5. 성장성 Risk','성장성 Risk','산업 성장 위험'],
+ sources:['출처 목록','교차검증 출처','근거 출처','출처 리스트'],
  name:['산업명','산업 이름','관심 산업'],
  workplaces:['근무처 유형','일할 수 있는 곳','내 직무로 일할 수 있는 곳','직무별 근무처','취업처 유형','근무처·조직 유형','어디에서 일할 수 있나'],
  employers:['대표 기관·기업군','대표 기관·기업','대표기관·기업군','대표 기관 및 기업군','대표 기업·기관','기관·기업군','대표 근무처','대표 기관'],
@@ -23,6 +34,20 @@ const industryKeys={
  checkedAt:['확인일','확인 날짜','확인 기준일']
 };
 const companyKeys={
+ productStrength:['Product · 상품/서비스 강점','제품 강점','상품 강점'],
+ productWeakness:['상품/서비스 약점','제품 약점','상품 약점'],
+ customerProfile:['Customer · 주요 고객','주요 고객 특성'],
+ financePerformance:['Financial state · 재무상태','매출·영업이익·순이익','재무 성과'],
+ financeRatios:['재무비율·변화','주요 재무비율','재무비율 변화'],
+ competitorStrategy:['Competitor · 경쟁사','경쟁사 분석','경쟁사 차별화'],
+ entryAdvantage:['진입장벽·경쟁우위','진입장벽 경쟁우위'],
+ futureGrowth:['Future direction · 미래방향','미래 성장동력','기업 미래방향'],
+ newMarkets:['신규 진출 시장','새로운 시장'],
+ swotStrength:['Strength · 강점','SWOT S','S 강점'],
+ swotWeakness:['Weakness · 약점','SWOT W','W 약점'],
+ swotOpportunity:['Opportunity · 기회','SWOT O','O 기회'],
+ swotThreat:['Threat · 위협','SWOT T','T 위협'],
+ sources:['출처 목록','교차검증 출처','근거 출처','출처 리스트'],
  name:['기업명','회사명'],
  type:['기업유형','기업 유형','기업 규모'],
  industry:['산업명','연결 산업','관심 산업'],
