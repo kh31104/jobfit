@@ -47,6 +47,17 @@ const INJE_MODULE_MAP={7:9,8:10,9:11,10:12,11:13};
 const INJE_NAV_MAP={9:7,10:8,11:9,12:10,13:11};
 function moduleStepFor(logical){return IS_INJE_FULL?(INJE_MODULE_MAP[logical]??logical):logical}
 function logicalStepFromModule(step){return IS_INJE_FULL?(INJE_NAV_MAP[step]??step):step}
+let latestNavigation=0;
+async function importStepWithRetry(specifier,request){
+  try{return await import(specifier)}
+  catch(error){
+    if(request!==latestNavigation)return null;
+    if(!(error?.name==='TypeError'&&/module|import|fetch|load|network/i.test(String(error?.message||''))))throw error;
+    await new Promise(resolve=>setTimeout(resolve,160));
+    if(request!==latestNavigation)return null;
+    return import(specifier+(specifier.includes('?')?'&':'?')+'jobfit_retry=1');
+  }
+}
 applyCourseConstraints();
 if(state.mode==='selective'&&SELECTIVE_MODULES.length&&!SELECTIVE_MODULES.includes(Number(state.activeStep)))state.activeStep=SELECTIVE_MODULES[0];
 
@@ -211,7 +222,7 @@ function installStepAccordion(root,step){
   stepAccordionObserver=new MutationObserver(()=>prepare());
   stepAccordionObserver.observe(section,{childList:true,subtree:true});
 }
-async function navigate(step,{skipSave=false}={}){state.activeStep=resolveNavigationStep(step);if(!skipSave)saveState();else{renderHeroMeta();renderNav()}const root=document.getElementById('stepRoot');root.innerHTML='<div class="card placeholder"><b>불러오는 중</b>선택한 모듈을 준비하고 있습니다.</div>';try{const physical=moduleStepFor(state.activeStep);const stepModule=state.mode==='selective'&&state.activeStep===5?'./steps/step5IndustryCompany.js?v=1':IS_INJE_FULL&&state.activeStep===6?'./steps/step6IndustryCompany.js?v=5':`./steps/step${physical}.js?v=${physical===2?31:physical===3?35:physical===4?37:physical===5?33:[9,10,11,12,13].includes(physical)?34:30}`;const mod=await import(stepModule);root.innerHTML='';const moduleContext=IS_INJE_FULL?{...context,navigate:(requested,opts)=>navigate(logicalStepFromModule(requested),opts),displayStep:state.activeStep}:context;await mod.render(moduleContext);const kicker=root.querySelector('.kicker');if(kicker&&/^STEP\s*\d+/i.test(kicker.textContent||''))kicker.textContent=(kicker.textContent||'').replace(/^STEP\s*\d+/i,`STEP ${state.mode==='selective'?visibleStepIndexes().indexOf(state.activeStep)+1:state.activeStep+1}`);root.querySelectorAll('.badge').forEach(el=>{if(/주차/.test(el.textContent||''))el.remove()});neutralizeSelectiveLabels(root);installStepAccordion(root,state.activeStep)}catch(err){console.error(err);root.innerHTML=`<div class="card callout warn"><b>선택한 모듈 화면을 불러오지 못했습니다.</b><br>새로고침 후 다시 시도해 주세요.<br><small>${escapeHtml(err.message)}</small></div>`}scrollTo({top:0,behavior:'smooth'})}
+async function navigate(step,{skipSave=false}={}){const request=++latestNavigation;state.activeStep=resolveNavigationStep(step);if(!skipSave)saveState();else{renderHeroMeta();renderNav()}const root=document.getElementById('stepRoot');root.innerHTML='<div class="card placeholder"><b>불러오는 중</b>선택한 모듈을 준비하고 있습니다.</div>';try{const physical=moduleStepFor(state.activeStep);const stepModule=state.mode==='selective'&&state.activeStep===5?'./steps/step5IndustryCompany.js?v=1':IS_INJE_FULL&&state.activeStep===6?'./steps/step6IndustryCompany.js?v=5':`./steps/step${physical}.js?v=${physical===2?31:physical===3?35:physical===4?37:physical===5?33:[9,10,11,12,13].includes(physical)?34:30}`;const mod=await importStepWithRetry(stepModule,request);if(request!==latestNavigation||!mod)return;root.innerHTML='';const moduleContext=IS_INJE_FULL?{...context,navigate:(requested,opts)=>navigate(logicalStepFromModule(requested),opts),displayStep:state.activeStep}:context;await mod.render(moduleContext);const kicker=root.querySelector('.kicker');if(kicker&&/^STEP\s*\d+/i.test(kicker.textContent||''))kicker.textContent=(kicker.textContent||'').replace(/^STEP\s*\d+/i,`STEP ${state.mode==='selective'?visibleStepIndexes().indexOf(state.activeStep)+1:state.activeStep+1}`);root.querySelectorAll('.badge').forEach(el=>{if(/주차/.test(el.textContent||''))el.remove()});neutralizeSelectiveLabels(root);installStepAccordion(root,state.activeStep)}catch(err){if(request!==latestNavigation)return;console.error(err);root.innerHTML=`<div class="card callout warn"><b>선택한 모듈 화면을 불러오지 못했습니다.</b><br>새로고침 후 다시 시도해 주세요.<br><small>${escapeHtml(err.message)}</small></div>`}scrollTo({top:0,behavior:'smooth'})}
 
 const context={STEPS,getState,saveState,toast,escapeHtml,makeAnonCode,courseConfig,navigate,applyCourseCode,downloadJSON,downloadResearchJSON,shareBackup,researchSyncStatus,syncResearchData};
 document.getElementById('exportBtn').addEventListener('click',downloadJSON);document.getElementById('researchExportBtn')?.addEventListener('click',downloadResearchJSON);document.getElementById('importBtn').addEventListener('click',requestImport);document.getElementById('importFile').addEventListener('change',e=>importJSONFile(e.target.files?.[0]));renderHeroMeta();renderNav();navigate(state.activeStep||visibleStepIndexes()[0]||0);
