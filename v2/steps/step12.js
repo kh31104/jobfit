@@ -1,6 +1,6 @@
 import {readField,READABLE_STYLES} from './readableResults.js';
 export async function render(ctx){
-  const displayStep=ctx.displayStep??12,injeCompact=displayStep!==12,coverLetterStep=injeCompact?'STEP 8':'STEP 10';
+  const displayStep=ctx.displayStep??12,injeCompact=displayStep!==12,coverLetterStep=injeCompact?'STEP 9':'STEP 10';
   const s=ctx.getState(),experiences=s.assessments?.experienceCompetency?.experiences||[],assets=s.artifacts?.careerAssets?.assets||[],cover=s.artifacts?.coverLetterLab||{questions:[]},resume=s.artifacts?.resumeLab||{items:[]},interview=s.artifacts?.interviewLab||{questions:[]},jd=s.artifacts?.jdAnalyzer||{postings:[],selectedId:''},posting=jd.postings?.find(x=>x.id===jd.selectedId)||jd.postings?.[0],saved=s.artifacts?.humanFirst||{items:[],consistency:{resumeCover:false,coverInterview:false,factLock:false},notes:''},data=structuredClone(saved),root=document.getElementById('stepRoot');
   data.items=data.items||[];data.consistency=data.consistency||{resumeCover:false,coverInterview:false,factLock:false};
 
@@ -29,7 +29,7 @@ export async function render(ctx){
   readField('Raw Voice',ee.map(e=>e.rawVoice||'').filter(Boolean).join(' / '),ctx)+'</div>'+
   (weak.length?'<p class="jfReadNote">주의: 연결된 Career Asset 중 Fact Check가 미완료된 항목이 있습니다.</p>':'')+
   (!coverReady?'<p class="jfReadNote">주의: 이전 자기소개서 문항의 Requirement 연결 또는 사실검증이 미완료되었습니다.</p>':'');}
-  function loadDraft(){const q=selectedCover();document.getElementById('draft').value=q?.draft||'';renderSourceEvidence();ctx.toast(q?.draft?'초안을 불러왔습니다.':'저장된 초안이 없습니다.');}
+  function loadDraft(){const q=selectedCover();document.getElementById('draft').value=q?.finalAnswer||q?.draft||'';renderSourceEvidence();ctx.toast(q?.finalAnswer||q?.draft?'STEP 9에서 수정한 답변을 불러왔습니다.':'저장된 답변이 없습니다.');}
   function saveHuman(){const coverId=v('coverId'),draft=v('draft'),finalText=v('finalText'),q=selectedCover();if(!coverId){status('자소서 문항을 선택하세요.');return;}if(!finalText){status('My Voice 최종본을 작성하세요.');return;}const aa=linkedAssets(q),assetsVerified=aa.length>0&&aa.every(isAssetVerified),coverReady=isCoverReady(q),factChecked=document.getElementById('factChecked').checked,ready=coverReady&&assetsVerified&&factChecked;const item={id:`hf_${Date.now()}`,coverId,question:q?.question||'',sourceAssetIds:aa.map(a=>a.id),draft,keep:v('keep'),humanize:v('humanize'),deleteText:v('deleteText'),finalText,factChecked,coverReady,assetsVerified,status:ready?'final-ready':'draft',createdAt:new Date().toISOString()};data.items=data.items.filter(x=>x.coverId!==coverId);data.items.push(item);persist();renderAll();status(ready?'Human-First Final Ready 버전을 저장했습니다.':'Human-First Draft로 저장했습니다. 이전 Evidence Chain과 Fact Lock을 확인하세요.');}
   function renderHumanList(){
     const box=document.getElementById('humanList');if(!box)return;

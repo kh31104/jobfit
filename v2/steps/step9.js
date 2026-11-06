@@ -1,10 +1,11 @@
 import {readValue,readField,READABLE_STYLES} from './readableResults.js';
+import {printApplicationDocument} from './applicationExport.js';
 import {renderStep8QuickStart,wireStep8QuickStart,QS_STEP8} from '../quickStart.js?v=1';
 export async function render(ctx){
   // INJE 화면 번호 기준: GAP Match와 지원자격 확인은 STEP 5 Job Analysis에 있다.
   const displayStep=ctx.displayStep??9,injeCompact=displayStep!==9,prevEvidenceStep=injeCompact?'STEP 5 GAP Match':'STEP 8',prevGateStep=injeCompact?'STEP 5 Job Analysis':'STEP 7';
   const s=ctx.getState(),jd=s.artifacts?.jdAnalyzer||{postings:[],selectedId:''},posting=jd.postings?.find(x=>x.id===jd.selectedId)||jd.postings?.[0],assets=s.artifacts?.careerAssets?.assets||[],candidateAssets=assets.filter(a=>(a.evidenceLevel||legacyLevel(a.strength))!=='없음'),experiences=s.assessments?.experienceCompetency?.experiences||[],saved=s.artifacts?.resumeLab||{items:[],summary:'',skills:'',notes:''},data=structuredClone(saved),root=document.getElementById('stepRoot');
-  data.items=data.items||[];ensureResumeForms(data);const prior=collectResumePriorData(s,posting,experiences);
+  data.items=data.items||[];ensureResumeForms(data);const prior=collectResumePriorData(s,posting,experiences);let editingResumeId=null;
 
   root.innerHTML=`<section class="card jobfitReadable resumeReadable">${READABLE_STYLES}
     <div class="sectionHead"><div><div class="kicker">STEP ${displayStep}</div><h2>Resume Lab</h2><p>JD와 Career Asset을 연결해 이력서·경험기술서를 만들되, 검증된 사실만 최종 문장으로 사용합니다.</p></div><span class="badge">9주차</span></div><div class="progress"><span style="width:71%"></span></div>
@@ -19,18 +20,19 @@ export async function render(ctx){
     <div class="hr"></div><div class="block"><h3>3. Career Asset → Resume Bullet</h3><p class="help">Fact Check가 끝나지 않은 자산도 초안 연습은 가능하지만, 최종 제출용으로는 표시하지 않습니다.</p><div class="grid2">${selectAsset('assetId','Career Asset',candidateAssets)}${sel('section','이력서 섹션','',['프로젝트','인턴·경력','대외활동','아르바이트','교육·수업','기타'])}</div><div id="assetContext" class="callout info">Career Asset을 선택하면 Evidence와 검증상태를 확인합니다.</div>
       <div class="grid2" style="margin-top:12px">${area('rawBullet','내 원문','','내가 먼저 사실 중심으로 작성한 문장')}${area('aiBullet','AI 구조화','','AI가 제안한 문장 또는 구조')}${area('finalBullet','최종 Bullet','','Action + 대상/방법 + Result/Evidence 중심으로 최종 수정')}${area('detailText','경험기술서 확장','','필요 시 3~5문장으로 역할·행동·성과를 확장')}</div>
       <label class="checkRow"><input type="checkbox" id="factChecked"><div><b>Resume Fact Check</b><span>행동·수치·결과가 Career Asset 및 원경험의 사실과 일치합니다.</span></div></label>
-      <div class="actions"><button class="btn secondary" id="copyPrompt">Resume AI 프롬프트 복사</button><button class="btn primary" id="addItem">이력서 문장 추가</button></div><div class="status" id="status"></div>
+      <div class="actions"><button class="btn secondary" id="copyPrompt">Resume AI 프롬프트 복사</button><button class="btn primary" id="addItem">이력서 문장 추가</button><button type="button" class="btn secondary hidden" id="cancelResumeEdit">수정 취소</button></div><div class="status" id="status"></div>
     </div>
 
     <div class="block"><div id="resumeItems"></div></div>
     ${optionalResumeDocsBlock(data,ctx,candidateAssets)}
-    <div class="hr"></div><div class="block"><h3>5. 직무맞춤 요약</h3><div class="grid2">${area('summary','직무 요약',data.summary,'내가 어떤 Evidence를 가진 지원자인지 2~3문장')}${area('skills','직무 관련 Skill·Tool'+sourceBadgeHtml(data,'skills'),data.skills,'JD에서 실제로 요구하고 내가 보유한 Skill·Tool만')}</div><div class="field" style="margin-top:12px"><label>점검 메모</label><textarea id="notes" placeholder="추가 보완할 부분">${esc(data.notes||'',ctx)}</textarea></div><div class="actions"><button class="btn primary" id="saveResume">Resume 저장</button><button class="btn secondary" id="nextStep">STEP ${displayStep+1} Cover Letter Lab →</button></div></div>
+    <div class="hr"></div><div class="block"><h3>5. 직무맞춤 요약</h3><div class="grid2">${area('summary','직무 요약',data.summary,'내가 어떤 Evidence를 가진 지원자인지 2~3문장')}${area('skills','직무 관련 Skill·Tool'+sourceBadgeHtml(data,'skills'),data.skills,'JD에서 실제로 요구하고 내가 보유한 Skill·Tool만')}</div><div class="field" style="margin-top:12px"><label>점검 메모</label><textarea id="notes" placeholder="추가 보완할 부분">${esc(data.notes||'',ctx)}</textarea></div><div class="actions"><button class="btn primary" id="saveResume">Resume 저장</button><button class="btn secondary" id="nextStep">STEP ${displayStep+(injeCompact?2:1)} Cover Letter Lab →</button></div></div>
     ${resumePreviewBlock()}
-  <style>@media(max-width:760px){.resumeReadable .jfA4Screen{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}.resumeReadable .jfA4Screen .resumeA4Sheet{min-width:560px;width:560px!important}.resumeReadable .grid3,.resumeReadable .grid4{grid-template-columns:minmax(0,1fr)}}.resumeReadable .resumeA4Sheet{overflow-wrap:anywhere;word-break:keep-all}</style></section>`;
+  <style>@media(max-width:760px){.resumeReadable .jfA4Screen{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}.resumeReadable .jfA4Screen .resumeA4Sheet{min-width:0;width:100%!important;padding:14px!important}.resumeReadable .grid3,.resumeReadable .grid4{grid-template-columns:minmax(0,1fr)}.resumeReadable .resumeA4Sheet table{display:block;max-width:100%;overflow-x:auto}}.resumeReadable .resumeA4Sheet{overflow-wrap:anywhere;word-break:keep-all}</style></section>`;
 
   if(injeCompact)wireStep8QuickStart(ctx,{onDone:()=>ctx.navigate(displayStep)});
-  wireResumeFormUi(data,ctx,persist,candidateAssets,experiences,prior);wireResumePreviewUi(data,ctx,posting,assets,persist);renderAll();document.getElementById('assetId').addEventListener('change',renderAssetContext);document.getElementById('copyPrompt').addEventListener('click',()=>copy(buildPrompt(),ctx));document.getElementById('addItem').addEventListener('click',addItem);document.getElementById('saveResume').addEventListener('click',saveBase);document.getElementById('nextStep').addEventListener('click',()=>{saveBase();ctx.navigate(10)});
+  wireResumeFormUi(data,ctx,persist,candidateAssets,experiences,prior);wireResumePreviewUi(data,ctx,posting,assets,persist);renderAll();document.getElementById('assetId').addEventListener('change',renderAssetContext);document.getElementById('copyPrompt').addEventListener('click',()=>copy(buildPrompt(),ctx));document.getElementById('addItem').addEventListener('click',addItem);document.getElementById('cancelResumeEdit').addEventListener('click',cancelResumeEdit);document.getElementById('saveResume').addEventListener('click',saveBase);document.getElementById('nextStep').addEventListener('click',()=>{saveBase();ctx.navigate(10)});
 
+  ['summary','skills','notes'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{data[id]=document.getElementById(id).value;persist();}));
   function renderAll(){renderGate();renderItems();renderAssetContext();}
   function renderGate(){const box=document.getElementById('resumeGate');if(!box)return;const verified=candidateAssets.filter(isAssetVerified).length,draft=candidateAssets.length-verified,finalItems=data.items.filter(x=>x.factChecked&&x.assetVerified).length,draftItems=data.items.length-finalItems;box.innerHTML=`<div class="grid4"><div class="miniCard"><b>Career Asset 후보</b><span>${candidateAssets.length}개</span></div><div class="miniCard"><b>검증된 Asset</b><span>${verified}개</span></div><div class="miniCard"><b>검증대기 Asset</b><span>${draft}개</span></div><div class="miniCard"><b>최종 사용 가능 Bullet</b><span>${finalItems}개 · 초안 ${draftItems}개</span></div></div>${draft?'<div class="callout warn"><b>검증대기 Career Asset이 있습니다.</b><br>초안 작성은 가능하지만 최종 Resume에는 Career Asset Fact Check와 원경험 Fact Check를 모두 완료한 항목만 사용하세요.</div>':'<div class="callout good"><b>Career Asset 검증상태 양호</b><br>현재 선택 가능한 자산은 사실검증 상태가 확인되었습니다.</div>'}`;}
   function renderAssetContext(){
@@ -42,7 +44,46 @@ export async function render(ctx){
       readField('연결 Requirement',a.requirement,ctx)+readField('핵심 행동',a.proof,ctx)+readField('확인 가능한 Evidence',a.fact,ctx)+'</div>'+
       '<p class="jfReadNote">Career Asset: '+esc(a.factCheck||'미확인',ctx)+(a.sourceExperienceFactChecked===false?' · 원경험 Fact Check 미완료':'')+' · '+(verified?'최종 Resume 사용 가능':'현재는 초안용 · 검증 후 최종 사용')+'</p>';
   }
-  function addItem(){const assetId=v('assetId');if(!assetId){status('Career Asset을 선택하세요.');return;}const a=assets.find(x=>x.id===assetId),level=a?.evidenceLevel||legacyLevel(a?.strength);if(level==='없음'){status('Evidence 없음 자산은 Resume에 사용할 수 없습니다.');return;}if(!v('rawBullet')&&!v('finalBullet')&&!v('aiBullet')){status('최소한 내 원문 또는 최종 Bullet을 작성하세요.');return;}const assetVerified=isAssetVerified(a),resumeChecked=document.getElementById('factChecked').checked,item={id:`resume_${Date.now()}`,assetId,assetTitle:a?.experienceTitle||'',requirement:a?.requirement||'',requirementLevel:a?.requirementLevel||'',evidenceLevel:level,assetFactCheck:a?.factCheck||'',assetVerified,section:v('section'),rawBullet:v('rawBullet'),aiBullet:v('aiBullet'),finalBullet:v('finalBullet'),detailText:v('detailText'),factChecked:resumeChecked,status:assetVerified&&resumeChecked?'final-ready':'draft'};data.items.push(item);persist();['rawBullet','aiBullet','finalBullet','detailText'].forEach(id=>document.getElementById(id).value='');document.getElementById('factChecked').checked=false;renderAll();status(item.status==='final-ready'?'최종 사용 가능한 Resume 문장을 추가했습니다.':'초안으로 저장했습니다. 사실검증 후 최종 사용하세요.');}
+  function addItem(){
+    const assetId=v('assetId');
+    if(!assetId){status('Career Asset을 선택하세요.');return;}
+    const a=assets.find(x=>x.id===assetId),level=a?.evidenceLevel||legacyLevel(a?.strength);
+    if(level==='없음'){status('Evidence 없음 자산은 Resume에 사용할 수 없습니다.');return;}
+    if(!v('rawBullet')&&!v('finalBullet')&&!v('aiBullet')){status('최소한 내 원문 또는 최종 Bullet을 작성하세요.');return;}
+    const assetVerified=isAssetVerified(a),resumeChecked=document.getElementById('factChecked').checked;
+    const fields={assetId,assetTitle:a?.experienceTitle||'',requirement:a?.requirement||'',requirementLevel:a?.requirementLevel||'',evidenceLevel:level,assetFactCheck:a?.factCheck||'',assetVerified,section:v('section'),rawBullet:v('rawBullet'),aiBullet:v('aiBullet'),finalBullet:v('finalBullet'),detailText:v('detailText'),factChecked:resumeChecked,status:assetVerified&&resumeChecked?'final-ready':'draft'};
+    const updating=!!editingResumeId;
+    if(updating){
+      const i=data.items.findIndex(x=>x.id===editingResumeId);
+      if(i<0){status('수정하려는 문장이 없어졌습니다. 목록을 확인하세요.');return;}
+      data.items[i]={...data.items[i],...fields,updatedAt:new Date().toISOString()};
+    }else{
+      data.items.push({id:'resume_'+Date.now(),...fields,createdAt:new Date().toISOString()});
+    }
+    persist();cancelResumeEdit();renderAll();
+    status((updating?'수정':'추가')+'한 문장을 '+(fields.status==='final-ready'?'Final Ready':'Draft · 검증필요')+' 상태로 저장했습니다.');
+  }
+  function editResumeItem(id){
+    const item=data.items.find(x=>x.id===id);if(!item)return;
+    editingResumeId=id;
+    for(const field of ['assetId','section','rawBullet','aiBullet','finalBullet','detailText']){
+      const el=document.getElementById(field);if(el)el.value=item[field]||'';
+    }
+    document.getElementById('factChecked').checked=false;
+    document.getElementById('addItem').textContent='수정 내용 저장';
+    document.getElementById('cancelResumeEdit').classList.remove('hidden');
+    renderAssetContext();
+    document.getElementById('rawBullet').scrollIntoView({behavior:'smooth',block:'center'});
+    status('기존 문장을 불러왔습니다. 내용 수정 후 Fact Check를 다시 체크하고 저장하세요.');
+  }
+  function cancelResumeEdit(){
+    editingResumeId=null;
+    for(const field of ['assetId','section','rawBullet','aiBullet','finalBullet','detailText']){const el=document.getElementById(field);if(el)el.value='';}
+    document.getElementById('factChecked').checked=false;
+    document.getElementById('addItem').textContent='이력서 문장 추가';
+    document.getElementById('cancelResumeEdit').classList.add('hidden');
+    renderAssetContext();
+  }
   function renderItems(){
     const box=document.getElementById('resumeItems');if(!box)return;
     if(!data.items.length){box.innerHTML='<div class="placeholder"><b>아직 Resume 문장이 없습니다.</b>Career Asset을 실제 이력서 문장으로 바꾸세요.</div>';return;}
@@ -50,9 +91,10 @@ export async function render(ctx){
       const ready=x.status==='final-ready'||(x.factChecked&&x.assetVerified);
       return '<div class="listCard jfResultBox"><div class="listHead"><div><span class="rankTag">Resume '+(i+1)+'</span><h3>'+esc(x.assetTitle||'경험',ctx)+'</h3><div class="muted small">'+esc([x.section||'섹션 미정',x.evidenceLevel||'',x.requirementLevel||'중요도 미분류'].filter(Boolean).join(' · '),ctx)+'</div></div><span class="scoreChip">'+(ready?'Final Ready':'Draft · 검증필요')+'</span></div>'+
         '<div class="jfReadFields">'+readField('연결 Requirement',x.requirement,ctx)+readField('최종 Bullet',x.finalBullet||x.aiBullet||x.rawBullet,ctx)+(x.detailText?readField('경험기술',x.detailText,ctx):'')+'</div>'+
-        '<div class="actions"><button class="btn danger smallBtn" data-del="'+esc(x.id,ctx)+'">삭제</button></div></div>';
+        '<div class="actions"><button type="button" class="btn secondary smallBtn" data-edit="'+esc(x.id,ctx)+'">수정</button><button class="btn danger smallBtn" data-del="'+esc(x.id,ctx)+'">삭제</button></div></div>';
     }).join('');
-    box.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{data.items=data.items.filter(x=>x.id!==b.dataset.del);persist();renderAll();}));
+    box.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>editResumeItem(b.dataset.edit)));
+    box.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{if(!window.confirm('선택한 이력서 문장을 삭제할까요?'))return;if(editingResumeId===b.dataset.del)cancelResumeEdit();data.items=data.items.filter(x=>x.id!==b.dataset.del);persist();renderAll();}));
   }
   function buildPrompt(){const a=assets.find(x=>x.id===v('assetId'));return `너는 이력서 문장 코치다. 아래 Career Asset에 기록된 사실만 사용해 Resume bullet을 구조화해라. 없는 숫자·성과·역할은 만들지 마라.\n\n[Target JD]\n${posting?`${posting.company} / ${posting.jobTitle}\n${posting.rawPosting||''}`:'미등록'}\n\n[Career Asset]\n${JSON.stringify(a||{},null,2)}\n\n[선택 이력서 양식]\n${resumeTemplateLabel(data.templateType)}\n\n[내가 먼저 쓴 문장]\n${v('rawBullet')||'미작성'}\n\n규칙:\n1. Career Asset의 Evidence 수준이 '없음'이면 문장을 만들지 말고 GAP라고 알려라.\n2. Career Asset 또는 원경험 Fact Check가 미완료이면 결과를 '초안'이라고 명시해라.\n3. 내가 직접 한 Action이 앞에 드러나게 한다.\n4. 대상·방법·결과·Evidence 중 실제 존재하는 정보만 사용한다.\n5. 수치가 없으면 만들지 않는다.\n6. JD 키워드를 억지로 삽입하지 않는다.\n7. 1줄 Bullet 2안과 경험기술서용 3~4문장 1안을 제시한다.\n8. 원문보다 과장된 표현과 사실확인이 필요한 표현을 마지막에 따로 표시한다.`}
   function saveBase(){data.summary=v('summary');data.skills=v('skills');data.notes=v('notes');persist();ctx.toast('Resume Lab 결과를 저장했습니다.');}
@@ -490,6 +532,7 @@ function wireResumeFormUi(data,ctx,persist,assets=[],experiences=[],prior={}){
       lab.querySelectorAll('[data-resume-template]').forEach(function(x){x.classList.toggle('primary',x===b);x.classList.toggle('secondary',x!==b);});
     });
     bindResumeInputs(lab,data,persist);
+    ['input','change'].forEach(event=>lab.addEventListener(event,function(e){if(!e.target.matches('[data-new-exp],#newExperienceFactChecked'))return;const panel=document.getElementById('resumeExperienceEntryBody');if(panel){data.newExperienceDraft=readNewExperienceDraft(panel);persist();}}));
   }
   var docs=document.getElementById('optionalResumeDocs');
   if(docs){
@@ -552,15 +595,15 @@ function autoFillOptionalDoc(data,type,asset,experiences){
     target.period=target.period||exp.period||'';
     target.role=target.role||exp.roleTitle||exp.role||'';
     target.task=target.task||exp.challenge||exp.situation||exp.context||'';
-    target.action=asset.proof||exp.action||target.action||'';
-    target.resultEvidence=uniqueJoin([exp.result,asset.fact,target.resultEvidence]);
-    target.jobLink=asset.jobLink||target.jobLink||((asset.requirement||'')?asset.requirement+' 요구와 연결':'');
+    target.action=target.action||asset.proof||exp.action||'';
+    target.resultEvidence=target.resultEvidence||uniqueJoin([exp.result,asset.fact]);
+    target.jobLink=target.jobLink||asset.jobLink||((asset.requirement||'')?asset.requirement+' 요구와 연결':'');
   }else{
     target.period=target.period||exp.period||'';
     target.departmentPosition=target.departmentPosition||exp.roleTitle||exp.role||'';
-    target.duties=asset.proof||exp.action||target.duties||'';
-    target.achievements=uniqueJoin([exp.result,asset.fact,target.achievements]);
-    target.jobLink=asset.jobLink||target.jobLink||((asset.requirement||'')?asset.requirement+' 요구와 연결':'');
+    target.duties=target.duties||asset.proof||exp.action||'';
+    target.achievements=target.achievements||uniqueJoin([exp.result,asset.fact]);
+    target.jobLink=target.jobLink||asset.jobLink||((asset.requirement||'')?asset.requirement+' 요구와 연결':'');
   }
 }
 function uniqueJoin(values){
@@ -569,8 +612,9 @@ function uniqueJoin(values){
 function resumePreviewBlock(){
   return '<div class="hr"></div><div class="block" id="resumePreviewLab"><h3>6. A4 이력서 미리보기 · PDF 저장</h3>'
     +'<p class="help">선택한 이력서 양식을 A4 형태로 확인합니다. Resume Bullet은 <b>Final Ready</b>만, 경험·경력기술서는 <b>Fact Check 완료</b> 항목만 최종 문서에 포함됩니다.</p>'
-    +'<div class="actions"><button type="button" class="btn secondary" id="refreshResumePreview">A4 미리보기</button><button type="button" class="btn primary" id="printResumePdf">PDF로 저장</button></div>'
-    +'<div class="callout info"><b>PDF 저장 방법</b><br>버튼을 누르면 인쇄창이 열립니다. 프린터에서 ‘PDF로 저장’을 선택하세요.</div>'
+    +'<div class="actions"><button type="button" class="btn secondary" id="refreshResumePreview">A4 미리보기</button><button type="button" class="btn primary" id="printResumePdf">이력서+선택 기술서 PDF</button><button type="button" class="btn secondary" id="printResumeOnly">이력서만 PDF</button><button type="button" class="btn secondary" id="printExperienceOnly">경험기술서만 PDF</button><button type="button" class="btn secondary" id="printCareerOnly">경력기술서만 PDF</button></div>'
+    +'<p class="help">표준·NCS·블라인드 이력서는 각각의 작성값을 따로 유지합니다. 양식을 선택한 다음 출력하세요. 경험기술서와 경력기술서는 별도로 작성하고 각각 PDF로 저장할 수 있습니다.</p>'
+    +'<div class="callout info"><b>PDF 저장 방법</b><br>버튼을 누르면 인쇄창이 열립니다. PC에서는 ‘PDF로 저장’, iPhone에서는 공유·인쇄 메뉴를 사용하세요. 기술서 단독 PDF는 해당 기술서의 Fact Check가 필요합니다.</div>'
     +'<div id="resumePreviewStatus" class="status"></div><div id="resumeA4Preview" class="hidden jfA4Screen" style="margin-top:14px"></div></div>';
 }
 function wireResumePreviewUi(data,ctx,posting,assets,persist){
@@ -583,6 +627,20 @@ function wireResumePreviewUi(data,ctx,posting,assets,persist){
   function renderPreview(){
     syncBase();box.innerHTML=resumeA4Html(data,ctx,posting,assets);box.classList.remove('hidden');
     var omitted=resumeOmittedCount(data);document.getElementById('resumePreviewStatus').textContent=omitted?('검증 전 항목 '+omitted+'개는 최종 문서에서 제외했습니다.'):'검증된 항목만 A4 미리보기에 반영했습니다.';
+  }
+  document.getElementById('printResumeOnly')?.addEventListener('click',function(){
+    syncBase();
+    printApplicationDocument(resumeTemplateLabel(data.templateType),resumeA4Html(data,ctx,posting,assets,false),ctx.toast);
+  });
+  for(const type of ['experience','career']){
+    const button=document.getElementById(type==='career'?'printCareerOnly':'printExperienceOnly');
+    button?.addEventListener('click',function(){
+      syncBase();
+      const doc=data.optionalDocument?.[type]||{},title=type==='career'?'경력기술서':'경험기술서';
+      if(!hasOptionalContent(doc)){ctx.toast(title+'를 먼저 작성하세요.');return;}
+      if(!doc.factChecked){ctx.toast(title+'의 Fact Check가 완료되어야 최종 PDF를 출력할 수 있습니다.');return;}
+      printApplicationDocument(title,'<div class="resumeA4Sheet"><h1>'+title+'</h1>'+previewOptionalSection(type,doc)+'</div>',ctx.toast);
+    });
   }
   refresh.addEventListener('click',renderPreview);
   printBtn.addEventListener('click',function(){
@@ -601,9 +659,9 @@ function resumeOmittedCount(data){
 function hasOptionalContent(obj){
   if(!obj)return false;return Object.entries(obj).some(function(entry){return !['assetId','factChecked'].includes(entry[0])&&String(entry[1]||'').trim();});
 }
-function resumeA4Html(data,ctx,posting,assets){
+function resumeA4Html(data,ctx,posting,assets,withOptional=true){
   var form=data.forms?.[data.templateType]||{},title=resumeTemplateLabel(data.templateType),verified=(data.items||[]).filter(function(x){return x.status==='final-ready'||(x.factChecked&&x.assetVerified);});
-  var optionalType=data.optionalDocument?.type||'none',optional=data.optionalDocument?.[optionalType]||{},includeOptional=optionalType!=='none'&&optional.factChecked&&hasOptionalContent(optional);
+  var optionalType=data.optionalDocument?.type||'none',optional=data.optionalDocument?.[optionalType]||{},includeOptional=withOptional&&optionalType!=='none'&&optional.factChecked&&hasOptionalContent(optional);
   var identity=previewIdentity(data.templateType,form),sections=previewFormSections(data.templateType,form);
   return '<div class="resumeA4Sheet" style="width:min(210mm,100%);min-height:297mm;margin:0 auto;background:#fff;color:#111;padding:16mm 15mm;box-sizing:border-box;border:1px solid #d8dde6;box-shadow:0 8px 30px rgba(15,23,42,.08);font-family:Arial,sans-serif">'
     +'<div style="display:flex;justify-content:space-between;gap:16px;border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:16px"><div><div style="font-size:12px;color:#64748b">'+escapeText(title)+'</div><h1 style="font-size:25px;margin:4px 0">'+escapeText(identity.name||'지원자')+'</h1><div style="font-size:13px">'+escapeText(identity.job||posting?.jobTitle||'')+'</div></div><div style="text-align:right;font-size:11px;line-height:1.65">'+identity.contact.map(escapeText).filter(Boolean).join('<br>')+'</div></div>'

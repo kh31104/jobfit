@@ -57,6 +57,10 @@ jobs:
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/
         run: node v2/tests/inje-step-navigation.mjs
+      - name: Test INJE STEP 8-9 editable resumes, cover letters and separate PDF on PC/mobile
+        env:
+          JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
+        run: node v2/tests/inje-step8-9-editable-docs.mjs
       - name: Test STEP 1-12 navigation and GAP incomplete on PC iPhone Android (v2)
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
