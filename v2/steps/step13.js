@@ -83,7 +83,7 @@ function portfolioHtml(s,data,ctx){
       ${readField('핵심 행동',a.proof,ctx)}${readField('Evidence',a.fact,ctx)}${readField('JD Requirement',a.requirement,ctx)}
       <p class="muted small">${esc(a.evidenceLevel||'',ctx)}</p></div>`).join(''):'<p>검증된 Career Asset 없음</p>')}
     ${section('06 RESUME · FINAL READY',resumeReady.length?resumeReady.map((x,i)=>`<div class="portfolioItem"><b>Resume ${i+1}</b>${readValue(x.finalBullet||x.aiBullet||x.rawBullet,ctx)}</div>`).join(''):'<p>Final Ready Resume 없음</p>')}
-    ${section('07 COVER LETTER · HUMAN-FIRST',humanReady.length?humanReady.map((x,i)=>`<div class="portfolioItem"><b>문항 ${i+1}</b>${readValue(x.finalText,ctx)}</div>`).join(''):coverReady.length?coverReady.map((x,i)=>`<div class="portfolioItem"><b>문항 ${i+1} · Human-First 편집 전</b>${readValue(x.draft||x.rawAnswer,ctx)}</div>`).join(''):'<p>Final Ready Cover Letter 없음</p>')}
+    ${section('07 COVER LETTER · HUMAN-FIRST',humanReady.length?humanReady.map((x,i)=>`<div class="portfolioItem"><b>문항 ${i+1}</b>${readValue(x.finalText,ctx)}</div>`).join(''):coverReady.length?coverReady.map((x,i)=>`<div class="portfolioItem"><b>문항 ${i+1} · Human-First 편집 전</b>${readValue(x.finalAnswer||x.draft||x.rawAnswer,ctx)}</div>`).join(''):'<p>Final Ready Cover Letter 없음</p>')}
     ${section('08 INTERVIEW EVIDENCE · READY',interviewReady.length?interviewReady.slice(0,10).map(q=>`<div class="portfolioItem"><b>${esc(q.question,ctx)}</b>${readValue(q.answerOutline,ctx)}</div>`).join(''):'<p>Ready Interview Evidence 없음</p>')}
     ${section('09 CAREER FIT',selected?`<div class="portfolioItem"><b>${esc(resolveFit(selected,s),ctx)}</b>
       ${readField('선택 근거',selected.reasons,ctx)}${readField('Risk / GAP',selected.risks,ctx)}</div>`:'<p>중간 FIT 우선방향 미선택</p>')}
