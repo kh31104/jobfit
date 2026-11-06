@@ -612,8 +612,9 @@ function uniqueJoin(values){
 function resumePreviewBlock(){
   return '<div class="hr"></div><div class="block" id="resumePreviewLab"><h3>6. A4 이력서 미리보기 · PDF 저장</h3>'
     +'<p class="help">선택한 이력서 양식을 A4 형태로 확인합니다. Resume Bullet은 <b>Final Ready</b>만, 경험·경력기술서는 <b>Fact Check 완료</b> 항목만 최종 문서에 포함됩니다.</p>'
-    +'<div class="actions"><button type="button" class="btn secondary" id="refreshResumePreview">A4 미리보기</button><button type="button" class="btn primary" id="printResumePdf">PDF로 저장</button></div>'
-    +'<div class="callout info"><b>PDF 저장 방법</b><br>버튼을 누르면 인쇄창이 열립니다. 프린터에서 ‘PDF로 저장’을 선택하세요.</div>'
+    +'<div class="actions"><button type="button" class="btn secondary" id="refreshResumePreview">A4 미리보기</button><button type="button" class="btn primary" id="printResumePdf">이력서+선택 기술서 PDF</button><button type="button" class="btn secondary" id="printResumeOnly">이력서만 PDF</button><button type="button" class="btn secondary" id="printExperienceOnly">경험기술서만 PDF</button><button type="button" class="btn secondary" id="printCareerOnly">경력기술서만 PDF</button></div>'
+    +'<p class="help">표준·NCS·블라인드 이력서는 각각의 작성값을 따로 유지합니다. 양식을 선택한 다음 출력하세요. 경험기술서와 경력기술서는 별도로 작성하고 각각 PDF로 저장할 수 있습니다.</p>'
+    +'<div class="callout info"><b>PDF 저장 방법</b><br>버튼을 누르면 인쇄창이 열립니다. PC에서는 ‘PDF로 저장’, iPhone에서는 공유·인쇄 메뉴를 사용하세요. 기술서 단독 PDF는 해당 기술서의 Fact Check가 필요합니다.</div>'
     +'<div id="resumePreviewStatus" class="status"></div><div id="resumeA4Preview" class="hidden jfA4Screen" style="margin-top:14px"></div></div>';
 }
 function wireResumePreviewUi(data,ctx,posting,assets,persist){
@@ -626,6 +627,20 @@ function wireResumePreviewUi(data,ctx,posting,assets,persist){
   function renderPreview(){
     syncBase();box.innerHTML=resumeA4Html(data,ctx,posting,assets);box.classList.remove('hidden');
     var omitted=resumeOmittedCount(data);document.getElementById('resumePreviewStatus').textContent=omitted?('검증 전 항목 '+omitted+'개는 최종 문서에서 제외했습니다.'):'검증된 항목만 A4 미리보기에 반영했습니다.';
+  }
+  document.getElementById('printResumeOnly')?.addEventListener('click',function(){
+    syncBase();
+    printApplicationDocument(resumeTemplateLabel(data.templateType),resumeA4Html(data,ctx,posting,assets,false),ctx.toast);
+  });
+  for(const type of ['experience','career']){
+    const button=document.getElementById(type==='career'?'printCareerOnly':'printExperienceOnly');
+    button?.addEventListener('click',function(){
+      syncBase();
+      const doc=data.optionalDocument?.[type]||{},title=type==='career'?'경력기술서':'경험기술서';
+      if(!hasOptionalContent(doc)){ctx.toast(title+'를 먼저 작성하세요.');return;}
+      if(!doc.factChecked){ctx.toast(title+'의 Fact Check가 완료되어야 최종 PDF를 출력할 수 있습니다.');return;}
+      printApplicationDocument(title,'<div class="resumeA4Sheet"><h1>'+title+'</h1>'+previewOptionalSection(type,doc)+'</div>',ctx.toast);
+    });
   }
   refresh.addEventListener('click',renderPreview);
   printBtn.addEventListener('click',function(){
@@ -644,9 +659,9 @@ function resumeOmittedCount(data){
 function hasOptionalContent(obj){
   if(!obj)return false;return Object.entries(obj).some(function(entry){return !['assetId','factChecked'].includes(entry[0])&&String(entry[1]||'').trim();});
 }
-function resumeA4Html(data,ctx,posting,assets){
+function resumeA4Html(data,ctx,posting,assets,withOptional=true){
   var form=data.forms?.[data.templateType]||{},title=resumeTemplateLabel(data.templateType),verified=(data.items||[]).filter(function(x){return x.status==='final-ready'||(x.factChecked&&x.assetVerified);});
-  var optionalType=data.optionalDocument?.type||'none',optional=data.optionalDocument?.[optionalType]||{},includeOptional=optionalType!=='none'&&optional.factChecked&&hasOptionalContent(optional);
+  var optionalType=data.optionalDocument?.type||'none',optional=data.optionalDocument?.[optionalType]||{},includeOptional=withOptional&&optionalType!=='none'&&optional.factChecked&&hasOptionalContent(optional);
   var identity=previewIdentity(data.templateType,form),sections=previewFormSections(data.templateType,form);
   return '<div class="resumeA4Sheet" style="width:min(210mm,100%);min-height:297mm;margin:0 auto;background:#fff;color:#111;padding:16mm 15mm;box-sizing:border-box;border:1px solid #d8dde6;box-shadow:0 8px 30px rgba(15,23,42,.08);font-family:Arial,sans-serif">'
     +'<div style="display:flex;justify-content:space-between;gap:16px;border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:16px"><div><div style="font-size:12px;color:#64748b">'+escapeText(title)+'</div><h1 style="font-size:25px;margin:4px 0">'+escapeText(identity.name||'지원자')+'</h1><div style="font-size:13px">'+escapeText(identity.job||posting?.jobTitle||'')+'</div></div><div style="text-align:right;font-size:11px;line-height:1.65">'+identity.contact.map(escapeText).filter(Boolean).join('<br>')+'</div></div>'
