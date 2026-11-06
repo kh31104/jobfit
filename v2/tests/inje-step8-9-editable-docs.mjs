@@ -48,6 +48,7 @@ for(const width of [1280,390]){
 
     await page.locator('[data-resume-doc="experience"]').click();
     await page.locator('[data-resume-bind="optionalDocument.experience.title"]').fill('경험기술서 실습');
+    await page.locator('[data-resume-section="experience-doc-evidence"] summary').click();
     await page.locator('[data-resume-bind="optionalDocument.experience.action"]').fill('리뷰를 실제로 분류함');
     await page.locator('[data-resume-bind="optionalDocument.experience.factChecked"]').check();
     assert(await page.locator('#printExperienceOnly').count()===1,'Separate experience PDF option missing');
