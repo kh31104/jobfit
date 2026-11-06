@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>Jobfit INJE STEP 7 | 교수자 자료 수집 시범</title>
+<link rel="stylesheet" href="../../v2/styles.css?v=4">
+<link rel="stylesheet" href="../../v2/guided.css">
+<style>
+.pilotWrap{max-width:1240px;margin:0 auto;padding:18px}.pilotHeader{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+.pilotHeader h1{margin:.15em 0;font-size:25px}.pilotHeader p,.pilotNote{margin:5px 0;color:#536278}
+.pilotTag{display:inline-block;border-radius:20px;background:#fff3d7;color:#744a0a;padding:4px 10px;font-size:12px;font-weight:700}
+.pilotToolbar{padding:16px;background:#f6f9ff;border:1px solid #cfdcf2;border-radius:14px;margin-bottom:16px}
+.pilotToolbar .controls{display:flex;flex-wrap:wrap;align-items:end;gap:9px;margin:10px 0}
+.pilotToolbar input,.pilotToolbar select{min-width:0;max-width:100%;box-sizing:border-box}
+.pilotToolbar input{padding:9px 10px;border:1px solid #bbc9dd;border-radius:8px}
+.pilotToolbar .wide{width:min(100%,430px)}.pilotToolbar button{padding:9px 13px;border-radius:8px;border:1px solid #a5b7d2;background:#fff;cursor:pointer}
+.pilotToolbar button.primary{background:#315df4;border-color:#315df4;color:#fff}
+.pilotToolbar button:disabled{opacity:.55;cursor:not-allowed}
+.pilotToolbar .label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}
+.pilotToolbar .dataPreview{white-space:pre-wrap;line-height:1.7;background:white;border:1px solid #d5e0ef;border-radius:10px;padding:12px;max-height:310px;overflow:auto;font-size:13px}
+.pilotToolbar .status{font-size:13px;min-height:20px;color:#26466c}.pilotToolbar details{margin:12px 0}.pilotToolbar summary{cursor:pointer;font-weight:700}
+.pilotToolbar .danger{color:#953131;border-color:#e5afb0}
+@media(max-width:700px){.pilotWrap{padding:9px}.pilotHeader h1{font-size:21px}.pilotToolbar .controls>*{flex-basis:100%}.pilotToolbar input{width:100%}}
+</style></head>
+<body>
+<div class="pilotWrap">
+<header class="pilotHeader"><div><span class="pilotTag">교수자 시범 · 학생 운영화면과 분리</span>
+<h1>JOBFIT INJE · STEP 7 공식자료 수집 테스트</h1>
+<p>실제 STEP 7 산업분석·기업분석표를 별도 저장공간에서 시험합니다.</p></div>
+<a href="../../?course=INJE2026" target="_blank" rel="noopener">기존 학생 화면 보기 ↗</a></header>
+<section class="pilotToolbar" aria-label="교수자 인증">
+<strong>① 교수자 로그인</strong>
+<p class="pilotNote">샘플 입력과 표 수정은 로그인 없이 시험할 수 있습니다. 공식사이트 자동 수집은 등록된 교수자 계정으로 로그인한 후 가능합니다.</p>
+<div class="controls"><input type="email" id="pilotEmail" class="wide" placeholder="등록된 교수자 이메일" autocomplete="email"><button type="button" id="pilotLogin">이메일 로그인 링크 받기</button><button id="pilotLogout" type="button">로그아웃</button></div><p class="status" id="authStatus" role="status"></p>
+</section>
+<section class="pilotToolbar" aria-label="공식자료 자동 수집">
+<strong>② 공식자료 수집 미리보기</strong><p class="pilotNote">수집한 내용은 바로 표에 저장되지 않습니다. 먼저 확인한 뒤 직접 적용하세요. 자동 추출 결과는 모두 '원문 대조 필요'입니다.</p>
+<details open><summary>산업분석 · 정부·공공기관 자료</summary>
+<p class="pilotNote">정부 부처 보도자료 등 공식 웹페이지의 상세 주소를 복사해 입력합니다. PDF·HWP는 자동 미리보기를 지원하지 않습니다.</p>
+<div class="controls"><input id="industryUrl" class="wide" placeholder="https://www.korea.kr/... 등 공식 원문 URL" aria-label="산업분석 공식 원문 URL">
+<select id="industryField" aria-label="반영할 산업분석 항목"><option value="policy">Policy 정책</option><option value="economy">Economy 경제</option><option value="society">Society 사회</option><option value="technology">Technology 기술</option><option value="opportunity">기회</option><option value="threat">위협</option></select>
+<button id="loadIndustry" class="primary" type="button">공식 문서 불러오기</button></div></details>
+<details open><summary>기업분석 · 금융감독원 OpenDART</summary>
+<p class="pilotNote">기업 고유번호 8자리를 입력합니다. 예시: LG전자 00401731. 인증키는 서버에만 보관합니다.</p>
+<div class="controls"><input id="corpCode" value="00401731" maxlength="8" inputmode="numeric" aria-label="DART 기업 고유번호"><button id="loadCompany" class="primary" type="button">기업개황·재무정보 불러오기</button><a href="https://dart.fss.or.kr" target="_blank" rel="noopener">DART 열기 ↗</a></div></details>
+<div id="pilotData" class="dataPreview" role="status">아직 수집한 자료가 없습니다.</div>
+<div class="controls"><button id="applyPilot" type="button" disabled>확인한 내용 기존 표의 빈칸에 반영</button><button id="copyPilot" type="button" disabled>AI 분석용 자료 복사</button><button id="samplePilot" type="button">저장·빈칸보호 기능만 시험</button><button id="clearPilot" class="danger" type="button">교수자 시범자료만 초기화</button></div>
+<p class="status" id="pilotStatus" role="status"></p>
+</section>
+<div id="stepRoot"></div>
+<p class="pilotNote">이 시범 화면의 저장 키는 학생용과 별도입니다. 실제 학생 STEP 7 데이터나 기존 STEP 1~6 자료는 가져오지 않습니다.</p>
+</div>
+<div id="toast" aria-live="polite" style="position:fixed;bottom:15px;left:50%;transform:translateX(-50%);background:#173b65;color:#fff;border-radius:9px;padding:8px 16px;display:none;z-index:10"></div>
+<script src="../../research-sync-config.js"></script>
+<script type="module" src="./app.js?v=1"></script></body></html>
