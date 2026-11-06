@@ -1,0 +1,34 @@
+name: INJE STEP 7 instructor pilot isolated test
+on:
+  pull_request:
+    paths:
+      - 'instructor/step7-pilot/**'
+      - 'supabase/functions/step7-source-preview/**'
+      - 'v2/tests/inje-step7-instructor-pilot.mjs'
+      - '.github/workflows/inje-step7-pilot.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'instructor/step7-pilot/**'
+      - 'supabase/functions/step7-source-preview/**'
+      - 'v2/tests/inje-step7-instructor-pilot.mjs'
+      - '.github/workflows/inje-step7-pilot.yml'
+permissions:
+  contents: read
+jobs:
+  teacher-page:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium webkit
+      - run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/step7-pilot-server.log 2>&1 &
+          sleep 2
+          curl --fail http://127.0.0.1:8765/instructor/step7-pilot/ >/dev/null
+      - run: node v2/tests/inje-step7-instructor-pilot.mjs
