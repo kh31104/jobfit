@@ -22,8 +22,9 @@ for(const [name,engine] of [['PC Chrome',chromium],['iPhone Safari',webkit]]){
   const keys=await page.evaluate(()=>Object.keys(localStorage));
   assert(keys.includes('jobfit:instructor:step7-source-pilot-v1'));
   assert(!keys.includes('jobfit:v2:learner'));
+  page.on('dialog',async d=>d.accept());
   await page.locator('#clearPilot').click();
-  await page.once('dialog',d=>d.accept()); // registered after click in Chromium may miss; check below if needed
+  assert.equal(await page.locator('#industry-policy').inputValue(),'','pilot reset must clear only pilot fields');
   await browser.close();
   console.log(name+' instructor STEP7 pilot PASS');
   if(errors.length)throw new Error(name+' browser errors: '+errors.join('; '));
