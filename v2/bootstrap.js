@@ -20,11 +20,54 @@ if(isInjeCourse){
   }
 }
 
-await import('./app.js?v=46');
-startContinuity();
-await import('./injeClassroom.js?v=18');
-await import('./careerDnaUx.js?v=10');
-await import('./careerDnaStudentUx.js?v=1');
-await import('./careerDnaLearningFlowUx.js?v=8');
-const {startOperationalSync}=await import('./operationalSync.js?v=2');
-startOperationalSync();
+// iPhone Safari는 여러 번 새로고침하면 이전 문서의 진행 중인 import()가
+// 취소되기도 한다. 해당 거부를 미처리 Promise로 남기지 않는다.
+let leavingPage=false;
+window.addEventListener('pagehide',()=>{leavingPage=true},{once:true});
+const moduleLoadError=error=>error?.name==='TypeError'&&/module|import|fetch|load|network/i.test(String(error?.message||''));
+const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+
+async function loadModule(specifier,label){
+  for(let attempt=0;attempt<2;attempt++){
+    if(leavingPage)return null;
+    const url=attempt?specifier+(specifier.includes('?')?'&':'?')+'jobfit_retry=1':specifier;
+    try{return await import(url)}
+    catch(error){
+      if(leavingPage)return null;
+      // 문법 오류·코드 실행 오류는 재시도하지 않고 별도로 진단한다.
+      if(!moduleLoadError(error)||attempt===1){
+        console.error('Jobfit 모듈 초기화 실패 ('+label+'):',error);
+        return null;
+      }
+      await pause(160);
+    }
+  }
+  return null;
+}
+function showModuleFailure(label){
+  if(leavingPage)return;
+  const root=document.getElementById('stepRoot');
+  if(!root)return;
+  root.innerHTML='<section class="card callout warn"><b>'+label+'을 불러오지 못했습니다.</b><p>통신 상태를 확인한 뒤 다시 시도하세요. 기존 입력값은 초기화되지 않습니다.</p><button type="button" class="btn primary" id="retryAppLoad">다시 불러오기</button></section>';
+  document.getElementById('retryAppLoad')?.addEventListener('click',()=>location.reload());
+}
+
+const app=await loadModule('./app.js?v=47','학습 화면');
+if(!app){
+  showModuleFailure('학습 화면');
+}else if(!leavingPage){
+  startContinuity();
+  for(const [specifier,label] of [
+    ['./injeClassroom.js?v=18','수업 도구'],
+    ['./careerDnaUx.js?v=10','Career DNA'],
+    ['./careerDnaStudentUx.js?v=1','Career DNA 결과'],
+    ['./careerDnaLearningFlowUx.js?v=8','Career DNA 학습']
+  ]){
+    if(leavingPage)break;
+    await loadModule(specifier,label);
+  }
+  if(!leavingPage){
+    const sync=await loadModule('./operationalSync.js?v=2','운영 데이터 동기화');
+    if(sync?.startOperationalSync)sync.startOperationalSync();
+  }
+}
