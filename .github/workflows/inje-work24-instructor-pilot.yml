@@ -1,0 +1,42 @@
+name: INJE instructor Work24 read-only probe UI
+on:
+  pull_request:
+    paths:
+      - 'instructor/work24-pilot/**'
+      - 'supabase/functions/work24-recruit-pilot/**'
+      - 'v2/tests/inje-work24-instructor-probe.mjs'
+      - '.github/workflows/inje-work24-instructor-pilot.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'instructor/work24-pilot/**'
+      - 'supabase/functions/work24-recruit-pilot/**'
+      - 'v2/tests/inje-work24-instructor-probe.mjs'
+      - '.github/workflows/inje-work24-instructor-pilot.yml'
+permissions:
+  contents: read
+jobs:
+  instructor-work24:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate source and key separation
+        run: |
+          node --check instructor/work24-pilot/app.js
+          node --check v2/tests/inje-work24-instructor-probe.mjs
+          ! grep -qE '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}' supabase/functions/work24-recruit-pilot/index.ts
+      - name: Install WebKit and Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium webkit
+      - name: Start local isolated web server
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/inje-work24-test.log 2>&1 &
+          sleep 2
+          curl -fsS http://127.0.0.1:8765/instructor/work24-pilot/ >/dev/null
+      - name: Test login gate and mocked Work24 response in both browsers
+        run: node v2/tests/inje-work24-instructor-probe.mjs

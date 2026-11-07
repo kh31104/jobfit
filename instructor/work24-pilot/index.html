@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>JOBFIT INJE · 고용24 교수자 채용정보 조회 실험</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;color:#29324b;background:#f7f8fc;line-height:1.6}
+*{box-sizing:border-box}
+.wrap{width:min(1050px,calc(100% - 28px));margin:24px auto 48px}
+header{display:flex;gap:14px;justify-content:space-between;align-items:start;flex-wrap:wrap}
+h1{font-size:25px;line-height:1.35;margin:4px 0}
+h2{font-size:18px;margin:0 0 10px}
+p{margin:7px 0}
+.eyebrow{font-size:12px;letter-spacing:.07em;color:#5b5fc6;font-weight:800}
+.panel{margin-top:15px;padding:19px;border:1px solid #dadeed;border-radius:14px;background:#fff}
+.muted{color:#636b7e;font-size:14px}
+.disclosure{padding:12px 14px;background:#f2f3fc;border-radius:10px;color:#4c5573;font-size:14px}
+label{display:block;font-size:14px;font-weight:700;margin-bottom:5px}
+.controls{display:flex;flex-wrap:wrap;align-items:end;gap:9px;margin:12px 0}
+.field{flex:1 1 220px}
+input,select{font:inherit;border:1px solid #c9cede;border-radius:8px;padding:9px;width:100%;background:#fff;color:#222b3d}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid #aeb6da;background:#fff;color:#363e69;padding:9px 14px;white-space:normal}
+button.primary{color:white;background:#6268df;border-color:#6268df;font-weight:700}
+button:disabled{opacity:.6;cursor:not-allowed}
+a{color:#5057c1}
+.status{padding:8px 11px;border-left:3px solid #a2a7c3;background:#fafaff;min-height:24px;font-size:14px;white-space:pre-wrap}
+.status[data-state="error"]{border-color:#c55353;color:#9b2c2c}
+.status[data-state="success"]{border-color:#44875a;color:#265c37}
+table{width:100%;border-collapse:collapse;min-width:610px;font-size:13px}
+td,th{border-bottom:1px solid #e6e8ef;padding:9px;text-align:left;vertical-align:top}
+thead{background:#f3f4ff}
+.tableWrap{overflow-x:auto}
+.cardGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.metric{padding:12px;border:1px solid #e5e8f2;border-radius:10px}
+.metric b{display:block;font-size:24px}
+.metric small{font-size:12px;color:#666f84}
+.detail{border-bottom:1px solid #e7e9f0;padding:10px 0;font-size:13px}
+.detail p{white-space:pre-wrap}
+.tokens{display:flex;flex-wrap:wrap;gap:6px}
+.token{padding:3px 7px;background:#eaf3ed;color:#316346;border-radius:6px}
+.token.missing{background:#fff3ee;color:#875d4e}
+@media(max-width:640px){.wrap{width:calc(100% - 14px);margin:9px auto}.panel{padding:12px}h1{font-size:21px}.cardGrid{grid-template-columns:1fr 1fr}button.primary{width:100%}}
+</style></head><body>
+<main class="wrap">
+<header>
+<div><div class="eyebrow">JOBFIT INJE · INSTRUCTOR PILOT</div><h1>고용24 채용정보 API 연결 시험</h1><p class="muted">공고 목록 10건·상세 2건만 조회 · 기존 학생 자료와 완전히 분리</p></div>
+<a href="../../?course=INJE2026" target="_blank" rel="noopener noreferrer">학생 운영화면 보기</a>
+</header>
+<section class="panel">
+<h2>① 교수자 인증</h2>
+<div class="disclosure">이 페이지는 별도의 교수자 테스트입니다. 공식 API 조회는 INJE2026 교수자 권한이 확인된 경우에만 허용됩니다. Supabase 대시보드 로그인과 이 시험용 교수자 로그인은 구별됩니다.</div>
+<div class="controls">
+<div class="field"><label for="email">등록된 교수자 이메일</label><input id="email" type="email" autocomplete="email" placeholder="교수자 이메일 주소"></div>
+<button id="sendLogin" type="button">이메일 로그인 링크 받기</button>
+<button id="logout" type="button">로그아웃</button>
+</div>
+<p id="authStatus" class="status" role="status">로그인 상태를 확인하고 있습니다.</p>
+</section>
+<section class="panel">
+<h2>② 고용24 채용정보 10건 시험</h2>
+<p class="muted">검색어는 선택사항입니다. 우선 공고 수집 여부부터 확인합니다. 분석 빈도나 취업 가능성을 계산하는 단계가 아닙니다.</p>
+<div class="controls">
+<div class="field"><label for="keyword">직무 키워드 (선택)</label><input id="keyword" type="text" maxlength="45" placeholder="예: 마케팅, 교육기획, 품질관리" value="마케팅"></div>
+<div class="field"><label for="career">경력 구분</label><select id="career"><option value="">전체</option><option value="N">신입</option><option value="Z">경력 무관</option></select></div>
+<button class="primary" id="probe" type="button">실제 API 10건 조회</button>
+</div>
+<p id="probeStatus" class="status" role="status">실제 조회를 실행하지 않았습니다.</p>
+</section>
+<section class="panel" id="results" hidden>
+<h2>③ 실제 응답 확인</h2>
+<div class="cardGrid">
+<div class="metric"><small>검색 결과 전체 건수 (API 값)</small><b id="total">—</b></div>
+<div class="metric"><small>목록 수신</small><b id="received">—</b></div>
+<div class="metric"><small>상세 조회 시도</small><b id="checked">—</b></div>
+</div>
+<p id="queryMeta" class="muted"></p>
+<div class="tableWrap">
+<table><thead><tr><th>기업명</th><th>공고명</th><th>경력</th><th>지역</th><th>등록일</th><th>원문</th></tr></thead><tbody id="rows"></tbody></table>
+</div>
+<h2 style="margin-top:22px">상세정보 필드 수신 확인 (최대 2건)</h2>
+<div id="details"></div>
+<p class="muted">자료 출처: 고용노동부 고용24(www.work24.go.kr) · 구인공고 상세정보는 출처 원문으로 이동해 확인하세요. 무단복제 및 배포 금지.</p>
+</section>
+<p class="muted" style="margin-top:20px">인증키는 Supabase 서버에서만 읽습니다. 결과는 이 화면의 임시 메모리에만 표시되며 학생 데이터베이스, 로컬스토리지, GitHub에 저장하지 않습니다.</p>
+</main>
+<script src="../../research-sync-config.js"></script>
+<script type="module" src="./app.js?v=1"></script>
+</body></html>
