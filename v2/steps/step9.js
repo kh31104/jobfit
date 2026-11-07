@@ -251,11 +251,15 @@ function wireResumeReviewUi(data,ctx,persist){
       return;
     }
     if(e.target.closest('#backToResumeForm')){
+      var formBlock=document.getElementById('resumeTemplateLab');
+      window.JobfitStepAccordion?.openBlock?.(formBlock);
       document.getElementById('resumeTemplateForm')?.scrollIntoView({behavior:'smooth',block:'start'});
       return;
     }
     if(e.target.closest('#goToResumePdf')){
-      document.getElementById('resumePreviewLab')?.scrollIntoView({behavior:'smooth',block:'start'});
+      var pdfBlock=document.getElementById('resumePreviewLab');
+      window.JobfitStepAccordion?.openBlock?.(pdfBlock);
+      pdfBlock?.scrollIntoView({behavior:'smooth',block:'start'});
       ctx.toast('PDF로 저장할지 선택하세요. 저장하지 않고 다시 수정·검토해도 됩니다.');
     }
   });
@@ -817,10 +821,9 @@ function wireResumePreviewUi(data,ctx,posting,assets,persist,injeCompact=false){
   refresh.addEventListener('click',renderPreview);
   printBtn.addEventListener('click',function(){
     renderPreview();
-    var iframe=document.getElementById('resumePrintFrame');if(iframe)iframe.remove();
-    iframe=document.createElement('iframe');iframe.id='resumePrintFrame';iframe.style.position='fixed';iframe.style.right='0';iframe.style.bottom='0';iframe.style.width='1px';iframe.style.height='1px';iframe.style.border='0';document.body.appendChild(iframe);
-    var doc=iframe.contentDocument;doc.open();doc.write('<!doctype html><html><head><meta charset="utf-8"><title>'+escapeText(resumeTemplateLabel(data.templateType))+'</title><style>'+resumePrintCss()+'</style></head><body>'+box.innerHTML+'</body></html>');doc.close();
-    setTimeout(function(){try{iframe.contentWindow.focus();iframe.contentWindow.print();}catch(e){ctx.toast('인쇄창을 열지 못했습니다. A4 미리보기에서 브라우저 인쇄 기능을 사용해 주세요.')}},120);
+    // iPhone Safari may block a delayed print() call in a hidden iframe.
+    // Keep a readable print document in a visible user-opened tab instead.
+    printApplicationDocument(resumeTemplateLabel(data.templateType),box.innerHTML,ctx.toast);
   });
 }
 function resumeOmittedCount(data){
