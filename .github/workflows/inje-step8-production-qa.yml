@@ -1,0 +1,39 @@
+name: INJE STEP 8 production PDF QA (isolated)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/inje-step8-production-qa.yml'
+      - 'v2/tests/inje-step8-realistic-pdf-qa.mjs'
+      - 'v2/steps/step9.js'
+
+permissions:
+  contents: read
+
+jobs:
+  production-step8:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright Chromium and WebKit
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium webkit
+      - name: Test deployed INJE STEP 8 student entries and generated PDFs
+        env:
+          JOBFIT_TEST_URL: https://kh31104.github.io/jobfit/v2/
+          JOBFIT_QA_OUT: v2/test-output/step8-pdf-qa-production
+        run: node v2/tests/inje-step8-realistic-pdf-qa.mjs
+      - name: Upload generated PDF samples and Safari print-page screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inje-step8-real-production-qa
+          path: v2/test-output/step8-pdf-qa-production/
+          if-no-files-found: ignore
+          retention-days: 7
