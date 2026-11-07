@@ -100,6 +100,7 @@ for(const cfg of config){
     await page.locator('#redoResumeReview').click();
     const secondPrompt=await page.locator('#resumeReviewPromptText').inputValue();
     must(secondPrompt.includes('브랜드/SNS 마케팅'),'Re-review did not use edited job');
+    await page.locator('#resumeReviewHistory summary').click();
     must(await page.locator('#resumeReviewHistory').innerText().then(x=>x.includes('1차: 성과 근거')),'Review history lost');
     await page.locator('#resumeReviewFeedback').fill('2차: 수정 완료');
     await page.locator('#goToResumePdf').click();
