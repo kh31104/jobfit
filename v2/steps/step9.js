@@ -134,7 +134,7 @@ function ensureResumeTargeting(data,posting){
 function resumeTargetingBlock(data,ctx,posting){
   var selected=data.applicationMode==='targeted';
   return '<div class="listCard" id="resumeTargetMode" style="margin:12px 0">'
-    +'<h3>2. 어떤 이력서를 작성할까요?</h3><p class="help">기업·직무가 없어도 작성할 수 있습니다. 전환해도 기존 이력서 내용은 유지됩니다.</p>'
+    +'<h3>작성 방향 선택 · 일반형 또는 직무맞춤형</h3><p class="help">기업·직무가 없어도 작성할 수 있습니다. 전환해도 기존 이력서 내용은 유지됩니다.</p>'
     +'<div class="actions"><button type="button" class="btn '+(selected?'primary':'secondary')+'" data-application-mode="targeted">지원 기업·직무가 있어요</button>'
     +'<button type="button" class="btn '+(!selected?'primary':'secondary')+'" data-application-mode="general">아직 정하지 않았어요</button></div>'
     +(selected?'<div class="callout info" style="margin-top:10px"><b>직무맞춤형 작성</b><br>회사와 직무를 확인하고 채용공고의 업무·자격요건에 맞춰 작성하세요. 지원직무는 선택한 이력서의 기본정보에서 직접 수정합니다.</div>'
@@ -435,7 +435,7 @@ function resumeTemplateForm(data,ctx){
 }
 function standardResumeForm(data,ctx){
   return '<div class="listCard"><div class="listHead"><div><span class="rankTag">선택 양식</span><h3>표준이력서</h3></div><span class="scoreChip">일반 기업형</span></div>'
-    +resumeFieldPolicy('standard')
+    +resumeFieldPolicy('standard',data.applicationMode)
     +resumeExampleControls('standard')
     +resumeFieldGroup('standard-basic','기본정보 · 필수','<div class="grid2">'
       +boundField(data,ctx,'forms.standard.targetJob','지원직무','예: 생산기술')
@@ -453,7 +453,7 @@ function standardResumeForm(data,ctx){
 }
 function ncsResumeForm(data,ctx){
   return '<div class="listCard"><div class="listHead"><div><span class="rankTag">선택 양식</span><h3>NCS 이력서</h3></div><span class="scoreChip">직무중심</span></div>'
-    +resumeFieldPolicy('ncs')
+    +resumeFieldPolicy('ncs',data.applicationMode)
     +resumeExampleControls('ncs')
     +resumeFieldGroup('ncs-basic','기본정보 · 필수','<div class="grid2">'
       +boundField(data,ctx,'forms.ncs.field','지원분야')
@@ -471,7 +471,7 @@ function ncsResumeForm(data,ctx){
 }
 function blindResumeForm(data,ctx){
   return '<div class="listCard"><div class="listHead"><div><span class="rankTag">선택 양식</span><h3>블라인드 채용 입사지원서</h3></div><span class="scoreChip">차별요소 제외</span></div>'
-    +resumeFieldPolicy('blind')
+    +resumeFieldPolicy('blind',data.applicationMode)
     +resumeExampleControls('blind')
     +resumeFieldGroup('blind-basic','전형 운영정보 · 필수','<div class="grid2">'
       +boundSelect(data,ctx,'forms.blind.applicantType','지원구분',['신입','경력'])
@@ -511,7 +511,8 @@ function resumeGridTable(data,ctx,title,base,cols,count){
 }
 
 
-function resumeFieldPolicy(type){
+function resumeFieldPolicy(type,applicationMode='targeted'){
+  if(applicationMode==='general')return '<div class="callout info"><b>일반 이력서 작성</b><br>지원 기업과 직무가 없어도 작성할 수 있으며 지원직무는 비워도 됩니다. 실제 사실이 확인된 학력·경력·자격·활동만 기재하세요. 블라인드 양식에서는 학교명·생년월일 등 차별 우려 정보를 작성하지 마세요.</div>';
   if(type==='ncs')return '<div class="callout info"><b>항목 판정</b><br><b>필수</b> 지원분야·직무·성명·휴대전화·이메일<br><b>선택·조건부</b> 주소(기관 요구 시), 직무관련 교육·자격·경험·경력(공고 평가항목일 때 작성)<br><b>기본 양식에서 삭제</b> 영문성명, 중복 전화번호, 학교명·입학/졸업연도·전체학점, 자격증 번호, 취미·특기</div>';
   if(type==='blind')return '<div class="callout warn"><b>항목 판정</b><br><b>필수</b> 지원구분·지원직무·성명·연락처·이메일<br><b>선택·조건부</b> 주소(기관 요구 시), 교육·자격·경험·경력, 공고에 명시된 가점사항<br><b>기본 양식에서 삭제</b> 사진·성별·생년월일·학교명·졸업일·전체학점·최종학교 소재지·직접 입력 접수번호</div>';
   return '<div class="callout info"><b>항목 판정</b><br><b>필수</b> 지원직무·성명·휴대전화·이메일<br><b>선택·조건부</b> 영문명, 주소, 학력, 경력, 자격·어학, 프로젝트·대외활동, 학점<br><b>기본 양식에서 삭제</b> 사진·생년월일·성별·가족사항·신체조건</div>';
@@ -635,7 +636,8 @@ function wireResumeFormUi(data,ctx,persist,assets=[],experiences=[],prior={},pos
       }
       var importer=e.target.closest('[data-resume-import]');
       if(importer){
-        var result=applyResumePriorData(data,data.templateType,prior,importer.dataset.resumeImport||'all');persist();
+        var importPrior=(injeCompact&&data.applicationMode==='general')?{...prior,targetJob:''}:prior;
+        var result=applyResumePriorData(data,data.templateType,importPrior,importer.dataset.resumeImport||'all');persist();
         var form=document.getElementById('resumeTemplateForm');if(form)form.innerHTML=resumeTemplateForm(data,ctx);
         var skills=document.getElementById('skills');if(skills&&!skills.value&&data.skills)skills.value=data.skills;
         ctx.toast(result.message);return;
@@ -785,7 +787,7 @@ function resumeA4Html(data,ctx,posting,assets,withOptional=true,injeCompact=fals
   var form=data.forms?.[data.templateType]||{},title=resumeTemplateLabel(data.templateType),verified=(data.items||[]).filter(function(x){return x.status==='final-ready'||(x.factChecked&&x.assetVerified);});
   var optionalType=data.optionalDocument?.type||'none',optional=data.optionalDocument?.[optionalType]||{},includeOptional=withOptional&&optionalType!=='none'&&optional.factChecked&&hasOptionalContent(optional);
   var identity=previewIdentity(data.templateType,form),sections=previewFormSections(data.templateType,form);
-  var jobCaption=injeCompact?(data.applicationMode==='general'?'':([data.targetCompany||'',identity.job||''].filter(Boolean).join(' · '))):(identity.job||posting?.jobTitle||'');
+  var jobCaption=injeCompact?(data.applicationMode==='general'?(identity.job||''):([data.targetCompany||'',identity.job||''].filter(Boolean).join(' · '))):(identity.job||posting?.jobTitle||'');
   return '<div class="resumeA4Sheet" style="width:min(210mm,100%);min-height:297mm;margin:0 auto;background:#fff;color:#111;padding:16mm 15mm;box-sizing:border-box;border:1px solid #d8dde6;box-shadow:0 8px 30px rgba(15,23,42,.08);font-family:Arial,sans-serif">'
     +'<div style="display:flex;justify-content:space-between;gap:16px;border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:16px"><div><div style="font-size:12px;color:#64748b">'+escapeText(title)+'</div><h1 style="font-size:25px;margin:4px 0">'+escapeText(identity.name||'지원자')+'</h1><div style="font-size:13px">'+escapeText(jobCaption)+'</div></div><div style="text-align:right;font-size:11px;line-height:1.65">'+identity.contact.map(escapeText).filter(Boolean).join('<br>')+'</div></div>'
     +(data.summary?previewSection('직무 요약','<p style="margin:0;white-space:pre-line">'+escapeText(data.summary)+'</p>'):'')
