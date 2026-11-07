@@ -24,7 +24,7 @@ for(const width of [1280,390]){
     await page.evaluate(({key,seed})=>localStorage.setItem(key,JSON.stringify(seed)),{key,seed:seed()});
     await page.reload({waitUntil:'networkidle'});
     await page.locator('#resumeTemplateLab').waitFor();
-    assert(await page.getByRole('heading',{name:'2. 이력서에 사용할 경험 확인하기'}).count()===1,'Simplified INJE evidence heading missing');
+    assert(await page.locator('#stepRoot h3').filter({hasText:'2. 이력서에 사용할 경험 확인하기'}).count()===1,'Simplified INJE evidence heading missing');
     assert(await page.locator('#resumeGate .miniCard').count()===3,'INJE evidence gate should contain three summaries');
     assert((await page.locator('#resumeGate').innerText()).includes('불러온 경험 근거'),'Imported evidence summary missing');
     assert((await page.locator('#resumeGate').innerText()).includes('앞에서 확인한 경험을 불러왔습니다.'),'STEP 3 verified experience was not reused');
