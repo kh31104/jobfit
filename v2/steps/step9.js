@@ -28,7 +28,7 @@ export async function render(ctx){
     <div class="hr"></div><div class="block"><h3>5. 직무맞춤 요약</h3><div class="grid2">${area('summary','직무 요약',data.summary,'내가 어떤 Evidence를 가진 지원자인지 2~3문장')}${area('skills','직무 관련 Skill·Tool'+sourceBadgeHtml(data,'skills'),data.skills,'JD에서 실제로 요구하고 내가 보유한 Skill·Tool만')}</div><div class="field" style="margin-top:12px"><label>점검 메모</label><textarea id="notes" placeholder="추가 보완할 부분">${esc(data.notes||'',ctx)}</textarea></div><div class="actions"><button class="btn primary" id="saveResume">Resume 저장</button><button class="btn secondary" id="nextStep">STEP ${displayStep+(injeCompact?2:1)} Cover Letter Lab →</button></div></div>
     ${injeCompact?resumeReviewBlock(data,ctx):''}
     ${resumePreviewBlock(injeCompact)}
-  <style>@media(max-width:760px){.resumeReadable .jfA4Screen{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}.resumeReadable .jfA4Screen .resumeA4Sheet{min-width:0;width:100%!important;padding:14px!important}.resumeReadable .grid3,.resumeReadable .grid4{grid-template-columns:minmax(0,1fr)}.resumeReadable .resumeA4Sheet table{display:block;max-width:100%;overflow-x:auto}}.resumeReadable .resumeA4Sheet{overflow-wrap:anywhere;word-break:keep-all}</style></section>`;
+  <style>@media(max-width:760px){.resumeReadable .jfA4Screen{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}.resumeReadable .jfA4Screen .resumeA4Sheet{min-width:0;width:100%!important;padding:14px!important}.resumeReadable .grid3,.resumeReadable .grid4{grid-template-columns:minmax(0,1fr)}.resumeReadable .resumeA4Sheet table{display:block;max-width:100%;overflow-x:auto}}.resumeReadable .resumeA4Sheet{overflow-wrap:anywhere;word-break:keep-all}.resumeReadable .injeResumePrint section>div{font-size:9.5pt!important;line-height:1.5!important}.resumeReadable .injeResumePrint section h2{font-size:12pt!important}.resumeReadable .injeResumePrint table,.resumeReadable .injeResumePrint th,.resumeReadable .injeResumePrint td{font-size:9pt!important;line-height:1.45!important}.resumeReadable .injeResumePrint td,.resumeReadable .injeResumePrint th{overflow-wrap:anywhere;word-break:break-word}.resumeReadable .injeResumePrint>div:first-child>div:last-child{font-size:9pt!important}@media(max-width:760px){.resumeReadable .injeResumePrint table,.resumeReadable .injeResumePrint thead,.resumeReadable .injeResumePrint tbody,.resumeReadable .injeResumePrint tr{display:block;width:100%!important}.resumeReadable .injeResumePrint thead{display:none!important}.resumeReadable .injeResumePrint tr{margin:0 0 10px;border:1px solid #d8dde6;border-radius:6px;overflow:hidden;break-inside:avoid}.resumeReadable .injeResumePrint td{display:grid!important;grid-template-columns:minmax(82px,38%) minmax(0,1fr);gap:7px;align-items:start;width:100%!important;min-width:0;max-width:100%;border:0!important;border-bottom:1px solid #e5e7eb!important;padding:6px!important;white-space:normal!important}.resumeReadable .injeResumePrint td:last-child{border-bottom:0!important}.resumeReadable .injeResumePrint td:before{content:attr(data-label);font-weight:700;color:#475569;overflow-wrap:anywhere}}</style></section>`;
 
   if(injeCompact)wireStep8QuickStart(ctx,{onDone:()=>ctx.navigate(displayStep)});
   wireResumeFormUi(data,ctx,persist,candidateAssets,experiences,prior,posting,injeCompact);wireResumePreviewUi(data,ctx,posting,assets,persist,injeCompact);if(injeCompact)wireResumeReviewUi(data,ctx,persist);renderAll();document.getElementById('assetId').addEventListener('change',renderAssetContext);document.getElementById('copyPrompt').addEventListener('click',()=>copy(buildPrompt(),ctx));document.getElementById('addItem').addEventListener('click',addItem);document.getElementById('cancelResumeEdit').addEventListener('click',cancelResumeEdit);document.getElementById('saveResume').addEventListener('click',saveBase);document.getElementById('nextStep').addEventListener('click',()=>{saveBase();ctx.navigate(10)});
@@ -483,11 +483,12 @@ function resumeTemplateForm(data,ctx){
   return standardResumeForm(data,ctx);
 }
 function standardResumeForm(data,ctx){
+  const general=ctx.displayStep!==undefined&&ctx.displayStep!==9&&data.applicationMode==='general';
   return '<div class="listCard"><div class="listHead"><div><span class="rankTag">선택 양식</span><h3>표준이력서</h3></div><span class="scoreChip">일반 기업형</span></div>'
-    +resumeFieldPolicy('standard',data.applicationMode)
+    +resumeFieldPolicy('standard',general?'general':'targeted')
     +resumeExampleControls('standard')
-    +resumeFieldGroup('standard-basic','기본정보 · 필수','<div class="grid2">'
-      +boundField(data,ctx,'forms.standard.targetJob','지원직무','예: 생산기술')
+    +resumeFieldGroup('standard-basic',general?'기본정보 · 연락처 필수 (지원직무 선택)':'기본정보 · 필수','<div class="grid2">'
+      +boundField(data,ctx,'forms.standard.targetJob',general?'지원직무 · 선택':'지원직무','예: 생산기술')
       +boundField(data,ctx,'forms.standard.nameKo','성명')
       +boundField(data,ctx,'forms.standard.phone','휴대폰')
       +boundField(data,ctx,'forms.standard.email','이메일','','email')
@@ -501,12 +502,13 @@ function standardResumeForm(data,ctx){
   +'</div>';
 }
 function ncsResumeForm(data,ctx){
+  const general=ctx.displayStep!==undefined&&ctx.displayStep!==9&&data.applicationMode==='general';
   return '<div class="listCard"><div class="listHead"><div><span class="rankTag">선택 양식</span><h3>NCS 이력서</h3></div><span class="scoreChip">직무중심</span></div>'
-    +resumeFieldPolicy('ncs',data.applicationMode)
+    +resumeFieldPolicy('ncs',general?'general':'targeted')
     +resumeExampleControls('ncs')
-    +resumeFieldGroup('ncs-basic','기본정보 · 필수','<div class="grid2">'
-      +boundField(data,ctx,'forms.ncs.field','지원분야')
-      +boundField(data,ctx,'forms.ncs.job','직무')
+    +resumeFieldGroup('ncs-basic',general?'기본정보 · 연락처 필수 (지원분야·직무 선택)':'기본정보 · 필수','<div class="grid2">'
+      +boundField(data,ctx,'forms.ncs.field',general?'지원분야 · 선택':'지원분야')
+      +boundField(data,ctx,'forms.ncs.job',general?'직무 · 선택':'직무')
       +boundField(data,ctx,'forms.ncs.nameKo','성명')
       +boundField(data,ctx,'forms.ncs.mobile','휴대전화')
       +boundField(data,ctx,'forms.ncs.email','전자우편','','email')
@@ -519,12 +521,13 @@ function ncsResumeForm(data,ctx){
   +'</div>';
 }
 function blindResumeForm(data,ctx){
+  const general=ctx.displayStep!==undefined&&ctx.displayStep!==9&&data.applicationMode==='general';
   return '<div class="listCard"><div class="listHead"><div><span class="rankTag">선택 양식</span><h3>블라인드 채용 입사지원서</h3></div><span class="scoreChip">차별요소 제외</span></div>'
-    +resumeFieldPolicy('blind',data.applicationMode)
+    +resumeFieldPolicy('blind',general?'general':'targeted')
     +resumeExampleControls('blind')
-    +resumeFieldGroup('blind-basic','전형 운영정보 · 필수','<div class="grid2">'
+    +resumeFieldGroup('blind-basic',general?'전형 운영정보 · 연락처 필수 (지원직무 선택)':'전형 운영정보 · 필수','<div class="grid2">'
       +boundSelect(data,ctx,'forms.blind.applicantType','지원구분',['신입','경력'])
-      +boundField(data,ctx,'forms.blind.targetJob','지원직무')
+      +boundField(data,ctx,'forms.blind.targetJob',general?'지원직무 · 선택':'지원직무')
       +boundField(data,ctx,'forms.blind.name','성명')
       +boundField(data,ctx,'forms.blind.phone','연락처')
       +boundField(data,ctx,'forms.blind.email','전자우편','','email')
@@ -561,9 +564,16 @@ function resumeGridTable(data,ctx,title,base,cols,count){
 
 
 function resumeFieldPolicy(type,applicationMode='targeted'){
-  if(type==='ncs')return '<div class="callout info"><b>항목 판정</b><br><b>필수</b> 지원분야·직무·성명·휴대전화·이메일<br><b>선택·조건부</b> 주소(기관 요구 시), 직무관련 교육·자격·경험·경력(공고 평가항목일 때 작성)<br><b>기본 양식에서 삭제</b> 영문성명, 중복 전화번호, 학교명·입학/졸업연도·전체학점, 자격증 번호, 취미·특기</div>';
-  if(type==='blind')return '<div class="callout warn"><b>항목 판정</b><br><b>필수</b> 지원구분·지원직무·성명·연락처·이메일<br><b>선택·조건부</b> 주소(기관 요구 시), 교육·자격·경험·경력, 공고에 명시된 가점사항<br><b>기본 양식에서 삭제</b> 사진·성별·생년월일·학교명·졸업일·전체학점·최종학교 소재지·직접 입력 접수번호</div>';
-  return '<div class="callout info"><b>항목 판정</b><br><b>필수</b> 지원직무·성명·휴대전화·이메일<br><b>선택·조건부</b> 영문명, 주소, 학력, 경력, 자격·어학, 프로젝트·대외활동, 학점<br><b>기본 양식에서 삭제</b> 사진·생년월일·성별·가족사항·신체조건</div>';
+  const general=applicationMode==='general';
+  if(type==='ncs')return general
+    ? '<div class="callout info"><b>항목 판정 · 일반형</b><br><b>필수</b> 성명·휴대전화·이메일<br><b>선택</b> 지원분야·직무(지원처 미정이면 생략 가능)<br><b>선택·조건부</b> 주소(기관 요구 시), 직무관련 교육·자격·경험·경력<br><b>기본 양식에서 삭제</b> 영문성명, 중복 전화번호, 학교명·입학/졸업연도·전체학점, 자격증 번호, 취미·특기<br><b>지원 시 확인</b> 실제 NCS 채용공고의 지정항목을 우선합니다.</div>'
+    : '<div class="callout info"><b>항목 판정</b><br><b>필수</b> 지원분야·직무·성명·휴대전화·이메일<br><b>선택·조건부</b> 주소(기관 요구 시), 직무관련 교육·자격·경험·경력(공고 평가항목일 때 작성)<br><b>기본 양식에서 삭제</b> 영문성명, 중복 전화번호, 학교명·입학/졸업연도·전체학점, 자격증 번호, 취미·특기</div>';
+  if(type==='blind')return general
+    ? '<div class="callout warn"><b>항목 판정 · 일반형</b><br><b>필수</b> 지원구분·성명·연락처·이메일<br><b>선택</b> 지원직무(지원처 미정이면 생략 가능)<br><b>선택·조건부</b> 주소(기관 요구 시), 교육·자격·경험·경력, 공고에 명시된 가점사항<br><b>기본 양식에서 삭제</b> 사진·성별·생년월일·학교명·졸업일·전체학점·최종학교 소재지·직접 입력 접수번호<br><b>지원 시 확인</b> 실제 블라인드 채용공고의 지정항목을 우선합니다.</div>'
+    : '<div class="callout warn"><b>항목 판정</b><br><b>필수</b> 지원구분·지원직무·성명·연락처·이메일<br><b>선택·조건부</b> 주소(기관 요구 시), 교육·자격·경험·경력, 공고에 명시된 가점사항<br><b>기본 양식에서 삭제</b> 사진·성별·생년월일·학교명·졸업일·전체학점·최종학교 소재지·직접 입력 접수번호</div>';
+  return general
+    ? '<div class="callout info"><b>항목 판정 · 일반형</b><br><b>필수</b> 성명·휴대전화·이메일<br><b>선택</b> 지원직무(지원처 미정이면 생략 가능)<br><b>선택·조건부</b> 영문명, 주소, 학력, 경력, 자격·어학, 프로젝트·대외활동, 학점<br><b>기본 양식에서 삭제</b> 사진·생년월일·성별·가족사항·신체조건<br><b>지원 시 확인</b> 실제 기업의 지정양식을 우선합니다.</div>'
+    : '<div class="callout info"><b>항목 판정</b><br><b>필수</b> 지원직무·성명·휴대전화·이메일<br><b>선택·조건부</b> 영문명, 주소, 학력, 경력, 자격·어학, 프로젝트·대외활동, 학점<br><b>기본 양식에서 삭제</b> 사진·생년월일·성별·가족사항·신체조건</div>';
 }
 
 function resumeFieldGroup(sectionId,title,inner,open){
@@ -655,6 +665,8 @@ function wireResumeFormUi(data,ctx,persist,assets=[],experiences=[],prior={},pos
         if(appButton){
           data.applicationMode=appButton.dataset.applicationMode;persist();
           var target=document.getElementById('resumeTargetMode');if(target)target.outerHTML=resumeTargetingBlock(data,ctx,posting);
+          var activeForm=document.getElementById('resumeTemplateForm');
+          if(activeForm)activeForm.innerHTML=resumeTemplateForm(data,ctx);
           refreshResumeReview(data,ctx);return;
         }
         if(e.target.closest('#loadSelectedResumeJD')&&posting){
@@ -835,7 +847,7 @@ function resumeA4Html(data,ctx,posting,assets,withOptional=true,injeCompact=fals
   var optionalType=data.optionalDocument?.type||'none',optional=data.optionalDocument?.[optionalType]||{},includeOptional=withOptional&&optionalType!=='none'&&optional.factChecked&&hasOptionalContent(optional);
   var identity=previewIdentity(data.templateType,form),sections=previewFormSections(data.templateType,form);
   var jobCaption=injeCompact?(data.applicationMode==='general'?(identity.job||''):([data.targetCompany||'',identity.job||''].filter(Boolean).join(' · '))):(identity.job||posting?.jobTitle||'');
-  return '<div class="resumeA4Sheet" style="width:min(210mm,100%);min-height:297mm;margin:0 auto;background:#fff;color:#111;padding:16mm 15mm;box-sizing:border-box;border:1px solid #d8dde6;box-shadow:0 8px 30px rgba(15,23,42,.08);font-family:Arial,sans-serif">'
+  return '<div class="resumeA4Sheet'+(injeCompact?' injeResumePrint':'')+'" style="width:min(210mm,100%);min-height:297mm;margin:0 auto;background:#fff;color:#111;padding:16mm 15mm;box-sizing:border-box;border:1px solid #d8dde6;box-shadow:0 8px 30px rgba(15,23,42,.08);font-family:Arial,sans-serif">'
     +'<div style="display:flex;justify-content:space-between;gap:16px;border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:16px"><div><div style="font-size:12px;color:#64748b">'+escapeText(title)+'</div><h1 style="font-size:25px;margin:4px 0">'+escapeText(identity.name||'지원자')+'</h1><div style="font-size:13px">'+escapeText(jobCaption)+'</div></div><div style="text-align:right;font-size:11px;line-height:1.65">'+identity.contact.map(escapeText).filter(Boolean).join('<br>')+'</div></div>'
     +(data.summary?previewSection('직무 요약','<p style="margin:0;white-space:pre-line">'+escapeText(data.summary)+'</p>'):'')
     +sections
@@ -873,7 +885,7 @@ function previewRows(group,cols){
   if(!group||typeof group!=='object')return '';
   var rows=Object.keys(group).sort().map(function(k){return group[k];}).filter(function(r){return r&&typeof r==='object'&&cols.some(function(c){return String(r[c[0]]||'').trim();});});
   if(!rows.length)return '';
-  return '<table style="width:100%;border-collapse:collapse;font-size:10.5px"><thead><tr>'+cols.map(function(c){return '<th style="border:1px solid #bcc3ce;background:#f4f6f8;padding:5px;text-align:left">'+escapeText(c[1])+'</th>';}).join('')+'</tr></thead><tbody>'+rows.map(function(r){return '<tr>'+cols.map(function(c){return '<td style="border:1px solid #d8dde6;padding:5px;vertical-align:top">'+escapeText(r[c[0]]||'')+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table>';
+  return '<table style="width:100%;border-collapse:collapse;font-size:10.5px"><thead><tr>'+cols.map(function(c){return '<th style="border:1px solid #bcc3ce;background:#f4f6f8;padding:5px;text-align:left">'+escapeText(c[1])+'</th>';}).join('')+'</tr></thead><tbody>'+rows.map(function(r){return '<tr>'+cols.map(function(c){return '<td data-label="'+escapeText(c[1])+'" style="border:1px solid #d8dde6;padding:5px;vertical-align:top">'+escapeText(r[c[0]]||'')+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table>';
 }
 function previewSection(title,body){
   return '<section style="margin:15px 0"><h2 style="font-size:13px;margin:0 0 7px;border-bottom:1px solid #111;padding-bottom:4px">'+escapeText(title)+'</h2><div style="font-size:10.8px;line-height:1.55">'+body+'</div></section>';
