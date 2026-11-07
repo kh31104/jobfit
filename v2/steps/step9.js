@@ -662,6 +662,8 @@ function wireResumeFormUi(data,ctx,persist,assets=[],experiences=[],prior={},pos
         if(appButton){
           data.applicationMode=appButton.dataset.applicationMode;persist();
           var target=document.getElementById('resumeTargetMode');if(target)target.outerHTML=resumeTargetingBlock(data,ctx,posting);
+          var activeForm=document.getElementById('resumeTemplateForm');
+          if(activeForm)activeForm.innerHTML=resumeTemplateForm(data,ctx);
           refreshResumeReview(data,ctx);return;
         }
         if(e.target.closest('#loadSelectedResumeJD')&&posting){
