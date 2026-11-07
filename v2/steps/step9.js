@@ -561,7 +561,6 @@ function resumeGridTable(data,ctx,title,base,cols,count){
 
 
 function resumeFieldPolicy(type,applicationMode='targeted'){
-  if(applicationMode==='general')return '<div class="callout info"><b>일반 이력서 작성</b><br>지원 기업과 직무가 없어도 작성할 수 있으며 지원직무는 비워도 됩니다. 실제 사실이 확인된 학력·경력·자격·활동만 기재하세요. 블라인드 양식에서는 학교명·생년월일 등 차별 우려 정보를 작성하지 마세요.</div>';
   if(type==='ncs')return '<div class="callout info"><b>항목 판정</b><br><b>필수</b> 지원분야·직무·성명·휴대전화·이메일<br><b>선택·조건부</b> 주소(기관 요구 시), 직무관련 교육·자격·경험·경력(공고 평가항목일 때 작성)<br><b>기본 양식에서 삭제</b> 영문성명, 중복 전화번호, 학교명·입학/졸업연도·전체학점, 자격증 번호, 취미·특기</div>';
   if(type==='blind')return '<div class="callout warn"><b>항목 판정</b><br><b>필수</b> 지원구분·지원직무·성명·연락처·이메일<br><b>선택·조건부</b> 주소(기관 요구 시), 교육·자격·경험·경력, 공고에 명시된 가점사항<br><b>기본 양식에서 삭제</b> 사진·성별·생년월일·학교명·졸업일·전체학점·최종학교 소재지·직접 입력 접수번호</div>';
   return '<div class="callout info"><b>항목 판정</b><br><b>필수</b> 지원직무·성명·휴대전화·이메일<br><b>선택·조건부</b> 영문명, 주소, 학력, 경력, 자격·어학, 프로젝트·대외활동, 학점<br><b>기본 양식에서 삭제</b> 사진·생년월일·성별·가족사항·신체조건</div>';
