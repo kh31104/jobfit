@@ -251,15 +251,11 @@ function wireResumeReviewUi(data,ctx,persist){
       return;
     }
     if(e.target.closest('#backToResumeForm')){
-      var formBlock=document.getElementById('resumeTemplateLab');
-      window.JobfitStepAccordion?.openBlock?.(formBlock);
       document.getElementById('resumeTemplateForm')?.scrollIntoView({behavior:'smooth',block:'start'});
       return;
     }
     if(e.target.closest('#goToResumePdf')){
-      var pdfBlock=document.getElementById('resumePreviewLab');
-      window.JobfitStepAccordion?.openBlock?.(pdfBlock);
-      pdfBlock?.scrollIntoView({behavior:'smooth',block:'start'});
+      document.getElementById('resumePreviewLab')?.scrollIntoView({behavior:'smooth',block:'start'});
       ctx.toast('PDF로 저장할지 선택하세요. 저장하지 않고 다시 수정·검토해도 됩니다.');
     }
   });
