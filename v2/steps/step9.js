@@ -130,6 +130,7 @@ function ensureResumeTargeting(data,posting){
   if(typeof data.targetCompany!=='string')data.targetCompany='';
   if(typeof data.targetJDText!=='string')data.targetJDText='';
   if(!data.reviewFeedbacks||typeof data.reviewFeedbacks!=='object'||Array.isArray(data.reviewFeedbacks))data.reviewFeedbacks={};
+  if(!data.reviewHistory||typeof data.reviewHistory!=='object'||Array.isArray(data.reviewHistory))data.reviewHistory={};
 }
 function resumeTargetingBlock(data,ctx,posting){
   var selected=data.applicationMode==='targeted';
@@ -188,36 +189,84 @@ function buildResumeReviewPrompt(data){
     '원문에 없는 정보는 [확인 필요]로 표시한다. 수정은 학생이 직접 결정한다.'
   ].join('\n');
 }
+function resumeReviewHistory(data){
+  var key=resumeReviewKey(data);
+  data.reviewHistory=data.reviewHistory&&typeof data.reviewHistory==='object'?data.reviewHistory:{};
+  if(!Array.isArray(data.reviewHistory[key]))data.reviewHistory[key]=[];
+  return data.reviewHistory[key];
+}
 function resumeReviewBlock(data,ctx){
   var key=resumeReviewKey(data),feedback=data.reviewFeedbacks?.[key]||'';
+  var history=resumeReviewHistory(data),count=history.length;
+  var past=history.slice(0,-1).map(function(item,i){
+    return '<div class="listCard" style="margin-top:8px"><b>'+(i+1)+'차 검토</b>'
+      +(item.feedback?'<p class="jfResultBox" style="white-space:pre-wrap;margin:8px 0 0">'+esc(item.feedback,ctx)+'</p>':'<p class="muted small">검토 결과를 기록하지 않았습니다.</p>')+'</div>';
+  }).join('');
   return '<div class="hr"></div><div class="block" id="resumeAiReview">'
-    +'<h3>6. AI 이력서 검토 · 학생 수정</h3>'
-    +'<p class="help">입력한 이력서를 AI가 검토하도록 프롬프트를 만들 수 있습니다. 검토 결과가 이력서에 자동 반영되지는 않으며 학생이 원문을 확인하고 직접 고칩니다.</p>'
-    +'<div class="callout info"><b>검토 순서</b><br>① 프롬프트 확인·복사 → ② AI에 붙여넣어 검토 → ③ AI 답변을 아래에 붙여넣기 → ④ 위 양식에서 직접 수정 → ⑤ A4 PDF 저장</div>'
-    +'<div class="callout warn"><b>개인정보 주의</b><br>프롬프트는 이름·연락처·주소 필드를 제외합니다. 다만 자유서술에 개인정보가 있을 수 있으니 AI에 붙여넣기 전 내용을 확인하세요.</div>'
+    +'<h3>6. AI 검토 → 직접 수정 → 다시 검토</h3>'
+    +'<p class="help">필요한 만큼 다시 검토할 수 있습니다. AI 수정 제안은 자동 반영되지 않으며, 이력서 양식에서 학생이 직접 고칩니다. PDF 저장은 학생이 마지막에 선택합니다.</p>'
+    +'<div class="callout info"><b>반복할 수 있는 검토 과정</b><br>① AI 검토 프롬프트 복사 → ② ChatGPT 등 AI에서 검토 → ③ 결과 붙여넣기 → ④ 학생이 원본 이력서 수정 → ⑤ 수정한 이력서로 AI 재검토 → ⑥ 원하는 때 PDF 저장 선택</div>'
+    +'<div class="callout warn"><b>개인정보 주의</b><br>이름·연락처·주소 입력란은 AI 프롬프트에서 제외합니다. 자유서술에 개인정보가 있다면 복사 전에 직접 확인하세요.</div>'
+    +'<p class="help" id="resumeReviewRoundStatus">현재 양식의 AI 검토 요청 '+count+'회'+(count?' · 최신 '+count+'차 결과 입력란 표시':' · 아직 요청하지 않았습니다.')+'</p>'
     +'<div class="actions"><button type="button" class="btn secondary" id="previewResumeReviewPrompt">AI 검토 프롬프트 확인</button>'
     +'<button type="button" class="btn primary" id="copyResumeReviewPrompt">AI 검토 프롬프트 복사</button></div>'
-    +'<div class="field" style="margin-top:10px"><label>AI 검토 프롬프트 · 복사 전에 확인</label><textarea id="resumeReviewPromptText" readonly placeholder="위의 프롬프트 확인 버튼을 누르면 작성 내용에 맞춘 검토 지시문이 표시됩니다." style="min-height:100px"></textarea></div>'
-    +'<div class="field"><label>AI 검토 결과 붙여넣기 · '+(data.templateType==='ncs'?'NCS':data.templateType==='blind'?'블라인드':'표준')+' / '+(data.applicationMode==='general'?'일반형':'맞춤형')+'</label><textarea id="resumeReviewFeedback" placeholder="AI가 발견한 오류·수정 제안을 붙여넣으세요. 양식별로 별도 저장됩니다.">'+esc(feedback,ctx)+'</textarea></div>'
-    +'<div class="actions"><button type="button" class="btn secondary" id="backToResumeForm">이력서 양식으로 돌아가 직접 수정</button></div>'
+    +'<div class="field" style="margin-top:10px"><label>AI 검토 프롬프트 · 복사 전에 확인</label><textarea id="resumeReviewPromptText" readonly placeholder="검토 프롬프트를 확인한 뒤 AI에 붙여넣으세요." style="min-height:100px"></textarea></div>'
+    +'<div class="field"><label>이번 AI 검토 결과 붙여넣기 · '+(data.templateType==='ncs'?'NCS':data.templateType==='blind'?'블라인드':'표준')+' / '+(data.applicationMode==='general'?'일반형':'맞춤형')+'</label><textarea id="resumeReviewFeedback" placeholder="AI가 제안한 수정 사항을 붙여넣으세요. 이 내용은 이력서에 자동 반영되지 않습니다.">'+esc(feedback,ctx)+'</textarea></div>'
+    +'<div class="actions"><button type="button" class="btn secondary" id="backToResumeForm">이력서로 돌아가 직접 수정</button>'
+    +'<button type="button" class="btn primary" id="redoResumeReview">수정 후 AI 재검토하기</button>'
+    +'<button type="button" class="btn secondary" id="goToResumePdf">PDF 저장 선택하기</button></div>'
+    +(history.length>1?'<details class="detailsBox" id="resumeReviewHistory" style="margin-top:12px"><summary>이전 AI 검토 결과 '+(history.length-1)+'건 보기</summary>'+past+'</details>':'')
+    +'<p class="help">재검토 버튼은 현재 수정한 이력서를 기준으로 새 프롬프트를 만듭니다. 이전 검토 의견은 위 기록에 남습니다. PDF 저장은 자동 실행되지 않습니다.</p>'
     +'</div>';
 }
 function wireResumeReviewUi(data,ctx,persist){
   var root=document.getElementById('stepRoot');
+  function showPrompt(newRound){
+    var key=resumeReviewKey(data),history=resumeReviewHistory(data);
+    if(newRound||!history.length){
+      if(newRound)data.reviewFeedbacks[key]='';
+      history.push({requestedAt:new Date().toISOString(),feedback:newRound?'':(data.reviewFeedbacks[key]||'')});
+      persist();
+      refreshResumeReview(data,ctx);
+    }
+    var prompt=buildResumeReviewPrompt(data),el=document.getElementById('resumeReviewPromptText');
+    if(el)el.value=prompt;
+    return prompt;
+  }
   root.addEventListener('click',function(e){
-    if(e.target.closest('#previewResumeReviewPrompt')||e.target.closest('#copyResumeReviewPrompt')){
-      var prompt=buildResumeReviewPrompt(data),el=document.getElementById('resumeReviewPromptText');
-      if(el)el.value=prompt;
-      if(e.target.closest('#copyResumeReviewPrompt'))copy(prompt,ctx);
+    if(e.target.closest('#redoResumeReview')){
+      showPrompt(true);
+      ctx.toast('현재 수정 내용을 기준으로 AI 재검토 프롬프트를 만들었습니다. 다시 AI에 붙여넣어 검토하세요.');
+      document.getElementById('resumeReviewPromptText')?.scrollIntoView({behavior:'smooth',block:'center'});
+      return;
+    }
+    if(e.target.closest('#previewResumeReviewPrompt')){
+      showPrompt(false);
+      return;
+    }
+    if(e.target.closest('#copyResumeReviewPrompt')){
+      var el=document.getElementById('resumeReviewPromptText');
+      var prompt=el?.value||showPrompt(false);
+      copy(prompt,ctx);
       return;
     }
     if(e.target.closest('#backToResumeForm')){
       document.getElementById('resumeTemplateForm')?.scrollIntoView({behavior:'smooth',block:'start'});
+      return;
+    }
+    if(e.target.closest('#goToResumePdf')){
+      document.getElementById('resumePreviewLab')?.scrollIntoView({behavior:'smooth',block:'start'});
+      ctx.toast('PDF로 저장할지 선택하세요. 저장하지 않고 다시 수정·검토해도 됩니다.');
     }
   });
   root.addEventListener('input',function(e){
     if(e.target.id==='resumeReviewFeedback'){
-      data.reviewFeedbacks[resumeReviewKey(data)]=e.target.value;persist();
+      var key=resumeReviewKey(data);
+      data.reviewFeedbacks[key]=e.target.value;
+      var history=resumeReviewHistory(data);
+      if(!history.length)history.push({requestedAt:new Date().toISOString(),feedback:''});
+      history[history.length-1].feedback=e.target.value;
+      persist();
     }
   });
 }
