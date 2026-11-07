@@ -32,7 +32,7 @@ for(const [engine,label,device] of [
    const url=route.request().url();
    if(url.includes('/functions/v1/research-measures')){
      return route.fulfill({
-       status:503,
+       status:route.request().method()==='OPTIONS'?200:503,
        contentType:'application/json',
        headers:{
          'Access-Control-Allow-Origin':'https://kh31104.github.io',
