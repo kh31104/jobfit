@@ -483,11 +483,12 @@ function resumeTemplateForm(data,ctx){
   return standardResumeForm(data,ctx);
 }
 function standardResumeForm(data,ctx){
+  const general=ctx.displayStep!==undefined&&ctx.displayStep!==9&&data.applicationMode==='general';
   return '<div class="listCard"><div class="listHead"><div><span class="rankTag">선택 양식</span><h3>표준이력서</h3></div><span class="scoreChip">일반 기업형</span></div>'
-    +resumeFieldPolicy('standard',data.applicationMode)
+    +resumeFieldPolicy('standard',general?'general':'targeted')
     +resumeExampleControls('standard')
-    +resumeFieldGroup('standard-basic',data.applicationMode==='general'?'기본정보 · 연락처 필수 (지원직무 선택)':'기본정보 · 필수','<div class="grid2">'
-      +boundField(data,ctx,'forms.standard.targetJob',data.applicationMode==='general'?'지원직무 · 선택':'지원직무','예: 생산기술')
+    +resumeFieldGroup('standard-basic',general?'기본정보 · 연락처 필수 (지원직무 선택)':'기본정보 · 필수','<div class="grid2">'
+      +boundField(data,ctx,'forms.standard.targetJob',general?'지원직무 · 선택':'지원직무','예: 생산기술')
       +boundField(data,ctx,'forms.standard.nameKo','성명')
       +boundField(data,ctx,'forms.standard.phone','휴대폰')
       +boundField(data,ctx,'forms.standard.email','이메일','','email')
@@ -501,12 +502,13 @@ function standardResumeForm(data,ctx){
   +'</div>';
 }
 function ncsResumeForm(data,ctx){
+  const general=ctx.displayStep!==undefined&&ctx.displayStep!==9&&data.applicationMode==='general';
   return '<div class="listCard"><div class="listHead"><div><span class="rankTag">선택 양식</span><h3>NCS 이력서</h3></div><span class="scoreChip">직무중심</span></div>'
-    +resumeFieldPolicy('ncs',data.applicationMode)
+    +resumeFieldPolicy('ncs',general?'general':'targeted')
     +resumeExampleControls('ncs')
-    +resumeFieldGroup('ncs-basic',data.applicationMode==='general'?'기본정보 · 연락처 필수 (지원분야·직무 선택)':'기본정보 · 필수','<div class="grid2">'
-      +boundField(data,ctx,'forms.ncs.field',data.applicationMode==='general'?'지원분야 · 선택':'지원분야')
-      +boundField(data,ctx,'forms.ncs.job',data.applicationMode==='general'?'직무 · 선택':'직무')
+    +resumeFieldGroup('ncs-basic',general?'기본정보 · 연락처 필수 (지원분야·직무 선택)':'기본정보 · 필수','<div class="grid2">'
+      +boundField(data,ctx,'forms.ncs.field',general?'지원분야 · 선택':'지원분야')
+      +boundField(data,ctx,'forms.ncs.job',general?'직무 · 선택':'직무')
       +boundField(data,ctx,'forms.ncs.nameKo','성명')
       +boundField(data,ctx,'forms.ncs.mobile','휴대전화')
       +boundField(data,ctx,'forms.ncs.email','전자우편','','email')
@@ -519,12 +521,13 @@ function ncsResumeForm(data,ctx){
   +'</div>';
 }
 function blindResumeForm(data,ctx){
+  const general=ctx.displayStep!==undefined&&ctx.displayStep!==9&&data.applicationMode==='general';
   return '<div class="listCard"><div class="listHead"><div><span class="rankTag">선택 양식</span><h3>블라인드 채용 입사지원서</h3></div><span class="scoreChip">차별요소 제외</span></div>'
-    +resumeFieldPolicy('blind',data.applicationMode)
+    +resumeFieldPolicy('blind',general?'general':'targeted')
     +resumeExampleControls('blind')
-    +resumeFieldGroup('blind-basic',data.applicationMode==='general'?'전형 운영정보 · 연락처 필수 (지원직무 선택)':'전형 운영정보 · 필수','<div class="grid2">'
+    +resumeFieldGroup('blind-basic',general?'전형 운영정보 · 연락처 필수 (지원직무 선택)':'전형 운영정보 · 필수','<div class="grid2">'
       +boundSelect(data,ctx,'forms.blind.applicantType','지원구분',['신입','경력'])
-      +boundField(data,ctx,'forms.blind.targetJob',data.applicationMode==='general'?'지원직무 · 선택':'지원직무')
+      +boundField(data,ctx,'forms.blind.targetJob',general?'지원직무 · 선택':'지원직무')
       +boundField(data,ctx,'forms.blind.name','성명')
       +boundField(data,ctx,'forms.blind.phone','연락처')
       +boundField(data,ctx,'forms.blind.email','전자우편','','email')
