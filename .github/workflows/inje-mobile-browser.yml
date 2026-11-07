@@ -65,6 +65,19 @@ jobs:
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
         run: node v2/tests/inje-step8-9-editable-docs.mjs
+      - name: Simulate student STEP 8 entries and generate A4 PDFs on desktop Android Safari
+        env:
+          JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
+          JOBFIT_QA_OUT: v2/test-output/step8-pdf-qa-local
+        run: node v2/tests/inje-step8-realistic-pdf-qa.mjs
+      - name: Archive isolated student STEP 8 PDF test outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inje-step8-qa-local
+          path: v2/test-output/step8-pdf-qa-local/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Reproduce and verify Safari module retry on v2
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
@@ -137,6 +150,19 @@ jobs:
         env:
           JOBFIT_TEST_URL: https://kh31104.github.io/jobfit/v2/
         run: node v2/tests/inje-step5-preview-toggle.mjs
+      - name: Simulate STEP 8 student on deployed Pages and generate PDFs
+        env:
+          JOBFIT_TEST_URL: https://kh31104.github.io/jobfit/v2/
+          JOBFIT_QA_OUT: v2/test-output/step8-pdf-qa-deployed
+        run: node v2/tests/inje-step8-realistic-pdf-qa.mjs
+      - name: Archive deployed STEP 8 PDF QA artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inje-step8-qa-deployed
+          path: v2/test-output/step8-pdf-qa-deployed/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Record production iOS Android verification on commit
         if: always()
         env:
