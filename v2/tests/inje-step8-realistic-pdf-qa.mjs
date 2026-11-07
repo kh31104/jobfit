@@ -45,6 +45,36 @@ for(const cfg of config){
     const text=await printPage.locator('body').innerText();
     for(const item of expectedText)must(text.includes(item),cfg.name+'/'+tag+' missing printed text '+item);
     if(unexpectedText)must(!text.includes(unexpectedText),cfg.name+'/'+tag+' unexpectedly leaked '+unexpectedText);
+    const styleCheck=await printPage.evaluate(()=>{
+      const sheet=document.querySelector('.resumeA4Sheet.injeResumePrint');
+      const table=sheet?.querySelector('table');
+      const cell=table?.querySelector('tbody td');
+      const content=sheet?.querySelector('section>div');
+      if(!sheet)return {hasSheet:false};
+      return {
+        hasSheet:true,
+        textPtPx:content?parseFloat(getComputedStyle(content).fontSize):null,
+        tablePx:table?parseFloat(getComputedStyle(table).fontSize):null,
+        cellPx:cell?parseFloat(getComputedStyle(cell).fontSize):null,
+        cellDisplay:cell?getComputedStyle(cell).display:null,
+        label:cell?getComputedStyle(cell,'::before').content:null,
+        sheetWidth:sheet.getBoundingClientRect().width,
+        sheetScrollWidth:sheet.scrollWidth,
+        tableWidth:table?.getBoundingClientRect().width||null
+      };
+    });
+    if(tag!=='experience-only'){
+      must(styleCheck.hasSheet,cfg.name+'/'+tag+' INJE-specific printable sheet missing');
+      must(styleCheck.textPtPx>=12.5,cfg.name+'/'+tag+' text remains below 9.5pt: '+JSON.stringify(styleCheck));
+      if(styleCheck.cellPx!==null){
+        must(styleCheck.cellPx>=11.9,cfg.name+'/'+tag+' table below 9pt: '+JSON.stringify(styleCheck));
+        if(cfg.name!=='pc-chromium'){
+          must(styleCheck.cellDisplay==='grid',cfg.name+'/'+tag+' phone preview must show label/value rows: '+JSON.stringify(styleCheck));
+          must(styleCheck.label!=='none'&&styleCheck.label!=='normal',cfg.name+'/'+tag+' mobile row labels missing: '+JSON.stringify(styleCheck));
+          must(styleCheck.sheetScrollWidth<=styleCheck.sheetWidth+3,cfg.name+'/'+tag+' phone layout horizontal clipping: '+JSON.stringify(styleCheck));
+        }
+      }
+    }
     if(cfg.pdf){
       const pdf=await printPage.pdf({format:'A4',printBackground:true});
       must(pdf.subarray(0,5).toString()==='%PDF-','Invalid PDF header: '+cfg.name+'/'+tag);
@@ -67,6 +97,8 @@ for(const cfg of config){
 
     // Student A: general resume, no target job required despite a previously chosen JD.
     await page.locator('[data-application-mode="general"]').click();
+    must((await page.locator('#resumeTemplateForm').innerText()).includes('지원직무(지원처 미정이면 생략 가능)'),'General standard incorrectly requires a target job');
+    must((await page.locator('#resumeTemplateForm').innerText()).includes('지원직무 · 선택'),'General standard input label must be optional');
     await enter('forms.standard.nameKo','홍테스트');
     await enter('forms.standard.phone','010-1111-2222');
     await enter('forms.standard.email','resume-test@example.com');
@@ -108,6 +140,9 @@ for(const cfg of config){
 
     // Student B: NCS education and work experience.
     await page.locator('[data-resume-template="ncs"]').click();
+    await page.locator('[data-application-mode="general"]').click();
+    must((await page.locator('#resumeTemplateForm').innerText()).includes('지원분야·직무(지원처 미정이면 생략 가능)'),'General NCS guidance inconsistent');
+    await page.locator('[data-application-mode="targeted"]').click();
     await enter('forms.ncs.nameKo','김엔씨에스');
     await enter('forms.ncs.mobile','010-1234-5678');
     await enter('forms.ncs.email','ncs@example.com');
@@ -122,6 +157,9 @@ for(const cfg of config){
 
     // Student C: blind resume must not include standard-resume school name.
     await page.locator('[data-resume-template="blind"]').click();
+    await page.locator('[data-application-mode="general"]').click();
+    must((await page.locator('#resumeTemplateForm').innerText()).includes('지원직무(지원처 미정이면 생략 가능)'),'General blind guidance inconsistent');
+    await page.locator('[data-application-mode="targeted"]').click();
     await enter('forms.blind.name','박블라인드');
     await enter('forms.blind.phone','010-2222-3333');
     await enter('forms.blind.email','blind@example.com');
