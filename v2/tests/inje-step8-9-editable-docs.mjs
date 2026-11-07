@@ -24,10 +24,46 @@ for(const width of [1280,390]){
     await page.evaluate(({key,seed})=>localStorage.setItem(key,JSON.stringify(seed)),{key,seed:seed()});
     await page.reload({waitUntil:'networkidle'});
     await page.locator('#resumeTemplateLab').waitFor();
+    assert(await page.locator('#stepRoot h3').filter({hasText:'2. 이력서에 사용할 경험 확인하기'}).count()===1,'Simplified INJE evidence heading missing');
+    assert(await page.locator('#resumeGate .miniCard').count()===3,'INJE evidence gate should contain three summaries');
+    assert((await page.locator('#resumeGate').innerText()).includes('불러온 경험 근거'),'Imported evidence summary missing');
+    assert((await page.locator('#resumeGate').innerText()).includes('앞에서 확인한 경험을 불러왔습니다.'),'STEP 3 verified experience was not reused');
+    assert(await page.locator('[data-resume-template]').count()===3,'Three resume templates are required');
+    assert(await page.locator('[data-application-mode="targeted"]').count()===1,'Targeted application mode missing');
+    await page.locator('[data-application-mode="general"]').click();
+    assert((await page.locator('#resumeTargetMode').innerText()).includes('일반 이력서 작성'),'General mode notice missing');
+    assert(await page.locator('[data-resume-bind="targetCompany"]').count()===0,'General mode must not demand employer');
+    await page.locator('#refreshResumePreview').click();
+    assert(!(await page.locator('#resumeA4Preview').innerText()).includes('브랜드 마케팅'),'General resume leaked previously selected JD job');
+    await page.locator('[data-application-mode="targeted"]').click();
+    await page.locator('[data-resume-bind="targetCompany"]').fill('테스트기업');
+    await page.locator('[data-resume-bind="targetJDText"]').fill('고객 데이터 분석 업무');
+    await page.locator('#previewResumeReviewPrompt').click();
+    const reviewPrompt=await page.locator('#resumeReviewPromptText').inputValue();
+    assert(reviewPrompt.includes('고객 데이터 분석 업무')&&reviewPrompt.includes('이력서 검토자'),'AI review prompt missing JD or review criteria');
+    assert(!reviewPrompt.includes('JF26-EDIT-DOC'),'AI review prompt must not expose user identity code');
+    await page.locator('#resumeReviewFeedback').fill('검토 결과: 활동기간 확인 필요');
+    await page.locator('[data-resume-template="ncs"]').click();
+    assert(await page.locator('#resumeReviewFeedback').inputValue()==='','Review feedback leaked across resume templates');
+    await page.locator('[data-resume-template="standard"]').click();
+    assert((await page.locator('#resumeReviewFeedback').inputValue()).includes('활동기간'),'Saved review feedback missing after template switch');
     await page.locator('[data-resume-bind="forms.standard.targetJob"]').fill('마케팅');
     await page.locator('[data-resume-template="ncs"]').click();
     await page.locator('[data-resume-template="standard"]').click();
     assert(await page.locator('[data-resume-bind="forms.standard.targetJob"]').inputValue()==='마케팅','Template switching erased manual entry');
+    await page.locator('#backToResumeForm').click();
+    await page.locator('[data-resume-bind="forms.standard.targetJob"]').fill('디지털 마케팅');
+    await page.locator('#redoResumeReview').click();
+    const secondPrompt=await page.locator('#resumeReviewPromptText').inputValue();
+    assert(secondPrompt.includes('디지털 마케팅'),'AI re-review did not include student-edited resume');
+    assert((await page.locator('#resumeReviewRoundStatus').innerText()).includes('2회'),'Second AI review was not counted');
+    assert(await page.locator('#resumeReviewFeedback').inputValue()==='','Old review feedback was not separated from new review');
+    await page.locator('#resumeReviewHistory summary').click();
+    assert((await page.locator('#resumeReviewHistory').innerText()).includes('활동기간 확인 필요'),'Previous review feedback history was lost');
+    await page.locator('#resumeReviewFeedback').fill('2차 검토 결과: 수정 사항 확인 완료');
+    await page.locator('#goToResumePdf').click();
+    assert(await page.locator('#printResumeOnly').count()===1,'Optional PDF control missing');
+    assert((await page.locator('#resumeReviewRoundStatus').innerText()).includes('2회'),'PDF choice incorrectly changed AI review state');
 
     await page.selectOption('#assetId','asset1');
     await page.selectOption('#section',{label:'프로젝트'});
@@ -61,7 +97,13 @@ for(const width of [1280,390]){
 
     await page.reload({waitUntil:'networkidle'});
     await page.locator('#resumeTemplateLab').waitFor();
-    assert(await page.locator('[data-resume-bind="forms.standard.targetJob"]').inputValue()==='마케팅','Resume state lost on reload');
+    assert(await page.locator('[data-resume-bind="forms.standard.targetJob"]').inputValue()==='디지털 마케팅','Student-edited resume lost on reload');
+    assert(await page.locator('[data-resume-bind="targetCompany"]').inputValue()==='테스트기업','Target company lost on reload');
+    assert((await page.locator('#resumeReviewFeedback').inputValue()).includes('2차 검토'),'Second review feedback lost on reload');
+    assert((await page.locator('#resumeReviewRoundStatus').innerText()).includes('2회'),'Re-review history did not survive reload');
+    await page.locator('#resumeReviewHistory summary').click();
+    assert((await page.locator('#resumeReviewHistory').innerText()).includes('활동기간 확인 필요'),'First review feedback not preserved on reload');
+    assert((await page.locator('[data-resume-bind="targetJDText"]').inputValue()).includes('고객 데이터 분석 업무'),'Target JD text lost on reload');
     const oldAssessment=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).assessments.experienceCompetency.experiences[0].action,key);
     assert(oldAssessment==='고객 리뷰 30건을 분류했다.','Upstream experience overwritten');
 
@@ -97,6 +139,23 @@ for(const width of [1280,390]){
     await page.reload({waitUntil:'networkidle'});
     await page.locator('#portfolioPrint').waitFor();
     assert((await page.locator('#portfolioPrint').innerText()).includes('기준별로 직접 분류했습니다.'),'Edited cover final not forwarded to portfolio');
+    await page.evaluate(key=>{
+      const state=JSON.parse(localStorage.getItem(key));
+      state.activeStep=7;
+      state.artifacts.jdAnalyzer={postings:[],selectedId:''};
+      state.artifacts.careerAssets={assets:[]};
+      state.artifacts.resumeLab={items:[],forms:{standard:{},ncs:{},blind:{}},optionalDocument:{type:'none',experience:{},career:{}}};
+      localStorage.setItem(key,JSON.stringify(state));
+    },key);
+    await page.reload({waitUntil:'networkidle'});
+    await page.locator('#resumeTemplateLab').waitFor();
+    assert((await page.locator('#resumeTargetMode').innerText()).includes('일반 이력서 작성'),'General mode without JD must work');
+    await page.locator('[data-resume-bind="forms.standard.nameKo"]').fill('일반 학생');
+    await page.locator('#refreshResumePreview').click();
+    assert((await page.locator('#resumeA4Preview').innerText()).includes('일반 학생'),'Resume PDF preview without JD or career assets failed');
+    await page.locator('#previewResumeReviewPrompt').click();
+    assert((await page.locator('#resumeReviewPromptText').inputValue()).includes('기업·직무 미지정 일반형'),'General AI review prompt missing');
+    assert(!(await page.locator('#resumeReviewPromptText').inputValue()).includes('일반 학생'),'AI prompt must not include name');
     assert(errors.length===0,'Browser error: '+errors.join(' | '));
     console.log('PASS INJE STEP 8-9 editable documents '+width+'px');
   }catch(e){failed=true;console.error('FAIL '+width+'px '+(e.stack||e));}
