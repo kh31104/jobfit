@@ -51,6 +51,19 @@ for(const width of [1280,390]){
     await page.locator('[data-resume-template="ncs"]').click();
     await page.locator('[data-resume-template="standard"]').click();
     assert(await page.locator('[data-resume-bind="forms.standard.targetJob"]').inputValue()==='마케팅','Template switching erased manual entry');
+    await page.locator('#backToResumeForm').click();
+    await page.locator('[data-resume-bind="forms.standard.targetJob"]').fill('디지털 마케팅');
+    await page.locator('#redoResumeReview').click();
+    const secondPrompt=await page.locator('#resumeReviewPromptText').inputValue();
+    assert(secondPrompt.includes('디지털 마케팅'),'AI re-review did not include student-edited resume');
+    assert((await page.locator('#resumeReviewRoundStatus').innerText()).includes('2회'),'Second AI review was not counted');
+    assert(await page.locator('#resumeReviewFeedback').inputValue()==='','Old review feedback was not separated from new review');
+    await page.locator('#resumeReviewHistory summary').click();
+    assert((await page.locator('#resumeReviewHistory').innerText()).includes('활동기간 확인 필요'),'Previous review feedback history was lost');
+    await page.locator('#resumeReviewFeedback').fill('2차 검토 결과: 수정 사항 확인 완료');
+    await page.locator('#goToResumePdf').click();
+    assert(await page.locator('#printResumeOnly').count()===1,'Optional PDF control missing');
+    assert((await page.locator('#resumeReviewRoundStatus').innerText()).includes('2회'),'PDF choice incorrectly changed AI review state');
 
     await page.selectOption('#assetId','asset1');
     await page.selectOption('#section',{label:'프로젝트'});
@@ -84,9 +97,12 @@ for(const width of [1280,390]){
 
     await page.reload({waitUntil:'networkidle'});
     await page.locator('#resumeTemplateLab').waitFor();
-    assert(await page.locator('[data-resume-bind="forms.standard.targetJob"]').inputValue()==='마케팅','Resume state lost on reload');
+    assert(await page.locator('[data-resume-bind="forms.standard.targetJob"]').inputValue()==='디지털 마케팅','Student-edited resume lost on reload');
     assert(await page.locator('[data-resume-bind="targetCompany"]').inputValue()==='테스트기업','Target company lost on reload');
-    assert((await page.locator('#resumeReviewFeedback').inputValue()).includes('활동기간'),'AI review feedback lost on reload');
+    assert((await page.locator('#resumeReviewFeedback').inputValue()).includes('2차 검토'),'Second review feedback lost on reload');
+    assert((await page.locator('#resumeReviewRoundStatus').innerText()).includes('2회'),'Re-review history did not survive reload');
+    await page.locator('#resumeReviewHistory summary').click();
+    assert((await page.locator('#resumeReviewHistory').innerText()).includes('활동기간 확인 필요'),'First review feedback not preserved on reload');
     assert((await page.locator('[data-resume-bind="targetJDText"]').inputValue()).includes('고객 데이터 분석 업무'),'Target JD text lost on reload');
     const oldAssessment=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).assessments.experienceCompetency.experiences[0].action,key);
     assert(oldAssessment==='고객 리뷰 30건을 분류했다.','Upstream experience overwritten');
