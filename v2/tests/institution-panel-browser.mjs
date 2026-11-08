@@ -8,7 +8,8 @@ let requests=0;
 async function smoke(viewport){
   const context=await browser.newContext({viewport});
   const page=await context.newPage();
-  const errors=[];
+  const errors=[],failed=[];
+  page.on('requestfailed',r=>failed.push({method:r.method(),url:r.url().slice(0,180),reason:r.failure()?.errorText}));
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto('http://127.0.0.1:'+port+'/v2/tests/fixtures/institution-panel.html',{waitUntil:'networkidle'});
   await page.locator('#jf7-company').fill('삼성전자');
@@ -55,7 +56,12 @@ async function smoke(viewport){
     return route.fulfill({status:422,contentType:'application/json',body:'{"error":"school_code_mismatch"}'});
   });
   await page.getByRole('button',{name:'공식자료 조회'}).click();
-  assert.equal(await page.getByRole('button',{name:'이 대학 선택'}).count(),2);
+  const choiceCount=await page.getByRole('button',{name:'이 대학 선택'}).count();
+  if(choiceCount!==2)console.log('DEBUG',JSON.stringify({
+    status:await page.locator('#jf7OrgStatus').innerText(),
+    result:await page.locator('#jf7OfficialResults').innerText(),requests,failed,errors
+  }));
+  assert.equal(choiceCount,2);
   await page.getByRole('button',{name:'이 대학 선택'}).nth(1).click();
   assert.match(await page.locator('#jf7OfficialResults').innerText(),/85.0/);
   await page.getByRole('button',{name:'빈 분석표 칸에 반영'}).click();
