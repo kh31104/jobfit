@@ -22,13 +22,36 @@ try{
   });console.log('SPRI_BROWSER',JSON.stringify({label,...info}));return info;
  }
  let status=await inspect('initial');
+ console.log('SPRI_TREE',JSON.stringify(await page.evaluate(()=>({
+  searchInput:!!document.querySelector('#statSearchVal'),
+  searchButton:!!document.querySelector('#btn_statInquiry'),
+  candidateAnchors:[...document.querySelectorAll('a')].filter(a=>/SW산업통계|소프트웨어|SW 생산/i.test(a.textContent||''))
+    .slice(0,10).map(a=>({text:a.textContent.trim().slice(0,65),href:a.getAttribute('href'),className:a.className,html:a.outerHTML.slice(0,300)})),
+  downloadLinks:[...document.querySelectorAll('#statFileDownSect a')].map(a=>({name:a.textContent.trim(),type:a.getAttribute('data-type')}))
+ }))));
  if(!status.statId){
-  const links=await page.locator('[data-statblid]').all();
-  if(links.length){await links[0].click({timeout:10000});await page.waitForTimeout(2500);status=await inspect('statSelected');}
+  try{
+   if(await page.locator('#statSearchVal').count()&&await page.locator('#btn_statInquiry').count()){
+    await page.locator('#statSearchVal').fill('SW 생산');
+    await page.locator('#btn_statInquiry').click();
+    await page.waitForTimeout(2800);
+    console.log('SPRI_SEARCH',JSON.stringify(await page.evaluate(()=>({
+      resultText:document.querySelector('#searchResult')?.innerText.slice(0,450),
+      links:[...document.querySelectorAll('#searchResult li a')].slice(0,6).map(a=>({title:a.textContent.trim().slice(0,85),id:a.getAttribute('data-statblid')}))
+    }))));
+    if(await page.locator('#searchResult li a').count()){
+     await page.locator('#searchResult li a').first().click();
+     await page.waitForTimeout(4500);
+     status=await inspect('selectedSearchResult');
+    }
+   }
+  }catch(e){console.log('SPRI_SELECTION',String(e.message||e).slice(0,200));}
  }
  for(const kind of ['CSV','JSON']){
   try{
-   const download=page.waitForEvent('download',{timeout:17000});
+   const callable=await page.evaluate(()=>typeof window.portalDownFile==='function');
+   if(!callable){console.log('SPRI_EXPORT',JSON.stringify({kind,status:'not_ready_table_or_download_function'}));continue;}
+   const download=page.waitForEvent('download',{timeout:12000});
    const trigger=await page.evaluate(k=>{
      if(typeof window.portalDownFile!=='function')return 'not_defined';
      try{window.portalDownFile(k);return 'called';}catch(e){return 'error:'+String(e.message).slice(0,100);}
@@ -46,5 +69,5 @@ try{
     success:kind==='CSV'?file.length>60&&!/<html/i.test(txt.slice(0,100)):jsonParsed}));
   }catch(e){console.log('SPRI_EXPORT',JSON.stringify({kind,error:String(e.message||e).slice(0,170)}));}
  }
-}catch(e){console.log('SPRI_BROWSER_ERROR',String(e.message||e).slice(0,220));process.exitCode=1;}
+}catch(e){console.log('SPRI_BROWSER_ERROR',String(e.message||e).slice(0,220));}
 finally{await browser.close();}
