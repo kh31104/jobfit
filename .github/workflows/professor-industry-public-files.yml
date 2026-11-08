@@ -1,0 +1,27 @@
+name: Professor isolated public Korean industry files live GET
+on:
+  pull_request:
+    paths:
+      - 'v2/tests/professor-industry-public-files.mjs'
+      - '.github/workflows/professor-industry-public-files.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  get-public-file:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check v2/tests/professor-industry-public-files.mjs
+      - name: Test no-login public file receipt from official data.go.kr
+        run: node v2/tests/professor-industry-public-files.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: isolated-public-industry-receipt-report
+          path: public-industry-probe/public-industry-receipt.json
+          retention-days: 3
