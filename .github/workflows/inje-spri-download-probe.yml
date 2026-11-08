@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'v2/tests/inje-spri-download-probe.mjs'
+      - 'v2/tests/inje-spri-export-inspection.mjs'
       - '.github/workflows/inje-spri-download-probe.yml'
   workflow_dispatch:
 permissions:
@@ -18,3 +19,4 @@ jobs:
           node-version: '22'
       - run: node --check v2/tests/inje-spri-download-probe.mjs
       - run: node v2/tests/inje-spri-download-probe.mjs
+      - run: node v2/tests/inje-spri-export-inspection.mjs
