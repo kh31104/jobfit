@@ -22,6 +22,14 @@ try{
   });console.log('SPRI_BROWSER',JSON.stringify({label,...info}));return info;
  }
  let status=await inspect('initial');
+ try{
+  const target=page.locator('a[name="SPRI_1_1_1"]');
+  if(await target.count()){
+   await target.click({timeout:12000});
+   await page.waitForTimeout(4200);
+   status=await inspect('clickedStatistic');
+  }
+ }catch(e){console.log('SPRI_SELECT_DIRECT',String(e.message||e).slice(0,150));}
  console.log('SPRI_TREE',JSON.stringify(await page.evaluate(()=>({
   searchInput:!!document.querySelector('#statSearchVal'),
   searchButton:!!document.querySelector('#btn_statInquiry'),
@@ -50,6 +58,7 @@ try{
  for(const kind of ['CSV','JSON']){
   try{
    const callable=await page.evaluate(()=>typeof window.portalDownFile==='function');
+   console.log('SPRI_EXPORT_STATUS',JSON.stringify({kind,currentUrl:page.url(),callable}));
    if(!callable){console.log('SPRI_EXPORT',JSON.stringify({kind,status:'not_ready_table_or_download_function'}));continue;}
    const download=page.waitForEvent('download',{timeout:12000});
    const trigger=await page.evaluate(k=>{
