@@ -105,9 +105,10 @@ $('clear').addEventListener('click',()=>{
  for(const key of Object.keys(slots))$(key).value='';
  msg('pestStatus','교수자 시험표만 비웠습니다.','success');
 });
+const wasAuthCallback=/(?:access_token|refresh_token|token_hash|code|error_code|error)=/.test(location.hash+location.search);
 msg('authStatus','교수자 로그인 상태 확인 중…');
 void captureAuthCallback().then(r=>{
  if(r?.ok||getSession())renderAuth();
- else if(r?.reason&&/인증 링크|인증 코드|인증 토큰|인증정보/.test(r.reason))msg('authStatus',r.reason,'error');
+ else if(wasAuthCallback&&r?.reason)msg('authStatus',r.reason,'error');
  else renderAuth();
 }).catch(()=>msg('authStatus','교수자 인증 완료 처리에 실패했습니다. 기존 로그인 화면에서 확인해 주세요.','error'));
