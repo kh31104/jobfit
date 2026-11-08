@@ -29,6 +29,35 @@ function blocks(xml,tag){
   const re=new RegExp('<'+tag+'(?:\\s[^>]*)?>([\\s\\S]*?)<\\/'+tag+'\\s*>','gi');
   return [...xml.matchAll(re)].map(x=>x[1]).slice(0,12);
 }
+// Classify upstream errors using only fixed messages. Never echo raw XML or keys.
+function diagnoseWork24Xml(raw){
+  const root=(String(raw).match(/<(?!\?|!)([a-zA-Z][a-zA-Z0-9_-]*)(?:\s|>)/)||[])[1]||'unknown';
+  const upstreamCode=(value(raw,'errorCode',32)||value(raw,'returnCode',32)||'').replace(/[^A-Za-z0-9_-]/g,'').slice(0,32)||null;
+  const message=value(raw,'error',350)||value(raw,'errorMsg',350)||value(raw,'message',350);
+  if(/개인회원/.test(message)&&/사용|이용|불가|제한/.test(message)){
+    return {ok:false,stage:'list',error:'work24_personal_member_restricted',errorCategory:'account_type',
+      upstreamRoot:root,upstreamCode,
+      note:'고용24가 개인회원의 해당 OPEN-API 이용을 제한했습니다. 승인된 키라도 기업회원으로 이용할 자격이 있는지 고용24 고객센터에 확인해야 합니다. 키나 학생 데이터 문제는 아닙니다.'};
+  }
+  if(/인증키|API.?키|승인|authkey|invalid.?key/i.test(message)){
+    return {ok:false,stage:'list',error:'work24_key_or_approval_rejected',errorCategory:'credential',
+      upstreamRoot:root,upstreamCode,
+      note:'고용24가 인증키 또는 API 이용 승인을 거절했습니다. 고용24 신청현황과 회원 유형을 확인해야 합니다.'};
+  }
+  if(/<html(?:\s|>)/i.test(raw)||/<!doctype html/i.test(raw)){
+    return {ok:false,stage:'list',error:'work24_returned_html',errorCategory:'upstream_html',
+      upstreamRoot:'html',upstreamCode,
+      note:'고용24에서 XML 대신 웹페이지를 반환했습니다. 고용24 보안 차단이나 일시적 서비스 문제일 수 있습니다.'};
+  }
+  if(message){
+    return {ok:false,stage:'list',error:'work24_xml_error',errorCategory:'upstream_error',
+      upstreamRoot:root,upstreamCode,
+      note:'고용24가 채용정보 목록 대신 오류를 반환했습니다. 오류 내용은 보안상 그대로 노출하지 않습니다. 신청 계정과 이용 가능 여부를 확인해야 합니다.'};
+  }
+  return {ok:false,stage:'list',error:'unexpected_xml_or_api_error',errorCategory:'unrecognized_xml',
+    upstreamRoot:root,upstreamCode,
+    note:'고용24 응답이 공식 채용정보 XML 형식과 다릅니다. XML 최상위 요소만 확인했습니다. 인증키와 응답 원문은 저장·반환하지 않습니다.'};
+}
 function detailLink(id){
   return 'https://www.work24.go.kr/wk/a/b/1500/empDetailAuthView.do?wantedAuthNo='+
     encodeURIComponent(id)+'&infoTypeCd=VALIDATION&infoTypeGroup=tb_workinfoworknet';
@@ -99,9 +128,7 @@ Deno.serve(async(req)=>{
   try{
     const raw=await fetchWork24('callOpenApiSvcInfo210L01.do',params);
     if(!/<wantedRoot(?:\s[^>]*)?>/i.test(raw)){
-      return json({ok:false,stage:'list',error:'unexpected_xml_or_api_error',
-        upstreamCode:value(raw,'errorCode',40)||value(raw,'returnCode',40)||null,
-        note:'고용24 응답 형식을 확인해야 합니다. 인증키는 반환하지 않습니다.'},502,origin);
+      return json(diagnoseWork24Xml(raw),502,origin);
     }
     const entries=blocks(raw,'wanted').map(xml=>{
       const id=value(xml,'wantedAuthNo',60);
