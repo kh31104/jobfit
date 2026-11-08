@@ -6,6 +6,8 @@ on:
       - 'v2/steps/step7Tables.js'
       - 'v2/institutionOfficialApi.js'
       - 'v2/tests/institution-official-routing.mjs'
+      - 'v2/tests/institution-panel-browser.mjs'
+      - 'v2/tests/fixtures/institution-panel.html'
       - 'supabase/functions/univ-alimi-faculty-pilot/index.ts'
       - '.github/workflows/university-alimi-smoke.yml'
   workflow_dispatch:
@@ -35,3 +37,21 @@ jobs:
           console.log(JSON.stringify({http:r.status,protected:r.status===401,error:String(payload?.code||'').slice(0,32)}));
           if(r.status!==401)process.exitCode=1;
           JS
+  browser-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium for desktop/mobile tests
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Run isolated STEP 7 browser smoke
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/jobfit-inje-source-panel.log 2>&1 &
+          server_pid=$!
+          trap 'kill $server_pid 2>/dev/null || true' EXIT
+          node v2/tests/institution-panel-browser.mjs
