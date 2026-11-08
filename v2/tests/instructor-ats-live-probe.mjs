@@ -34,7 +34,7 @@ function mapRecord(provider,j){
 function evidence(row){
   const role=row.title+' '+row.type;
   const intern=/\bintern(?:ship)?\b|인턴/i.test(role);
-  const entry=/\bnew[ -]?grad(?:uate)?\b|\bgraduate\b|\bentry[ -]?level\b|\bearly[ -]?career\b|\bjunior\b|신입/i.test(role);
+  const entry=/\bnew[ -]?grad(?:uate)?\b|\buniversity[ -]?grad(?:uate)?\b|\bcollege[ -]?grad(?:uate)?\b|\bgraduate\b|\bentry[ -]?level\b|\bearly[ -]?career\b|\bjunior\b|신입/i.test(role);
   return {...row,jdLength:row.jd.length,hasJD:row.jd.length>=80,
     hasTasksText:/responsibilit|what you.ll do|duties|your role|업무|담당|you will/i.test(row.jd),
     hasRequirementsText:/qualifications|requirements|what you need|experience|자격|우대/i.test(row.jd),
@@ -63,7 +63,14 @@ async function runOne(p){
       const rows=raw.filter(x=>p.name!=='Ashby'||x.isListed===true)
         .map(j=>evidence(mapRecord(p.name,j)));
       if(rows.length<10)throw Error('fewer_than_10_public_postings:'+rows.length);
-      const samples=rows.slice(0,10);
+      // Purposefully include up to three explicitly labeled internships and two entry-title cues.
+      // Counts in this 10-posting diagnostic sample are NOT prevalence estimates.
+      const highlighted=[
+        ...rows.filter(x=>x.classification==='intern_wording').slice(0,3),
+        ...rows.filter(x=>x.classification==='entry_wording').slice(0,2)
+      ];
+      const selected=new Set(highlighted.map(x=>x.url));
+      const samples=[...highlighted,...rows.filter(x=>!selected.has(x.url))].slice(0,10);
       const report={provider:p.name,board,endpoint,apiStatus:status,responseBytes:bytes,
         sourceRecordCount:raw.length,listedRecordCount:rows.length,
         checkedCount:samples.length,internWordingsInBoard:rows.filter(x=>x.classification==='intern_wording').length,
@@ -86,7 +93,7 @@ async function runOne(p){
 const results=[];
 for(const p of providers)results.push(await runOne(p));
 const report={runAt:new Date().toISOString(),testType:'live-unauthed-GET-no-user-data',
- method:'API order first 10 listed postings per provider; title/type keyword counts are heuristic not confirmation',
+ method:'Purposeful diagnostic sample: up to 3 internship cues and 2 entry-level title cues, then API-order fill to 10; NOT a prevalence or representativeness estimate',
  providerReports:results.map(x=>x.report)};
 fs.mkdirSync('ats-probe-output',{recursive:true});
 fs.writeFileSync('ats-probe-output/live-api-results.json',JSON.stringify(report,null,2)+'\n');
