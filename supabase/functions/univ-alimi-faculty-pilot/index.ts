@@ -65,7 +65,7 @@ Deno.serve(async req=>{
     return response({error:"invalid_school_or_kind"},400,origin);
   const currentYear=new Date().getUTCFullYear();
   if(!Number.isInteger(year)||year<2020||year>currentYear)return response({error:"invalid_year"},400,origin);
-  const ck=[school,kind,year].join(":");
+  const ck=[school,kind,year,providedSchoolId||"auto"].join(":");
   const c=cache.get(ck);
   if(c&&c.until>Date.now())return response({...c.data as object,cached:true},200,origin);
   const ip=(req.headers.get("x-forwarded-for")||req.headers.get("cf-connecting-ip")||"unknown").split(",")[0];
@@ -83,7 +83,7 @@ Deno.serve(async req=>{
   upstream.searchParams.set("svyYr",String(year));
   try{
     let schoolId=providedSchoolId;
-    if(!schoolId){
+    { // Always validate the chosen school ID against the official code lookup.
       // University names cannot be substituted for the required 'schlId' parameter.
       // Resolve the official ID first using the separate, publicly documented code API.
       const codeUrl=new URL(CODE_BASE);
@@ -117,7 +117,11 @@ Deno.serve(async req=>{
       const exact=codeRows.filter(x=>norm(schoolOf(x))===norm(school));
       const matches=exact.filter(x=>/^[A-Za-z0-9_-]{3,40}$/.test(String(x.schlId||"")));
       const unique=[...new Set(matches.map(x=>x.schlId))];
-      if(unique.length!==1){
+      if(providedSchoolId&&!unique.includes(providedSchoolId)){
+        return response({error:"school_code_mismatch",
+          guidance:"선택한 학교코드가 요청한 대학명 또는 공시연도와 일치하지 않습니다."},422,origin);
+      }
+      if(!providedSchoolId&&unique.length!==1){
         const candidates=unique.slice(0,8).map(id=>{
           const x=matches.find(item=>item.schlId===id)||{};
           return {schoolId:id,name:schoolOf(x),campus:String(x.clgcpDivNm||x.clgcpDivCd||x.campusDivNm||"").slice(0,70),
@@ -128,7 +132,7 @@ Deno.serve(async req=>{
           guidance:"복수 학교아이디가 검색되면 공시자료와 본교·분교 구분을 확인해 하나를 선택하세요.",
           source:"https://www.data.go.kr/data/15158963/openapi.do"},422,origin);
       }
-      schoolId=unique[0];
+      schoolId=providedSchoolId||unique[0];
     }
     upstream.searchParams.set("schlId",schoolId);
     let resp=await fetch(upstream,{method:"GET",redirect:"error",signal:AbortSignal.timeout(10000),
