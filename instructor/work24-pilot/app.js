@@ -115,7 +115,11 @@ $('probe').addEventListener('click',async()=>{
       if(response.status===401)throw Error('교수자 로그인 세션이 유효하지 않습니다. 이메일로 다시 로그인하세요. ('+code+')');
       if(response.status===403)throw Error('INJE2026 교수자 조회 권한이 아직 등록되지 않았습니다. ('+code+')');
       if(response.status===503)throw Error('Supabase 환경변수 또는 서버 설정을 확인하세요. ('+code+')');
-      throw Error('실제 API 조회 실패 (HTTP '+response.status+'): '+code);
+      // Show only pre-approved, server-authored diagnostic text; never expose upstream XML or auth keys.
+      const note=typeof body?.note==='string'?body.note.slice(0,260):'';
+      if(code==='work24_personal_member_restricted')
+        throw Error('고용24 개인회원 API 이용 제한이 확인되었습니다. '+note+' ('+code+')');
+      throw Error('실제 API 조회 실패 (HTTP '+response.status+'): '+code+(note?'\n'+note:''));
     }
     render(body);
     status('probeStatus','고용24 응답 수신 성공 · 목록 '+String(body.received)+

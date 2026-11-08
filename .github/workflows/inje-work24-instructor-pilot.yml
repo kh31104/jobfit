@@ -5,6 +5,7 @@ on:
       - 'instructor/work24-pilot/**'
       - 'supabase/functions/work24-recruit-pilot/**'
       - 'v2/tests/inje-work24-instructor-probe.mjs'
+      - 'v2/tests/work24-upstream-errors.mjs'
       - '.github/workflows/inje-work24-instructor-pilot.yml'
   push:
     branches: [main]
@@ -12,6 +13,7 @@ on:
       - 'instructor/work24-pilot/**'
       - 'supabase/functions/work24-recruit-pilot/**'
       - 'v2/tests/inje-work24-instructor-probe.mjs'
+      - 'v2/tests/work24-upstream-errors.mjs'
       - '.github/workflows/inje-work24-instructor-pilot.yml'
 permissions:
   contents: read
@@ -29,6 +31,8 @@ jobs:
           node --check instructor/work24-pilot/app.js
           node --check v2/tests/inje-work24-instructor-probe.mjs
           ! grep -qE '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}' supabase/functions/work24-recruit-pilot/index.ts
+      - name: Validate Work24 error classification without real keys
+        run: node v2/tests/work24-upstream-errors.mjs
       - name: Install WebKit and Chromium
         run: |
           npm install --no-save playwright@1.55.0
