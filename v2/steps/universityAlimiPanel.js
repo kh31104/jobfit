@@ -83,7 +83,11 @@ export function mountUniversityAlimiPanel(root){
           source_api_error:'제공기관 응답 오류입니다. 공식 API 승인·조회 조건을 확인하세요.',
           request_limit:'조회 요청이 많습니다. 잠시 후 다시 시도하세요.',
           university_api_secret_missing:'서버에 대학알리미 인증키가 등록되지 않았습니다.',
-          source_network_or_timeout:'공식 API와 연결되지 않았습니다. 다시 시도하세요.'
+          source_network_or_timeout:'공식 API와 연결되지 않았습니다. 다시 시도하세요.',
+          school_code_lookup_http_403:'대학 기본 정보 API 이용 권한을 확인해 주세요. 공공데이터포털에서 해당 API 활용신청이 필요할 수 있습니다.',
+          school_code_lookup_api_error:'대학 식별번호 조회가 거부되었습니다. 대학 기본 정보 API 승인 및 인증키를 확인하세요.',
+          school_code_not_found:'학교 식별번호를 찾지 못했습니다. 학교명과 공시연도를 확인하세요.',
+          school_code_ambiguous:'동일한 대학명이 여러 코드에 해당합니다. 대학 본교·분교 구분을 확인하세요.'
         };
         status.textContent=messages[out?.error]||'공식자료 조회에 실패했습니다. 오류코드: '+String(out?.error||api.status).slice(0,70);
         return;
