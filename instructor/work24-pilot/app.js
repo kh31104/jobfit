@@ -124,4 +124,10 @@ $('probe').addEventListener('click',async()=>{
     status('probeStatus',String(error.message||error),'error');
   }finally{btn.disabled=false;btn.textContent='실제 API 10건 조회';}
 });
-captureAuthCallback();authMessage();
+status('authStatus','로그인 완료 여부를 확인하고 있습니다.');
+void captureAuthCallback().then(result=>{
+  if(result?.ok)authMessage();
+  else if(result?.reason && (location.hash || location.search))status('authStatus',result.reason,'error');
+  else if(result?.reason && /인증 링크|인증 코드|인증 토큰/.test(result.reason))status('authStatus',result.reason,'error');
+  else authMessage();
+}).catch(()=>status('authStatus','로그인 완료 처리 중 오류가 발생했습니다. 새 로그인 링크로 다시 시도해 주세요.','error'));
