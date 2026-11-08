@@ -3,6 +3,7 @@
 const ALLOW="https://kh31104.github.io";
 const SOURCE="https://www.data.go.kr/data/15158678/openapi.do";
 const BASE="https://apis.data.go.kr/B340014/EducationResearchService/";
+const CODE_BASE="https://apis.data.go.kr/B340014/BasicInformationService_2/getUniversityCode";
 const OPS=Object.freeze({
   ensure:"getNoticeFullTimeFacultyEnsureRate",
   research:"getComparisonFullTimeFacultyResearchCrntSt"
@@ -57,6 +58,8 @@ Deno.serve(async req=>{
   if(u.searchParams.has("key")||u.searchParams.has("serviceKey"))return response({error:"do_not_send_secrets"},400,origin);
   const school=(u.searchParams.get("school")||"").trim();
   const kind=u.searchParams.get("kind")||"ensure";
+  const providedSchoolId=(u.searchParams.get("schoolId")||"").trim();
+  if(providedSchoolId&&!/^[A-Za-z0-9_-]{3,40}$/.test(providedSchoolId)) return response({error:"invalid_school_id"},400,origin);
   const year=Number(u.searchParams.get("year")||new Date().getUTCFullYear()-1);
   if(!/^[가-힣A-Za-z0-9()·.\- ]{2,48}$/.test(school)||!OPS[kind as keyof typeof OPS])
     return response({error:"invalid_school_or_kind"},400,origin);
@@ -78,8 +81,49 @@ Deno.serve(async req=>{
   upstream.searchParams.set("pageNo","1");
   upstream.searchParams.set("numOfRows","30");
   upstream.searchParams.set("svyYr",String(year));
-  upstream.searchParams.set("schlKrnNm",school);
   try{
+    let schoolId=providedSchoolId;
+    if(!schoolId){
+      // University names cannot be substituted for the required 'schlId' parameter.
+      // Resolve the official ID first using the separate, publicly documented code API.
+      const codeUrl=new URL(CODE_BASE);
+      codeUrl.searchParams.set("serviceKey",secret);
+      codeUrl.searchParams.set("pageNo","1");
+      codeUrl.searchParams.set("numOfRows","100");
+      codeUrl.searchParams.set("svyYr",String(year));
+      codeUrl.searchParams.set("schlKrnNm",school);
+      let codeResp=await fetch(codeUrl,{method:"GET",redirect:"error",signal:AbortSignal.timeout(10000),
+        headers:{"Accept":"application/xml,text/xml,*/*"}});
+      if(codeResp.status===403){
+        const errorBody=await codeResp.clone().text();
+        const alt=(Deno.env.get("JOB_ALIO_RECRUIT_API_KEY")||"").trim();
+        if(xmlValue(errorBody,"returnReasonCode")==="30"&&alt&&alt!==secret){
+          codeUrl.searchParams.set("serviceKey",alt);
+          codeResp=await fetch(codeUrl,{method:"GET",redirect:"error",signal:AbortSignal.timeout(10000),
+            headers:{"Accept":"application/xml,text/xml,*/*"}});
+        }
+      }
+      if(!codeResp.ok)return response({error:"school_code_lookup_http_"+codeResp.status,
+        guidance:"대학 기본 정보 API 활용승인과 인증키를 확인해 주세요.",
+        source:"https://www.data.go.kr/data/15158963/openapi.do"},422,origin);
+      const codeXml=(await codeResp.text()).slice(0,450000);
+      const codeResult=xmlValue(codeXml,"resultCode")||xmlValue(codeXml,"returnReasonCode");
+      if(codeResult&&!["0","00","200","000"].includes(codeResult))
+        return response({error:"school_code_lookup_api_error",resultCode:codeResult},422,origin);
+      const codeRows=rows(codeXml);
+      const norm=(x:string)=>x.toLowerCase().replace(/[\s()]/g,"");
+      const exact=codeRows.filter(x=>norm(schoolOf(x))===norm(school));
+      const matches=exact.filter(x=>/^[A-Za-z0-9_-]{3,40}$/.test(String(x.schlId||"")));
+      const unique=[...new Set(matches.map(x=>x.schlId))];
+      if(unique.length!==1){
+        return response({error:unique.length>1?"school_code_ambiguous":"school_code_not_found",
+          received:codeRows.length,matched:matches.length,
+          guidance:"대학명·공시연도를 확인하거나 학교아이디(schlId)를 직접 지정하세요.",
+          source:"https://www.data.go.kr/data/15158963/openapi.do"},422,origin);
+      }
+      schoolId=unique[0];
+    }
+    upstream.searchParams.set("schlId",schoolId);
     let resp=await fetch(upstream,{method:"GET",redirect:"error",signal:AbortSignal.timeout(10000),
       headers:{"Accept":"application/xml,text/xml,*/*"}});
     // A separate approved data.go.kr application may share a different service key.
@@ -124,13 +168,18 @@ Deno.serve(async req=>{
     const tagNames=[...new Set([...xml.matchAll(/<\/?(?:[\w-]+:)?([a-zA-Z][\w-]*)\b/g)].map(x=>x[1]))].slice(0,25);
     const xmlRoot=(xml.match(/<(?!\?|!)([A-Za-z_][\w:-]*)\b/)||[])[1]||"unknown";
     const norm=(x:string)=>x.toLowerCase().replace(/[\s()]/g,"");
-    const matches=all.filter(o=>schoolOf(o)&&norm(schoolOf(o))===norm(school)).slice(0,5);
+    const matches=all.filter(o=>{
+      const rowSchool=schoolOf(o);
+      if(rowSchool)return norm(rowSchool)===norm(school);
+      if(o.schlId)return String(o.schlId)===schoolId;
+      return true; // Official server filtered this response by the verified school ID.
+    }).slice(0,5);
     if(!matches.length){
       const error=all.length?"school_matching_unverified":"no_data_or_schema_unverified";
       return response({ok:false,error,school,year,kind,received:all.length,source:SOURCE,xmlRoot,tagNames,
         notice:"정확한 학교명이 포함된 응답을 확인하지 못했습니다. 다른 대학 자료를 섞지 않습니다."},422,origin);
     }
-    const result={ok:true,school,year,kind,rows:matches,
+    const result={ok:true,school,schoolId,year,kind,rows:matches,
       source:SOURCE,provider:"한국대학교육협의회 대학알리미",
       checked:false,
       notice:"API 원자료 미리보기입니다. 공시 기준연도와 항목 의미를 원문에서 대조하세요."};
