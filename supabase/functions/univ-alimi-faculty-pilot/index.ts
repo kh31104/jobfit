@@ -118,9 +118,14 @@ Deno.serve(async req=>{
       const matches=exact.filter(x=>/^[A-Za-z0-9_-]{3,40}$/.test(String(x.schlId||"")));
       const unique=[...new Set(matches.map(x=>x.schlId))];
       if(unique.length!==1){
+        const candidates=unique.slice(0,8).map(id=>{
+          const x=matches.find(item=>item.schlId===id)||{};
+          return {schoolId:id,name:schoolOf(x),campus:String(x.clgcpDivNm||x.clgcpDivCd||x.campusDivNm||"").slice(0,70),
+            location:String(x.regionNm||x.areaNm||x.locatNm||x.areaName||"").slice(0,70)};
+        });
         return response({error:unique.length>1?"school_code_ambiguous":"school_code_not_found",
-          received:codeRows.length,matched:matches.length,
-          guidance:"대학명·공시연도를 확인하거나 학교아이디(schlId)를 직접 지정하세요.",
+          candidates,received:codeRows.length,matched:matches.length,
+          guidance:"복수 학교아이디가 검색되면 공시자료와 본교·분교 구분을 확인해 하나를 선택하세요.",
           source:"https://www.data.go.kr/data/15158963/openapi.do"},422,origin);
       }
       schoolId=unique[0];
