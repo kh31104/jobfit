@@ -117,12 +117,17 @@ Deno.serve(async req=>{
     const code=xmlValue(xml,"resultCode")||xmlValue(xml,"returnCode")||xmlValue(xml,"code");
     if(code&&!["0","00","200","000"].includes(code))
       return response({error:"source_api_error",resultCode:code.slice(0,15),source:SOURCE},502,origin);
+    const authCode=xmlValue(xml,"returnReasonCode");
+    if(authCode)return response({error:"source_gateway_error",gatewayCode:authCode.slice(0,15),
+      gatewayType:xmlValue(xml,"returnAuthMsg").replace(/[^A-Za-z0-9_-]/g,"").slice(0,70)},502,origin);
     const all=rows(xml);
+    const tagNames=[...new Set([...xml.matchAll(/<\/?(?:[\w-]+:)?([a-zA-Z][\w-]*)\b/g)].map(x=>x[1]))].slice(0,25);
+    const xmlRoot=(xml.match(/<(?!\?|!)([A-Za-z_][\w:-]*)\b/)||[])[1]||"unknown";
     const norm=(x:string)=>x.toLowerCase().replace(/[\s()]/g,"");
     const matches=all.filter(o=>schoolOf(o)&&norm(schoolOf(o))===norm(school)).slice(0,5);
     if(!matches.length){
       const error=all.length?"school_matching_unverified":"no_data_or_schema_unverified";
-      return response({ok:false,error,school,year,kind,received:all.length,source:SOURCE,
+      return response({ok:false,error,school,year,kind,received:all.length,source:SOURCE,xmlRoot,tagNames,
         notice:"정확한 학교명이 포함된 응답을 확인하지 못했습니다. 다른 대학 자료를 섞지 않습니다."},422,origin);
     }
     const result={ok:true,school,year,kind,rows:matches,
