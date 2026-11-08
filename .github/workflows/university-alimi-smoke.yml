@@ -1,0 +1,57 @@
+name: INJE institution API contract checks
+on:
+  pull_request:
+    paths:
+      - 'v2/steps/institutionSourcesPanel.js'
+      - 'v2/steps/step7Tables.js'
+      - 'v2/institutionOfficialApi.js'
+      - 'v2/tests/institution-official-routing.mjs'
+      - 'v2/tests/institution-panel-browser.mjs'
+      - 'v2/tests/fixtures/institution-panel.html'
+      - 'supabase/functions/univ-alimi-faculty-pilot/index.ts'
+      - '.github/workflows/university-alimi-smoke.yml'
+  workflow_dispatch:
+jobs:
+  routing-and-auth-safety:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check browser module syntax
+        run: |
+          node --check v2/steps/institutionSourcesPanel.js
+          node --check v2/institutionOfficialApi.js
+          node --check v2/steps/step7Tables.js
+          node --check v2/steps/step6IndustryCompany.js
+      - name: Validate student-record preservation and institution routing
+        run: node v2/tests/institution-official-routing.mjs
+      - name: Ensure student APIs do not expose unauthenticated gateway
+        run: |
+          node --input-type=module <<'JS'
+          const u=new URL('https://hllnoriffbhzpyhpnvsf.supabase.co/functions/v1/univ-alimi-faculty-pilot');
+          u.searchParams.set('school','인제대학교');
+          u.searchParams.set('year','2025');
+          u.searchParams.set('kind','ensure');
+          const r=await fetch(u,{signal:AbortSignal.timeout(12000)});
+          const payload=await r.json();
+          console.log(JSON.stringify({http:r.status,protected:r.status===401,error:String(payload?.code||'').slice(0,32)}));
+          if(r.status!==401)process.exitCode=1;
+          JS
+  browser-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium for desktop/mobile tests
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Run isolated STEP 7 browser smoke
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/jobfit-inje-source-panel.log 2>&1 &
+          server_pid=$!
+          trap 'kill $server_pid 2>/dev/null || true' EXIT
+          node v2/tests/institution-panel-browser.mjs

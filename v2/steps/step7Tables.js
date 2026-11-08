@@ -1,6 +1,7 @@
 // INJE STEP 7 · editable PEST/5-forces and company/SWOT tables.
 // Additive schema. Existing industryCompany records and localStorage keys are not migrated or erased.
 import {activeTargetJobs,activeTargetCombos,renderStep7QuickStart,wireStep7QuickStart} from '../quickStart.js?v=1';
+import {mountInstitutionSourcePanel} from './institutionSourcesPanel.js?v=1';
 
 const INDUSTRY = [
   ['workplaces','직무별 근무처 유형'],['employers','대표 기관·기업군'],['jobTasks','그곳에서 하는 일'],['entryPaths','진입·채용 경로'],
@@ -231,7 +232,7 @@ export function renderInjeStep7Tables(ctx,openLegacy){
     '<div class="actions"><button id="jf7LoadEarlier" type="button" class="btn outline">앞 STEP 정보 불러오기</button>'+
     '<button id="jf7Manual" type="button" class="btn outline">새 목표 직접 입력</button></div>'+
     '<p class="help" id="jf7Missing">정보가 부족한 경우 프롬프트가 필요한 질문을 먼저 하도록 안내합니다.</p></div>'+
-    renderPart('industry',d)+renderPart('company',d)+
+    renderPart('industry',d)+'<div id="jf7InstitutionSources"></div>'+renderPart('company',d)+
     '<div class="actions"><button class="btn primary" id="jf7Finish" type="button">STEP 7 표 저장 · STEP 8 연계</button>'+
     '<button class="btn secondary" id="jf7Next" type="button">STEP 8 Resume Lab →</button>'+
     '<button class="btn outline" id="jf7Legacy" type="button">이전 산업·기업분석 기록 보기</button></div>'+
@@ -346,5 +347,6 @@ export function renderInjeStep7Tables(ctx,openLegacy){
   });
   q('jf7Legacy').addEventListener('click',()=>{if(typeof openLegacy==='function')openLegacy()});
   wireStep7QuickStart(ctx,{onDone:()=>ctx.navigate(6)});
+  mountInstitutionSourcePanel(root);
   setMissing();updateHints('industry');updateHints('company');
 }
