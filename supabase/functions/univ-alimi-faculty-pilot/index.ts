@@ -82,7 +82,19 @@ Deno.serve(async req=>{
   try{
     const resp=await fetch(upstream,{method:"GET",redirect:"error",signal:AbortSignal.timeout(10000),
       headers:{"Accept":"application/xml,text/xml,*/*"}});
-    if(!resp.ok)return response({error:"source_http_"+resp.status,source:SOURCE},502,origin);
+    if(!resp.ok){
+      // Return only a classified response code. Never return the credential or raw response.
+      const failureBody=(await resp.text()).slice(0,15000);
+      const gatewayCode=xmlValue(failureBody,"returnReasonCode")||
+        xmlValue(failureBody,"resultCode")||xmlValue(failureBody,"code");
+      const gatewayType=xmlValue(failureBody,"returnAuthMsg")||
+        xmlValue(failureBody,"errMsg");
+      const bodyType=/<(?:!DOCTYPE|html|HTML)/.test(failureBody)?"html":
+        /<\?xml|<OpenAPI_ServiceResponse|<response/.test(failureBody)?"xml":"other";
+      return response({error:"source_http_"+resp.status,source:SOURCE,
+        gatewayCode:gatewayCode.slice(0,15),gatewayType:gatewayType.replace(/[^A-Za-z0-9_-]/g,"").slice(0,70),
+        bodyType,credentialLooksEncoded:secret.includes("%")},502,origin);
+    }
     if(Number(resp.headers.get("content-length")||0)>450000)return response({error:"source_response_too_large"},502,origin);
     const xml=await resp.text();
     if(xml.length>450000)return response({error:"source_response_too_large"},502,origin);
