@@ -87,7 +87,9 @@ Deno.serve(async req=>{
       // University names cannot be substituted for the required 'schlId' parameter.
       // Resolve the official ID first using the separate, publicly documented code API.
       const codeUrl=new URL(CODE_BASE);
-      codeUrl.searchParams.set("serviceKey",secret);
+      // The Basic Information dataset can have a separate approved application key.
+      const basicKey=(Deno.env.get("UNIV_ALIMI_BASIC_API_KEY")||secret).trim();
+      codeUrl.searchParams.set("serviceKey",basicKey);
       codeUrl.searchParams.set("pageNo","1");
       codeUrl.searchParams.set("numOfRows","100");
       codeUrl.searchParams.set("svyYr",String(year));
