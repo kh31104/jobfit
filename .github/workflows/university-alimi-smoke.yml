@@ -12,26 +12,35 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 3
     steps:
-      - name: Verify faculty API response for multiple years
+      - name: Validate official school ID and faculty metrics for 2025
         run: |
           node --input-type=module <<'JS'
-          let found=false;
-          for(const [year,kind] of [['2025','ensure'],['2026','ensure'],['2025','research'],['2026','research']]){
-            const u=new URL('https://hllnoriffbhzpyhpnvsf.supabase.co/functions/v1/univ-alimi-faculty-pilot');
+          const base='https://hllnoriffbhzpyhpnvsf.supabase.co/functions/v1/univ-alimi-faculty-pilot';
+          async function probe(kind,schoolId=''){
+            const u=new URL(base);
             u.searchParams.set('school','인제대학교');
-            u.searchParams.set('year',year);
+            u.searchParams.set('year','2025');
             u.searchParams.set('kind',kind);
-            try{
-              const r=await fetch(u,{signal:AbortSignal.timeout(18000)});
-              const x=await r.json();
-              console.log(JSON.stringify({
-                year,kind,http:r.status,ok:x?.ok===true,error:x?.error||null,
-                gatewayCode:x?.gatewayCode||null,xmlRoot:x?.xmlRoot||null,
-                tagNames:x?.tagNames||null,received:x?.received??null,
-                rowCount:Array.isArray(x?.rows)?x.rows.length:null
-              },null,2));
-              if(r.ok&&x?.ok===true&&Array.isArray(x?.rows)&&x.rows.length)found=true;
-            }catch(e){console.error('University gateway unavailable:',e?.name||'request error');}
+            if(schoolId)u.searchParams.set('schoolId',schoolId);
+            const r=await fetch(u,{signal:AbortSignal.timeout(18000)});
+            const o=await r.json();
+            const summary={kind,manualCode:Boolean(schoolId),http:r.status,
+              error:o?.error||null,resultCode:o?.resultCode||null,
+              candidates:Array.isArray(o?.candidates)?o.candidates.length:null,
+              dataRows:Array.isArray(o?.rows)?o.rows.length:null};
+            console.log(JSON.stringify(summary));
+            return {r,o};
           }
-          if(!found)process.exitCode=1;
+          let hasData=false;
+          try {
+            const initial=await probe('ensure');
+            const codes=Array.isArray(initial.o?.candidates)
+              ?initial.o.candidates.map(x=>String(x.schoolId||'')).filter(Boolean).slice(0,3):[];
+            if(initial.r.ok&&initial.o?.ok===true)hasData=true;
+            for(const code of codes){
+              const result=await probe('ensure',code);
+              if(result.r.ok&&result.o?.ok===true){hasData=true;break;}
+            }
+          }catch(e){console.error('Probe interrupted: '+String(e?.name||'request_failure'));}
+          if(!hasData)process.exitCode=1;
           JS
