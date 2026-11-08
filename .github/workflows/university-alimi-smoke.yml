@@ -1,46 +1,37 @@
-name: INJE university Alimi API smoke
+name: INJE institution API contract checks
 on:
   pull_request:
     paths:
-      - 'v2/universityAlimiApi.js'
-      - 'v2/steps/universityAlimiPanel.js'
+      - 'v2/steps/institutionSourcesPanel.js'
+      - 'v2/steps/step7Tables.js'
+      - 'v2/institutionOfficialApi.js'
+      - 'v2/tests/institution-official-routing.mjs'
       - 'supabase/functions/univ-alimi-faculty-pilot/index.ts'
       - '.github/workflows/university-alimi-smoke.yml'
   workflow_dispatch:
 jobs:
-  faculty-api:
+  routing-and-auth-safety:
     runs-on: ubuntu-24.04
-    timeout-minutes: 3
+    timeout-minutes: 4
     steps:
-      - name: Validate official school ID and faculty metrics for 2025
+      - uses: actions/checkout@v4
+      - name: Check browser module syntax
+        run: |
+          node --check v2/steps/institutionSourcesPanel.js
+          node --check v2/institutionOfficialApi.js
+          node --check v2/steps/step7Tables.js
+          node --check v2/steps/step6IndustryCompany.js
+      - name: Validate student-record preservation and institution routing
+        run: node v2/tests/institution-official-routing.mjs
+      - name: Ensure student APIs do not expose unauthenticated gateway
         run: |
           node --input-type=module <<'JS'
-          const base='https://hllnoriffbhzpyhpnvsf.supabase.co/functions/v1/univ-alimi-faculty-pilot';
-          async function probe(kind,schoolId=''){
-            const u=new URL(base);
-            u.searchParams.set('school','인제대학교');
-            u.searchParams.set('year','2025');
-            u.searchParams.set('kind',kind);
-            if(schoolId)u.searchParams.set('schoolId',schoolId);
-            const r=await fetch(u,{signal:AbortSignal.timeout(18000)});
-            const o=await r.json();
-            const summary={kind,manualCode:Boolean(schoolId),http:r.status,
-              error:o?.error||null,resultCode:o?.resultCode||null,
-              candidates:Array.isArray(o?.candidates)?o.candidates.length:null,
-              dataRows:Array.isArray(o?.rows)?o.rows.length:null};
-            console.log(JSON.stringify(summary));
-            return {r,o};
-          }
-          let hasData=false;
-          try {
-            const initial=await probe('ensure');
-            const codes=Array.isArray(initial.o?.candidates)
-              ?initial.o.candidates.map(x=>String(x.schoolId||'')).filter(Boolean).slice(0,3):[];
-            if(initial.r.ok&&initial.o?.ok===true)hasData=true;
-            for(const code of codes){
-              const result=await probe('ensure',code);
-              if(result.r.ok&&result.o?.ok===true){hasData=true;break;}
-            }
-          }catch(e){console.error('Probe interrupted: '+String(e?.name||'request_failure'));}
-          if(!hasData)process.exitCode=1;
+          const u=new URL('https://hllnoriffbhzpyhpnvsf.supabase.co/functions/v1/univ-alimi-faculty-pilot');
+          u.searchParams.set('school','인제대학교');
+          u.searchParams.set('year','2025');
+          u.searchParams.set('kind','ensure');
+          const r=await fetch(u,{signal:AbortSignal.timeout(12000)});
+          const payload=await r.json();
+          console.log(JSON.stringify({http:r.status,protected:r.status===401,error:String(payload?.code||'').slice(0,32)}));
+          if(r.status!==401)process.exitCode=1;
           JS
