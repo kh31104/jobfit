@@ -56,7 +56,7 @@ Deno.serve(async req=>{
   if(origin&&origin!==ALLOW)return response({error:"origin_not_allowed"},403);
   if(req.method!=="GET")return response({error:"get_only"},405,origin);
   // Valid JWTs alone are not authorization. Require an approved INJE2026 instructor.
-  const token=String(req.headers.get("authorization")||"").match(/^Bearer\\s+([\\w.\\-_]+)$/i)?.[1];
+  const token=String(req.headers.get("authorization")||"").match(/^Bearer\s+([A-Za-z0-9_.-]+)$/i)?.[1];
   if(!token)return response({error:"instructor_login_required"},401,origin);
   const projectUrl=Deno.env.get("SUPABASE_URL")||"";
   const serviceRole=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
