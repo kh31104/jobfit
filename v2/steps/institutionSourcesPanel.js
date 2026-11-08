@@ -62,7 +62,7 @@ export function mountInstitutionSourcePanel(root){
     '<p class="help">분석 대상 기관에 따라 공식자료를 선택합니다. 조회만으로 STEP 7 표가 바뀌지 않습니다.</p>'+
     '<div class="grid4 jf7OfficialFields">'+
     '<div class="field"><label for="jf7OrgType">기관 유형</label><select id="jf7OrgType" class="input"><option value="auto">자동 구분</option><option value="company">일반기업</option><option value="public">공공기관</option><option value="university">대학</option></select></div>'+
-    '<div class="field"><label for="jf7SourceYear">공시연도</label><select id="jf7SourceYear" class="input"><option>2025</option><option>2024</option><option>2023</option><option>2026</option></select></div>'+
+    '<div class="field" id="jf7YearField" hidden><label for="jf7SourceYear">공시연도</label><select id="jf7SourceYear" class="input"><option>2025</option><option>2024</option><option>2023</option><option>2026</option></select></div>'+
     '<div class="field" id="jf7DartField" hidden><label for="jf7CorpCode">DART 기업 고유번호 8자리</label><input class="input" id="jf7CorpCode" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" placeholder="예: 8자리" autocomplete="off"></div>'+
     '<div class="field" id="jf7IndicatorField" hidden><label for="jf7SourceIndicator">대학 조회 항목</label><select id="jf7SourceIndicator" class="input"><option value="ensure">전임교원 확보율</option><option value="research">전임교원 연구실적</option></select></div>'+
     '</div>'+
@@ -97,6 +97,7 @@ export function mountInstitutionSourcePanel(root){
     const route=officialRouteFor(currentType);
     const hasOrg=Boolean(name);
     query('jf7DartField').hidden=currentType!=='company';
+    query('jf7YearField').hidden=currentType!=='university';
     query('jf7IndicatorField').hidden=currentType!=='university';
     actions.replaceChildren();links.replaceChildren();
     if(!hasOrg){
