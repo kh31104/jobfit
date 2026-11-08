@@ -1,6 +1,6 @@
 // JOBFIT INJE STEP 7: additive, read-only university faculty/research lookup.
 // No changes to saved students' artifacts, no direct access to API credentials.
-const API='https://hllnoriffbhzpyhpnvsf.supabase.co/functions/v1/univ-alimi-faculty-pilot';
+import {fetchUniversityAlimi} from '../universityAlimiApi.js?v=1';
 const SOURCE='https://www.data.go.kr/data/15158678/openapi.do';
 const LABELS={
   schlKrnNm:'학교명',schulNm:'학교명',schlNm:'학교명',
@@ -74,13 +74,9 @@ export function mountUniversityAlimiPanel(root){
     status.textContent='대학알리미 공공데이터를 조회하고 있습니다.';
     button.disabled=true;
     try{
-      const url=new URL(API);
-      url.searchParams.set('school',schoolName);
-      url.searchParams.set('year',year.value);
-      url.searchParams.set('kind',kind.value);
-      const r=await fetch(url.toString(),{method:'GET',headers:{'Accept':'application/json'},cache:'no-store',signal:AbortSignal.timeout(14000)});
-      const out=await r.json();
-      if(!r.ok||!out?.ok||!Array.isArray(out.rows)){
+      const api=await fetchUniversityAlimi({school:schoolName,year:year.value,kind:kind.value});
+      const out=api.body;
+      if(!api.ok||!out?.ok||!Array.isArray(out.rows)){
         const messages={
           school_matching_unverified:'요청한 대학과 일치하는 자료를 확인하지 못했습니다. 대학명 또는 연도를 바꿔보세요.',
           no_data_or_schema_unverified:'해당 연도 자료가 없거나 제공 형식 확인이 필요합니다. 원문에서 확인하세요.',
@@ -89,7 +85,7 @@ export function mountUniversityAlimiPanel(root){
           university_api_secret_missing:'서버에 대학알리미 인증키가 등록되지 않았습니다.',
           source_network_or_timeout:'공식 API와 연결되지 않았습니다. 다시 시도하세요.'
         };
-        status.textContent=messages[out?.error]||'공식자료 조회에 실패했습니다. 오류코드: '+String(out?.error||r.status).slice(0,70);
+        status.textContent=messages[out?.error]||'공식자료 조회에 실패했습니다. 오류코드: '+String(out?.error||api.status).slice(0,70);
         return;
       }
       status.textContent='대학알리미 공식자료 '+out.rows.length+'건 조회 · '+String(out.year)+'년 · 출처 원문 대조 전';
