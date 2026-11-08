@@ -71,7 +71,7 @@ Deno.serve(async req=>{
   if(prev.day!==day){prev.day=day;prev.daily=0;}
   prev.n++;prev.daily++;perIp.set(ip,prev);
   if(prev.n>6||prev.daily>25)return response({error:"request_limit"},429,origin);
-  const secret=Deno.env.get("UNIV_ALIMI_FACULTY_RESEARCH_API_KEY");
+  const secret=(Deno.env.get("UNIV_ALIMI_FACULTY_RESEARCH_API_KEY")||"").trim();
   if(!secret)return response({error:"university_api_secret_missing"},503,origin);
   const upstream=new URL(BASE+OPS[kind as keyof typeof OPS]);
   upstream.searchParams.set("serviceKey",secret);
@@ -80,8 +80,22 @@ Deno.serve(async req=>{
   upstream.searchParams.set("svyYr",String(year));
   upstream.searchParams.set("schlKrnNm",school);
   try{
-    const resp=await fetch(upstream,{method:"GET",redirect:"error",signal:AbortSignal.timeout(10000),
+    let resp=await fetch(upstream,{method:"GET",redirect:"error",signal:AbortSignal.timeout(10000),
       headers:{"Accept":"application/xml,text/xml,*/*"}});
+    // A separate approved data.go.kr application may share a different service key.
+    // Retry only once for an explicit unregistered-key response; never disclose either key.
+    let alternateTried=false;
+    if(resp.status===403){
+      const firstError=await resp.clone().text();
+      const firstCode=xmlValue(firstError,"returnReasonCode");
+      const alt=(Deno.env.get("JOB_ALIO_RECRUIT_API_KEY")||"").trim();
+      if(firstCode==="30"&&alt&&alt!==secret){
+        alternateTried=true;
+        upstream.searchParams.set("serviceKey",alt);
+        resp=await fetch(upstream,{method:"GET",redirect:"error",signal:AbortSignal.timeout(10000),
+          headers:{"Accept":"application/xml,text/xml,*/*"}});
+      }
+    }
     if(!resp.ok){
       // Return only a classified response code. Never return the credential or raw response.
       const failureBody=(await resp.text()).slice(0,15000);
@@ -93,7 +107,7 @@ Deno.serve(async req=>{
         /<\?xml|<OpenAPI_ServiceResponse|<response/.test(failureBody)?"xml":"other";
       return response({error:"source_http_"+resp.status,source:SOURCE,
         gatewayCode:gatewayCode.slice(0,15),gatewayType:gatewayType.replace(/[^A-Za-z0-9_-]/g,"").slice(0,70),
-        bodyType,credentialLooksEncoded:secret.includes("%")},502,origin);
+        bodyType,alternateTried,credentialLooksEncoded:secret.includes("%")},502,origin);
     }
     if(Number(resp.headers.get("content-length")||0)>450000)return response({error:"source_response_too_large"},502,origin);
     const xml=await resp.text();
