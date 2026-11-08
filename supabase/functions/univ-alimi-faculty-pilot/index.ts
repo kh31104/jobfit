@@ -1,3 +1,4 @@
+import {createClient} from "https://esm.sh/@supabase/supabase-js@2.57.4";
 // JOBFIT INJE STEP 7 university faculty/research public-data gateway.
 // Read-only, no student records. Secret remains exclusively on the server.
 const ALLOW="https://kh31104.github.io";
@@ -49,11 +50,26 @@ const schoolOf=(o:Record<string,string>)=>o.schlKrnNm||o.schulNm||o.schulName||o
 Deno.serve(async req=>{
   const origin=req.headers.get("origin")||"";
   if(req.method==="OPTIONS")return origin===ALLOW?new Response(null,{status:204,headers:{
-    "Access-Control-Allow-Origin":origin,"Access-Control-Allow-Methods":"GET, OPTIONS","Access-Control-Allow-Headers":"content-type",
+    "Access-Control-Allow-Origin":origin,"Access-Control-Allow-Methods":"GET, OPTIONS","Access-Control-Allow-Headers":"authorization, apikey, content-type",
     "Access-Control-Max-Age":"600"
   }}):response({error:"origin_not_allowed"},403);
   if(origin&&origin!==ALLOW)return response({error:"origin_not_allowed"},403);
   if(req.method!=="GET")return response({error:"get_only"},405,origin);
+  // Valid JWTs alone are not authorization. Require an approved INJE2026 instructor.
+  const token=String(req.headers.get("authorization")||"").match(/^Bearer\\s+([\\w.\\-_]+)$/i)?.[1];
+  if(!token)return response({error:"instructor_login_required"},401,origin);
+  const projectUrl=Deno.env.get("SUPABASE_URL")||"";
+  const serviceRole=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
+  if(!projectUrl||!serviceRole)return response({error:"instructor_auth_not_configured"},503,origin);
+  const admin=createClient(projectUrl,serviceRole,{auth:{autoRefreshToken:false,persistSession:false}});
+  const {data:ident,error:authError}=await admin.auth.getUser(token);
+  if(authError||!ident?.user)return response({error:"invalid_instructor_session"},401,origin);
+  const {data:member,error:memberError}=await admin.from("research_instructors")
+    .select("cohort_id, research_cohorts!inner(cohort_code)")
+    .eq("user_id",ident.user.id).limit(20);
+  if(memberError||!Array.isArray(member)||
+     !member.some((x:any)=>x.research_cohorts?.cohort_code==="INJE2026"))
+    return response({error:"inje_instructor_permission_required"},403,origin);
   const u=new URL(req.url);
   if(u.searchParams.has("key")||u.searchParams.has("serviceKey"))return response({error:"do_not_send_secrets"},400,origin);
   const school=(u.searchParams.get("school")||"").trim();
