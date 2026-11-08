@@ -1,0 +1,28 @@
+name: Instructor magic-link redirect contract
+on:
+  pull_request:
+    paths:
+      - 'instructor/centralBackend.js'
+      - 'v2/tests/instructor-magiclink-redirect.mjs'
+      - '.github/workflows/instructor-magiclink-redirect.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'instructor/centralBackend.js'
+      - 'v2/tests/instructor-magiclink-redirect.mjs'
+      - '.github/workflows/instructor-magiclink-redirect.yml'
+permissions:
+  contents: read
+jobs:
+  magiclink-redirect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check browser module
+        run: node --check instructor/centralBackend.js
+      - name: Test exact redirect_to contract with mock fetch
+        run: node v2/tests/instructor-magiclink-redirect.mjs
