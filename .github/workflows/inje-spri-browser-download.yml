@@ -1,0 +1,23 @@
+name: Professor SPRi actual CSV JSON export in browser
+on:
+  pull_request:
+    paths:
+      - 'v2/tests/inje-spri-browser-download.mjs'
+      - '.github/workflows/inje-spri-browser-download.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-spri-export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check v2/tests/inje-spri-browser-download.mjs
+      - run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - run: node v2/tests/inje-spri-browser-download.mjs
