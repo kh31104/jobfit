@@ -107,5 +107,10 @@ $('pilotLogin').addEventListener('click',async()=>{
   catch(e){authStatus('로그인 요청 실패: '+String(e.message||e));}
 });
 $('pilotLogout').addEventListener('click',async()=>{await signOutInstructor();authStatus('로그아웃했습니다.');});
-captureAuthCallback();authStatus(getSession()?'교수자 로그인 세션이 있습니다. 공식자료 호출 시 권한을 추가 확인합니다.':'미로그인 · 샘플 테스트는 바로 가능');
+authStatus('교수자 로그인 완료 여부를 확인하고 있습니다.');
+void captureAuthCallback().then(result=>{
+  if(result?.ok)authStatus('교수자 로그인 세션이 있습니다. 공식자료 호출 시 권한을 추가 확인합니다.');
+  else if(result?.reason && /인증 링크|인증 코드|인증 토큰/.test(result.reason))authStatus(result.reason);
+  else authStatus('미로그인 · 샘플 테스트는 바로 가능');
+}).catch(()=>authStatus('로그인 완료 처리 중 오류가 발생했습니다.'));
 render();showPreview(null);
