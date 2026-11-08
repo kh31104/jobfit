@@ -44,7 +44,7 @@ concurrency:
 
 jobs:
   syntax-and-contracts:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -190,7 +190,7 @@ jobs:
 
   browser-regression:
     needs: syntax-and-contracts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -269,7 +269,7 @@ jobs:
     needs:
       - syntax-and-contracts
       - browser-regression
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Mark exact tested SHA ready for production
         run: |
@@ -281,7 +281,7 @@ jobs:
     needs:
       - syntax-and-contracts
       - browser-regression
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
