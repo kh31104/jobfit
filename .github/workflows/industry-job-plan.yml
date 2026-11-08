@@ -1,0 +1,30 @@
+name: INJE professor industry/job relevance checks
+on:
+  pull_request:
+    paths:
+      - 'instructor/industry-public-pilot/**'
+      - 'supabase/functions/industry-public-pilot/**'
+      - 'v2/tests/industry-job-plan.mjs'
+      - '.github/workflows/industry-job-plan.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'instructor/industry-public-pilot/**'
+      - 'supabase/functions/industry-public-pilot/**'
+      - 'v2/tests/industry-job-plan.mjs'
+      - '.github/workflows/industry-job-plan.yml'
+permissions:
+  contents: read
+jobs:
+  industry-plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check instructor/industry-public-pilot/app.js
+      - run: node --check instructor/industry-public-pilot/plan.mjs
+      - run: node --check supabase/functions/industry-public-pilot/plan.mjs
+      - run: node v2/tests/industry-job-plan.mjs

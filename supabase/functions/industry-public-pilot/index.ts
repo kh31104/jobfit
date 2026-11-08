@@ -1,6 +1,7 @@
 // Independent professor-only public industry CSV preview. No student DB/localStorage writes.
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 import {SOURCES,fetchPublicCsv,transform} from './lib.mjs';
+import {industryJobPlan,suggestedSource} from './plan.mjs';
 
 const ALLOW=new Set(['https://kh31104.github.io']);
 const CACHE=new Map();
@@ -44,7 +45,16 @@ Deno.serve(async(req)=>{
  const kind=String(input.kind||'');
  const source=SOURCES[kind];
  if(!source)return answer({error:'unsupported_source'},400,origin);
- const keyword=String(input.keyword||'').replace(/[<>\r\n]/g,'').trim();
+ const mode=input.mode==='guided'?'guided':'manual';
+ const industry=String(input.industry||'').trim();
+ const targetJob=String(input.targetJob||'').trim();
+ if(industry.length>70||targetJob.length>70)return answer({error:'industry_or_job_too_long'},400,origin);
+ const plan=mode==='guided'?industryJobPlan(industry,targetJob):null;
+ const selection=plan?suggestedSource(plan,kind):null;
+ if(mode==='guided'&&!selection){
+  return answer({error:'source_not_relevant',note:'선택한 산업·직무에 해당 자료를 추천하지 않습니다. 다른 출처를 선택하세요.'},422,origin);
+ }
+ const keyword=mode==='guided'?selection.keyword:String(input.keyword||'').replace(/[<>\r\n]/g,'').trim();
  if(keyword.length>40)return answer({error:'keyword_too_long'},400,origin);
  const now=Date.now(),userId=identity.user.id;
  const rate=TIMES.get(userId)||[];
@@ -63,6 +73,10 @@ Deno.serve(async(req)=>{
    ok:true,kind,source:{title:source.title,provider:source.provider,url:source.url,
      baseDate:source.baseDate,license:source.license,tableField:source.field},
    result:{matched:data.matched,shown:data.records.length,rows:data.records},
+   selection:{mode,industry:mode==='guided'?plan.industry:'',targetJob:mode==='guided'?plan.targetJob:'',
+     sector:mode==='guided'?plan.sectorLabel:'수동 조회',keyword,
+     level:selection?.level||'직접 선택',why:selection?.why||'사용자가 공개파일을 수동 선택한 결과입니다.',
+     uncovered:mode==='guided'?plan.uncovered:''},
    received:{bytes:item.bytes,at:item.receivedAt},queriedAt:new Date().toISOString(),
    caveats:['공개파일 기준일의 기록입니다. 현재 정책·모집상태가 아닙니다.',
      '산업 변화에서 직무 채용 증감으로 자동 추론하지 않습니다.',
