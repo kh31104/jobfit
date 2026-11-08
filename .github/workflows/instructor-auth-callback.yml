@@ -1,0 +1,35 @@
+name: Instructor auth callback regression
+on:
+  pull_request:
+    paths:
+      - 'instructor/centralBackend.js'
+      - 'instructor/work24-pilot/**'
+      - 'instructor/step7-pilot/**'
+      - 'v2/tests/instructor-auth-callback.mjs'
+      - '.github/workflows/instructor-auth-callback.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'instructor/centralBackend.js'
+      - 'instructor/work24-pilot/**'
+      - 'instructor/step7-pilot/**'
+      - 'v2/tests/instructor-auth-callback.mjs'
+      - '.github/workflows/instructor-auth-callback.yml'
+permissions:
+  contents: read
+jobs:
+  auth-callback:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify syntax
+        run: |
+          node --check instructor/centralBackend.js
+          node --check instructor/work24-pilot/app.js
+          node --check instructor/step7-pilot/app.js
+      - name: Verify email sign-in callback without sending credentials
+        run: node v2/tests/instructor-auth-callback.mjs
