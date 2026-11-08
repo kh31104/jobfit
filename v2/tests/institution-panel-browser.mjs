@@ -56,6 +56,7 @@ async function smoke(viewport){
     return route.fulfill({status:422,contentType:'application/json',body:'{"error":"school_code_mismatch"}'});
   });
   await page.getByRole('button',{name:'공식자료 조회'}).click();
+  await page.getByRole('button',{name:'이 대학 선택'}).first().waitFor({state:'visible',timeout:7000});
   const choiceCount=await page.getByRole('button',{name:'이 대학 선택'}).count();
   if(choiceCount!==2)console.log('DEBUG',JSON.stringify({
     status:await page.locator('#jf7OrgStatus').innerText(),
@@ -63,6 +64,7 @@ async function smoke(viewport){
   }));
   assert.equal(choiceCount,2);
   await page.getByRole('button',{name:'이 대학 선택'}).nth(1).click();
+  await page.waitForFunction(()=>document.querySelector('#jf7OfficialResults')?.textContent?.includes('85.0'),null,{timeout:7000});
   assert.match(await page.locator('#jf7OfficialResults').innerText(),/85.0/);
   await page.getByRole('button',{name:'빈 분석표 칸에 반영'}).click();
   assert.match(await page.locator('#jf7OrgStatus').innerText(),/원문을 직접 대조/);
