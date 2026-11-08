@@ -30,6 +30,12 @@ async function smoke(viewport){
   });
   await page.route(mockOrigin+'/functions/v1/*',async route=>{
     requests++;
+    if(route.request().method()==='OPTIONS'){
+      return route.fulfill({status:204,headers:{
+        'access-control-allow-origin':'*','access-control-allow-methods':'GET,POST,OPTIONS',
+        'access-control-allow-headers':'authorization,apikey,content-type'
+      }});
+    }
     const url=new URL(route.request().url());
     const schoolId=url.searchParams.get('schoolId');
     if(!schoolId){
