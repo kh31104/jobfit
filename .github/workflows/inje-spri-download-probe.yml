@@ -1,0 +1,20 @@
+name: Professor SPRi CSV JSON download discovery
+on:
+  pull_request:
+    paths:
+      - 'v2/tests/inje-spri-download-probe.mjs'
+      - '.github/workflows/inje-spri-download-probe.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  spri-public:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check v2/tests/inje-spri-download-probe.mjs
+      - run: node v2/tests/inje-spri-download-probe.mjs
