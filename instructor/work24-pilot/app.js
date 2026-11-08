@@ -1,4 +1,4 @@
-import {captureAuthCallback,getSession,requestMagicLink,signOutInstructor,instructorBackendStatus} from '../centralBackend.js';
+import {captureAuthCallback,getSession,requestMagicLink,signOutInstructor,instructorBackendStatus} from '../centralBackend.js?v=2';
 
 const $=id=>document.getElementById(id);
 const fn='/functions/v1/work24-recruit-pilot';
