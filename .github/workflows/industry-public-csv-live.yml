@@ -1,0 +1,22 @@
+name: INJE professor PEST 3 government CSV live test
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/industry-public-pilot/**'
+      - 'v2/tests/industry-public-csv-live.mjs'
+      - '.github/workflows/industry-public-csv-live.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  csv-verification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check supabase/functions/industry-public-pilot/lib.mjs
+      - name: Validate real CSV downloads and PEST transformation without any API keys
+        run: node v2/tests/industry-public-csv-live.mjs
