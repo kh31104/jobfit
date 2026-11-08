@@ -1,0 +1,35 @@
+name: INJE university Alimi API smoke
+on:
+  pull_request:
+    paths:
+      - 'v2/universityAlimiApi.js'
+      - 'v2/steps/universityAlimiPanel.js'
+      - 'supabase/functions/univ-alimi-faculty-pilot/index.ts'
+      - '.github/workflows/university-alimi-smoke.yml'
+  workflow_dispatch:
+jobs:
+  faculty-api:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Verify read-only faculty API (no secret in client)
+        run: |
+          node --input-type=module <<'JS'
+          const u=new URL('https://hllnoriffbhzpyhpnvsf.supabase.co/functions/v1/univ-alimi-faculty-pilot');
+          u.searchParams.set('school','인제대학교');
+          u.searchParams.set('year','2025');
+          u.searchParams.set('kind','ensure');
+          try{
+            const r=await fetch(u,{signal:AbortSignal.timeout(18000)});
+            const x=await r.json();
+            console.log(JSON.stringify({
+              http:r.status,ok:x?.ok===true,provider:x?.provider||null,
+              error:x?.error||null,resultCode:x?.resultCode||null,
+              rowCount:Array.isArray(x?.rows)?x.rows.length:null
+            },null,2));
+            if(!r.ok||x?.ok!==true||!Array.isArray(x.rows)||!x.rows.length)process.exitCode=1;
+          }catch(e){
+            console.error('University gateway unavailable:',e?.name||'request error');
+            process.exitCode=1;
+          }
+          JS
