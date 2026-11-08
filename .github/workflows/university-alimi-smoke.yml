@@ -25,6 +25,8 @@ jobs:
             console.log(JSON.stringify({
               http:r.status,ok:x?.ok===true,provider:x?.provider||null,
               error:x?.error||null,resultCode:x?.resultCode||null,
+              gatewayCode:x?.gatewayCode||null,gatewayType:x?.gatewayType||null,
+              bodyType:x?.bodyType||null,credentialLooksEncoded:x?.credentialLooksEncoded===true,
               rowCount:Array.isArray(x?.rows)?x.rows.length:null
             },null,2));
             if(!r.ok||x?.ok!==true||!Array.isArray(x.rows)||!x.rows.length)process.exitCode=1;
