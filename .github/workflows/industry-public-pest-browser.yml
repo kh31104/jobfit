@@ -4,6 +4,7 @@ on:
     paths:
       - 'instructor/industry-public-pilot/**'
       - 'v2/tests/industry-public-pest-browser.mjs'
+      - 'v2/tests/industry-job-relevance-browser.mjs'
       - '.github/workflows/industry-public-pest-browser.yml'
   workflow_dispatch:
 permissions:
@@ -32,3 +33,5 @@ jobs:
           curl -fsS http://127.0.0.1:8767/instructor/industry-public-pilot/ >/dev/null
       - name: Verify isolated preview in Chrome and Safari
         run: node v2/tests/industry-public-pest-browser.mjs
+      - name: Verify industry and target-job relevance without student data
+        run: node v2/tests/industry-job-relevance-browser.mjs
