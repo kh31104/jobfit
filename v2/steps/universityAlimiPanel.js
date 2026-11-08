@@ -64,7 +64,7 @@ export function mountUniversityAlimiPanel(root){
   root.querySelector('#jf7LoadEarlier')?.addEventListener('click',()=>queueMicrotask(sync));
   root.querySelector('#jf7Manual')?.addEventListener('click',()=>queueMicrotask(sync));
   sync();
-  button.addEventListener('click',async()=>{
+  async function runLookup(schoolId=''){
     const schoolName=school.value.trim();
     if(!universityName(schoolName)){
       status.textContent='대학 기관명으로 조회해 주세요. 예: 인제대학교. 대학일자리플러스센터 등의 부서명은 제외합니다.';
@@ -74,8 +74,23 @@ export function mountUniversityAlimiPanel(root){
     status.textContent='대학알리미 공공데이터를 조회하고 있습니다.';
     button.disabled=true;
     try{
-      const api=await fetchUniversityAlimi({school:schoolName,year:year.value,kind:kind.value});
+      const api=await fetchUniversityAlimi({school:schoolName,year:year.value,kind:kind.value,schoolId});
       const out=api.body;
+      if(out?.error==='school_code_ambiguous' && Array.isArray(out.candidates) && out.candidates.length){
+        status.textContent='동일 대학명으로 '+out.candidates.length+'개 학교코드가 조회되었습니다. 본교·분교를 확인하고 선택해 주세요.';
+        results.append(el('h4','','학교 선택'));
+        for(const candidate of out.candidates){
+          if(!/^[A-Za-z0-9_-]{3,40}$/.test(String(candidate.schoolId||'')))continue;
+          const line=el('div','jf7UnivCard');
+          line.append(el('p','help',[candidate.name||schoolName,candidate.campus||'캠퍼스 구분 확인 필요',candidate.location||'',candidate.schoolId].filter(Boolean).join(' · ')));
+          const choose=el('button','btn outline','이 대학 자료 조회');
+          choose.type='button';
+          choose.addEventListener('click',()=>runLookup(String(candidate.schoolId)));
+          line.append(choose);
+          results.append(line);
+        }
+        return;
+      }
       if(!api.ok||!out?.ok||!Array.isArray(out.rows)){
         const messages={
           school_matching_unverified:'요청한 대학과 일치하는 자료를 확인하지 못했습니다. 대학명 또는 연도를 바꿔보세요.',
@@ -113,7 +128,8 @@ export function mountUniversityAlimiPanel(root){
     }catch{
       status.textContent='네트워크 오류로 조회하지 못했습니다. 브라우저 또는 공식 API 상태를 확인하세요.';
     }finally{button.disabled=false}
-  });
+  }
+  button.addEventListener('click',()=>runLookup());
   copy.addEventListener('click',async()=>{
     if(!copyText)return;
     try{await navigator.clipboard.writeText(copyText);status.textContent='대학정보를 복사했습니다. STEP 7 표에 필요한 항목만 직접 반영하세요.'}
