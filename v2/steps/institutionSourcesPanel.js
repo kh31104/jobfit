@@ -72,7 +72,7 @@ export function mountInstitutionSourcePanel(root){
     '<div id="jf7OfficialResults" aria-live="polite"></div>'+
     '</section>';
   const style=node('style');
-  style.textContent='.jf7OfficialPanel{border:1px solid #dce4f1;background:#f9fbff;border-radius:13px;padding:16px;margin:22px 0 26px;line-height:1.7}'+
+  style.textContent='.jf7OfficialPanel [hidden]{display:none!important}.jf7OfficialPanel{border:1px solid #dce4f1;background:#f9fbff;border-radius:13px;padding:16px;margin:22px 0 26px;line-height:1.7}'+
     '.jf7OfficialPanel h3{margin:0 0 4px}.jf7OfficialPanel .jf7OfficialFields{margin:14px 0;align-items:end}'+
     '.jf7OfficialPanel .jf7OfficialLinks a{font-size:13px;overflow-wrap:anywhere}'+
     '.jf7OfficialPanel .jf7OfficialCard{border:1px solid #d5deeb;background:#fff;border-radius:10px;padding:12px;margin:12px 0}'+
