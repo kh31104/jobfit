@@ -1,5 +1,5 @@
 import {readValue,readField,readCard,READABLE_STYLES} from './readableResults.js';
-import {renderInjeStep7Tables} from './step7Tables.js?v=2';
+import {renderInjeStep7Tables} from './step7Tables.js?v=3';
 import {parseIndustryAi,parseCompanyAi,isHttpUrl} from './industryAiParser.js?v=2';
 import {activeTargetJobs,activeTargetCombos,quickStartActive,renderStep7QuickStart,wireStep7QuickStart} from '../quickStart.js?v=1';
 const INDUSTRY_SOURCE_TYPES=['정부·공공기관','산업협회·전문기관','공시·통계','기업 IR·사업보고서','기타 신뢰자료'];
