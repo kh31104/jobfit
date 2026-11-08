@@ -12,27 +12,26 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 3
     steps:
-      - name: Verify read-only faculty API (no secret in client)
+      - name: Verify faculty API response for multiple years
         run: |
           node --input-type=module <<'JS'
-          const u=new URL('https://hllnoriffbhzpyhpnvsf.supabase.co/functions/v1/univ-alimi-faculty-pilot');
-          u.searchParams.set('school','인제대학교');
-          u.searchParams.set('year','2025');
-          u.searchParams.set('kind','ensure');
-          try{
-            const r=await fetch(u,{signal:AbortSignal.timeout(18000)});
-            const x=await r.json();
-            console.log(JSON.stringify({
-              http:r.status,ok:x?.ok===true,provider:x?.provider||null,
-              error:x?.error||null,resultCode:x?.resultCode||null,
-              gatewayCode:x?.gatewayCode||null,gatewayType:x?.gatewayType||null,
-              bodyType:x?.bodyType||null,xmlRoot:x?.xmlRoot||null,tagNames:x?.tagNames||null,
-              credentialLooksEncoded:x?.credentialLooksEncoded===true,
-              rowCount:Array.isArray(x?.rows)?x.rows.length:null
-            },null,2));
-            if(!r.ok||x?.ok!==true||!Array.isArray(x.rows)||!x.rows.length)process.exitCode=1;
-          }catch(e){
-            console.error('University gateway unavailable:',e?.name||'request error');
-            process.exitCode=1;
+          let found=false;
+          for(const [year,kind] of [['2025','ensure'],['2026','ensure'],['2025','research'],['2026','research']]){
+            const u=new URL('https://hllnoriffbhzpyhpnvsf.supabase.co/functions/v1/univ-alimi-faculty-pilot');
+            u.searchParams.set('school','인제대학교');
+            u.searchParams.set('year',year);
+            u.searchParams.set('kind',kind);
+            try{
+              const r=await fetch(u,{signal:AbortSignal.timeout(18000)});
+              const x=await r.json();
+              console.log(JSON.stringify({
+                year,kind,http:r.status,ok:x?.ok===true,error:x?.error||null,
+                gatewayCode:x?.gatewayCode||null,xmlRoot:x?.xmlRoot||null,
+                tagNames:x?.tagNames||null,received:x?.received??null,
+                rowCount:Array.isArray(x?.rows)?x.rows.length:null
+              },null,2));
+              if(r.ok&&x?.ok===true&&Array.isArray(x?.rows)&&x.rows.length)found=true;
+            }catch(e){console.error('University gateway unavailable:',e?.name||'request error');}
           }
+          if(!found)process.exitCode=1;
           JS
