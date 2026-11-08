@@ -1,0 +1,34 @@
+name: Instructor public industry PEST browser isolation test
+on:
+  pull_request:
+    paths:
+      - 'instructor/industry-public-pilot/**'
+      - 'v2/tests/industry-public-pest-browser.mjs'
+      - '.github/workflows/industry-public-pest-browser.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pest-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax checks
+        run: |
+          node --check instructor/industry-public-pilot/app.js
+          node --check v2/tests/industry-public-pest-browser.mjs
+      - name: Install browser engines
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium webkit
+      - name: Serve local static site
+        run: |
+          python3 -m http.server 8767 --bind 127.0.0.1 >/tmp/industry-pest-test.log 2>&1 &
+          sleep 2
+          curl -fsS http://127.0.0.1:8767/instructor/industry-public-pilot/ >/dev/null
+      - name: Verify isolated preview in Chrome and Safari
+        run: node v2/tests/industry-public-pest-browser.mjs
