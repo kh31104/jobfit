@@ -5,7 +5,7 @@ const context=await browser.newContext({acceptDownloads:true,viewport:{width:140
 const page=await context.newPage();
 page.on('dialog',d=>d.dismiss().catch(()=>{}));
 try{
- const url='https://stat.spri.kr/uportal/stat/comBriefStatPage/SPRI_3_1.do';
+ const url='https://stat.spri.kr/uportal/stat/comDetailStatPage/SPRI_1_1_1.do';
  await page.goto(url,{waitUntil:'domcontentloaded',timeout:40000});
  await page.waitForTimeout(3500);
  async function inspect(label){
