@@ -1,5 +1,5 @@
 import {renderInjeStep7Tables} from '../../v2/steps/step7Tables.js?v=1';
-import {captureAuthCallback,getSession,requestMagicLink,signOutInstructor} from '../centralBackend.js';
+import {captureAuthCallback,getSession,requestMagicLink,signOutInstructor} from '../centralBackend.js?v=2';
 
 const KEY='jobfit:instructor:step7-source-pilot-v1';
 const root=document.getElementById('stepRoot');
