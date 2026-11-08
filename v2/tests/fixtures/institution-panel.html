@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>INJE STEP 7 공식자료 패널 검증 전용</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>body{margin:0;padding:18px;background:#fff}main{max-width:1200px;margin:0 auto}#jf7InstitutionSources{margin:20px 0}</style>
+</head><body><main>
+<div class="grid4">
+ <label class="field">분석 기업·기관<input class="input" id="jf7-company" placeholder="기업·기관명"></label>
+ <label class="field">목표 직무<input class="input" id="jf7-job" value="대학교수"></label>
+ <label class="field">관심 산업<input class="input" id="jf7-industry" value="교육"></label>
+</div>
+<div id="jf7InstitutionSources"></div>
+<h3>기존 STEP 7 기업분석표 (시험용)</h3>
+<textarea id="company-other"></textarea>
+<textarea id="company-financePerformance">기존 입력 재무분석</textarea>
+<div id="sources"></div>
+<button id="jf7LoadEarlier" type="button">앞 STEP 정보</button>
+<button id="jf7Manual" type="button">새 목표</button>
+</main>
+<script>
+window.JOBFIT_RESEARCH_CONFIG={
+  instructorAuthEnabled:true,
+  supabaseUrl:'https://hllnoriffbhzpyhpnvsf.supabase.co',
+  publishableKey:'sb_publishable_test_only'
+};
+const area=document.getElementById('sources');
+for(let n=1;n<=8;n++){
+  const id='S'+n;
+  for(const key of ['issuer','title','published','url']){
+    const i=document.createElement('input');i.dataset.kind='company';i.dataset.source=id;i.dataset.sourceKey=key;
+    i.value=n===2?({issuer:'기존 발행기관',title:'기존 자료명',published:'2025-01-01',url:'https://www.data.go.kr'}[key]):'';
+    area.append(i);
+  }
+  const cb=document.createElement('input');cb.type='checkbox';cb.dataset.kind='company';cb.dataset.verified=id;
+  cb.checked=n===2;area.append(cb);
+}
+document.getElementById('company-other').addEventListener('input',()=>{
+  for(const c of document.querySelectorAll('[data-kind="company"][data-verified]'))c.checked=false;
+});
+</script>
+<script type="module">
+import {mountInstitutionSourcePanel} from '../../steps/institutionSourcesPanel.js?v=1';
+mountInstitutionSourcePanel(document);
+</script>
+</body></html>
