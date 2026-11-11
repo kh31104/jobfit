@@ -14,7 +14,7 @@ export async function render(ctx){
 
     ${resumeTemplateBlock(data,ctx,prior,posting,injeCompact)}
 
-    ${injeCompact?`<div class="hr"></div><div class="block" id="resumeEvidenceImport"><h3>2. 이력서에 사용할 경험 확인하기</h3><p class="help">필요한 경우에만 앞 단계의 학력·자격·경험을 선택해 불러오세요. 이미 작성한 내용은 덮어쓰지 않습니다. STEP 3에서 확인한 경험은 다시 검사하지 않고, 새로 쓴 수치·성과만 확인하세요.</p>${resumeAutoImportBlock(prior,data.templateType,ctx)}${resumeExperienceEntryTabs(data,ctx)}<div id="resumeGate"></div></div>`:`<div class="hr"></div><div class="block"><h3>2. Resume Evidence Gate</h3><div id="resumeGate"></div><div class="grid3" style="margin-top:12px"><div class="miniCard"><b>Fact</b><span>하지 않은 일·없는 수치를 쓰지 않는다.</span></div><div class="miniCard"><b>Action</b><span>역할명이 아니라 내가 직접 한 행동을 쓴다.</span></div><div class="miniCard"><b>Evidence</b><span>JD Requirement를 증명하는 Career Asset만 사용한다.</span></div></div></div>`}
+    ${injeCompact?`<div class="hr"></div><div class="block" id="resumeEvidenceImport"><h3>2. 이력서에 사용할 경험 확인하기</h3><p class="help">필요한 경우에만 앞 단계의 학력·자격·경험을 선택해 불러오세요. 이미 작성한 내용은 덮어쓰지 않습니다. STEP 3에서 확인한 경험은 다시 검사하지 않고, 새로 쓴 수치·성과만 확인하세요.</p>${resumeAutoImportBlock(prior,data.templateType,ctx,true)}${resumeExperienceEntryTabs(data,ctx)}<div id="resumeGate"></div></div>`:`<div class="hr"></div><div class="block"><h3>2. Resume Evidence Gate</h3><div id="resumeGate"></div><div class="grid3" style="margin-top:12px"><div class="miniCard"><b>Fact</b><span>하지 않은 일·없는 수치를 쓰지 않는다.</span></div><div class="miniCard"><b>Action</b><span>역할명이 아니라 내가 직접 한 행동을 쓴다.</span></div><div class="miniCard"><b>Evidence</b><span>JD Requirement를 증명하는 Career Asset만 사용한다.</span></div></div></div>`}
 
     <div class="hr"></div><div class="block"><h3>3. ${injeCompact?'경험을 이력서 문장으로 바꾸기':'Career Asset → Resume Bullet'}</h3><p class="help">${injeCompact?'앞에서 확인한 경험을 선택하고, 실제로 한 일과 결과를 이력서 문장으로 정리하세요.':'Fact Check가 끝나지 않은 자산도 초안 연습은 가능하지만, 최종 제출용으로는 표시하지 않습니다.'}</p><div class="grid2">${selectAsset('assetId',injeCompact?'이력서에 쓸 경험':'Career Asset',candidateAssets)}${sel('section','이력서 섹션','',['프로젝트','인턴·경력','대외활동','아르바이트','교육·수업','기타'])}</div><div id="assetContext" class="callout info">${injeCompact?'경험을 선택하면 실제 행동과 확인 근거를 보여줍니다.':'Career Asset을 선택하면 Evidence와 검증상태를 확인합니다.'}</div>
       <div class="grid2" style="margin-top:12px">${area('rawBullet',injeCompact?'내가 직접 쓴 문장':'내 원문','','내가 먼저 사실 중심으로 작성한 문장')}${area('aiBullet',injeCompact?'AI가 정리한 문장':'AI 구조화','','AI가 제안한 문장 또는 구조')}${area('finalBullet',injeCompact?'최종 이력서 문장':'최종 Bullet','','실제로 한 일과 결과만 사용해 최종 수정')}${area('detailText',injeCompact?'경험기술서용 설명':'경험기술서 확장','','필요 시 3~5문장으로 역할·행동·성과를 확장')}</div>
@@ -283,21 +283,22 @@ function resumeTemplateBlock(data,ctx,prior,posting=null,injeCompact=false){
     +'</div>'
     +(injeCompact?resumeTargetingBlock(data,ctx,posting):'')
     +'<div id="resumeTemplateGuide">'+resumeTemplateGuide(data.templateType)+'</div>'
+    +(!injeCompact?resumeAutoImportBlock(prior,data.templateType,ctx)+resumeExperienceEntryTabs(data,ctx):'')
     +'<div id="resumeTemplateForm">'+resumeTemplateForm(data,ctx)+'</div>'
   +'</div>';
 }
 
-function resumeAutoImportBlock(prior,type,ctx){
+function resumeAutoImportBlock(prior,type,ctx,compact=false){
   var edu=prior.education?.institution||prior.education?.major?'학력·전공 1건':'학력·전공 없음';
   var certCount=(prior.certifications||[]).length+(prior.language||[]).length;
   var expCount=(prior.experiences||[]).length;
   var skill=prior.tools?'도구·기술 있음':'도구·기술 없음';
   var blindNote=type==='blind'?'<br><b>블라인드 보호:</b> 학교명은 자동 입력하지 않습니다.':'';
   var ncsNote=type==='ncs'?'<br><b>NCS 보호:</b> 학교명·학점 대신 직무관련 교육·경험만 가져옵니다.':'';
-  return '<div class="callout info" id="resumeAutoImport"><b>앞 단계 정보 선택 불러오기</b><br>'
-    +'앞에서 이미 입력한 사실은 다시 쓰지 않습니다. 아래 버튼을 누른 항목만 빈칸에 반영합니다. <b>'+esc(edu,ctx)+' · 자격/어학 '+certCount+'건 · 검증 경험 '+expCount+'건 · '+esc(skill,ctx)+'</b>'
+  return '<div class="callout '+(compact?'info':'good')+'" id="resumeAutoImport"><b>'+(compact?'앞 단계 정보 선택 불러오기':'STEP 1~7 자동 불러오기')+'</b><br>'
+    +'앞에서 이미 입력한 사실은 다시 쓰지 않습니다. '+(compact?'아래 버튼을 누른 항목만 빈칸에 반영합니다. ':'')+'<b>'+esc(edu,ctx)+' · 자격/어학 '+certCount+'건 · 검증 경험 '+expCount+'건 · '+esc(skill,ctx)+'</b>'
     +blindNote+ncsNote
-    +'<br><span class="muted small"><b>선택해서 불러오기:</b> 지원직무, 학력·전공, 취득한 자격·어학, 검증된 경험·활동, 도구·기술. <b>직접 입력:</b> 성명·연락처와 아직 확인되지 않은 정보. 불러온 항목에는 <b>출처: STEP 1 / STEP 3 / STEP 5</b>를 표시하며 작성한 값은 덮어쓰지 않습니다.</span>'
+    +'<br><span class="muted small"><b>'+(compact?'선택해서 불러오기:</b> 지원직무, 학력·전공, 취득한 자격·어학, 검증된 경험·활동, 도구·기술. <b>직접 입력:</b> 성명·연락처와 아직 확인되지 않은 정보. 불러온 항목에는 <b>출처: STEP 1 / STEP 3 / STEP 5</b>를 표시하며 작성한 값은 덮어쓰지 않습니다.':'자동:</b> 선택 JD의 지원직무, 앞 단계의 전공·학력정보, 취득 완료 자격·어학, 검증 완료 경험·활동, 도구·기술. <b>직접 입력:</b> 성명·휴대전화·이메일 등 앞 단계에 없는 개인정보와 자동으로 확인할 수 없는 날짜·기관·점수. 자동 입력값에는 <b>출처: STEP 1 / STEP 3 / STEP 5</b>를 표시하며 기존 입력값을 덮어쓰지 않습니다.')+'</span>'
     +'<div class="actions" style="margin-top:10px"><button type="button" class="btn secondary smallBtn" data-resume-import="education">학력·교육</button><button type="button" class="btn secondary smallBtn" data-resume-import="credentials">자격·어학</button><button type="button" class="btn secondary smallBtn" data-resume-import="experiences">경험·활동</button><button type="button" class="btn primary smallBtn" data-resume-import="all">가능한 항목 모두 불러오기</button></div></div>';
 }
 
@@ -709,7 +710,7 @@ function wireResumeFormUi(data,ctx,persist,assets=[],experiences=[],prior={},pos
       data.templateType=b.dataset.resumeTemplate||'standard';persist();
       var f=document.getElementById('resumeTemplateForm'),g=document.getElementById('resumeTemplateGuide');
       if(f)f.innerHTML=resumeTemplateForm(data,ctx);if(g)g.innerHTML=resumeTemplateGuide(data.templateType);
-       var importNotice=document.getElementById('resumeAutoImport');if(importNotice)importNotice.outerHTML=resumeAutoImportBlock(prior,data.templateType,ctx);
+       var importNotice=document.getElementById('resumeAutoImport');if(importNotice)importNotice.outerHTML=resumeAutoImportBlock(prior,data.templateType,ctx,injeCompact);
       lab.querySelectorAll('[data-resume-template]').forEach(function(x){x.classList.toggle('primary',x===b);x.classList.toggle('secondary',x!==b);});
       if(injeCompact)refreshResumeReview(data,ctx);
     });
