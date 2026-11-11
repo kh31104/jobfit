@@ -93,6 +93,16 @@ function boundedStep(v){
   return Number.isInteger(n)?Math.max(0,Math.min(13,n)):0;
 }
 
+function hasInjeResumeReady(resume){
+  const forms=resume?.forms||{},filled=v=>v&&typeof v==='object'?Object.values(v).some(filled):typeof v==='string'&&v.trim().length>0;
+  return ['standard','ncs','blind'].some(type=>{
+    const f=forms[type]||{},name=type==='blind'?f.name:f.nameKo,contact=f.email||(type==='ncs'?f.mobile:f.phone);
+    const job=type==='ncs'?f.job||f.field:f.targetJob;
+    const detailKeys=type==='standard'?['education','career','certifications','activities']:type==='ncs'?['training','certifications','career','activities']:['training','certifications','experience','jobContent'];
+    return !!String(name||'').trim()&&!!String(contact||'').trim()&&detailKeys.some(k=>filled(f[k]))&&
+      (resume?.applicationMode!=='targeted'||!!String(job||'').trim());
+  });
+}
 function isStepComplete(i,s){
   const a=s.artifacts||{},d=s.assessments||{};
   switch(i){
@@ -105,7 +115,7 @@ function isStepComplete(i,s){
     case 6:return !!a.careerFit?.selectedId;
     case 7:return !!(a.jdAnalyzer?.selectedId&&a.jdAnalyzer?.postings?.length);
     case 8:return !!a.careerAssets?.assets?.length;
-    case 9:return !!a.resumeLab?.items?.length;
+    case 9:return !!(a.resumeLab?.items?.length||(ALLOWED_COURSES.has(String(s.profile?.courseCode||'').trim().toUpperCase())&&hasInjeResumeReady(a.resumeLab)));
     case 10:return !!a.coverLetterLab?.questions?.length;
     case 11:return !!a.interviewLab?.questions?.length;
     case 12:return !!a.humanFirst?.items?.length;
