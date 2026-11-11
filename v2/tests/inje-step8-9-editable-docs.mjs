@@ -60,6 +60,7 @@ for(const width of [1280,390]){
     await page.locator('[data-resume-bind="forms.standard.targetJob"]').fill('디지털 마케팅');
     await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeAiReview')));
     await page.locator('#redoResumeReview').click();
+    assert((await page.locator('#resumeAiReview > h3').textContent()).startsWith('3.'),'AI review section number changed after re-review');
     const secondPrompt=await page.locator('#resumeReviewPromptText').inputValue();
     assert(secondPrompt.includes('디지털 마케팅'),'AI re-review did not include student-edited resume');
     assert((await page.locator('#resumeReviewRoundStatus').innerText()).includes('2회'),'Second AI review was not counted');
