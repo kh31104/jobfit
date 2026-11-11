@@ -119,6 +119,7 @@ for(const width of [1280,390]){
 
     await page.reload({waitUntil:'networkidle'});
     await page.locator('#resumeTemplateLab').waitFor();
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeAiReview')));
     assert(await page.locator('[data-resume-bind="forms.standard.targetJob"]').inputValue()==='디지털 마케팅','Student-edited resume lost on reload');
     assert(await page.locator('[data-resume-bind="targetCompany"]').inputValue()==='테스트기업','Target company lost on reload');
     assert((await page.locator('#resumeReviewFeedback').inputValue()).includes('2차 검토'),'Second review feedback lost on reload');
@@ -171,10 +172,13 @@ for(const width of [1280,390]){
     },key);
     await page.reload({waitUntil:'networkidle'});
     await page.locator('#resumeTemplateLab').waitFor();
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeTemplateLab')));
     assert((await page.locator('#resumeTargetMode').innerText()).includes('일반 이력서 작성'),'General mode without JD must work');
     await page.locator('[data-resume-bind="forms.standard.nameKo"]').fill('일반 학생');
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumePreviewLab')));
     await page.locator('#refreshResumePreview').click();
     assert((await page.locator('#resumeA4Preview').innerText()).includes('일반 학생'),'Resume PDF preview without JD or career assets failed');
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeAiReview')));
     await page.locator('#previewResumeReviewPrompt').click();
     assert((await page.locator('#resumeReviewPromptText').inputValue()).includes('기업·직무 미지정 일반형'),'General AI review prompt missing');
     assert(!(await page.locator('#resumeReviewPromptText').inputValue()).includes('일반 학생'),'AI prompt must not include name');
