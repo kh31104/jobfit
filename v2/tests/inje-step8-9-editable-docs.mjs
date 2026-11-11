@@ -24,6 +24,10 @@ for(const width of [1280,390]){
     await page.evaluate(({key,seed})=>localStorage.setItem(key,JSON.stringify(seed)),{key,seed:seed()});
     await page.reload({waitUntil:'networkidle'});
     await page.locator('#resumeTemplateLab').waitFor();
+    assert(await page.locator('#stepRoot .progress + #resumeTemplateLab').count()===1,'INJE STEP 8 must open directly with resume template selection');
+    assert(await page.locator('#resumeEvidenceImport #resumeAutoImport').count()===1,'Optional prior-data import must appear in section 2');
+    assert(await page.locator('#resumeEvidenceImport #resumeExperienceEntry').count()===1,'Import and new-experience controls must appear in section 2');
+    assert(await page.locator('#resumeTemplateLab #resumeAutoImport').count()===0,'Section 1 should contain only resume selection and writing controls');
     assert(await page.locator('#stepRoot h3').filter({hasText:'2. 이력서에 사용할 경험 확인하기'}).count()===1,'Simplified INJE evidence heading missing');
     assert(await page.locator('#resumeGate .miniCard').count()===3,'INJE evidence gate should contain three summaries');
     assert((await page.locator('#resumeGate').innerText()).includes('불러온 경험 근거'),'Imported evidence summary missing');
