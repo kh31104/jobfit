@@ -38,6 +38,15 @@ for(const width of [1280,390]){
     await page.locator('[data-application-mode="search"]').click();
     assert(await page.locator('#resumeFindJdPanel a[target="_blank"]').count()===5,'Private/public job search links missing');
     assert((await page.locator('#resumeJdSearchPrompt').inputValue()).includes('경영학과'),'Search prompt did not use existing major');
+    await page.locator('#resumeFindJdPanel details summary').click();
+    await page.locator('#copyResumeJdSearchPrompt').click();
+    assert((await page.locator('#resumeAiIntakePanel').textContent()).includes('관심 산업'),'Missing industry should trigger a student question');
+    assert(!(await page.locator('#resumeAiIntakePanel').textContent()).includes('전공이 무엇인가요?'),'Known major was asked again');
+    await page.locator('[data-ai-intake-answer="industry"]').fill('콘텐츠·미디어');
+    await page.locator('[data-ai-intake-apply]').click();
+    assert(await page.locator('#resumeAiIntakePanel').count()===0,'Answered search questions must close');
+    assert(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts.resumeLab.aiIntakeAnswers.search.industry,key)==='콘텐츠·미디어','Student search answer was not saved');
+    assert((await page.locator('#resumeJdSearchPrompt').inputValue()).includes('콘텐츠·미디어'),'Search prompt was not rebuilt with student answer');
     const companyBefore=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts.resumeLab.targetCompany||'',key);
     await page.locator('[data-resume-bind="resumeJobSearchDraft.company"]').fill('탐색기업');
     await page.locator('[data-resume-bind="resumeJobSearchDraft.job"]').fill('디지털 마케팅');
@@ -61,6 +70,14 @@ for(const width of [1280,390]){
     const reviewPrompt=await page.locator('#resumeReviewPromptText').inputValue();
     assert(reviewPrompt.includes('고객 데이터 분석 업무')&&reviewPrompt.includes('이력서 검토자'),'AI review prompt missing JD or review criteria');
     assert(reviewPrompt.includes('지원직무 반영 점검'),'AI review must explicitly examine job-description alignment');
+    assert(reviewPrompt.includes('정보 부족 시 질문부터'),'Review preview must instruct the AI to ask questions instead of inventing details');
+    await page.locator('#copyResumeReviewPrompt').click();
+    const intakeShown=await page.locator('#resumeAiIntakePanel').count();
+    assert(intakeShown===1,'Review question panel missing: '+JSON.stringify(await page.evaluate(key=>{const d=JSON.parse(localStorage.getItem(key)).artifacts.resumeLab;return {form:d.forms.standard,items:d.items,answers:d.aiIntakeAnswers,summary:d.summary};},key)));
+    assert((await page.locator('#resumeAiIntakePanel').textContent()).includes('이력서에서 특히 확인할 경험'),'Review must ask about missing actual experience evidence');
+    await page.locator('[data-ai-intake-answer="focus"]').fill('고객 리뷰 분석 과정에서 내가 직접 수행한 업무');
+    await page.locator('[data-ai-intake-apply]').click();
+    assert(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts.resumeLab.aiIntakeAnswers['review_standard_targeted'].focus.includes('직접 수행'),key),'Review answer not retained');
     assert(!reviewPrompt.includes('JF26-EDIT-DOC'),'AI review prompt must not expose user identity code');
     await page.locator('#resumeReviewFeedback').fill('검토 결과: 활동기간 확인 필요');
     await page.locator('[data-resume-template="ncs"]').click();
@@ -89,6 +106,14 @@ for(const width of [1280,390]){
 
     await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeEvidenceImport')));
     await page.locator('#resumeAdvancedDisclosure summary').click();
+    await page.locator('#copyPrompt').click();
+    assert(await page.locator('#resumeAiIntakePanel [data-ai-intake-answer="action"]').count()===1,'Resume bullet must ask for missing personal action');
+    await page.locator('[data-ai-intake-answer="experience"]').fill('학생 프로젝트');
+    await page.locator('[data-ai-intake-answer="action"]').fill('자료 20건을 직접 분류');
+    await page.locator('[data-ai-intake-answer="result"]').fill('분류표');
+    await page.locator('[data-ai-intake-apply]').click();
+    assert(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts.resumeLab.aiIntakeAnswers.bullet.action.includes('직접 분류'),key),'Resume bullet answer was not saved');
+    assert(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts.resumeLab.items.length===0,key),'Guided AI answers must not create verified resume items');
     await page.selectOption('#assetId','asset1');
     await page.selectOption('#section',{label:'프로젝트'});
     await page.locator('#rawBullet').fill('리뷰 분석 원문');
@@ -109,6 +134,11 @@ for(const width of [1280,390]){
     await page.locator('#resumeOptionalDocsDisclosure summary').click();
     await page.locator('[data-resume-doc="experience"]').click();
     assert(await page.locator('#copyResumeOptionalAiPrompt').count()===1,'Experience description needs an AI drafting action');
+    await page.locator('#copyResumeOptionalAiPrompt').click();
+    assert(await page.locator('#resumeAiIntakePanel [data-ai-intake-answer="period"]').count()===0,'Limit initial questions to three relevant missing facts');
+    assert((await page.locator('#resumeAiIntakePanel').textContent()).includes('직접 수행한 행동'),'Experience draft should ask missing actions');
+    await page.locator('[data-ai-intake-skip]').click();
+    assert(await page.locator('#resumeAiIntakePanel').count()===0,'Unknown experience details must not block drafting');
     await page.locator('#resumeOptionalAiAnswer').fill('[경험명]\nAI 경험기술서 초안\n[내 행동]\n소비자 리뷰 30건을 기준별로 직접 분류\n[결과·근거]\n분류표 작성\n[지원직무 연결]\n고객 데이터 분석 업무와 연결');
     await page.locator('#applyResumeOptionalAi').click();
     assert((await page.locator('[data-resume-bind="optionalDocument.experience.action"]').inputValue()).includes('30건'),'AI experience action was not imported into an editable field');
@@ -131,6 +161,11 @@ for(const width of [1280,390]){
     await page.locator('[data-resume-doc="career"]').click();
     assert(await page.locator('#copyResumeOptionalAiPrompt').count()===1,'Career description must expose its AI drafting prompt');
     assert((await page.locator('#resumeOptionalAiHelp').textContent()).includes('담당업무'),'Career drafting guidance must explain duties and outcomes');
+    await page.locator('#copyResumeOptionalAiPrompt').click();
+    assert(await page.locator('#resumeAiIntakePanel [data-ai-intake-answer="company"]').count()===1,'Career prompt should ask for missing employer');
+    await page.locator('[data-ai-intake-answer="company"]').fill('실습기관');
+    await page.locator('[data-ai-intake-skip]').click();
+    assert(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts.resumeLab.optionalDocument.career.factChecked!==true,key),'Skipping questions must not mark career facts verified');
     await page.locator('[data-resume-doc="experience"]').click();
 
     await page.reload({waitUntil:'networkidle'});
