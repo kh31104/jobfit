@@ -45,6 +45,7 @@ for(const width of [1280,390]){
     await page.locator('#previewResumeReviewPrompt').click();
     const reviewPrompt=await page.locator('#resumeReviewPromptText').inputValue();
     assert(reviewPrompt.includes('고객 데이터 분석 업무')&&reviewPrompt.includes('이력서 검토자'),'AI review prompt missing JD or review criteria');
+    assert(reviewPrompt.includes('지원직무 반영 점검'),'AI review must explicitly examine job-description alignment');
     assert(!reviewPrompt.includes('JF26-EDIT-DOC'),'AI review prompt must not expose user identity code');
     await page.locator('#resumeReviewFeedback').fill('검토 결과: 활동기간 확인 필요');
     await page.locator('[data-resume-template="ncs"]').click();
@@ -89,6 +90,12 @@ for(const width of [1280,390]){
 
     await page.locator('#resumeOptionalDocsDisclosure summary').click();
     await page.locator('[data-resume-doc="experience"]').click();
+    assert(await page.locator('#copyResumeOptionalAiPrompt').count()===1,'Experience description needs an AI drafting action');
+    await page.locator('#resumeOptionalAiAnswer').fill('[경험명]\\nAI 경험기술서 초안\\n[내 행동]\\n소비자 리뷰 30건을 기준별로 직접 분류\\n[결과·근거]\\n분류표 작성\\n[지원직무 연결]\\n고객 데이터 분석 업무와 연결');
+    await page.locator('#applyResumeOptionalAi').click();
+    assert((await page.locator('[data-resume-bind="optionalDocument.experience.action"]').inputValue()).includes('30건'),'AI experience action was not imported into an editable field');
+    assert(!(await page.locator('[data-resume-bind="optionalDocument.experience.factChecked"]').isChecked()),'AI draft was incorrectly marked fact-checked');
+    assert((await page.locator('[data-resume-bind="optionalDocument.experience.jobLink"]').inputValue()).includes('고객 데이터 분석'),'AI draft did not preserve target-job link');
     await page.locator('[data-resume-bind="optionalDocument.experience.title"]').fill('경험기술서 실습');
     await page.locator('[data-resume-section="experience-doc-evidence"] summary').click();
     await page.locator('[data-resume-bind="optionalDocument.experience.action"]').fill('리뷰를 실제로 분류함');
