@@ -24,7 +24,27 @@ for(const [engine,label,device] of [
 ]){
  const browser=await engine.launch({headless:true});
  const context=await browser.newContext({...device,locale:'ko-KR'});
- await context.route(/https:\/\/[^/]*supabase\.co\//,route=>route.abort());
+ // Research-measures is enabled on deployed INJE, even with ?measures=false.
+ // Aborting a cross-origin request makes Safari report a synthetic CORS/network
+ // pageerror; simulate an unavailable server with correct preflight headers instead.
+ // This isolates the module-recovery test from an unrelated research API.
+ await context.route(/https:\/\/[^/]*supabase\.co\//,route=>{
+   const url=route.request().url();
+   if(url.includes('/functions/v1/research-measures')){
+     return route.fulfill({
+       status:route.request().method()==='OPTIONS'?200:503,
+       contentType:'application/json',
+       headers:{
+         'Access-Control-Allow-Origin':'https://kh31104.github.io',
+         'Access-Control-Allow-Headers':'apikey, content-type',
+         'Access-Control-Allow-Methods':'POST, OPTIONS',
+         'Cache-Control':'no-store'
+       },
+       body:JSON.stringify({error:'simulated_research_measure_outage'})
+     });
+   }
+   return route.abort();
+ });
  const page=await context.newPage(),errors=[],failedRequests=[];
  page.on('pageerror',e=>errors.push(e.message));
  page.on('requestfailed',request=>{if(/\/v2\/(app\.js|steps\/step9\.js)/.test(request.url()))failedRequests.push(request.url()+' : '+request.failure()?.errorText);});
