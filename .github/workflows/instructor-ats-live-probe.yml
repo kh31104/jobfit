@@ -1,0 +1,28 @@
+name: JOBFIT professor isolated public ATS live probe
+on:
+  pull_request:
+    paths:
+      - "v2/tests/instructor-ats-live-probe.mjs"
+      - ".github/workflows/instructor-ats-live-probe.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-ats:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify test source syntax
+        run: node --check v2/tests/instructor-ats-live-probe.mjs
+      - name: GET-only live test from 3 public ATS (no credentials)
+        run: node v2/tests/instructor-ats-live-probe.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: professor-only-ats-public-live-evidence
+          path: ats-probe-output/live-api-results.json
+          retention-days: 3
