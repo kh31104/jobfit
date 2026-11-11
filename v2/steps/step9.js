@@ -744,7 +744,7 @@ function optionalDocBody(data,ctx,assets=[]){
         +boundArea(data,ctx,'optionalDocument.experience.resultEvidence','결과·Evidence','수치·산출물·피드백·기록 등')
         +boundArea(data,ctx,'optionalDocument.experience.jobLink','지원직무 연결','어떤 JD 요구를 증명하는지')
       +'</div>',false)
-      +optionalFactCheck(data,'experience')+(ctx.displayStep===8?resumeOptionalAiControls(data,ctx,'experience'):'')+'</div>';
+      +optionalFactCheck(data,'experience')+(ctx.displayStep===7?resumeOptionalAiControls(data,ctx,'experience'):'')+'</div>';
   }
   if(data.optionalDocument.type==='career'){
     return '<div class="listCard"><h3>경력기술서</h3>'+assetAutofillControls(data,ctx,'career',assets)
@@ -760,7 +760,7 @@ function optionalDocBody(data,ctx,assets=[]){
         +boundArea(data,ctx,'optionalDocument.career.tools','사용 Skill · Tool','')
         +boundArea(data,ctx,'optionalDocument.career.jobLink','지원직무 연결','어떤 JD 요구와 연결되는지')
       +'</div>',false)
-      +optionalFactCheck(data,'career')+(ctx.displayStep===8?resumeOptionalAiControls(data,ctx,'career'):'')+'</div>';
+      +optionalFactCheck(data,'career')+(ctx.displayStep===7?resumeOptionalAiControls(data,ctx,'career'):'')+'</div>';
   }
   return '<div class="placeholder"><b>선택사항입니다.</b>이력서만 필요한 경우 여기서는 아무것도 작성하지 않아도 됩니다.</div>';
 }
