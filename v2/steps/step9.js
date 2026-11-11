@@ -102,7 +102,7 @@ export async function render(ctx){
     box.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>editResumeItem(b.dataset.edit)));
     box.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{if(!window.confirm('선택한 이력서 문장을 삭제할까요?'))return;if(editingResumeId===b.dataset.del)cancelResumeEdit();data.items=data.items.filter(x=>x.id!==b.dataset.del);persist();renderAll();}));
   }
-  function buildPrompt(){const a=assets.find(x=>x.id===v('assetId'));return `너는 이력서 문장 코치다. 아래 Career Asset에 기록된 사실만 사용해 Resume bullet을 구조화해라. 없는 숫자·성과·역할은 만들지 마라.\n\n[Target JD]\n${posting?`${posting.company} / ${posting.jobTitle}\n${posting.rawPosting||''}`:'미등록'}\n\n[Career Asset]\n${JSON.stringify(a||{},null,2)}\n\n[선택 이력서 양식]\n${resumeTemplateLabel(data.templateType)}\n\n[내가 먼저 쓴 문장]\n${v('rawBullet')||'미작성'}\n\n규칙:\n1. Career Asset의 Evidence 수준이 '없음'이면 문장을 만들지 말고 GAP라고 알려라.\n2. Career Asset 또는 원경험 Fact Check가 미완료이면 결과를 '초안'이라고 명시해라.\n3. 내가 직접 한 Action이 앞에 드러나게 한다.\n4. 대상·방법·결과·Evidence 중 실제 존재하는 정보만 사용한다.\n5. 수치가 없으면 만들지 않는다.\n6. JD 키워드를 억지로 삽입하지 않는다.\n7. 1줄 Bullet 2안과 경험기술서용 3~4문장 1안을 제시한다.\n8. 원문보다 과장된 표현과 사실확인이 필요한 표현을 마지막에 따로 표시한다.`}
+  function buildPrompt(){const a=assets.find(x=>x.id===v('assetId'));const currentJD=injeCompact?(data.applicationMode==='targeted'?`${data.targetCompany||'지원기업 미정'} / ${valueAt(data,resumeTargetJobPath(data.templateType))||posting?.jobTitle||'지원직무 미정'}\n${data.targetJDText||(data.targetCompany===posting?.company?posting?.rawPosting:'')||'공고 내용 확인 필요'}`:'기업·직무 미지정 일반형'):null;return `너는 이력서 문장 코치다. 아래 Career Asset에 기록된 사실만 사용해 Resume bullet을 구조화해라. 없는 숫자·성과·역할은 만들지 마라.\n\n[Target JD]\n${injeCompact?currentJD:posting?`${posting.company} / ${posting.jobTitle}\n${posting.rawPosting||''}`:'미등록'}\n\n[Career Asset]\n${JSON.stringify(a||{},null,2)}\n\n[선택 이력서 양식]\n${resumeTemplateLabel(data.templateType)}\n\n[내가 먼저 쓴 문장]\n${v('rawBullet')||'미작성'}\n\n규칙:\n1. Career Asset의 Evidence 수준이 '없음'이면 문장을 만들지 말고 GAP라고 알려라.\n2. Career Asset 또는 원경험 Fact Check가 미완료이면 결과를 '초안'이라고 명시해라.\n3. 내가 직접 한 Action이 앞에 드러나게 한다.\n4. 대상·방법·결과·Evidence 중 실제 존재하는 정보만 사용한다.\n5. 수치가 없으면 만들지 않는다.\n6. JD 키워드를 억지로 삽입하지 않는다.\n7. 1줄 Bullet 2안과 경험기술서용 3~4문장 1안을 제시한다.\n8. 원문보다 과장된 표현과 사실확인이 필요한 표현을 마지막에 따로 표시한다.`}
   function saveBase(){data.summary=v('summary');data.skills=v('skills');data.notes=v('notes');persist();ctx.toast('Resume Lab 결과를 저장했습니다.');}
   function persist(){ctx.saveState({artifacts:{resumeLab:data}});const p=document.getElementById('resumeSavedProgress');if(p)p.textContent=resumeSavedProgressText(data);}function v(id){return document.getElementById(id)?.value?.trim()||''}function status(t){document.getElementById('status').textContent=t;ctx.toast(t)}
 }
@@ -196,7 +196,7 @@ function resumeAiIntakeQuestions(scope,data,ctx,posting,assets){
   }
   if(scope==='review'){
     const targeted=data.applicationMode==='targeted';
-    const hasExperience=!!(data.items||[]).length||!!(data.additionalExperiences||[]).length||!!(data.summary||'').trim()||Object.entries(form).some(([k,v])=>!/name|phone|email|address|mobile/i.test(k)&&!!value(v));
+    const hasExperience=!!(data.items||[]).length||!!(data.additionalExperiences||[]).length||!!(data.summary||'').trim()||Object.entries(form).some(([k,v])=>!/name|phone|email|address|mobile|targetjob|^job$|^field$|position/i.test(k)&&!!value(v));
     return [
       ...(targeted?[
         ask('company','지원하는 회사·기관은 어디인가요?',data.targetCompany||posting?.company,'예: OO기업','targetCompany'),
@@ -249,8 +249,9 @@ function wireResumeAiIntake(data,ctx,persist,posting,assets){
       current.questions.forEach(q=>{
         const field=[...pane.querySelectorAll('[data-ai-intake-answer]')].find(x=>x.dataset.aiIntakeAnswer===q.key);
         const answer=String(field?.value||'').trim();if(!answer)return;
-        bag[q.key]=answer;
-        if(q.target&&!String(valueAt(data,q.target)||'').trim()){
+        const unknown=/^(?:모름|모르겠어요|잘 모르겠어요|미정|확인 필요|해당 없음)$/i.test(answer);
+        bag[q.key]=unknown?'[확인 필요]':answer;
+        if(!unknown&&q.target&&!String(valueAt(data,q.target)||'').trim()){
           setValueAt(data,q.target,answer);
           const active=root.querySelector('[data-resume-bind="'+q.target+'"]');if(active)active.value=answer;
           if(q.target.startsWith('optionalDocument.')){
