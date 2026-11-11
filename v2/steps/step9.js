@@ -197,7 +197,7 @@ function resumeAiIntakeQuestions(scope,data,ctx,posting,assets){
   if(scope==='review'){
     const targeted=data.applicationMode==='targeted';
     const hasText=v=>typeof v==='string'?!!v.trim():Array.isArray(v)?v.some(hasText):v&&typeof v==='object'?Object.values(v).some(hasText):false;
-    const hasExperience=!!(data.items||[]).length||!!(data.additionalExperiences||[]).length||!!(data.summary||'').trim()||Object.entries(form).some(([k,v])=>!/name|phone|email|address|mobile|targetjob|^job$|^field$|position/i.test(k)&&hasText(v));
+    const hasExperience=!!(data.items||[]).length||!!(data.additionalExperiences||[]).length||!!(data.summary||'').trim()||Object.entries(form).some(([k,v])=>/^(activities|career|experience|projects|workHistory|internships)$/i.test(k)&&hasText(v));
     return [
       ...(targeted?[
         ask('company','지원하는 회사·기관은 어디인가요?',data.targetCompany||posting?.company,'예: OO기업','targetCompany'),
