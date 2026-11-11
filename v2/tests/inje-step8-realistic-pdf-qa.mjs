@@ -172,11 +172,13 @@ for(const cfg of config){
     await printAndCheck('#printResumeOnly','blind-targeted',['박블라인드','학생 프로젝트팀','기업 홍보'],'테스트대학교');
 
     // Optional experience document: standalone and combined PDF both need readable print windows.
+    await page.locator('#resumeOptionalDocsDisclosure summary').click();
     await page.locator('[data-resume-doc="experience"]').click();
     await enter('optionalDocument.experience.title','소비자 조사 경험기술서');
     await openGroup('experience-doc-evidence');
     await enter('optionalDocument.experience.action','리뷰 분류 기준을 직접 설계');
     await by('optionalDocument.experience.factChecked').check();
+    await page.locator('#resumeOtherPdfOptions summary').click();
     await printAndCheck('#printExperienceOnly','experience-only',['소비자 조사 경험기술서','리뷰 분류 기준을 직접 설계']);
     await printAndCheck('#printResumePdf','combined-resume',['박블라인드','소비자 조사 경험기술서']);
 
