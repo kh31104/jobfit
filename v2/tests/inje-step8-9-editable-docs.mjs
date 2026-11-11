@@ -72,6 +72,8 @@ for(const width of [1280,390]){
     assert(reviewPrompt.includes('지원직무 반영 점검'),'AI review must explicitly examine job-description alignment');
     assert(reviewPrompt.includes('정보 부족 시 질문부터'),'Review preview must instruct the AI to ask questions instead of inventing details');
     await page.locator('#copyResumeReviewPrompt').click();
+    const intakeShown=await page.locator('#resumeAiIntakePanel').count();
+    assert(intakeShown===1,'Review question panel missing: '+JSON.stringify(await page.evaluate(key=>{const d=JSON.parse(localStorage.getItem(key)).artifacts.resumeLab;return {form:d.forms.standard,items:d.items,answers:d.aiIntakeAnswers,summary:d.summary};},key)));
     assert((await page.locator('#resumeAiIntakePanel').textContent()).includes('이력서에서 특히 확인할 경험'),'Review must ask about missing actual experience evidence');
     await page.locator('[data-ai-intake-answer="focus"]').fill('고객 리뷰 분석 과정에서 내가 직접 수행한 업무');
     await page.locator('[data-ai-intake-apply]').click();
