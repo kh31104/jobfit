@@ -30,14 +30,14 @@ for(const [engine,label,device] of [
  page.on('requestfailed',request=>{if(/\/v2\/(app\.js|steps\/step9\.js)/.test(request.url()))failedRequests.push(request.url()+' : '+request.failure()?.errorText);});
  try{
    let appFailed=0;
-   await page.route(/\/v2\/app\.js\?v=48$/,route=>{
+   await page.route(/\/v2\/app\.js\?v=49$/,route=>{
      if(!appFailed++){return route.abort('failed');}
      return route.continue();
    });
    await page.goto(base+'?course=INJE2026&measures=false',{waitUntil:'domcontentloaded',timeout:60000});
    await page.locator('.stepBtn[data-step="6"]').waitFor({timeout:45000});
    assert(appFailed===1,label+': app bootstrap interruption not triggered');
-   await page.unroute(/\/v2\/app\.js\?v=48$/);
+   await page.unroute(/\/v2\/app\.js\?v=49$/);
 
    await page.evaluate(({key,fixture})=>localStorage.setItem(key,JSON.stringify(fixture)),{key,fixture});
    await page.reload({waitUntil:'domcontentloaded'});
@@ -45,14 +45,14 @@ for(const [engine,label,device] of [
    await page.locator('#stepRoot .sectionHead').waitFor({timeout:45000});
 
    let stepFailed=0;
-   await page.route(/\/steps\/step9\.js\?v=35$/,route=>{
+   await page.route(/\/steps\/step9\.js\?v=36$/,route=>{
      if(!stepFailed++){return route.abort('failed');}
      return route.continue();
    });
    await page.locator('.stepBtn[data-step="7"]').click();
    await page.locator('#resumeTemplateLab').waitFor({timeout:45000});
    assert(stepFailed===1,label+': STEP 8 interruption not triggered');
-   await page.unroute(/\/steps\/step9\.js\?v=35$/);
+   await page.unroute(/\/steps\/step9\.js\?v=36$/);
    // The learner intentionally keeps optional resume bullets collapsed. Open the section before testing visibility.
    await page.evaluate(()=>{
      window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeEvidenceImport'));

@@ -34,6 +34,21 @@ for(const width of [1280,390]){
     assert((await page.locator('#resumeGate').innerText()).includes('앞에서 확인한 경험을 불러왔습니다.'),'STEP 3 verified experience was not reused');
     assert(await page.locator('[data-resume-template]').count()===3,'Three resume templates are required');
     assert(await page.locator('[data-application-mode="targeted"]').count()===1,'Targeted application mode missing');
+    assert(await page.locator('[data-application-mode="search"]').count()===1,'Find JD option missing');
+    await page.locator('[data-application-mode="search"]').click();
+    assert(await page.locator('#resumeFindJdPanel a[target="_blank"]').count()===5,'Private/public job search links missing');
+    assert((await page.locator('#resumeJdSearchPrompt').inputValue()).includes('경영학과'),'Search prompt did not use existing major');
+    const companyBefore=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts.resumeLab.targetCompany||'',key);
+    await page.locator('[data-resume-bind="resumeJobSearchDraft.company"]').fill('탐색기업');
+    await page.locator('[data-resume-bind="resumeJobSearchDraft.job"]').fill('디지털 마케팅');
+    await page.locator('[data-resume-bind="resumeJobSearchDraft.url"]').fill('https://example.org/jobs/1');
+    await page.locator('[data-resume-bind="resumeJobSearchDraft.details"]').fill('고객 데이터 분석');
+    assert(await page.evaluate(key=>(JSON.parse(localStorage.getItem(key)).artifacts.resumeLab.targetCompany||''),key)===companyBefore,'Exploration must not overwrite resume until confirmed');
+    await page.locator('#resumeApplyFoundJD').click();
+    assert(await page.locator('[data-resume-bind="targetCompany"]').inputValue()==='탐색기업','Selected posting company was not applied');
+    assert(await page.locator('[data-resume-bind="forms.standard.targetJob"]').inputValue()==='디지털 마케팅','Selected posting job was not reflected in resume');
+    assert(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts.resumeLab.resumeSearchSourceUrl,key)==='https://example.org/jobs/1','Selected posting source URL missing');
+
     await page.locator('[data-application-mode="general"]').click();
     assert((await page.locator('#resumeTargetMode').innerText()).includes('일반 이력서 작성'),'General mode notice missing');
     assert(await page.locator('[data-resume-bind="targetCompany"]').count()===0,'General mode must not demand employer');

@@ -52,7 +52,7 @@ function showModuleFailure(label){
   document.getElementById('retryAppLoad')?.addEventListener('click',()=>location.reload());
 }
 
-const app=await loadModule('./app.js?v=48','학습 화면');
+const app=await loadModule('./app.js?v=49','학습 화면');
 if(!app){
   showModuleFailure('학습 화면');
 }else if(!leavingPage){
