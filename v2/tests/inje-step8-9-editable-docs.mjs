@@ -58,6 +58,7 @@ for(const width of [1280,390]){
     assert(await page.locator('[data-resume-bind="forms.standard.targetJob"]').inputValue()==='마케팅','Template switching erased manual entry');
     await page.locator('#backToResumeForm').click();
     await page.locator('[data-resume-bind="forms.standard.targetJob"]').fill('디지털 마케팅');
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeAiReview')));
     await page.locator('#redoResumeReview').click();
     const secondPrompt=await page.locator('#resumeReviewPromptText').inputValue();
     assert(secondPrompt.includes('디지털 마케팅'),'AI re-review did not include student-edited resume');
@@ -68,8 +69,9 @@ for(const width of [1280,390]){
     await page.locator('#resumeReviewFeedback').fill('2차 검토 결과: 수정 사항 확인 완료');
     await page.locator('#goToResumePdf').click();
     assert(await page.locator('#printResumeOnly').count()===1,'Optional PDF control missing');
-    assert((await page.locator('#resumeReviewRoundStatus').innerText()).includes('2회'),'PDF choice incorrectly changed AI review state');
+    assert((await page.locator('#resumeReviewRoundStatus').textContent()).includes('2회'),'PDF choice incorrectly changed AI review state');
 
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeEvidenceImport')));
     await page.locator('#resumeAdvancedDisclosure summary').click();
     await page.selectOption('#assetId','asset1');
     await page.selectOption('#section',{label:'프로젝트'});
@@ -102,6 +104,7 @@ for(const width of [1280,390]){
     await page.locator('[data-resume-bind="optionalDocument.experience.factChecked"]').check();
     assert(await page.locator('#printExperienceOnly').count()===1,'Separate experience PDF option missing');
     const popupPromise=page.waitForEvent('popup');
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumePreviewLab')));
     await page.locator('#resumeOtherPdfOptions summary').click();
     await page.locator('#printExperienceOnly').click();
     const popup=await popupPromise;
