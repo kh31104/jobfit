@@ -156,7 +156,7 @@ function resumeAiWithIntakeRules(prompt,scope,data){
 }
 function resumeAiIntakeQuestions(scope,data,ctx,posting,assets){
   const value=x=>String(x==null?'':x).trim();
-  const ask=(key,label,has,placeholder='',target='')=>({key,label,has:!!value(has),placeholder,target});
+  const ask=(key,label,has,placeholder='',target='')=>({key,label,has:typeof has==='boolean'?has:!!value(has),placeholder,target});
   const form=data.forms?.[data.templateType]||{},job=value(valueAt(data,resumeTargetJobPath(data.templateType)));
   if(scope==='search'){
     const state=ctx.getState(),explorer=state.artifacts?.jobExplorer||{};
