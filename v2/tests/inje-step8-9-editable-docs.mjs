@@ -94,7 +94,7 @@ for(const width of [1280,390]){
     await page.locator('#resumeOptionalDocsDisclosure summary').click();
     await page.locator('[data-resume-doc="experience"]').click();
     assert(await page.locator('#copyResumeOptionalAiPrompt').count()===1,'Experience description needs an AI drafting action');
-    await page.locator('#resumeOptionalAiAnswer').fill('[경험명]\\nAI 경험기술서 초안\\n[내 행동]\\n소비자 리뷰 30건을 기준별로 직접 분류\\n[결과·근거]\\n분류표 작성\\n[지원직무 연결]\\n고객 데이터 분석 업무와 연결');
+    await page.locator('#resumeOptionalAiAnswer').fill('[경험명]\nAI 경험기술서 초안\n[내 행동]\n소비자 리뷰 30건을 기준별로 직접 분류\n[결과·근거]\n분류표 작성\n[지원직무 연결]\n고객 데이터 분석 업무와 연결');
     await page.locator('#applyResumeOptionalAi').click();
     assert((await page.locator('[data-resume-bind="optionalDocument.experience.action"]').inputValue()).includes('30건'),'AI experience action was not imported into an editable field');
     assert(!(await page.locator('[data-resume-bind="optionalDocument.experience.factChecked"]').isChecked()),'AI draft was incorrectly marked fact-checked');
