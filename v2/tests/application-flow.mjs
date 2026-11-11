@@ -123,6 +123,7 @@ await run('New STEP 8 Resume Lab keeps unverified STEP 5 evidence as draft',asyn
   const heading=(await page.locator('#stepRoot').textContent())||'';
   assert(heading.includes('Resume Lab'),'Logical STEP 8 did not load Resume Lab');
   assert((await page.locator('#stepRoot .kicker').first().textContent()).includes('STEP 8'),'Resume Lab still shows the old STEP number');
+  await page.locator('#resumeAdvancedDisclosure summary').click();
   await page.locator('#assetId').selectOption('a1');
   const ctx=(await page.locator('#assetContext').textContent())||'';
   assert(ctx.includes('현재는 초안용'),'Unverified asset was not marked draft-only');
@@ -142,6 +143,7 @@ await run('STEP 8 Resume Lab supports three form tabs and optional detail docume
   await page.locator('[data-resume-template="blind"]').click();
   assert(((await page.locator('#resumeTemplateGuide').textContent())||'').includes('블라인드 작성 원칙'),'Blind privacy guidance missing');
   await page.locator('[data-resume-bind="forms.blind.targetJob"]').fill('생산기술');
+  await page.locator('#resumeOptionalDocsDisclosure summary').click();
   await page.locator('[data-resume-doc="experience"]').click();
   await page.locator('details[data-resume-section="experience-doc-evidence"] summary').click();
   await page.locator('[data-resume-bind="optionalDocument.experience.action"]').fill('측정조건을 나눠 비교했다');
@@ -289,12 +291,14 @@ await run('STEP 8 student persona completes resume preview and Career Asset auto
   await page.locator('[data-resume-bind="forms.standard.education.r0.period"]').fill('2023.03~2027.02');
   await page.locator('[data-resume-bind="forms.standard.education.r0.school"]').fill('부경대학교');
   await page.locator('[data-resume-bind="forms.standard.education.r0.graduation"]').fill('졸업예정');
+  await page.locator('#resumeAdvancedDisclosure summary').click();
   await page.locator('#assetId').selectOption('a1');
   await page.locator('#section').selectOption({label:'프로젝트'});
   await page.locator('#rawBullet').fill('센서 측정조건을 나눠 오차 원인을 분석함');
   await page.locator('#finalBullet').fill('측정조건을 온도와 설치각도별로 나눠 비교해 오차가 커지는 조건을 확인');
   await page.locator('#factChecked').check();
   await page.locator('#addItem').click();
+  await page.locator('#resumeOptionalDocsDisclosure summary').click();
   await page.locator('[data-resume-doc="experience"]').click();
   await page.locator('[data-asset-source="experience"]').selectOption('a1');
   await page.locator('[data-auto-asset="experience"]').click();

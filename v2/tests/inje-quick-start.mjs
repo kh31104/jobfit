@@ -67,49 +67,33 @@ for(const width of [1280,390]){
     st=await read(page);
     assert(st.artifacts?.industryCompany?.targetCompanies?.length===1,'STEP 7 company selection was not saved');
 
-    // STEP 8: 근거 카드 새로 만들기
+    // STEP 8: Quick Start 없이 이력서 1종을 직접 작성하고 경험만 필요할 때 추가
     await openStep(page,7);
-    await page.waitForSelector('#qsStep8.callout');
-    await page.selectOption('#qs8Company',{index:1});
-    assert((await page.locator('#qs8CompanyName').inputValue())==='바른식품','Company name was not loaded from STEP 7');
-    assert((await page.locator('#qs8Reqs').inputValue()).includes('HACCP 이해'),'Hiring signals were not loaded as requirements');
-    await page.fill('#qs8ExpTitle1','급식실 위생 점검 보조');await page.fill('#qs8ExpAction1','점검표를 매일 기록하고 누락 항목을 담당자에게 알렸다.');await page.fill('#qs8ExpResult1','한 달 점검표 30장');await page.check('#qs8ExpFact1');
-    await page.click('#qs8Save');
-    assert(!(await read(page)).artifacts?.careerAssets,'Career assets saved before mapping');
-    await page.click('#qs8BuildMap');
-    assert((await page.locator('#qs8Map [data-qs8-req]').count())===3,'Mapping table should list three requirements');
-    await page.locator('#qs8Map [data-qs8-exp]').nth(0).selectOption({index:1});
-    assert((await page.locator('#qs8Map [data-qs8-level]').nth(0).inputValue())==='확인 필요','Evidence level did not move from none when an experience was chosen');
-    await page.locator('#qs8Map [data-qs8-level]').nth(0).selectOption('근거 있음');
-    await page.locator('#qs8Map [data-qs8-exp]').nth(1).selectOption({index:1});
-    await page.click('#qs8Save');
-    await page.waitForFunction(()=>document.querySelectorAll('#assetId option').length>=3);
+    await page.waitForSelector('#resumeTemplateLab');
+    assert(await page.locator('#qsStep8').count()===0,'STEP 8 should start with the resume form, not an intake form');
+    assert(await page.locator('#resumeEvidenceImport #resumeExperienceEntry').count()===1,'Optional experience must be in section 2');
+    await page.locator('[data-application-mode="targeted"]').click();
+    await page.locator('[data-resume-bind="targetCompany"]').fill('바른식품');
+    await page.locator('[data-resume-bind="forms.standard.targetJob"]').fill('식품 품질관리');
+    await page.locator('[data-resume-bind="forms.standard.nameKo"]').fill('학생 테스트');
+    await page.locator('[data-resume-bind="forms.standard.email"]').fill('learner@example.com');
+    await page.locator('[data-extra-exp-mode="new"]').click();
+    await page.locator('[data-new-exp="title"]').fill('급식실 위생 점검 보조');
+    await page.locator('[data-new-exp="actionResult"]').fill('점검표를 매일 기록하고 누락 항목을 담당자에게 알렸다.');
+    await page.locator('#newExperienceFactChecked').check();
+    await page.locator('#addNewResumeExperience').click();
     st=await read(page);
-    const qsAssets=st.artifacts.careerAssets.assets;
-    assert(qsAssets.length===3&&qsAssets.every(a=>a.origin==='quick-start-step8'),'Quick start assets missing or unmarked');
-    assert(qsAssets[0].evidenceLevel==='A · 직접 증거'&&qsAssets[0].factCheck==='검증완료','Verified quick start asset was not created correctly');
-    assert(qsAssets[2].evidenceLevel==='없음','Unmapped requirement should stay as a GAP');
-    assert(st.artifacts.jdAnalyzer.selectedId===st.artifacts.jdAnalyzer.postings[0].id&&st.artifacts.jdAnalyzer.postings[0].company==='바른식품','Quick start posting was not selected');
-    assert(st.assessments.experienceCompetency.experiences.some(x=>x.origin==='quick-start-step8'&&x.factChecked),'Quick start experience was not saved');
+    assert(st.artifacts.resumeLab.forms.standard.activities.r0.activity.includes('급식실 위생'),'New experience did not enter the resume');
+    assert((await page.locator('.stepBtn[data-step="7"] .stepN').textContent()).includes('✓'),'One usable resume should complete STEP 8');
+    await page.locator('#refreshResumePreview').click();
+    assert((await page.locator('#resumeA4Preview').innerText()).includes('식품 품질관리'),'Target job missing from resume preview');
 
-    // 이력서 문장 추가 → STEP 8 완료
-    await page.selectOption('#assetId',{index:1});
-    await page.fill('#rawBullet','위생 점검표를 매일 기록해 누락 항목을 담당자에게 공유했습니다.');
-    await page.check('#factChecked');await page.click('#addItem');
-    await page.waitForFunction(k=>JSON.parse(localStorage.getItem(k)).artifacts?.resumeLab?.items?.length===1,key);
-    assert((await page.locator('.stepBtn[data-step="7"] .stepN').textContent()).includes('✓'),'STEP 8 should be complete after adding a resume bullet');
-
-    // STEP 9: 요구사항과 근거 카드가 이어지는지
+    // STEP 9은 근거 카드가 없더라도 진입할 수 있어야 한다.
     await openStep(page,8);
-    await page.waitForSelector('#requirementId');
-    const reqOptions=await page.locator('#requirementId option').allTextContents();
-    assert(reqOptions.some(t=>t.includes('HACCP 이해')),'Cover Letter cannot see quick start requirements');
-    assert((await page.locator('[data-asset]').count())>=2,'Cover Letter cannot see quick start career assets');
-
-    // 새로고침 후 유지
+    await page.waitForSelector('#question');
     await page.reload({waitUntil:'networkidle'});
     st=await read(page);
-    assert(st.artifacts.quickStart.step8.active&&st.artifacts.resumeLab.items.length===1,'Quick start data was lost after reload');
+    assert(st.artifacts.resumeLab.forms.standard.targetJob==='식품 품질관리','Resume was lost after reload');
     assert(errors.length===0,'Browser errors: '+errors.join(' | '));
     console.log(`PASS learner without data can start from STEP 7 and reach STEP 9 (${width}px)`);
   }catch(err){failed=true;console.error(`FAIL A ${width}px\n`+(err.stack||err));}
@@ -128,8 +112,8 @@ for(const width of [1280,390]){
     await page.waitForSelector('#qsStep7');
     await page.click('#jf7Legacy');
     assert(await page.evaluate(()=>{const d=document.querySelector('#qsStep7 .qsDetails');return !!d&&!d.open&&!document.querySelector('#qsStep7.callout')}),'STEP 7 quick start should be a closed option when targets exist');
-    await openStep(page,7);await page.waitForSelector('#qsStep8');
-    assert(await page.evaluate(()=>{const d=document.querySelector('#qsStep8 .qsDetails');return !!d&&!d.open&&!document.querySelector('#qsStep8.callout')}),'STEP 8 quick start should be a closed option when assets exist');
+    await openStep(page,7);await page.waitForSelector('#resumeTemplateLab');
+    assert(await page.locator('#qsStep8').count()===0,'Deprecated STEP 8 Quick Start still shown');
     let st=await read(page);
     for(const k of ['jobExplorer','industryCompany','jdAnalyzer','careerAssets'])assert(JSON.stringify(st.artifacts[k])===JSON.stringify(seed.artifacts[k]),'Opening STEP 7·8 modified saved '+k);
     assert(JSON.stringify(st.assessments.experienceCompetency)===JSON.stringify(seed.assessments.experienceCompetency),'Opening STEP 7·8 modified experiences');
@@ -150,21 +134,14 @@ for(const width of [1280,390]){
     st=await read(page);
     assert(st.artifacts.quickStart.step7.active===false,'Switching back to STEP 4 target did not persist');
 
-    // STEP 8 다른 공고로 새로 시작 → 기존 카드 유지 → 기준 공고 되돌리기
-    await openStep(page,7);await page.waitForSelector('#qsStep8');
-    await page.locator('#qsStep8 .qsDetails > summary').click();
-    await page.fill('#qs8CompanyName','새회사');await page.fill('#qs8JobTitle','브랜드 마케팅');await page.fill('#qs8Reqs','SNS 콘텐츠 기획');
-    await page.click('#qs8BuildMap');
-    await page.locator('#qs8Map [data-qs8-exp]').first().selectOption({label:'[STEP 3] 소비자 조사'});
-    await page.click('#qs8Save');
-    await page.waitForFunction(k=>JSON.parse(localStorage.getItem(k)).artifacts.jdAnalyzer.postings.length===2,key);
+    // STEP 8: 기존 STEP 3 경험을 선택 불러와도 원본과 JD·Career Asset은 유지해야 한다.
+    await openStep(page,7);await page.waitForSelector('#resumeTemplateLab');
+    await page.locator('[data-resume-import="experiences"]').first().click();
     st=await read(page);
     assert(st.artifacts.careerAssets.assets.some(a=>a.id==='asset1'),'Existing career asset was removed');
-    assert(st.artifacts.careerAssets.assets.find(a=>a.origin==='quick-start-step8')?.experienceId==='exp1','Existing STEP 3 experience could not be linked');
-    assert(st.assessments.experienceCompetency.experiences.length===1,'No new experience should be added when only an existing one is linked');
-    await page.waitForSelector('#qs8Posting');
-    await page.selectOption('#qs8Posting','jd1');
-    await page.waitForFunction(k=>JSON.parse(localStorage.getItem(k)).artifacts.jdAnalyzer.selectedId==='jd1',key);
+    assert(st.artifacts.jdAnalyzer.postings.length===1&&st.artifacts.jdAnalyzer.selectedId==='jd1','Saved JD was changed');
+    assert(st.assessments.experienceCompetency.experiences.length===1,'Original STEP 3 experience was changed');
+    assert(st.artifacts.resumeLab.forms.standard.activities.r0.activity.includes('소비자 조사'),'Verified STEP 3 experience was not imported');
     assert(errors.length===0,'Browser errors: '+errors.join(' | '));
     console.log('PASS learner with data keeps original data and can switch back');
   }catch(err){failed=true;console.error('FAIL B\n'+(err.stack||err));}
