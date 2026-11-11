@@ -29,6 +29,7 @@ export async function render(ctx){
     ${resumePreviewBlock(injeCompact)}
   <style>@media(max-width:760px){.resumeReadable .jfA4Screen{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}.resumeReadable .jfA4Screen .resumeA4Sheet{min-width:0;width:100%!important;padding:14px!important}.resumeReadable .grid3,.resumeReadable .grid4{grid-template-columns:minmax(0,1fr)}.resumeReadable .resumeA4Sheet table{display:block;max-width:100%;overflow-x:auto}}.resumeReadable .resumeA4Sheet{overflow-wrap:anywhere;word-break:keep-all}.resumeReadable .injeResumePrint section>div{font-size:9.5pt!important;line-height:1.5!important}.resumeReadable .injeResumePrint section h2{font-size:12pt!important}.resumeReadable .injeResumePrint table,.resumeReadable .injeResumePrint th,.resumeReadable .injeResumePrint td{font-size:9pt!important;line-height:1.45!important}.resumeReadable .injeResumePrint td,.resumeReadable .injeResumePrint th{overflow-wrap:anywhere;word-break:break-word}.resumeReadable .injeResumePrint>div:first-child>div:last-child{font-size:9pt!important}@media(max-width:760px){.resumeReadable .injeResumePrint table,.resumeReadable .injeResumePrint thead,.resumeReadable .injeResumePrint tbody,.resumeReadable .injeResumePrint tr{display:block;width:100%!important}.resumeReadable .injeResumePrint thead{display:none!important}.resumeReadable .injeResumePrint tr{margin:0 0 10px;border:1px solid #d8dde6;border-radius:6px;overflow:hidden;break-inside:avoid}.resumeReadable .injeResumePrint td{display:grid!important;grid-template-columns:minmax(82px,38%) minmax(0,1fr);gap:7px;align-items:start;width:100%!important;min-width:0;max-width:100%;border:0!important;border-bottom:1px solid #e5e7eb!important;padding:6px!important;white-space:normal!important}.resumeReadable .injeResumePrint td:last-child{border-bottom:0!important}.resumeReadable .injeResumePrint td:before{content:attr(data-label);font-weight:700;color:#475569;overflow-wrap:anywhere}}</style></section>`;
 
+  if(injeCompact)compactInjeResumeUi(root,data);
   wireResumeFormUi(data,ctx,persist,candidateAssets,experiences,prior,posting,injeCompact);wireResumePreviewUi(data,ctx,posting,assets,persist,injeCompact);if(injeCompact)wireResumeReviewUi(data,ctx,persist);renderAll();document.getElementById('assetId').addEventListener('change',renderAssetContext);document.getElementById('copyPrompt').addEventListener('click',()=>copy(buildPrompt(),ctx));document.getElementById('addItem').addEventListener('click',addItem);document.getElementById('cancelResumeEdit').addEventListener('click',cancelResumeEdit);document.getElementById('saveResume').addEventListener('click',saveBase);document.getElementById('nextStep').addEventListener('click',()=>{saveBase();ctx.navigate(10)});
 
   ['summary','skills','notes'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{data[id]=document.getElementById(id).value;persist();}));
@@ -102,7 +103,7 @@ export async function render(ctx){
   }
   function buildPrompt(){const a=assets.find(x=>x.id===v('assetId'));return `너는 이력서 문장 코치다. 아래 Career Asset에 기록된 사실만 사용해 Resume bullet을 구조화해라. 없는 숫자·성과·역할은 만들지 마라.\n\n[Target JD]\n${posting?`${posting.company} / ${posting.jobTitle}\n${posting.rawPosting||''}`:'미등록'}\n\n[Career Asset]\n${JSON.stringify(a||{},null,2)}\n\n[선택 이력서 양식]\n${resumeTemplateLabel(data.templateType)}\n\n[내가 먼저 쓴 문장]\n${v('rawBullet')||'미작성'}\n\n규칙:\n1. Career Asset의 Evidence 수준이 '없음'이면 문장을 만들지 말고 GAP라고 알려라.\n2. Career Asset 또는 원경험 Fact Check가 미완료이면 결과를 '초안'이라고 명시해라.\n3. 내가 직접 한 Action이 앞에 드러나게 한다.\n4. 대상·방법·결과·Evidence 중 실제 존재하는 정보만 사용한다.\n5. 수치가 없으면 만들지 않는다.\n6. JD 키워드를 억지로 삽입하지 않는다.\n7. 1줄 Bullet 2안과 경험기술서용 3~4문장 1안을 제시한다.\n8. 원문보다 과장된 표현과 사실확인이 필요한 표현을 마지막에 따로 표시한다.`}
   function saveBase(){data.summary=v('summary');data.skills=v('skills');data.notes=v('notes');persist();ctx.toast('Resume Lab 결과를 저장했습니다.');}
-  function persist(){ctx.saveState({artifacts:{resumeLab:data}})}function v(id){return document.getElementById(id)?.value?.trim()||''}function status(t){document.getElementById('status').textContent=t;ctx.toast(t)}
+  function persist(){ctx.saveState({artifacts:{resumeLab:data}});const p=document.getElementById('resumeSavedProgress');if(p)p.textContent=resumeSavedProgressText(data);}function v(id){return document.getElementById(id)?.value?.trim()||''}function status(t){document.getElementById('status').textContent=t;ctx.toast(t)}
 }
 function gateNotice(p,ctx,prevGateStep='STEP 7'){const fail=(p.gates||[]).filter(x=>x.status==='미충족'),check=(p.gates||[]).filter(x=>x.status==='확인 필요');if(fail.length)return `<div class="callout warn"><b>Application Gate 미충족</b><br>${fail.map(x=>esc(x.text,ctx)).join(' · ')}<br>이력서 작성과 별개로 지원자격 충족 여부를 먼저 확인하세요.</div>`;if(check.length||!p.gateReviewed)return `<div class="callout info"><b>지원자격 확인 미완료</b><br>Resume를 작성할 수는 있지만 실제 지원 전 ${prevGateStep}의 지원자격을 반드시 확인하세요.</div>`;return ''}
 function isAssetVerified(a){return !!a&&a.factCheck==='검증완료'&&a.sourceExperienceFactChecked!==false}
@@ -249,11 +250,11 @@ function wireResumeReviewUi(data,ctx,persist){
       return;
     }
     if(e.target.closest('#backToResumeForm')){
-      document.getElementById('resumeTemplateForm')?.scrollIntoView({behavior:'smooth',block:'start'});
+      window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeTemplateLab'));document.getElementById('resumeTemplateForm')?.scrollIntoView({behavior:'smooth',block:'start'});
       return;
     }
     if(e.target.closest('#goToResumePdf')){
-      document.getElementById('resumePreviewLab')?.scrollIntoView({behavior:'smooth',block:'start'});
+      window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumePreviewLab'));document.getElementById('resumePreviewLab')?.scrollIntoView({behavior:'smooth',block:'start'});
       ctx.toast('PDF로 저장할지 선택하세요. 저장하지 않고 다시 수정·검토해도 됩니다.');
     }
   });
@@ -282,12 +283,57 @@ function resumeTemplateBlock(data,ctx,prior,posting=null,injeCompact=false){
       +resumeTab('blind','블라인드 이력서',data.templateType)
     +'</div>'
     +(injeCompact?resumeTargetingBlock(data,ctx,posting):'')
+    +'<p class="help" id="resumeSavedProgress">'+resumeSavedProgressText(data)+'</p>'
     +'<div id="resumeTemplateGuide">'+resumeTemplateGuide(data.templateType)+'</div>'
     +(!injeCompact?resumeAutoImportBlock(prior,data.templateType,ctx)+resumeExperienceEntryTabs(data,ctx):'')
     +'<div id="resumeTemplateForm">'+resumeTemplateForm(data,ctx)+'</div>'
   +'</div>';
 }
 
+function resumeSavedProgressText(data){
+  const types=['standard','ncs','blind'],labels={standard:'표준',ncs:'NCS',blind:'블라인드'};
+  const saved=types.filter(type=>{
+    const inspect=v=>v&&typeof v==='object'?Object.values(v).some(inspect):typeof v==='string'&&v.trim().length>0;
+    return inspect(data.forms?.[type]||{});
+  });
+  return '입력한 이력서 '+saved.length+'/3종'+(saved.length?' · '+saved.map(x=>labels[x]).join(', '):'')+' · 1종 이상 작성한 뒤 아래에서 PDF로 저장하세요.';
+}
+function compactInjeResumeUi(root,data){
+  const outer=root.querySelector('.resumeReadable'),evidence=document.getElementById('resumeEvidenceImport');
+  if(!outer||!evidence)return;
+  const blockWithHeading=text=>[...outer.querySelectorAll(':scope > .block')].find(x=>x.querySelector(':scope > h3')?.textContent?.trim()?.startsWith(text));
+  const bullet=blockWithHeading('3. '),summary=blockWithHeading('5. ');
+  const items=document.getElementById('resumeItems')?.parentElement,docs=document.getElementById('optionalResumeDocs');
+  const move=node=>{if(!node)return;const prev=node.previousElementSibling;if(prev?.classList?.contains('hr'))prev.remove();return node;};
+  const makeDetails=(label,id,open=false)=>{
+    const d=document.createElement('details');d.className='detailsBox';d.id=id;d.style.marginTop='14px';
+    d.open=!!open;const s=document.createElement('summary');s.textContent=label;d.appendChild(s);return d;
+  };
+  if(docs){
+    const choice=makeDetails('경험기술서·경력기술서 · 필요하면 AI로 작성','resumeOptionalDocsDisclosure',data.optionalDocument?.type!=='none');
+    choice.appendChild(move(docs));evidence.appendChild(choice);
+    const heading=docs.querySelector(':scope > h3');if(heading)heading.textContent='경험·경력기술서 작성 · 선택';
+  }
+  const advanced=makeDetails('추가 선택 · 이력서 문장 정리와 직무 요약','resumeAdvancedDisclosure');
+  if(bullet){bullet.querySelector(':scope > h3').textContent='이력서 문장 다듬기 · 선택';advanced.appendChild(move(bullet));}
+  if(items)advanced.appendChild(move(items));
+  if(summary){summary.querySelector(':scope > h3').textContent='직무 요약 · 필요할 때';advanced.appendChild(move(summary));}
+  evidence.appendChild(advanced);
+  const review=document.getElementById('resumeAiReview');if(review)review.querySelector(':scope > h3').textContent='3. AI 최종 검토 · 학생 직접 수정';
+  const preview=document.getElementById('resumePreviewLab');
+  if(preview){
+    preview.querySelector(':scope > h3').textContent='4. 최종 이력서 확인 · PDF 저장';
+    const actions=preview.querySelector(':scope > .actions'),only=document.getElementById('printResumeOnly');
+    if(actions&&only){
+      const more=makeDetails('다른 저장 방법 · 기술서 포함 또는 별도 PDF','resumeOtherPdfOptions');
+      const otherActions=document.createElement('div');otherActions.className='actions';
+      ['printResumePdf','printExperienceOnly','printCareerOnly'].forEach(id=>{const b=document.getElementById(id);if(b)otherActions.appendChild(b);});
+      more.appendChild(otherActions);actions.insertAdjacentElement('afterend',more);
+      only.textContent='선택한 이력서 PDF 저장';only.classList.remove('secondary');only.classList.add('primary');
+      const combined=document.getElementById('printResumePdf');if(combined){combined.classList.remove('primary');combined.classList.add('secondary');}
+    }
+  }
+}
 function resumeAutoImportBlock(prior,type,ctx,compact=false){
   var edu=prior.education?.institution||prior.education?.major?'학력·전공 1건':'학력·전공 없음';
   var certCount=(prior.certifications||[]).length+(prior.language||[]).length;
