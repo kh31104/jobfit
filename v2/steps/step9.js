@@ -121,6 +121,7 @@ function ensureResumeForms(data){
   data.optionalDocument.experience=data.optionalDocument.experience||{};
   data.optionalDocument.career=data.optionalDocument.career||{};
   data.importSources=data.importSources&&typeof data.importSources==='object'?data.importSources:{};
+  data.optionalAiDrafts=data.optionalAiDrafts&&typeof data.optionalAiDrafts==='object'?data.optionalAiDrafts:{};
   data.additionalExperiences=Array.isArray(data.additionalExperiences)?data.additionalExperiences:[];
   data.extraExperienceMode=data.extraExperienceMode||'imported';
 }
@@ -648,6 +649,63 @@ function cellSelect(path,val,opts,ctx){
   val=val||opts[0];
   return '<select data-resume-bind="'+path+'" style="min-width:110px;width:100%;border:0;background:transparent;padding:8px">'+opts.map(function(o){return '<option '+(o===val?'selected':'')+'>'+esc(o,ctx)+'</option>';}).join('')+'</select>';
 }
+function resumeOptionalAiControls(data,ctx,type){
+  const example=type==='career'?'회사·직무·기간 → 담당업무 → 직접 한 일 → 주요 성과·근거 → 지원직무 연결':'경험명·기간·역할 → 상황·과제 → 내가 직접 한 행동 → 결과·증빙 → 지원직무 연결';
+  return '<div class="callout info" id="resumeOptionalAiHelp" style="margin-top:14px"><b>AI로 기술서 초안 정리하기</b><p class="help">작성 구조: '+example+'. 없는 성과나 수치는 만들지 않습니다. AI 답변을 아래에 붙여넣은 뒤 확인·수정하세요.</p>'
+    +'<div class="actions"><button type="button" class="btn primary" id="copyResumeOptionalAiPrompt">AI 작성 프롬프트 복사</button></div>'
+    +'<div class="field"><label>AI 답변 붙여넣기 · 학생 확인 후 반영</label><textarea id="resumeOptionalAiAnswer" placeholder="[항목명] 제목에 맞춰 AI가 정리한 답변을 붙여넣으세요.">'+esc(data.optionalAiDrafts?.[type]||'',ctx)+'</textarea></div>'
+    +'<div class="actions"><button type="button" class="btn secondary" id="applyResumeOptionalAi">작성된 초안을 빈 입력칸에 반영</button></div>'
+    +'<p class="help">이미 작성한 칸은 덮어쓰지 않습니다. AI 초안 반영 후에도 모든 항목을 직접 고칠 수 있고 Fact Check는 다시 확인해야 합니다.</p></div>';
+}
+function resumeOptionalAiSpec(type){
+  return type==='career'?
+    [['회사명','company'],['근무기간','period'],['부서·직급·역할','departmentPosition'],['고용형태','employmentType'],['담당업무','duties'],['주요 성과·근거','achievements'],['사용 Skill·Tool','tools'],['지원직무 연결','jobLink']]:
+    [['경험명','title'],['기간','period'],['기관·수업·팀','organization'],['내 역할','role'],['상황·과제','task'],['내 행동','action'],['결과·근거','resultEvidence'],['지원직무 연결','jobLink']];
+}
+function buildResumeOptionalAiPrompt(data,type,posting,assets){
+  const x=data.optionalDocument?.[type]||{},a=(assets||[]).find(y=>y.id===x.assetId);
+  const targeted=data.applicationMode==='targeted',form=data.forms?.[data.templateType]||{};
+  const job=previewIdentity(data.templateType,form).job||posting?.jobTitle||'미지정';
+  const jd=targeted?(data.targetJDText||posting?.rawPosting||'공고 정보 없음'):'일반형 이력서 · 지원 직무 공고 미지정';
+  const fields=resumeOptionalAiSpec(type);
+  const source=a?{experience:a.experienceTitle,action:a.proof,evidence:a.fact,requirement:a.requirement,verification:isAssetVerified(a)?'검증완료':'검증 전 · 초안용'}:{source:'학생 직접 입력 · 별도 검증 필요'};
+  return ['역할: 취업준비생의 '+(type==='career'?'경력기술서':'경험기술서')+' 작성 보조자.',
+    '목적: 실제 경험과 확인 가능한 근거만 정리하고, 지원직무와 연결되는 부분을 분명히 보여준다.',
+    '[지원 기업]',targeted?(data.targetCompany||posting?.company||'미입력'):'미지정',
+    '[지원직무]',targeted?job:'미지정 · 일반형',
+    '[채용공고 주요업무와 요구조건]',jd,
+    '[학생이 현재 입력한 사실 - 이름·전화·이메일은 보내지 않음]',JSON.stringify(x,null,2),
+    '[STEP 3/5에서 연결된 Career Asset]',JSON.stringify(source,null,2),
+    '[작성 규칙]',
+    '1. 아래 대괄호 제목을 그대로 사용해 각 항목을 작성한다. 표나 JSON 대신 항목마다 줄바꿈으로 작성한다.',
+    '2. 팀이 한 일과 학생이 직접 한 행동을 구분한다. 없는 기간·숫자·역할·성과는 절대로 만들지 않는다.',
+    '3. 정보가 없으면 임의로 채우지 말고 [확인 필요]라고 쓴다.',
+    '4. 상황·과제와 직접 한 행동은 구체적으로, 결과는 확인 가능한 산출물·기록만 사용한다.',
+    '5. 직무연결은 제공한 공고의 업무·조건에 근거할 때만 쓰고, 연결 근거가 없으면 [확인 필요]로 둔다.',
+    '6. 서류 문장으로 자연스럽고 간결하게 작성하되 과장하거나 사실을 바꾸지 않는다.',
+    '[반드시 지킬 출력 형식]',
+    ...fields.map(([label])=>'['+label+']\n• 실제 확인된 내용 또는 [확인 필요]'),
+    '마지막에 [사실확인 질문]으로 누락된 증거를 최대 3개만 묻는다.'].join('\n');
+}
+function applyResumeOptionalAiAnswer(data,type,raw){
+  const allowed=new Map(resumeOptionalAiSpec(type)),out={},labels=[...allowed.keys()];
+  const regex=/^\s*(?:#{1,4}\s*)?\[([^\]]+)\]\s*(?:[:：]\s*)?(.*)$/gm;
+  const found=[...String(raw||'').matchAll(regex)];
+  for(let i=0;i<found.length;i++){
+    const name=found[i][1].trim(),key=allowed.get(name);
+    if(!key)continue;
+    const begin=found[i].index+found[i][0].length,end=i+1<found.length?found[i+1].index:raw.length;
+    let value=[found[i][2],raw.slice(begin,end)].filter(Boolean).join('\n').trim();
+    value=value.replace(/^\s*[•-]\s*/gm,'').trim();
+    if(value==='[확인 필요]'||!value)continue;
+    out[key]=value;
+  }
+  const doc=data.optionalDocument[type]||{},changed=[];
+  Object.entries(out).forEach(([key,value])=>{if(!String(doc[key]||'').trim()){doc[key]=value;changed.push(key);}});
+  if(changed.length)doc.factChecked=false;
+  data.optionalDocument[type]=doc;
+  return {count:changed.length,labels:labels.filter(x=>changed.includes(allowed.get(x)))};
+}
 function optionalResumeDocsBlock(data,ctx,assets=[]){
   ensureResumeForms(data);
   return '<div class="hr"></div><div class="block" id="optionalResumeDocs">'
@@ -679,7 +737,7 @@ function optionalDocBody(data,ctx,assets=[]){
         +boundArea(data,ctx,'optionalDocument.experience.resultEvidence','결과·Evidence','수치·산출물·피드백·기록 등')
         +boundArea(data,ctx,'optionalDocument.experience.jobLink','지원직무 연결','어떤 JD 요구를 증명하는지')
       +'</div>',false)
-      +optionalFactCheck(data,'experience')+'</div>';
+      +optionalFactCheck(data,'experience')+(ctx.displayStep===8?resumeOptionalAiControls(data,ctx,'experience'):'')+'</div>';
   }
   if(data.optionalDocument.type==='career'){
     return '<div class="listCard"><h3>경력기술서</h3>'+assetAutofillControls(data,ctx,'career',assets)
@@ -695,7 +753,7 @@ function optionalDocBody(data,ctx,assets=[]){
         +boundArea(data,ctx,'optionalDocument.career.tools','사용 Skill · Tool','')
         +boundArea(data,ctx,'optionalDocument.career.jobLink','지원직무 연결','어떤 JD 요구와 연결되는지')
       +'</div>',false)
-      +optionalFactCheck(data,'career')+'</div>';
+      +optionalFactCheck(data,'career')+(ctx.displayStep===8?resumeOptionalAiControls(data,ctx,'career'):'')+'</div>';
   }
   return '<div class="placeholder"><b>선택사항입니다.</b>이력서만 필요한 경우 여기서는 아무것도 작성하지 않아도 됩니다.</div>';
 }
