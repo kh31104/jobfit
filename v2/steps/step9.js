@@ -207,7 +207,7 @@ function resumeReviewBlock(data,ctx){
       +(item.feedback?'<p class="jfResultBox" style="white-space:pre-wrap;margin:8px 0 0">'+esc(item.feedback,ctx)+'</p>':'<p class="muted small">검토 결과를 기록하지 않았습니다.</p>')+'</div>';
   }).join('');
   return '<div class="hr"></div><div class="block" id="resumeAiReview">'
-    +'<h3>6. AI 검토 → 직접 수정 → 다시 검토</h3>'
+    +'<h3>'+(ctx.displayStep===7?'3. AI 최종 검토 · 학생 직접 수정':'6. AI 검토 → 직접 수정 → 다시 검토')+'</h3>'
     +'<p class="help">필요한 만큼 다시 검토할 수 있습니다. AI 수정 제안은 자동 반영되지 않으며, 이력서 양식에서 학생이 직접 고칩니다. PDF 저장은 학생이 마지막에 선택합니다.</p>'
     +'<div class="callout info"><b>반복할 수 있는 검토 과정</b><br>① AI 검토 프롬프트 복사 → ② ChatGPT 등 AI에서 검토 → ③ 결과 붙여넣기 → ④ 학생이 원본 이력서 수정 → ⑤ 수정한 이력서로 AI 재검토 → ⑥ 원하는 때 PDF 저장 선택</div>'
     +'<div class="callout warn"><b>개인정보 주의</b><br>이름·연락처·주소 입력란은 AI 프롬프트에서 제외합니다. 자유서술에 개인정보가 있다면 복사 전에 직접 확인하세요.</div>'
