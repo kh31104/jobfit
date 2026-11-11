@@ -69,6 +69,7 @@ for(const width of [1280,390]){
     assert(await page.locator('#printResumeOnly').count()===1,'Optional PDF control missing');
     assert((await page.locator('#resumeReviewRoundStatus').innerText()).includes('2회'),'PDF choice incorrectly changed AI review state');
 
+    await page.locator('#resumeAdvancedDisclosure summary').click();
     await page.selectOption('#assetId','asset1');
     await page.selectOption('#section',{label:'프로젝트'});
     await page.locator('#rawBullet').fill('리뷰 분석 원문');
@@ -86,6 +87,7 @@ for(const width of [1280,390]){
     assert(resume.items.length===1&&resume.items[0].id===before,'Editing duplicated resume row');
     assert(resume.items[0].finalBullet.includes('기준별 분류')&&resume.items[0].status==='final-ready','Resume updated bullet not final-ready');
 
+    await page.locator('#resumeOptionalDocsDisclosure summary').click();
     await page.locator('[data-resume-doc="experience"]').click();
     await page.locator('[data-resume-bind="optionalDocument.experience.title"]').fill('경험기술서 실습');
     await page.locator('[data-resume-section="experience-doc-evidence"] summary').click();
@@ -93,6 +95,7 @@ for(const width of [1280,390]){
     await page.locator('[data-resume-bind="optionalDocument.experience.factChecked"]').check();
     assert(await page.locator('#printExperienceOnly').count()===1,'Separate experience PDF option missing');
     const popupPromise=page.waitForEvent('popup');
+    await page.locator('#resumeOtherPdfOptions summary').click();
     await page.locator('#printExperienceOnly').click();
     const popup=await popupPromise;
     await popup.locator('body').waitFor();
