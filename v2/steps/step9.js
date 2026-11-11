@@ -30,7 +30,8 @@ export async function render(ctx){
   <style>@media(max-width:760px){.resumeReadable .jfA4Screen{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}.resumeReadable .jfA4Screen .resumeA4Sheet{min-width:0;width:100%!important;padding:14px!important}.resumeReadable .grid3,.resumeReadable .grid4{grid-template-columns:minmax(0,1fr)}.resumeReadable .resumeA4Sheet table{display:block;max-width:100%;overflow-x:auto}}.resumeReadable .resumeA4Sheet{overflow-wrap:anywhere;word-break:keep-all}.resumeReadable .injeResumePrint section>div{font-size:9.5pt!important;line-height:1.5!important}.resumeReadable .injeResumePrint section h2{font-size:12pt!important}.resumeReadable .injeResumePrint table,.resumeReadable .injeResumePrint th,.resumeReadable .injeResumePrint td{font-size:9pt!important;line-height:1.45!important}.resumeReadable .injeResumePrint td,.resumeReadable .injeResumePrint th{overflow-wrap:anywhere;word-break:break-word}.resumeReadable .injeResumePrint>div:first-child>div:last-child{font-size:9pt!important}@media(max-width:760px){.resumeReadable .injeResumePrint table,.resumeReadable .injeResumePrint thead,.resumeReadable .injeResumePrint tbody,.resumeReadable .injeResumePrint tr{display:block;width:100%!important}.resumeReadable .injeResumePrint thead{display:none!important}.resumeReadable .injeResumePrint tr{margin:0 0 10px;border:1px solid #d8dde6;border-radius:6px;overflow:hidden;break-inside:avoid}.resumeReadable .injeResumePrint td{display:grid!important;grid-template-columns:minmax(82px,38%) minmax(0,1fr);gap:7px;align-items:start;width:100%!important;min-width:0;max-width:100%;border:0!important;border-bottom:1px solid #e5e7eb!important;padding:6px!important;white-space:normal!important}.resumeReadable .injeResumePrint td:last-child{border-bottom:0!important}.resumeReadable .injeResumePrint td:before{content:attr(data-label);font-weight:700;color:#475569;overflow-wrap:anywhere}}</style></section>`;
 
   if(injeCompact)compactInjeResumeUi(root,data);
-  wireResumeFormUi(data,ctx,persist,candidateAssets,experiences,prior,posting,injeCompact);wireResumePreviewUi(data,ctx,posting,assets,persist,injeCompact);if(injeCompact)wireResumeReviewUi(data,ctx,persist,posting);renderAll();document.getElementById('assetId').addEventListener('change',renderAssetContext);document.getElementById('copyPrompt').addEventListener('click',()=>copy(buildPrompt(),ctx));document.getElementById('addItem').addEventListener('click',addItem);document.getElementById('cancelResumeEdit').addEventListener('click',cancelResumeEdit);document.getElementById('saveResume').addEventListener('click',saveBase);document.getElementById('nextStep').addEventListener('click',()=>{saveBase();ctx.navigate(10)});
+  const aiGuide=injeCompact?wireResumeAiIntake(data,ctx,persist,posting,candidateAssets):null;
+  wireResumeFormUi(data,ctx,persist,candidateAssets,experiences,prior,posting,injeCompact,aiGuide);wireResumePreviewUi(data,ctx,posting,assets,persist,injeCompact);if(injeCompact)wireResumeReviewUi(data,ctx,persist,posting,aiGuide);renderAll();document.getElementById('assetId').addEventListener('change',renderAssetContext);document.getElementById('copyPrompt').addEventListener('click',e=>aiGuide?aiGuide.request('bullet',e.currentTarget,buildPrompt):copy(buildPrompt(),ctx));document.getElementById('addItem').addEventListener('click',addItem);document.getElementById('cancelResumeEdit').addEventListener('click',cancelResumeEdit);document.getElementById('saveResume').addEventListener('click',saveBase);document.getElementById('nextStep').addEventListener('click',()=>{saveBase();ctx.navigate(10)});
 
   ['summary','skills','notes'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{data[id]=document.getElementById(id).value;persist();}));
   function renderAll(){renderGate();renderItems();renderAssetContext();}
@@ -133,14 +134,167 @@ function ensureResumeTargeting(data,posting){
   if(!data.resumeJobSearchDraft||typeof data.resumeJobSearchDraft!=='object')data.resumeJobSearchDraft={company:'',job:'',url:'',details:''};
   if(!data.reviewFeedbacks||typeof data.reviewFeedbacks!=='object'||Array.isArray(data.reviewFeedbacks))data.reviewFeedbacks={};
   if(!data.reviewHistory||typeof data.reviewHistory!=='object'||Array.isArray(data.reviewHistory))data.reviewHistory={};
+  if(!data.aiIntakeAnswers||typeof data.aiIntakeAnswers!=='object'||Array.isArray(data.aiIntakeAnswers))data.aiIntakeAnswers={};
+}
+
+
+const RESUME_AI_ASK_RULE=[
+  '[STEP 8 공통 · 정보 부족 시 질문부터]',
+  '아래 내용을 먼저 살펴보고, 결과 작성에 반드시 필요한 사실이 부족하거나 서로 모순되면 학생에게 최대 3개의 짧은 질문을 먼저 해. 답변을 받기 전에는 누락된 정보를 추정해 채우지 마.',
+  '학생이 답하면 해당 정보를 반영하고, 여전히 필수 사실이 부족할 때만 후속 질문을 해. 앞에서 확인된 내용은 반복해서 묻지 마.',
+  '답하지 못한 사실은 [확인 필요]로 표시하고 확인 가능한 범위까지만 작성해. 학생이 제공한 수치·경력·성과는 검증 전 정보이며 사실로 단정하지 마.',
+  '채용공고는 실제 원문·모집기간을 확인한 경우만 모집 중이라고 판정하고, 없는 링크·성과·직무 요건을 만들지 마.',
+  '최종 이력서나 기술서는 학생이 직접 확인·수정하도록 해. 개인 이름·연락처 등 불필요한 개인정보는 요구하지 마.'
+].join('\n');
+function resumeAiIntakeScope(scope,data){
+  return scope==='review'?'review_'+data.templateType+'_'+data.applicationMode:scope;
+}
+function resumeAiWithIntakeRules(prompt,scope,data){
+  const key=resumeAiIntakeScope(scope,data),answers=data.aiIntakeAnswers?.[key]||{};
+  const extra=Object.entries(answers).filter(([,v])=>String(v||'').trim()).map(([k,v])=>'- '+k+': '+String(v).trim()).join('\n');
+  return RESUME_AI_ASK_RULE+'\n\n'+(extra?'[학생이 질문에 직접 답한 보충 정보 · 사실 확인 전]\n'+extra+'\n\n':'')+prompt;
+}
+function resumeAiIntakeQuestions(scope,data,ctx,posting,assets){
+  const value=x=>String(x==null?'':x).trim();
+  const ask=(key,label,has,placeholder='',target='')=>({key,label,has:!!value(has),placeholder,target});
+  const form=data.forms?.[data.templateType]||{},job=value(valueAt(data,resumeTargetJobPath(data.templateType)));
+  if(scope==='search'){
+    const state=ctx.getState(),explorer=state.artifacts?.jobExplorer||{};
+    const combos=explorer.targetCombos||[],candidate=(explorer.candidates||[]).find(x=>x.id===combos[0]?.jobId)||(explorer.candidates||[])[0]||{};
+    return [
+      ask('job','관심 있는 직무는 무엇인가요?',job||candidate.title||posting?.jobTitle||data.resumeJobSearchDraft?.job,'예: 콘텐츠 마케팅'),
+      ask('industry','관심 산업은 어디인가요?',combos[0]?.industry||(explorer.industryInterests||[])[0],'예: 패션·유통 / 정하지 못했으면 관심 분야'),
+      ask('major','전공이 무엇인가요?',state.profile?.major,'예: 경영학과')
+    ];
+  }
+  if(scope==='bullet'){
+    const el=document.getElementById('assetId'),a=(assets||[]).find(x=>x.id===el?.value)||{};
+    const raw=document.getElementById('rawBullet')?.value||'';
+    return [
+      ask('experience','어떤 경험을 이력서에 쓰려고 하나요?',a.experienceTitle||raw,'예: 캡스톤 프로젝트'),
+      ask('action','그 경험에서 직접 한 일은 무엇인가요?',a.proof||raw,'예: 고객 리뷰 30건을 분류'),
+      ask('result','확인 가능한 결과나 산출물은 무엇인가요?',a.fact||a.result||'','예: 분류표 작성 / 아직 없다면 모르겠어요')
+    ];
+  }
+  if(scope==='experience'){
+    const doc=data.optionalDocument?.experience||{},a=(assets||[]).find(x=>x.id===doc.assetId)||{};
+    return [
+      ask('title','경험 이름이 무엇인가요?',doc.title||a.experienceTitle,'예: 교내 마케팅 프로젝트','optionalDocument.experience.title'),
+      ask('action','직접 수행한 행동은 무엇인가요?',doc.action||a.proof,'예: 설문 40건을 분류','optionalDocument.experience.action'),
+      ask('result','확인 가능한 결과·산출물은 무엇인가요?',doc.resultEvidence||a.fact,'예: 분석표·피드백 / 없다면 미확인','optionalDocument.experience.resultEvidence'),
+      ask('period','활동 시기는 언제인가요?',doc.period,'예: 2026.03~2026.06','optionalDocument.experience.period')
+    ];
+  }
+  if(scope==='career'){
+    const doc=data.optionalDocument?.career||{},a=(assets||[]).find(x=>x.id===doc.assetId)||{};
+    return [
+      ask('company','어느 회사·기관에서 일했나요?',doc.company,'예: OO기업','optionalDocument.career.company'),
+      ask('duties','직접 담당한 업무는 무엇인가요?',doc.duties||a.proof,'예: 고객문의 유형별 분류','optionalDocument.career.duties'),
+      ask('achievements','검증 가능한 업무 결과는 무엇인가요?',doc.achievements||a.fact,'예: 업무 기록표 / 없다면 확인 필요','optionalDocument.career.achievements'),
+      ask('period','근무 기간은 언제인가요?',doc.period,'예: 2025.07~2025.08','optionalDocument.career.period')
+    ];
+  }
+  if(scope==='review'){
+    const targeted=data.applicationMode==='targeted';
+    const hasExperience=!!(data.items||[]).length||!!(data.additionalExperiences||[]).length||!!(data.summary||'').trim()||Object.entries(form).some(([k,v])=>!/name|phone|email|address|mobile/i.test(k)&&!!value(v));
+    return [
+      ...(targeted?[
+        ask('company','지원하는 회사·기관은 어디인가요?',data.targetCompany||posting?.company,'예: OO기업','targetCompany'),
+        ask('job','지원직무는 무엇인가요?',job||posting?.jobTitle,'예: 디지털 마케팅',resumeTargetJobPath(data.templateType)),
+        ask('jd','공고의 실제 담당업무나 필수요건을 알고 있나요?',data.targetJDText||posting?.rawPosting,'공고에서 직접 확인한 내용을 붙여넣으세요. 모르면 비워두세요.','targetJDText')
+      ]:[]),
+      ask('focus','이력서에서 특히 확인할 경험·부분이 있나요?',hasExperience,'예: 고객 분석 경험을 직무와 연결했는지')
+    ];
+  }
+  return [];
+}
+function wireResumeAiIntake(data,ctx,persist,posting,assets){
+  const root=document.getElementById('stepRoot');
+  let pending=null;
+  function missing(scope){
+    const saved=data.aiIntakeAnswers?.[resumeAiIntakeScope(scope,data)]||{};
+    return resumeAiIntakeQuestions(scope,data,ctx,posting,assets)
+      .filter(q=>!q.has&&!String(saved[q.key]||'').trim());
+  }
+  function panel(scope,anchor){
+    const old=root.querySelector('#resumeAiIntakePanel');if(old)old.remove();
+    const questions=missing(scope).slice(0,3);
+    if(!questions.length)return false;
+    const wrapper=document.createElement('div');wrapper.id='resumeAiIntakePanel';
+    wrapper.className='callout info';wrapper.style.marginTop='12px';
+    wrapper.innerHTML='<b>AI 답변에 필요한 정보를 먼저 확인할게요.</b>'
+      +'<p class="help">앞 단계에서 찾지 못한 정보만 질문합니다. 모르는 항목은 비워두고 진행할 수 있습니다. 입력한 내용은 초안용이며 기존 이력서를 덮어쓰지 않습니다.</p>'
+      +questions.map((q,i)=>'<div class="field"><label for="resumeAiQuestion'+i+'">'+(i+1)+'. '+esc(q.label,ctx)+'</label><textarea id="resumeAiQuestion'+i+'" data-ai-intake-answer="'+esc(q.key,ctx)+'" rows="2" placeholder="'+esc(q.placeholder,ctx)+'"></textarea></div>').join('')
+      +'<div class="actions"><button type="button" class="btn primary" data-ai-intake-apply>답변 반영하고 프롬프트 완성</button><button type="button" class="btn secondary" data-ai-intake-skip>잘 모르겠어요 · 확인 필요로 진행</button></div>';
+    anchor?.closest('.actions')?.insertAdjacentElement('afterend',wrapper);
+    if(!wrapper.isConnected)root.appendChild(wrapper);
+    pending={scope,questions};
+    wrapper.scrollIntoView({behavior:'smooth',block:'nearest'});
+    return true;
+  }
+  function prepare(scope,raw){return resumeAiWithIntakeRules(raw,scope,data);}
+  function request(scope,anchor,build){
+    pending={scope,build};
+    if(panel(scope,anchor)){pending.build=build;return;}
+    pending=null;copy(prepare(scope,build()),ctx);
+  }
+  root.addEventListener('click',function(e){
+    const apply=e.target.closest('[data-ai-intake-apply]'),skip=e.target.closest('[data-ai-intake-skip]');
+    if(!apply&&!skip||!pending)return;
+    const current=pending,pane=root.querySelector('#resumeAiIntakePanel');if(!pane)return;
+    const key=resumeAiIntakeScope(current.scope,data);
+    data.aiIntakeAnswers=data.aiIntakeAnswers||{};
+    const bag=data.aiIntakeAnswers[key]||(data.aiIntakeAnswers[key]={});
+    if(apply){
+      current.questions.forEach(q=>{
+        const field=[...pane.querySelectorAll('[data-ai-intake-answer]')].find(x=>x.dataset.aiIntakeAnswer===q.key);
+        const answer=String(field?.value||'').trim();if(!answer)return;
+        bag[q.key]=answer;
+        if(q.target&&!String(valueAt(data,q.target)||'').trim()){
+          setValueAt(data,q.target,answer);
+          const active=root.querySelector('[data-resume-bind="'+q.target+'"]');if(active)active.value=answer;
+          if(q.target.startsWith('optionalDocument.')){
+            const type=q.target.split('.')[1];if(data.optionalDocument?.[type])data.optionalDocument[type].factChecked=false;
+          }
+        }
+      });
+      persist();
+    }
+    pane.remove();
+    if(apply&&missing(current.scope).length){
+      const nextButton=root.querySelector(current.scope==='search'?'#copyResumeJdSearchPrompt':current.scope==='bullet'?'#copyPrompt':current.scope==='review'?'#copyResumeReviewPrompt':'#copyResumeOptionalAiPrompt');
+      pending={scope:current.scope,build:current.build};
+      if(panel(current.scope,nextButton)){pending.build=current.build;return;}
+    }
+    pending=null;
+    if(current.scope==='search'){
+      const el=document.getElementById('resumeJdSearchPrompt');
+      if(el&&apply){
+        const original=buildResumeJdSearchPrompt(ctx,data,posting);
+        // Preserve any edits the learner made to the existing search prompt.
+        if(!el.dataset.manualEdit||el.value.includes('관심 산업 미정')||el.value.includes('관심 직무 미정'))el.value=original;
+      }
+    }
+    if(current.scope==='review'){
+      const prompt=prepare(current.scope,current.build());
+      const el=document.getElementById('resumeReviewPromptText');if(el)el.value=prompt;
+    }
+    copy(prepare(current.scope,current.build()),ctx);
+    ctx.toast(apply?'답변을 반영한 AI 프롬프트를 복사했습니다.':'부족한 정보는 확인 필요로 남긴 AI 프롬프트를 복사했습니다.');
+  });
+  root.addEventListener('input',function(e){
+    if(e.target.id==='resumeJdSearchPrompt')e.target.dataset.manualEdit='true';
+  });
+  return {request,prepare};
 }
 
 function buildResumeJdSearchPrompt(ctx,data,posting){
   const s=ctx.getState(), explorer=s.artifacts?.jobExplorer||{}, combos=explorer.targetCombos||[];
   const candidate=(explorer.candidates||[]).find(x=>x.id===combos[0]?.jobId)||(explorer.candidates||[])[0]||{};
-  const industry=combos[0]?.industry||(explorer.industryInterests||[])[0]||'관심 산업 미정';
-  const job=String(valueAt(data,resumeTargetJobPath(data.templateType))||candidate.title||posting?.jobTitle||'관심 직무 미정');
-  const major=s.profile?.major||'전공 미입력';
+  const answers=data.aiIntakeAnswers?.search||{};
+  const industry=combos[0]?.industry||(explorer.industryInterests||[])[0]||answers.industry||'관심 산업 미정';
+  const job=String(valueAt(data,resumeTargetJobPath(data.templateType))||candidate.title||posting?.jobTitle||answers.job||'관심 직무 미정');
+  const major=s.profile?.major||answers.major||'전공 미입력';
   const date=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
   return [
     '나는 '+major+' 전공 대학생이며, '+industry+' 산업의 '+job+' 직무를 탐색하고 있어.',
@@ -283,7 +437,7 @@ function resumeReviewBlock(data,ctx){
     +'<p class="help">재검토 버튼은 현재 수정한 이력서를 기준으로 새 프롬프트를 만듭니다. 이전 검토 의견은 위 기록에 남습니다. PDF 저장은 자동 실행되지 않습니다.</p>'
     +'</div>';
 }
-function wireResumeReviewUi(data,ctx,persist,posting=null){
+function wireResumeReviewUi(data,ctx,persist,posting=null,aiGuide=null){
   var root=document.getElementById('stepRoot');
   function showPrompt(newRound){
     var key=resumeReviewKey(data),history=resumeReviewHistory(data);
@@ -293,7 +447,7 @@ function wireResumeReviewUi(data,ctx,persist,posting=null){
       persist();
       refreshResumeReview(data,ctx);
     }
-    var prompt=buildResumeReviewPrompt(data,posting),el=document.getElementById('resumeReviewPromptText');
+    var prompt=aiGuide?aiGuide.prepare('review',buildResumeReviewPrompt(data,posting)):buildResumeReviewPrompt(data,posting),el=document.getElementById('resumeReviewPromptText');
     if(el)el.value=prompt;
     return prompt;
   }
@@ -311,7 +465,8 @@ function wireResumeReviewUi(data,ctx,persist,posting=null){
     if(e.target.closest('#copyResumeReviewPrompt')){
       var el=document.getElementById('resumeReviewPromptText');
       var prompt=el?.value||showPrompt(false);
-      copy(prompt,ctx);
+      if(aiGuide)aiGuide.request('review',e.target.closest('#copyResumeReviewPrompt'),()=>buildResumeReviewPrompt(data,posting));
+      else copy(prompt,ctx);
       return;
     }
     if(e.target.closest('#backToResumeForm')){
@@ -824,7 +979,7 @@ function optionalDocBody(data,ctx,assets=[]){
   }
   return '<div class="placeholder"><b>선택사항입니다.</b>이력서만 필요한 경우 여기서는 아무것도 작성하지 않아도 됩니다.</div>';
 }
-function wireResumeFormUi(data,ctx,persist,assets=[],experiences=[],prior={},posting=null,injeCompact=false){
+function wireResumeFormUi(data,ctx,persist,assets=[],experiences=[],prior={},posting=null,injeCompact=false,aiGuide=null){
   var lab=document.getElementById('resumeTemplateLab');
   var interactionRoot=lab?.closest('.resumeReadable')||lab;
   if(lab){
@@ -845,7 +1000,10 @@ function wireResumeFormUi(data,ctx,persist,assets=[],experiences=[],prior={},pos
           return;
         }
         if(e.target.closest('#copyResumeJdSearchPrompt')){
-          copy(document.getElementById('resumeJdSearchPrompt')?.value||'',ctx);return;
+          const btn=e.target.closest('#copyResumeJdSearchPrompt');
+          if(aiGuide)aiGuide.request('search',btn,()=>document.getElementById('resumeJdSearchPrompt')?.value||buildResumeJdSearchPrompt(ctx,data,posting));
+          else copy(document.getElementById('resumeJdSearchPrompt')?.value||'',ctx);
+          return;
         }
         if(e.target.closest('#resumeSearchUseStep5')&&posting){
           const draft=data.resumeJobSearchDraft;
@@ -930,7 +1088,11 @@ function wireResumeFormUi(data,ctx,persist,assets=[],experiences=[],prior={},pos
     docs.addEventListener('click',function(e){
       if(e.target.closest('#copyResumeOptionalAiPrompt')){
         const type=data.optionalDocument?.type||'none';
-        if(type!=='none')copy(buildResumeOptionalAiPrompt(data,type,posting,assets),ctx);
+        if(type!=='none'){
+          const prompt=()=>buildResumeOptionalAiPrompt(data,type,posting,assets);
+          if(aiGuide)aiGuide.request(type,e.target.closest('#copyResumeOptionalAiPrompt'),prompt);
+          else copy(prompt(),ctx);
+        }
         return;
       }
       if(e.target.closest('#applyResumeOptionalAi')){
