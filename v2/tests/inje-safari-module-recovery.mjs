@@ -53,7 +53,12 @@ for(const [engine,label,device] of [
    await page.locator('#resumeTemplateLab').waitFor({timeout:45000});
    assert(stepFailed===1,label+': STEP 8 interruption not triggered');
    await page.unroute(/\/steps\/step9\.js\?v=34$/);
-   assert((await page.locator('#resumeItems').innerText()).includes('기존 값 유지'),label+': seeded resume lost');
+   // The learner intentionally keeps optional resume bullets collapsed. Open the section before testing visibility.
+   await page.evaluate(()=>{
+     window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeEvidenceImport'));
+     const advanced=document.getElementById('resumeAdvancedDisclosure');if(advanced)advanced.open=true;
+   });
+   assert((await page.locator('#resumeItems').innerText()).includes('기존 값 유지'),label+': seeded resume not visible when expanded');
    await page.locator('.stepBtn[data-step="8"]').click();
    await page.locator('#question').waitFor({timeout:45000});
    const saved=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
