@@ -129,22 +129,81 @@ function ensureResumeTargeting(data,posting){
   if(data.applicationMode!=='targeted'&&data.applicationMode!=='general')data.applicationMode=posting?'targeted':'general';
   if(typeof data.targetCompany!=='string')data.targetCompany='';
   if(typeof data.targetJDText!=='string')data.targetJDText='';
+  data.resumeJobSearchOpen=data.resumeJobSearchOpen===true;
+  if(!data.resumeJobSearchDraft||typeof data.resumeJobSearchDraft!=='object')data.resumeJobSearchDraft={company:'',job:'',url:'',details:''};
   if(!data.reviewFeedbacks||typeof data.reviewFeedbacks!=='object'||Array.isArray(data.reviewFeedbacks))data.reviewFeedbacks={};
   if(!data.reviewHistory||typeof data.reviewHistory!=='object'||Array.isArray(data.reviewHistory))data.reviewHistory={};
 }
+
+function buildResumeJdSearchPrompt(ctx,data,posting){
+  const s=ctx.getState(), explorer=s.artifacts?.jobExplorer||{}, combos=explorer.targetCombos||[];
+  const candidate=(explorer.candidates||[]).find(x=>x.id===combos[0]?.jobId)||(explorer.candidates||[])[0]||{};
+  const industry=combos[0]?.industry||(explorer.industryInterests||[])[0]||'관심 산업 미정';
+  const job=String(valueAt(data,resumeTargetJobPath(data.templateType))||candidate.title||posting?.jobTitle||'관심 직무 미정');
+  const major=s.profile?.major||'전공 미입력';
+  const date=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  return [
+    '나는 '+major+' 전공 대학생이며, '+industry+' 산업의 '+job+' 직무를 탐색하고 있어.',
+    '확인 기준일: '+date+' (대한민국 표준시 KST). 반드시 오늘 기준 실제 모집 상태를 확인해.',
+    '[검색 순서]',
+    '1. 기업·기관 공식 채용페이지에서 현재 모집 중인 신입 및 채용연계형 인턴',
+    '2. 사람인·잡코리아·고용24의 현재 공고',
+    '3. 공공기관이라면 잡알리오·클린아이 잡플러스',
+    '4. 모집 중인 적합 공고가 없다면 최근 6개월 이내의 마감 공고를 참고용으로만',
+    '[사실 확인 규칙]',
+    '- 확인한 접수 시작일·마감일을 기준으로 모집 중 / 마감 / 확인 필요를 구분해.',
+    '- 실제 원문 URL이 확인된 경우만 적고 링크를 만들어내지 마.',
+    '- 확인하지 못한 사항은 확인 필요라고 적어. 전공만으로 직무 적합성을 판단하지 마.',
+    '- 공고 이름이 비슷해도 실제 업무가 다른 직무는 제외해.',
+    '[출력 항목: 적합 공고 최대 3개]',
+    '기업·기관명 | 공고명 | 지원직무 | 모집상태 | 접수기간 | 원문 URL | 담당업무 | 필수조건 | 우대사항',
+    '각 공고 아래에 지원직무에 맞게 이력서에서 강조할 확인된 경험·역량 종류를 최대 3개 제시해.',
+    '현재 공고가 없다면 없다고 명확하게 말하고 최근 6개월 공고를 따로 제시해.'
+  ].join('\n');
+}
+function resumeJdSearchPanel(data,ctx,posting){
+  const draft=data.resumeJobSearchDraft||{};
+  const sites=[
+    ['사람인','https://www.saramin.co.kr/','민간기업'],
+    ['잡코리아','https://www.jobkorea.co.kr/','민간기업'],
+    ['고용24','https://www.work24.go.kr/','정부 채용정보'],
+    ['잡알리오','https://job.alio.go.kr/','공공기관'],
+    ['클린아이 잡플러스','https://job.cleaneye.go.kr/','지방공공기관']
+  ];
+  return '<div style="margin-top:12px" id="resumeFindJdPanel">'
+    +'<div class="callout info"><b>공고를 찾은 뒤 이력서에 연결하세요.</b><br>기존 이력서는 그대로 유지합니다. 검색 결과는 자동으로 저장되지 않으며 학생이 확인해 선택한 공고만 반영합니다.</div>'
+    +'<p class="help" style="margin:10px 0 6px"><b>① 채용공고 직접 찾아보기</b></p>'
+    +'<div class="grid3">'+sites.map(x=>'<a class="btn secondary" style="display:block;text-align:left;white-space:normal" href="'+x[1]+'" target="_blank" rel="noopener noreferrer">'+x[0]+'<span class="muted small" style="display:block">'+x[2]+'</span></a>').join('')+'</div>'
+    +'<details class="detailsBox" style="margin-top:12px"><summary>② AI에게 현재 채용공고 찾아달라고 하기 · 선택</summary><p class="help">웹 검색이 가능한 AI에 아래 내용을 복사해 검색하세요. AI가 제시한 채용공고는 원문과 접수기간을 직접 확인해야 합니다.</p>'
+    +'<textarea id="resumeJdSearchPrompt" readonly rows="13">'+esc(buildResumeJdSearchPrompt(ctx,data,posting),ctx)+'</textarea>'
+    +'<div class="actions"><button class="btn secondary" type="button" id="copyResumeJdSearchPrompt">내 공고검색 프롬프트 복사</button></div></details>'
+    +'<p class="help" style="margin:12px 0 6px"><b>③ 실제 확인한 공고 한 개 기록하기</b></p>'
+    +'<div class="grid2">'
+    +boundField(data,ctx,'resumeJobSearchDraft.company','기업·기관명 · 필수','기업명')
+    +boundField(data,ctx,'resumeJobSearchDraft.job','찾은 지원직무 · 필수','공고의 실제 직무명')
+    +'</div>'
+    +boundField(data,ctx,'resumeJobSearchDraft.url','공고 원문 URL · 선택','https://...')
+    +boundArea(data,ctx,'resumeJobSearchDraft.details','담당업무·필수조건 · 선택','공고의 직무내용을 직접 확인하여 붙여넣으세요. 내용이 없으면 직무 맞춤 검토는 제한됩니다.')
+    +(posting?'<div class="actions"><button class="btn secondary smallBtn" type="button" id="resumeSearchUseStep5">STEP 5에서 선택한 공고를 위 빈칸에 불러오기</button></div>':'')
+    +'<div class="actions"><button class="btn primary" type="button" id="resumeApplyFoundJD">이 공고로 직무맞춤형 이력서 작성</button><button class="btn secondary" type="button" data-application-mode="general">공고가 없어도 이력서 먼저 작성</button></div>'
+    +'<p class="help">공고 탐색은 선택사항입니다. 이력서 작성과 PDF 저장을 막지 않습니다.</p>'
+    +'</div>';
+}
 function resumeTargetingBlock(data,ctx,posting){
-  var selected=data.applicationMode==='targeted';
+  const searching=!!data.resumeJobSearchOpen,selected=data.applicationMode==='targeted';
   return '<div class="listCard" id="resumeTargetMode" style="margin:12px 0">'
-    +'<h3>작성 방향 선택 · 일반형 또는 직무맞춤형</h3><p class="help">기업·직무가 없어도 작성할 수 있습니다. 전환해도 기존 이력서 내용은 유지됩니다.</p>'
-    +'<div class="actions"><button type="button" class="btn '+(selected?'primary':'secondary')+'" data-application-mode="targeted">지원 기업·직무가 있어요</button>'
-    +'<button type="button" class="btn '+(!selected?'primary':'secondary')+'" data-application-mode="general">아직 정하지 않았어요</button></div>'
-    +(selected?'<div class="callout info" style="margin-top:10px"><b>직무맞춤형 작성</b><br>회사와 직무를 확인하고 채용공고의 업무·자격요건에 맞춰 작성하세요. 지원직무는 선택한 이력서의 기본정보에서 직접 수정합니다.</div>'
+    +'<h3>작성 방향 선택 · 지원직무 확인</h3><p class="help">지원처를 찾거나, 아직 정하지 않은 상태로 먼저 작성할 수 있습니다. 어느 쪽이든 기존 입력은 유지됩니다.</p>'
+    +'<div class="actions"><button type="button" class="btn '+(!searching&&selected?'primary':'secondary')+'" data-application-mode="targeted">지원 기업·직무가 있어요</button>'
+    +'<button type="button" class="btn '+(!searching&&!selected?'primary':'secondary')+'" data-application-mode="general">아직 정하지 않았어요</button>'
+    +'<button type="button" class="btn '+(searching?'primary':'secondary')+'" data-application-mode="search">공고 찾아볼래요</button></div>'
+    +(searching?resumeJdSearchPanel(data,ctx,posting):selected?'<div class="callout info" style="margin-top:10px"><b>직무맞춤형 작성</b><br>회사와 직무를 확인하고 채용공고의 업무·자격요건에 맞춰 작성하세요. 지원직무는 선택한 이력서의 기본정보에서 직접 수정합니다.</div>'
       +boundField(data,ctx,'targetCompany','지원 기업 · 선택','지원 기업명')
       +boundArea(data,ctx,'targetJDText','채용공고 주요 내용 · 선택','실제 공고의 주요 업무·필수/우대조건. 없다면 비워두세요.')
       +(posting?'<div class="actions"><button type="button" class="btn secondary smallBtn" id="loadSelectedResumeJD">STEP 5 채용공고 불러오기</button></div>':'')
       :'<div class="callout info" style="margin-top:10px"><b>일반 이력서 작성</b><br>지원 기업과 직무가 없어도 학력·경험·경력·자격을 작성할 수 있습니다. 지원직무 항목은 비워도 됩니다. 이후 기업에 지원할 때 직무맞춤형으로 수정하세요.</div>')
     +'</div>';
 }
+
 function resumeTargetJobPath(type){
   return type==='ncs'?'forms.ncs.job':type==='blind'?'forms.blind.targetJob':'forms.standard.targetJob';
 }
@@ -172,6 +231,7 @@ function buildResumeReviewPrompt(data,posting=null){
     '[검토 대상]',resumeTemplateLabel(data.templateType)+' / '+(targeted?'지원 기업·직무 맞춤형':'기업·직무 미지정 일반형'),
     '[지원 기업]',targeted?(data.targetCompany||posting?.company||'미입력'):'미지정',
     '[채용공고 근거]',targeted?(data.targetJDText||posting?.rawPosting||'미입력 - 직무 키워드를 임의로 만들지 마라'):'미지정 - JD 관련성 점검을 요구하지 마라',
+    '[공고 원문 URL · 직접 확인]',targeted?(data.resumeSearchSourceUrl||'미기록'):'해당 없음',
     '[선택 양식에 입력한 내용 - 연락처·이름·주소 등 일부 개인정보 제외]',JSON.stringify(form,null,2),
     '[경험 문장과 확인 상태]',JSON.stringify(bullet,null,2),
     '[이번 단계에서 추가한 경험]',JSON.stringify(additional,null,2),
@@ -772,11 +832,48 @@ function wireResumeFormUi(data,ctx,persist,assets=[],experiences=[],prior={},pos
       if(injeCompact){
         var appButton=e.target.closest('[data-application-mode]');
         if(appButton){
-          data.applicationMode=appButton.dataset.applicationMode;persist();
+          const mode=appButton.dataset.applicationMode;
+          data.resumeJobSearchOpen=mode==='search';
+          if(!data.resumeJobSearchOpen)data.applicationMode=mode;
+          persist();
           var target=document.getElementById('resumeTargetMode');if(target)target.outerHTML=resumeTargetingBlock(data,ctx,posting);
-          var activeForm=document.getElementById('resumeTemplateForm');
-          if(activeForm)activeForm.innerHTML=resumeTemplateForm(data,ctx);
-          refreshResumeReview(data,ctx);return;
+          if(!data.resumeJobSearchOpen){
+            var activeForm=document.getElementById('resumeTemplateForm');
+            if(activeForm)activeForm.innerHTML=resumeTemplateForm(data,ctx);
+            refreshResumeReview(data,ctx);
+          }
+          return;
+        }
+        if(e.target.closest('#copyResumeJdSearchPrompt')){
+          copy(document.getElementById('resumeJdSearchPrompt')?.value||'',ctx);return;
+        }
+        if(e.target.closest('#resumeSearchUseStep5')&&posting){
+          const draft=data.resumeJobSearchDraft;
+          if(!draft.company)draft.company=posting.company||'';
+          if(!draft.job)draft.job=posting.jobTitle||'';
+          if(!draft.details)draft.details=posting.rawPosting||'';
+          if(!draft.url)draft.url=posting.url||posting.jobUrl||'';
+          persist();
+          const target=document.getElementById('resumeTargetMode');if(target)target.outerHTML=resumeTargetingBlock(data,ctx,posting);
+          ctx.toast('STEP 5의 선택 공고를 빈칸에 불러왔습니다. 내용을 확인하세요.');return;
+        }
+        if(e.target.closest('#resumeApplyFoundJD')){
+          const draft=data.resumeJobSearchDraft||{};
+          const company=String(draft.company||'').trim(),job=String(draft.job||'').trim();
+          if(!company||!job){ctx.toast('기업명과 실제 지원직무를 먼저 입력하세요.');return;}
+          const targetJobPath=resumeTargetJobPath(data.templateType);
+          const prevJob=String(valueAt(data,targetJobPath)||'').trim();
+          const willOverwrite=(data.targetCompany&&data.targetCompany!==company)||(prevJob&&prevJob!==job);
+          if(willOverwrite&&!window.confirm('기존 지원 기업 또는 지원직무를 새로 확인한 공고로 변경할까요? 작성한 경험·학력·자격은 유지됩니다.'))return;
+          data.applicationMode='targeted';data.resumeJobSearchOpen=false;
+          data.targetCompany=company;data.targetJDText=String(draft.details||'').trim();
+          data.resumeSearchSourceUrl=String(draft.url||'').trim();
+          setValueAt(data,targetJobPath,job);setImportSource(data,targetJobPath,'STEP 8 공고 탐색');
+          persist();
+          const target=document.getElementById('resumeTargetMode');if(target)target.outerHTML=resumeTargetingBlock(data,ctx,posting);
+          const form=document.getElementById('resumeTemplateForm');if(form)form.innerHTML=resumeTemplateForm(data,ctx);
+          refreshResumeReview(data,ctx);
+          ctx.toast('선택한 공고를 직무맞춤형 이력서에 반영했습니다. 공고 업무와 실제 경험을 확인하세요.');return;
         }
         if(e.target.closest('#loadSelectedResumeJD')&&posting){
           data.targetCompany=posting.company||'';data.targetJDText=posting.rawPosting||'';
