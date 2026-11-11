@@ -30,7 +30,7 @@ export async function render(ctx){
   <style>@media(max-width:760px){.resumeReadable .jfA4Screen{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}.resumeReadable .jfA4Screen .resumeA4Sheet{min-width:0;width:100%!important;padding:14px!important}.resumeReadable .grid3,.resumeReadable .grid4{grid-template-columns:minmax(0,1fr)}.resumeReadable .resumeA4Sheet table{display:block;max-width:100%;overflow-x:auto}}.resumeReadable .resumeA4Sheet{overflow-wrap:anywhere;word-break:keep-all}.resumeReadable .injeResumePrint section>div{font-size:9.5pt!important;line-height:1.5!important}.resumeReadable .injeResumePrint section h2{font-size:12pt!important}.resumeReadable .injeResumePrint table,.resumeReadable .injeResumePrint th,.resumeReadable .injeResumePrint td{font-size:9pt!important;line-height:1.45!important}.resumeReadable .injeResumePrint td,.resumeReadable .injeResumePrint th{overflow-wrap:anywhere;word-break:break-word}.resumeReadable .injeResumePrint>div:first-child>div:last-child{font-size:9pt!important}@media(max-width:760px){.resumeReadable .injeResumePrint table,.resumeReadable .injeResumePrint thead,.resumeReadable .injeResumePrint tbody,.resumeReadable .injeResumePrint tr{display:block;width:100%!important}.resumeReadable .injeResumePrint thead{display:none!important}.resumeReadable .injeResumePrint tr{margin:0 0 10px;border:1px solid #d8dde6;border-radius:6px;overflow:hidden;break-inside:avoid}.resumeReadable .injeResumePrint td{display:grid!important;grid-template-columns:minmax(82px,38%) minmax(0,1fr);gap:7px;align-items:start;width:100%!important;min-width:0;max-width:100%;border:0!important;border-bottom:1px solid #e5e7eb!important;padding:6px!important;white-space:normal!important}.resumeReadable .injeResumePrint td:last-child{border-bottom:0!important}.resumeReadable .injeResumePrint td:before{content:attr(data-label);font-weight:700;color:#475569;overflow-wrap:anywhere}}</style></section>`;
 
   if(injeCompact)compactInjeResumeUi(root,data);
-  wireResumeFormUi(data,ctx,persist,candidateAssets,experiences,prior,posting,injeCompact);wireResumePreviewUi(data,ctx,posting,assets,persist,injeCompact);if(injeCompact)wireResumeReviewUi(data,ctx,persist);renderAll();document.getElementById('assetId').addEventListener('change',renderAssetContext);document.getElementById('copyPrompt').addEventListener('click',()=>copy(buildPrompt(),ctx));document.getElementById('addItem').addEventListener('click',addItem);document.getElementById('cancelResumeEdit').addEventListener('click',cancelResumeEdit);document.getElementById('saveResume').addEventListener('click',saveBase);document.getElementById('nextStep').addEventListener('click',()=>{saveBase();ctx.navigate(10)});
+  wireResumeFormUi(data,ctx,persist,candidateAssets,experiences,prior,posting,injeCompact);wireResumePreviewUi(data,ctx,posting,assets,persist,injeCompact);if(injeCompact)wireResumeReviewUi(data,ctx,persist,posting);renderAll();document.getElementById('assetId').addEventListener('change',renderAssetContext);document.getElementById('copyPrompt').addEventListener('click',()=>copy(buildPrompt(),ctx));document.getElementById('addItem').addEventListener('click',addItem);document.getElementById('cancelResumeEdit').addEventListener('click',cancelResumeEdit);document.getElementById('saveResume').addEventListener('click',saveBase);document.getElementById('nextStep').addEventListener('click',()=>{saveBase();ctx.navigate(10)});
 
   ['summary','skills','notes'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{data[id]=document.getElementById(id).value;persist();}));
   function renderAll(){renderGate();renderItems();renderAssetContext();}
@@ -163,15 +163,15 @@ function resumeRedactForAi(obj){
   }
   return obj;
 }
-function buildResumeReviewPrompt(data){
+function buildResumeReviewPrompt(data,posting=null){
   var form=resumeRedactForAi(data.forms?.[data.templateType]||{}),targeted=data.applicationMode==='targeted';
   var bullet=(data.items||[]).map(function(x){return {section:x.section||'',original:x.rawBullet||'',final:x.finalBullet||x.aiBullet||'',experience:x.assetTitle||'',verified:!!(x.factChecked&&x.assetVerified)};});
   var additional=(data.additionalExperiences||[]).filter(function(x){return x.templateType===data.templateType;}).map(function(x){return {title:x.title,actionResult:x.actionResult,period:x.period};});
   return [
     '역할: 대학생·취업준비생을 위한 한국어 이력서 검토자. 문장을 대신 창작하기보다 학생이 고쳐야 할 부분을 정확히 찾아라.',
     '[검토 대상]',resumeTemplateLabel(data.templateType)+' / '+(targeted?'지원 기업·직무 맞춤형':'기업·직무 미지정 일반형'),
-    '[지원 기업]',targeted?(data.targetCompany||'미입력'):'미지정',
-    '[채용공고 근거]',targeted?(data.targetJDText||'미입력 - 직무 키워드를 임의로 만들지 마라'):'미지정 - JD 관련성 점검을 요구하지 마라',
+    '[지원 기업]',targeted?(data.targetCompany||posting?.company||'미입력'):'미지정',
+    '[채용공고 근거]',targeted?(data.targetJDText||posting?.rawPosting||'미입력 - 직무 키워드를 임의로 만들지 마라'):'미지정 - JD 관련성 점검을 요구하지 마라',
     '[선택 양식에 입력한 내용 - 연락처·이름·주소 등 일부 개인정보 제외]',JSON.stringify(form,null,2),
     '[경험 문장과 확인 상태]',JSON.stringify(bullet,null,2),
     '[이번 단계에서 추가한 경험]',JSON.stringify(additional,null,2),
@@ -183,6 +183,10 @@ function buildResumeReviewPrompt(data){
     '5. 블라인드 양식은 학교명·출신지역·성별·나이·가족관계 등 직무 무관 개인정보 노출을 특히 점검한다.',
     '6. 직무맞춤형이고 채용공고가 제공된 경우에만 공고 요구사항과 이력의 연결을 확인한다. 일반형에는 JD를 추정하지 않는다.',
     '7. 기존 사실을 유지하며 수정 제안을 제시한다. 확인되지 않은 자격/경력/성과를 새로 추가하지 않는다.',
+    '8. 지원직무가 이력서 상단에 명확히 표시되어 있는지, 공고의 주요 업무·필수 요구사항과 직무경험이 실제로 연결되는지를 최우선으로 점검한다.',
+    '[우선 출력 - 지원직무 반영 점검]',
+    '채용공고 업무·요구사항 | 이력서에 적힌 관련 경험·자격 | 근거 수준(직접/간접/없음) | 학생이 고칠 부분',
+    '공고가 없으면 이 표를 생략하고 학생이 선택한 직무와 이력서 일치 여부만 점검한다.',
     '[출력 - 반드시 아래 표 형식]',
     '검토 위치 | 문제 유형 | 원문 | 수정 제안 | 수정 이유 | 학생 확인 필요 여부',
     '표 아래에 ① 바로 수정 가능한 표현 ② 사실확인이 필요한 사항 ③ 누락된 정보(있을 경우)를 구분한다.',
@@ -219,7 +223,7 @@ function resumeReviewBlock(data,ctx){
     +'<p class="help">재검토 버튼은 현재 수정한 이력서를 기준으로 새 프롬프트를 만듭니다. 이전 검토 의견은 위 기록에 남습니다. PDF 저장은 자동 실행되지 않습니다.</p>'
     +'</div>';
 }
-function wireResumeReviewUi(data,ctx,persist){
+function wireResumeReviewUi(data,ctx,persist,posting=null){
   var root=document.getElementById('stepRoot');
   function showPrompt(newRound){
     var key=resumeReviewKey(data),history=resumeReviewHistory(data);
@@ -229,7 +233,7 @@ function wireResumeReviewUi(data,ctx,persist){
       persist();
       refreshResumeReview(data,ctx);
     }
-    var prompt=buildResumeReviewPrompt(data),el=document.getElementById('resumeReviewPromptText');
+    var prompt=buildResumeReviewPrompt(data,posting),el=document.getElementById('resumeReviewPromptText');
     if(el)el.value=prompt;
     return prompt;
   }
@@ -824,6 +828,23 @@ function wireResumeFormUi(data,ctx,persist,assets=[],experiences=[],prior={},pos
   var docs=document.getElementById('optionalResumeDocs');
   if(docs){
     docs.addEventListener('click',function(e){
+      if(e.target.closest('#copyResumeOptionalAiPrompt')){
+        const type=data.optionalDocument?.type||'none';
+        if(type!=='none')copy(buildResumeOptionalAiPrompt(data,type,posting,assets),ctx);
+        return;
+      }
+      if(e.target.closest('#applyResumeOptionalAi')){
+        const type=data.optionalDocument?.type||'none',el=document.getElementById('resumeOptionalAiAnswer');
+        if(type==='none'||!el)return;
+        data.optionalAiDrafts[type]=el.value;
+        const result=applyResumeOptionalAiAnswer(data,type,el.value);
+        persist();
+        if(result.count){
+          const body=document.getElementById('optionalDocBody');if(body)body.innerHTML=optionalDocBody(data,ctx,assets);
+          ctx.toast('AI 초안 '+result.count+'개 항목을 빈칸에 반영했습니다. 사실을 확인하고 직접 수정하세요.');
+        }else ctx.toast('반영할 새 항목이 없습니다. [항목명] 제목이 있는지 확인하세요. 기존 입력값은 유지됩니다.');
+        return;
+      }
       var auto=e.target.closest('[data-auto-asset]');
       if(auto){
         var type=auto.dataset.autoAsset,select=docs.querySelector('[data-asset-source="'+type+'"]'),asset=assets.find(function(x){return x.id===select?.value;});
@@ -839,6 +860,11 @@ function wireResumeFormUi(data,ctx,persist,assets=[],experiences=[],prior={},pos
       docs.querySelectorAll('[data-resume-doc]').forEach(function(x){x.classList.toggle('primary',x===b);x.classList.toggle('secondary',x!==b);});
     });
     bindResumeInputs(docs,data,persist);
+    docs.addEventListener('input',function(e){
+      if(e.target?.id!=='resumeOptionalAiAnswer')return;
+      data.optionalAiDrafts[data.optionalDocument.type]=e.target.value;
+      persist();
+    });
   }
 }
 function bindResumeInputs(root,data,persist){
