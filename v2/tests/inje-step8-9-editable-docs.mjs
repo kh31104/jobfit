@@ -111,6 +111,11 @@ for(const width of [1280,390]){
     await popup.locator('body').waitFor();
     assert((await popup.locator('body').innerText()).includes('경험기술서 실습'),'Separate PDF missed saved experience');
     await popup.close();
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeEvidenceImport')));
+    await page.locator('[data-resume-doc="career"]').click();
+    assert(await page.locator('#copyResumeOptionalAiPrompt').count()===1,'Career description must expose its AI drafting prompt');
+    assert((await page.locator('#resumeOptionalAiHelp').textContent()).includes('담당업무'),'Career drafting guidance must explain duties and outcomes');
+    await page.locator('[data-resume-doc="experience"]').click();
 
     await page.reload({waitUntil:'networkidle'});
     await page.locator('#resumeTemplateLab').waitFor();
