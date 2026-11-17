@@ -277,7 +277,7 @@ for(const width of [1280,390]){
     },key);
     await page.evaluate(key=>{
       const st=JSON.parse(localStorage.getItem(key));st.activeStep=8;
-      st.artifacts.coverLetterLab={questions:[]};
+      st.artifacts.coverLetterLab={questions:[],practiceMode:false};
       localStorage.setItem(key,JSON.stringify(st));
     },key);
     await page.reload({waitUntil:'networkidle'});
@@ -288,12 +288,14 @@ for(const width of [1280,390]){
     }
     assert(!studentCopy.includes('${prevEvidenceStep}'),'Template variable leaked to student UI');
     assert(await page.locator('[data-asset="inje_step3_ex1"]').count()===1,'STEP 3 experience was not offered as draft material');
-    await page.locator('[name="coverWorkMode"][value="application"]').check();
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('question')?.closest('.block')));
     await page.selectOption('#requirementId','__manual');
     await page.locator('#manualRequirement').fill('고객 데이터 분석');
     await page.locator('#question').fill('마케팅 직무와 관련된 경험은 무엇인가요?');
     await page.locator('#intent').fill('직무 관련 경험과 직접 행동을 확인');
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.querySelector('[data-asset="inje_step3_ex1"]')?.closest('.block')));
     await page.locator('[data-asset="inje_step3_ex1"]').check();
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('rawAnswer')?.closest('.block')));
     await page.locator('#rawAnswer').fill('리뷰 30건을 기준별로 직접 분류하고 기록했습니다.');
     await page.locator('#draft').fill('리뷰를 분류한 경험을 기반으로 고객 관점을 확인했습니다.');
     await page.locator('#addQuestion').click();
