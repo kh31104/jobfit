@@ -315,6 +315,35 @@ for(const width of [1280,390]){
     await page.locator('#addQuestion').click();
     const changed=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts.coverLetterLab.questions,key);
     assert(changed.length===1&&changed[0].rawAnswer.includes('표로 정리'),'Edited draft did not replace previous draft');
+    // 학생 관점: 지원기업 미정 연습본을 만들고 저장·수정 후에도 원자료를 지킨다.
+    await page.locator('[name="coverWorkMode"][value="practice"]').check();
+    await page.locator('#practiceTargetJob').fill('브랜드 마케팅');
+    await page.locator('[data-cover-type="WHY"]').click();
+    assert(await page.locator('#questionType').inputValue()==='WHY','Sample question type missing');
+    assert((await page.locator('#coverTypeGuide').innerText()).includes('PREP'),'Practice WHY guide missing');
+    await page.locator('#rawAnswer').fill('고객 리뷰를 분류하는 과제가 흥미로워 마케팅 직무를 알아보고 있습니다.');
+    await page.locator('#draft').fill('고객 리뷰 분류 경험을 바탕으로 마케팅 직무에 관심이 있습니다.');
+    await page.locator('#addQuestion').click();
+    const practiceState=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),key);
+    const practiceQ=practiceState.artifacts.coverLetterLab.questions.at(-1);
+    assert(practiceState.artifacts.coverLetterLab.questions.length===2,'Practice deleted earlier draft');
+    assert(practiceQ.practiceMode===true&&practiceQ.status==='draft'&&!practiceQ.company,'Practice must remain draft without company');
+    assert(practiceQ.questionType==='WHY'&&practiceQ.jobTitle==='브랜드 마케팅','Practice type/target job lost');
+    const practiceId=practiceQ.id;
+    await page.locator('#coverReviewQuestion').selectOption(practiceId);
+    assert((await page.locator('#coverReviewPrompt').inputValue()).includes('실제 채용공고 없음'),'Practice AI review should not invent posting');
+    await page.reload({waitUntil:'networkidle'});
+    assert(await page.locator('[name="coverWorkMode"][value="practice"]').isChecked(),'Practice mode lost on reload');
+    await page.locator('[data-cover-edit]').last().click();
+    assert(await page.locator('#questionType').inputValue()==='WHY','Saved practice WHY type lost');
+    await page.locator('#rawAnswer').fill('고객 리뷰 분류 과정을 기록했고, 이를 바탕으로 마케팅에 관심을 갖게 됐습니다.');
+    await page.locator('#addQuestion').click();
+    const practiceAfter=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),key);
+    assert(practiceAfter.artifacts.coverLetterLab.questions.length===2,'Practice edit duplicated question');
+    assert(practiceAfter.artifacts.coverLetterLab.questions.at(-1).rawAnswer.includes('기록했고'),'Practice edit not retained');
+    assert(JSON.stringify(practiceAfter.assessments.experienceCompetency.experiences)===beforeCoverFallback.exp,'Practice overwrote STEP 3');
+    assert(JSON.stringify(practiceAfter.artifacts.resumeLab)===beforeCoverFallback.resume,'Practice overwrote STEP 8');
+    assert(JSON.stringify(practiceAfter.artifacts.jdAnalyzer)===beforeCoverFallback.jd,'Practice overwrote job posting');
     if(width<=480){
       const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
       assert(overflow<=2,'INJE STEP 9 mobile horizontal overflow '+overflow+'px');
