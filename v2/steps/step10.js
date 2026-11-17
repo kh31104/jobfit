@@ -17,7 +17,7 @@ export async function render(ctx){
     <div class="sectionHead"><div><div class="kicker">STEP ${displayStep}</div><h2>${injeCompact?'자기소개서 작성':'Cover Letter Lab'}</h2><p>${injeCompact?'기업의 질문을 이해하고 내 경험을 골라 직접 답변을 완성하세요.':'문항 평가의도 → JD Requirement → Career Asset을 연결한 뒤, 학생의 실제 답변으로 자기소개서를 만듭니다.'}</p></div><span class="badge">10주차</span></div><div class="progress"><span style="width:79%"></span></div>
     ${posting?`<div class="callout info"><b>${injeCompact?'지원할 기업·직무':'Target'}</b><br>${esc(posting.company,ctx)} · ${esc(posting.jobTitle,ctx)}</div>`:''}
     <div class="block"><h3>0. ${injeCompact?'작성 현황':'Cover Letter Readiness'}</h3><div id="coverDashboard"></div></div>
-    ${resumeReuseBlock(resumeItems,ctx)}
+    ${resumeReuseBlock(resumeItems,ctx,injeCompact)}
 
     <div class="hr"></div><div class="block"><h3>1. ${injeCompact?'자기소개서 질문 이해하기':'문항 → 평가의도 → JD 연결'}</h3><div class="grid2">${area('question','자기소개서 문항','','문항 전체를 그대로 입력')}${area('intent',injeCompact?'기업이 확인하려는 내용':'내가 해석한 평가의도','','예: 지원 직무를 이해하고 관련 경험이 있는가?')}</div><div class="grid2" style="margin-top:12px">${selectReq('requirementId',injeCompact?'채용공고에서 요구하는 업무·역량':'관련 JD Requirement',posting?.requirements||[],injeCompact)}${area('claim',injeCompact?'가장 말하고 싶은 내용':'이 문항에서 증명할 핵심주장','','예: 고객 리뷰를 분류해 구매 기준을 비교한 경험이 있다')}</div><div id="questionGuard" class="callout info">${injeCompact?'채용공고에서 요구하는 일과 내 경험이 맞는지 확인합니다.':'JD Requirement와 Career Asset을 연결하면 정합성을 확인합니다.'}</div></div>
 
@@ -25,7 +25,7 @@ export async function render(ctx){
 
     <div class="hr"></div><div class="block"><h3>3. ${injeCompact?'내 경험으로 자기소개서 작성하기':'내 답변에서 초안 만들기'}</h3><div class="grid2">${area('rawAnswer',injeCompact?'내가 실제로 한 일 · 직접 답변':'내 원래 답변 · Raw Voice','','언제, 무슨 일을, 왜, 어떻게 했고 결과는 어땠나요?')}${area('structure',injeCompact?'답변 흐름 메모':'구조화 메모','','핵심 내용 → 상황 → 내 행동과 이유 → 결과·근거 → 지원 직무 연결')}</div><div class="field" style="margin-top:12px"><label>${injeCompact?'AI가 정리한 초안':'AI 초안'}</label><textarea id="draft" rows="8" placeholder="AI가 구조화한 초안. 최종본이 아닙니다."></textarea></div><div class="field" style="margin-top:12px"><label><b>학생이 수정한 최종 답변</b></label><textarea id="finalAnswer" rows="10" placeholder="AI 초안을 사실에 맞게 수정합니다. 내가 하지 않은 일이나 확인되지 않은 수치는 삭제하세요."></textarea><p class="help">${injeCompact?'사실 확인을 마친 최종 답변만 다음 단계에 활용합니다.':'이 내용이 Fact Check 완료 후 포트폴리오에 전달됩니다.'} 작성한 문항은 아래 목록에서 다시 수정할 수 있습니다.</p></div><label class="checkRow"><input type="checkbox" id="factChecked"><div><b>${injeCompact?'작성 내용 사실 확인':'Cover Letter Fact Check'}</b><span>${injeCompact?'내가 한 일·수치·결과가 실제 경험과 일치하며 과장하지 않았습니다.':'경험·수치·역할·결과가 선택한 Career Asset 및 Raw Voice와 일치합니다.'}</span></div></label><div class="actions"><button class="btn primary" id="addQuestion">문항 저장</button><button type="button" class="btn secondary hidden" id="cancelQuestionEdit">수정 취소</button></div><div class="status" id="status"></div></div>
 
-    <div class="block"><h3>4. 저장한 문항 · 수정 및 개별 저장</h3><p class="help">각 문항의 최종답변을 수정하거나 검증된 문항만 개별 PDF로 저장할 수 있습니다. 검증 전 초안은 별도 텍스트 파일로 보관할 수 있습니다.</p><div class="actions"><button type="button" class="btn secondary" id="printAllCovers">검증 완료 문항 전체 PDF</button><button type="button" class="btn secondary" id="downloadAllCovers">문항 전체 TXT 백업</button></div><div id="questionList"></div></div><div class="actions"><button class="btn primary" id="saveAll">${injeCompact?'자기소개서 작성 내용 저장':'Cover Letter Lab 저장'}</button><button class="btn secondary" id="nextStep">STEP ${displayStep+(injeCompact?2:1)} ${injeCompact?'면접 준비':'Interview Lab'} →</button></div>
+    <div class="block"><h3>4. 저장한 문항 · 수정 및 개별 저장</h3><p class="help">각 문항의 최종답변을 수정하거나 검증된 문항만 개별 PDF로 저장할 수 있습니다. 검증 전 초안은 별도 텍스트 파일로 보관할 수 있습니다.</p><div class="actions"><button type="button" class="btn secondary" id="printAllCovers">${injeCompact?'최종 완성 문항 전체 PDF':'검증 완료 문항 전체 PDF'}</button><button type="button" class="btn secondary" id="downloadAllCovers">${injeCompact?'전체 문항 텍스트 백업':'문항 전체 TXT 백업'}</button></div><div id="questionList"></div></div><div class="actions"><button class="btn primary" id="saveAll">${injeCompact?'자기소개서 작성 내용 저장':'Cover Letter Lab 저장'}</button><button class="btn secondary" id="nextStep">STEP ${displayStep+(injeCompact?2:1)} ${injeCompact?'면접 준비':'Interview Lab'} →</button></div>
   <style>.coverReadable .jfDraftText{white-space:pre-wrap;font-size:14px;line-height:1.85;overflow-wrap:anywhere;word-break:keep-all}.coverReadable .jfResultBox>.jfReadFields{margin-top:12px}.coverReadable .jfReadField{min-width:0}@media(max-width:760px){.coverReadable .grid2,.coverReadable .grid3{grid-template-columns:minmax(0,1fr)}} </style></section>`;
 
   renderAll();wireResumeReuse();document.querySelectorAll('[data-asset]').forEach(x=>x.addEventListener('change',()=>{enforceAssetLimit(x);renderGuards()}));document.getElementById('requirementId').addEventListener('change',renderGuards);document.getElementById('manualRequirement')?.addEventListener('input',renderGuards);document.getElementById('copyPrompt').addEventListener('click',()=>copy(buildPrompt(),ctx));document.getElementById('addQuestion').addEventListener('click',addQuestion);document.getElementById('cancelQuestionEdit').addEventListener('click',cancelQuestionEdit);document.getElementById('saveAll').addEventListener('click',()=>{persist();status('자기소개서 작업을 저장했습니다.');});document.getElementById('nextStep').addEventListener('click',()=>{persist();ctx.navigate(11)});
@@ -62,7 +62,7 @@ export async function render(ctx){
     });
   }
   function selectedAssets(){const ids=[...document.querySelectorAll('[data-asset]:checked')].map(x=>x.dataset.asset);return guidedAssets.filter(a=>ids.includes(a.id))}
-  function enforceAssetLimit(changed){const checked=[...document.querySelectorAll('[data-asset]:checked')];if(checked.length>2){changed.checked=false;ctx.toast('문항당 Career Asset은 최대 2개를 권장·허용합니다.');}}
+  function enforceAssetLimit(changed){const checked=[...document.querySelectorAll('[data-asset]:checked')];if(checked.length>2){changed.checked=false;ctx.toast(injeCompact?'문항당 경험은 최대 2개만 선택할 수 있습니다.':'문항당 Career Asset은 최대 2개를 권장·허용합니다.');}}
   function alignment(){const sel=selectedAssets(),reqId=v('requirementId'),weak=sel.filter(a=>!isAssetVerified(a)),matched=reqId&&reqId!=='__manual'?sel.filter(a=>a.requirementId===reqId):[];return {sel,reqId,weak,matched,aligned:!!reqId&&reqId!=='__manual'&&matched.length>0&&weak.length===0&&sel.length<=2}}
   function renderGuards(){
     if(!injeCompact){const a=alignment(),assetBox=document.getElementById('assetGuard'),qBox=document.getElementById('questionGuard');if(!a.sel.length){assetBox.className='callout info';assetBox.textContent='Career Asset을 선택하면 사실검증·Requirement 연결을 확인합니다.';}else if(a.weak.length){assetBox.className='callout warn';assetBox.innerHTML=`<b>Fact Check 필요</b><br>${a.weak.map(x=>esc(x.experienceTitle,ctx)).join(', ')}의 Career Asset 또는 원경험 Fact Check가 완료되지 않았습니다.`;}else if(a.reqId&&!a.matched.length){assetBox.className='callout warn';assetBox.innerHTML='<b>Requirement 연결 불일치</b><br>선택한 Career Asset 중 현재 JD Requirement를 직접 연결한 자산이 없습니다. 다른 자산을 선택하거나 연결 논리를 다시 확인하세요.';}else{assetBox.className='callout good';assetBox.innerHTML='<b>선택 Evidence 확인</b><br>선택한 Career Asset의 사실검증 및 JD Requirement 연결이 확인되었습니다.';}if(!a.reqId){qBox.className='callout info';qBox.textContent='관련 JD Requirement를 선택하세요.';}else if(a.matched.length){qBox.className='callout good';qBox.textContent='문항의 핵심주장을 실제 JD Requirement와 Career Asset Evidence에 연결할 수 있습니다.';}else{qBox.className='callout warn';qBox.textContent='선택한 JD Requirement와 연결되는 Career Asset Evidence가 아직 없습니다.';}return;}
@@ -77,15 +77,15 @@ export async function render(ctx){
     else if(a.matched.length){qBox.className='callout good';qBox.textContent='선택한 경험이 채용공고의 업무·역량과 연결되어 있습니다.';}
     else{qBox.className='callout warn';qBox.textContent='공고의 업무·역량에 해당하는 경험이 있는지 확인하세요. 없으면 초안으로 먼저 작성할 수 있습니다.';}
   }
-  function renderDashboard(){const box=document.getElementById('coverDashboard'),finals=data.questions.filter(isQuestionReady).length,drafts=data.questions.length-finals;box.innerHTML=`<div class="grid3"><div class="miniCard"><b>저장 문항</b><span>${data.questions.length}개</span></div><div class="miniCard"><b>Final Ready</b><span>${finals}개</span></div><div class="miniCard"><b>Draft / 검증필요</b><span>${drafts}개</span></div></div>`;}
+  function renderDashboard(){const box=document.getElementById('coverDashboard'),finals=data.questions.filter(isQuestionReady).length,drafts=data.questions.length-finals;box.innerHTML=`<div class="grid3"><div class="miniCard"><b>저장 문항</b><span>${data.questions.length}개</span></div><div class="miniCard"><b>${injeCompact?'최종 완성':'Final Ready'}</b><span>${finals}개</span></div><div class="miniCard"><b>${injeCompact?'초안 · 확인 필요':'Draft / 검증필요'}</b><span>${drafts}개</span></div></div>`;}
   function addQuestion(){
     const q=v('question'),a=alignment();
     if(!q){status('자기소개서 문항을 입력하세요.');return;}
-    if(!v('intent')){status('평가의도를 먼저 작성하세요.');return;}
+    if(!v('intent')){status(injeCompact?'기업이 이 질문으로 무엇을 확인하려는지 적어 주세요.':'평가의도를 먼저 작성하세요.');return;}
     if(!a.reqId){status(injeCompact?'채용공고에서 요구하는 업무·역량을 선택하거나 직접 입력하세요.':'관련 JD Requirement를 선택하세요.');return;}if(injeCompact&&a.reqId==='__manual'&&!v('manualRequirement')){status('공고에서 요구하는 업무·역량을 직접 입력하세요.');return;}
     if(!a.sel.length&&!injeCompact){status('사용할 Career Asset을 1개 이상 선택하세요.');return;}
-    if(a.sel.length>2){status('Career Asset은 최대 2개만 선택하세요.');return;}
-    if(!v('rawAnswer')){status('AI 초안보다 학생의 Raw Voice 또는 인터뷰 답변을 먼저 남기세요.');return;}
+    if(a.sel.length>2){status(injeCompact?'자기소개서 질문당 경험은 최대 2개만 선택하세요.':'Career Asset은 최대 2개만 선택하세요.');return;}
+    if(!v('rawAnswer')){status(injeCompact?'먼저 실제로 한 일을 내 말로 적어 주세요. AI 초안만으로는 저장할 수 없습니다.':'AI 초안보다 학생의 Raw Voice 또는 인터뷰 답변을 먼저 남기세요.');return;}
     const r=a.reqId==='__manual'?{id:'__manual',text:v('manualRequirement')}:(posting?.requirements||[]).find(x=>x.id===a.reqId);
     const factChecked=document.getElementById('factChecked').checked,assetVerified=a.weak.length===0,requirementAligned=a.matched.length>0,statusValue=factChecked&&assetVerified&&requirementAligned&&(!injeCompact||!!v('finalAnswer'))?'final-ready':'draft';
     const fields={postingId:posting?.id||'',company:posting?.company||'',jobTitle:posting?.jobTitle||'',question:q,intent:v('intent'),requirementId:r?.id||'',requirement:r?.text||'',claim:v('claim'),assetIds:a.sel.map(x=>x.id),rawAnswer:v('rawAnswer'),structure:v('structure'),draft:v('draft'),finalAnswer:v('finalAnswer'),factChecked,assetVerified,requirementAligned,status:statusValue};
@@ -98,7 +98,7 @@ export async function render(ctx){
       data.questions.push({id:'cl_'+Date.now(),...fields,createdAt:new Date().toISOString()});
     }
     persist();cancelQuestionEdit();renderAll();
-    status((updating?'수정':'추가')+' 문항을 '+(statusValue==='final-ready'?'Final Ready':'Draft · 검증필요')+' 상태로 저장했습니다.');
+    status((updating?'수정':'추가')+' 문항을 '+(statusValue==='final-ready'?(injeCompact?'최종 완성':'Final Ready'):(injeCompact?'초안 · 확인 필요':'Draft · 검증필요'))+' 상태로 저장했습니다.');
   }
   function editQuestion(id){
     const q=data.questions.find(x=>x.id===id);if(!q)return;
@@ -156,7 +156,16 @@ export async function render(ctx){
   function persist(){ctx.saveState({artifacts:{coverLetterLab:data}})}function v(id){return document.getElementById(id)?.value?.trim()||''}function clear(ids){ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value=''})}function status(t){document.getElementById('status').textContent=t;ctx.toast(t)}
 }
 
-function resumeReuseBlock(items,ctx){
+function resumeReuseBlock(items,ctx,injeCompact=false){
+  if(injeCompact){
+    if(!items.length)return '<div class="hr"></div><div class="block"><h3>STEP 8에서 작성한 이력서 연결하기</h3><div class="callout info">STEP 8에서 경험을 이력서 문장으로 확인하면 여기서 불러올 수 있습니다. 기존 입력값은 바뀌지 않습니다.</div></div>';
+    return '<div class="hr"></div><div class="block" id="resumeReuse"><h3>STEP 8 이력서 경험 불러오기</h3>'
+      +'<p class="help">앞에서 작성한 경험을 다시 입력할 필요가 없습니다. 자기소개서 질문에 맞게 필요한 내용만 보완하세요.</p>'
+      +'<div class="grid2"><div class="field"><label>불러올 이력서 경험</label><select class="jfLongSelect" id="resumeEvidenceSource"><option value="">선택하세요</option>'
+      +items.map(x=>'<option value="'+esc(x.id,ctx)+'">'+esc(x.assetTitle||x.section||'내 경험',ctx)+'</option>').join('')
+      +'</select></div><div class="field"><label>&nbsp;</label><button type="button" class="btn primary" id="loadResumeEvidence">이 경험 불러오기</button></div></div>'
+      +'<div class="callout good"><b>자동으로 채워지는 내용</b> 내가 한 행동·결과·경험 근거<br><b>학생이 확인할 내용</b> 질문의 의도·지원 직무 연결·최종 답변</div></div>';
+  }
   if(!items.length)return '<div class="hr"></div><div class="block"><h3>STEP 8 → STEP 9 연결</h3><div class="callout info"><b>같은 경험을 다시 입력하지 않습니다.</b><br>STEP 8에서 Final Ready 이력서 경험을 먼저 만들면 여기서 Career Asset·원경험을 자동으로 불러올 수 있습니다.</div></div>';
   return '<div class="hr"></div><div class="block" id="resumeReuse"><h3>STEP 8 → STEP 9 · 이력서 경험 불러오기</h3>'
     +'<p class="help">자기소개서 문항과 평가의도는 새로 확인해야 하지만, 같은 경험의 Action·Result·Evidence는 다시 입력하지 않습니다.</p>'
