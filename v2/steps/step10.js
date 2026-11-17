@@ -118,8 +118,9 @@ export async function render(ctx){
     document.getElementById('addQuestion').textContent='문항 수정 저장';
     document.getElementById('cancelQuestionEdit').classList.remove('hidden');
     renderGuards();
-    if(injeCompact)window.JobfitStepAccordion?.openBlock?.(document.getElementById('question')?.closest('.block'));
-    document.getElementById('question').scrollIntoView({behavior:'smooth',block:'center'});
+    const editFocus=injeCompact?document.getElementById('finalAnswer'):document.getElementById('question');
+    if(injeCompact)window.JobfitStepAccordion?.openBlock?.(editFocus?.closest('.block'));
+    editFocus?.scrollIntoView({behavior:'smooth',block:'center'});
     status('저장 문항을 불러왔습니다. 수정 후 사실을 다시 확인하고 저장하세요.');
   }
   function cancelQuestionEdit(){
