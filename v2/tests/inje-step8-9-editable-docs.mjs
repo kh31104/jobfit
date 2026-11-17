@@ -210,6 +210,7 @@ for(const width of [1280,390]){
     assert((await page.locator('#coverTypeGuide').innerText()).includes('STAR'),'HOW guide missing STAR');
     await page.selectOption('#questionType','CAN');
     assert((await page.locator('#coverTypeGuide').innerText()).includes('두괄식'),'CAN guide missing conclusion-first STAR');
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('coverAiReview')));
     await page.selectOption('#coverReviewQuestion',coverBefore);
     await page.locator('#copyCoverReview').click();
     assert((await page.locator('#coverReviewPrompt').inputValue()).includes('고객 리뷰 30건'),'Review prompt missing student answer');
@@ -330,6 +331,7 @@ for(const width of [1280,390]){
     assert(practiceQ.practiceMode===true&&practiceQ.status==='draft'&&!practiceQ.company,'Practice must remain draft without company');
     assert(practiceQ.questionType==='WHY'&&practiceQ.jobTitle==='브랜드 마케팅','Practice type/target job lost');
     const practiceId=practiceQ.id;
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('coverAiReview')));
     await page.locator('#coverReviewQuestion').selectOption(practiceId);
     assert((await page.locator('#coverReviewPrompt').inputValue()).includes('실제 채용공고 없음'),'Practice AI review should not invent posting');
     await page.reload({waitUntil:'networkidle'});
