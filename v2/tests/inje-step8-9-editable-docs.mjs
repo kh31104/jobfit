@@ -309,6 +309,7 @@ for(const width of [1280,390]){
     assert(afterDraft.exp===beforeCoverFallback.exp,'Existing STEP 3 experience was overwritten');
     assert(afterDraft.resume===beforeCoverFallback.resume,'Existing STEP 8 resume was overwritten');
     assert(afterDraft.jd===beforeCoverFallback.jd,'Existing JD was overwritten');
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('questionList')?.closest('.block')));
     await page.locator('[data-cover-pdf]').click();
     assert((await page.locator('#status').innerText()).includes('최종 답변과 사실 확인'),'Unverified draft must not export as final PDF');
     await page.reload({waitUntil:'networkidle'});
