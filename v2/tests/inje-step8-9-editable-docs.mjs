@@ -228,6 +228,7 @@ for(const width of [1280,390]){
     assert(reviewStore[coverBefore]?.length===2,'Two review rounds not saved');
     await page.reload({waitUntil:'networkidle'});
     assert((await page.locator('#coverReviewFeedback').inputValue()).includes('수정본 확인'),'Second review feedback lost on reload');
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('questionList')?.closest('.block')));
     await page.locator('[data-cover-edit]').click();
     assert(!(await page.locator('#factChecked').isChecked()),'Review revision incorrectly inherited fact check');
     await page.locator('#factChecked').check();
@@ -309,6 +310,7 @@ for(const width of [1280,390]){
     await page.locator('[data-cover-pdf]').click();
     assert((await page.locator('#status').innerText()).includes('최종 답변과 사실 확인'),'Unverified draft must not export as final PDF');
     await page.reload({waitUntil:'networkidle'});
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('questionList')?.closest('.block')));
     await page.locator('[data-cover-edit]').click();
     assert(await page.locator('#manualRequirement').inputValue()==='고객 데이터 분석','Manual requirement lost after reload');
     assert(await page.locator('#rawAnswer').inputValue()==='리뷰 30건을 기준별로 직접 분류하고 기록했습니다.','Student draft lost after reload');
@@ -336,6 +338,7 @@ for(const width of [1280,390]){
     assert((await page.locator('#coverReviewPrompt').inputValue()).includes('실제 채용공고 없음'),'Practice AI review should not invent posting');
     await page.reload({waitUntil:'networkidle'});
     assert(await page.locator('[name="coverWorkMode"][value="practice"]').isChecked(),'Practice mode lost on reload');
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('questionList')?.closest('.block')));
     await page.locator('[data-cover-edit]').last().click();
     assert(await page.locator('#questionType').inputValue()==='WHY','Saved practice WHY type lost');
     await page.locator('#rawAnswer').fill('고객 리뷰 분류 과정을 기록했고, 이를 바탕으로 마케팅에 관심을 갖게 됐습니다.');
