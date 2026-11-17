@@ -233,6 +233,62 @@ for(const width of [1280,390]){
     await page.locator('#previewResumeReviewPrompt').click();
     assert((await page.locator('#resumeReviewPromptText').inputValue()).includes('기업·직무 미지정 일반형'),'General AI review prompt missing');
     assert(!(await page.locator('#resumeReviewPromptText').inputValue()).includes('일반 학생'),'AI prompt must not include name');
+    // STEP 9 학생 관점: 앞 단계에 채용공고/역량 카드가 없어도 초안을 작성·재수정할 수 있다.
+    // 이 경로는 기존 경험·이력서를 덮어쓰거나 검증되지 않은 초안을 Final Ready로 표시하지 않는다.
+    const beforeCoverFallback=await page.evaluate(key=>{
+      const st=JSON.parse(localStorage.getItem(key));return {
+        exp:JSON.stringify(st.assessments.experienceCompetency.experiences),
+        resume:JSON.stringify(st.artifacts.resumeLab),
+        jd:JSON.stringify(st.artifacts.jdAnalyzer)
+      };
+    },key);
+    await page.evaluate(key=>{
+      const st=JSON.parse(localStorage.getItem(key));st.activeStep=8;
+      st.artifacts.coverLetterLab={questions:[]};
+      localStorage.setItem(key,JSON.stringify(st));
+    },key);
+    await page.reload({waitUntil:'networkidle'});
+    await page.locator('#question').waitFor();
+    const studentCopy=await page.locator('#stepRoot').innerText();
+    for(const word of ['채용공고에서 요구하는 업무·역량','자기소개서에 사용할 경험 선택','AI에게 경험 질문받기','내가 실제로 한 일']){
+      assert(studentCopy.includes(word),'INJE STEP 9 student label missing: '+word);
+    }
+    assert(!studentCopy.includes('${prevEvidenceStep}'),'Template variable leaked to student UI');
+    assert(await page.locator('[data-asset="inje_step3_ex1"]').count()===1,'STEP 3 experience was not offered as draft material');
+    await page.selectOption('#requirementId','__manual');
+    await page.locator('#manualRequirement').fill('고객 데이터 분석');
+    await page.locator('#question').fill('마케팅 직무와 관련된 경험은 무엇인가요?');
+    await page.locator('#intent').fill('직무 관련 경험과 직접 행동을 확인');
+    await page.locator('[data-asset="inje_step3_ex1"]').check();
+    await page.locator('#rawAnswer').fill('리뷰 30건을 기준별로 직접 분류하고 기록했습니다.');
+    await page.locator('#draft').fill('리뷰를 분류한 경험을 기반으로 고객 관점을 확인했습니다.');
+    await page.locator('#addQuestion').click();
+    const afterDraft=await page.evaluate(key=>{
+      const st=JSON.parse(localStorage.getItem(key));
+      return {question:st.artifacts.coverLetterLab.questions[0],
+        exp:JSON.stringify(st.assessments.experienceCompetency.experiences),
+        resume:JSON.stringify(st.artifacts.resumeLab),
+        jd:JSON.stringify(st.artifacts.jdAnalyzer)};
+    },key);
+    assert(afterDraft.question?.status==='draft','Manual JD fallback must remain a draft');
+    assert(afterDraft.question?.requirement==='고객 데이터 분석','Manual job requirement was not saved');
+    assert(afterDraft.exp===beforeCoverFallback.exp,'Existing STEP 3 experience was overwritten');
+    assert(afterDraft.resume===beforeCoverFallback.resume,'Existing STEP 8 resume was overwritten');
+    assert(afterDraft.jd===beforeCoverFallback.jd,'Existing JD was overwritten');
+    await page.locator('[data-cover-pdf]').click();
+    assert((await page.locator('#status').innerText()).includes('최종 답변과 사실 확인'),'Unverified draft must not export as final PDF');
+    await page.reload({waitUntil:'networkidle'});
+    await page.locator('[data-cover-edit]').click();
+    assert(await page.locator('#manualRequirement').inputValue()==='고객 데이터 분석','Manual requirement lost after reload');
+    assert(await page.locator('#rawAnswer').inputValue()==='리뷰 30건을 기준별로 직접 분류하고 기록했습니다.','Student draft lost after reload');
+    await page.locator('#rawAnswer').fill('고객 리뷰 30건을 직접 분류하고 표로 정리했습니다.');
+    await page.locator('#addQuestion').click();
+    const changed=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts.coverLetterLab.questions,key);
+    assert(changed.length===1&&changed[0].rawAnswer.includes('표로 정리'),'Edited draft did not replace previous draft');
+    if(width<=480){
+      const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+      assert(overflow<=2,'INJE STEP 9 mobile horizontal overflow '+overflow+'px');
+    }
     assert(errors.length===0,'Browser error: '+errors.join(' | '));
     console.log('PASS INJE STEP 8-9 editable documents '+width+'px');
   }catch(e){failed=true;console.error('FAIL '+width+'px '+(e.stack||e));}
