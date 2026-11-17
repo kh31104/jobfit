@@ -118,6 +118,7 @@ export async function render(ctx){
     document.getElementById('addQuestion').textContent='문항 수정 저장';
     document.getElementById('cancelQuestionEdit').classList.remove('hidden');
     renderGuards();
+    if(injeCompact)window.JobfitStepAccordion?.openBlock?.(document.getElementById('question')?.closest('.block'));
     document.getElementById('question').scrollIntoView({behavior:'smooth',block:'center'});
     status('저장 문항을 불러왔습니다. 수정 후 사실을 다시 확인하고 저장하세요.');
   }
@@ -190,7 +191,7 @@ export async function render(ctx){
       if(input.value.trim()&&!window.confirm('현재 입력한 질문을 연습 문항으로 바꿀까요?'))return;
       input.value=button.dataset.coverSample||'';
       const type=document.getElementById('questionType');if(type)type.value=button.dataset.coverType||'';
-      renderTypeGuide();input.focus();
+      renderTypeGuide();window.JobfitStepAccordion?.openBlock?.(input.closest('.block'));input.focus();
     }));
   }
   function ensureCoverReviewData(){
