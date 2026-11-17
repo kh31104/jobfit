@@ -143,7 +143,7 @@ export async function render(ctx){
         '<div class="actions">'+(injeCompact?'<button type="button" class="btn primary smallBtn" data-cover-review="'+esc(q.id,ctx)+'">AI 검토·재검토</button>':'')+'<button type="button" class="btn secondary smallBtn" data-cover-edit="'+esc(q.id,ctx)+'">수정</button><button type="button" class="btn secondary smallBtn" data-cover-pdf="'+esc(q.id,ctx)+'">문항 PDF</button><button type="button" class="btn outline smallBtn" data-cover-txt="'+esc(q.id,ctx)+'">문항 TXT</button><button class="btn danger smallBtn" data-del="'+esc(q.id,ctx)+'">삭제</button></div></div>';
     }).join('');
     box.querySelectorAll('[data-cover-edit]').forEach(b=>b.addEventListener('click',()=>editQuestion(b.dataset.coverEdit)));
-    if(injeCompact)box.querySelectorAll('[data-cover-review]').forEach(b=>b.addEventListener('click',()=>{selectedReviewId=b.dataset.coverReview;renderReviewPanel();document.getElementById('coverAiReview')?.scrollIntoView({behavior:'smooth',block:'start'});}));
+    if(injeCompact)box.querySelectorAll('[data-cover-review]').forEach(b=>b.addEventListener('click',()=>{selectedReviewId=b.dataset.coverReview;renderReviewPanel();const reviewSection=document.getElementById('coverAiReview');window.JobfitStepAccordion?.openBlock?.(reviewSection);reviewSection?.scrollIntoView({behavior:'smooth',block:'start'});}));
     box.querySelectorAll('[data-cover-pdf]').forEach(b=>b.addEventListener('click',()=>{
       const q=data.questions.find(x=>x.id===b.dataset.coverPdf);
       if(!isQuestionReady(q)){status(injeCompact?'최종 답변과 사실 확인이 끝난 문항만 PDF로 저장됩니다. 초안은 텍스트 파일로 보관하세요.':'최종 PDF는 Fact Check 완료 문항만 가능합니다. 검증 전 문항은 TXT로 별도 저장하세요.');return;}
