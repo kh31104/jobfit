@@ -204,6 +204,7 @@ for(const width of [1280,390]){
     assert(cover.questions.length===1&&cover.questions[0].id===coverBefore,'Editing duplicated cover question');
     assert(cover.questions[0].finalAnswer.includes('기준별로')&&cover.questions[0].status==='final-ready','Cover final not saved');
     // 학생 관점: WHY/HOW/CAN 안내와 AI 검토→수정→재검토 이력을 확인한다.
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('question')?.closest('.block')));
     await page.selectOption('#questionType','WHY');
     assert((await page.locator('#coverTypeGuide').innerText()).includes('PREP'),'WHY guide missing PREP');
     await page.selectOption('#questionType','HOW');
@@ -235,6 +236,7 @@ for(const width of [1280,390]){
     await page.locator('#addQuestion').click();
     assert(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts.coverLetterLab.questions[0].status,key)==='final-ready','Final ready not restored after student recheck');
 
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('questionList')?.closest('.block')));
     const downloadPromise=page.waitForEvent('download');
     await page.locator('[data-cover-txt]').click();
     const dl=await downloadPromise;
@@ -319,11 +321,13 @@ for(const width of [1280,390]){
     const changed=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts.coverLetterLab.questions,key);
     assert(changed.length===1&&changed[0].rawAnswer.includes('표로 정리'),'Edited draft did not replace previous draft');
     // 학생 관점: 지원기업 미정 연습본을 만들고 저장·수정 후에도 원자료를 지킨다.
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('coverModeBlock')));
     await page.locator('[name="coverWorkMode"][value="practice"]').check();
     await page.locator('#practiceTargetJob').fill('브랜드 마케팅');
     await page.locator('[data-cover-type="WHY"]').click();
     assert(await page.locator('#questionType').inputValue()==='WHY','Sample question type missing');
     assert((await page.locator('#coverTypeGuide').innerText()).includes('PREP'),'Practice WHY guide missing');
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('rawAnswer')?.closest('.block')));
     await page.locator('#rawAnswer').fill('고객 리뷰를 분류하는 과제가 흥미로워 마케팅 직무를 알아보고 있습니다.');
     await page.locator('#draft').fill('고객 리뷰 분류 경험을 바탕으로 마케팅 직무에 관심이 있습니다.');
     await page.locator('#addQuestion').click();
