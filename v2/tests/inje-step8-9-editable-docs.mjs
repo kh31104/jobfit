@@ -203,6 +203,35 @@ for(const width of [1280,390]){
     const cover=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts.coverLetterLab,key);
     assert(cover.questions.length===1&&cover.questions[0].id===coverBefore,'Editing duplicated cover question');
     assert(cover.questions[0].finalAnswer.includes('기준별로')&&cover.questions[0].status==='final-ready','Cover final not saved');
+    // 학생 관점: WHY/HOW/CAN 안내와 AI 검토→수정→재검토 이력을 확인한다.
+    await page.selectOption('#questionType','WHY');
+    assert((await page.locator('#coverTypeGuide').innerText()).includes('PREP'),'WHY guide missing PREP');
+    await page.selectOption('#questionType','HOW');
+    assert((await page.locator('#coverTypeGuide').innerText()).includes('STAR'),'HOW guide missing STAR');
+    await page.selectOption('#questionType','CAN');
+    assert((await page.locator('#coverTypeGuide').innerText()).includes('두괄식'),'CAN guide missing conclusion-first STAR');
+    await page.selectOption('#coverReviewQuestion',coverBefore);
+    await page.locator('#copyCoverReview').click();
+    assert((await page.locator('#coverReviewPrompt').inputValue()).includes('고객 리뷰 30건'),'Review prompt missing student answer');
+    await page.locator('#coverReviewFeedback').fill('본인이 직접 한 행동을 보강해 주세요.');
+    await page.locator('#saveCoverReviewFeedback').click();
+    await page.locator('#coverReviewRevision').fill('고객 리뷰 30건을 기준별로 직접 분류했습니다. 분류 기준표도 작성했습니다.');
+    await page.locator('#applyCoverRevision').click();
+    const revised=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts.coverLetterLab.questions[0],key);
+    assert(!revised.factChecked&&revised.status==='draft','Student revision must reset fact check');
+    await page.locator('#redoCoverReview').click();
+    assert((await page.locator('#coverReviewPrompt').inputValue()).includes('직전 AI 검토 의견'),'Re-review prompt lost previous feedback');
+    await page.locator('#coverReviewFeedback').fill('수정본 확인. 경험 근거와 최종 대조하세요.');
+    await page.locator('#saveCoverReviewFeedback').click();
+    const reviewStore=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts.coverLetterLab.reviewHistory,key);
+    assert(reviewStore[coverBefore]?.length===2,'Two review rounds not saved');
+    await page.reload({waitUntil:'networkidle'});
+    assert((await page.locator('#coverReviewFeedback').inputValue()).includes('수정본 확인'),'Second review feedback lost on reload');
+    await page.locator('[data-cover-edit]').click();
+    assert(!(await page.locator('#factChecked').isChecked()),'Review revision incorrectly inherited fact check');
+    await page.locator('#factChecked').check();
+    await page.locator('#addQuestion').click();
+    assert(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts.coverLetterLab.questions[0].status,key)==='final-ready','Final ready not restored after student recheck');
 
     const downloadPromise=page.waitForEvent('download');
     await page.locator('[data-cover-txt]').click();
@@ -255,6 +284,7 @@ for(const width of [1280,390]){
     }
     assert(!studentCopy.includes('${prevEvidenceStep}'),'Template variable leaked to student UI');
     assert(await page.locator('[data-asset="inje_step3_ex1"]').count()===1,'STEP 3 experience was not offered as draft material');
+    await page.locator('[name="coverWorkMode"][value="application"]').check();
     await page.selectOption('#requirementId','__manual');
     await page.locator('#manualRequirement').fill('고객 데이터 분석');
     await page.locator('#question').fill('마케팅 직무와 관련된 경험은 무엇인가요?');
