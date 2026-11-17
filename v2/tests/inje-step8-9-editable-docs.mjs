@@ -281,8 +281,8 @@ for(const width of [1280,390]){
       localStorage.setItem(key,JSON.stringify(st));
     },key);
     await page.reload({waitUntil:'networkidle'});
-    await page.locator('#question').waitFor();
-    const studentCopy=await page.locator('#stepRoot').innerText();
+    await page.locator('#question').waitFor({state:'attached'});
+    const studentCopy=await page.locator('#stepRoot').textContent();
     for(const word of ['채용공고에서 요구하는 업무·역량','자기소개서에 사용할 경험 선택','AI에게 경험 질문받기','내가 실제로 한 일']){
       assert(studentCopy.includes(word),'INJE STEP 9 student label missing: '+word);
     }
