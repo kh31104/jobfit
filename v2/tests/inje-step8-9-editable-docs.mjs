@@ -259,6 +259,7 @@ for(const width of [1280,390]){
     await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeTemplateLab')));
     assert((await page.locator('#resumeTargetMode').innerText()).includes('일반 이력서 작성'),'General mode without JD must work');
     await page.locator('[data-resume-bind="forms.standard.nameKo"]').fill('일반 학생');
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.querySelector('[data-resume-section="standard-certifications"]')));
     await page.locator('[data-resume-bind="forms.standard.certifications.r0.name"]').fill('컴퓨터활용능력');
     await page.locator('[data-resume-bind="forms.standard.certifications.r0.score"]').fill('2급');
     await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumePreviewLab')));
