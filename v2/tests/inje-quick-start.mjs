@@ -71,7 +71,7 @@ for(const width of [1280,390]){
     await openStep(page,7);
     await page.waitForSelector('#resumeTemplateLab');
     assert(await page.locator('#qsStep8').count()===0,'STEP 8 should start with the resume form, not an intake form');
-    assert(await page.locator('#resumeEvidenceImport #resumeExperienceEntry').count()===1,'Optional experience must be in section 2');
+    assert(await page.locator('#resumeEvidenceImport #resumeExperienceEntry').count()===1,'Optional experience must remain available inside stage 1');
     await page.locator('[data-application-mode="targeted"]').click();
     await page.locator('[data-resume-bind="targetCompany"]').fill('바른식품');
     await page.locator('[data-resume-bind="forms.standard.targetJob"]').fill('식품 품질관리');
