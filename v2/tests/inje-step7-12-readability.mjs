@@ -58,7 +58,8 @@ for(const width of [1280,390]){
         await page.locator('#resumeAdvancedDisclosure').waitFor();
         await page.evaluate(()=>{
           const section=document.getElementById('resumeEvidenceImport');
-          window.JobfitStepAccordion?.openBlock?.(section);
+          window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeTemplateLab'));
+          document.getElementById('resumePriorDetails').open=true;
           document.getElementById('resumeAdvancedDisclosure').open=true;
         });
       }
