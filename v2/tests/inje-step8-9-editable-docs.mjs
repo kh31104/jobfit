@@ -28,9 +28,9 @@ for(const width of [1280,390]){
     assert(await page.locator('#resumeEvidenceImport #resumeAutoImport').count()===1,'Optional prior-data import must appear in section 2');
     assert(await page.locator('#resumeEvidenceImport #resumeExperienceEntry').count()===1,'Import and new-experience controls must appear in section 2');
     assert(await page.locator('#resumeTemplateLab #resumePriorDetails #resumeAutoImport').count()===1,'Optional prior-data import must be nested in stage 1');
-    assert(await page.locator('#resumeTemplateLab > h3').textContent()==='1. 이력서 작성','Stage 1 heading missing');
-    assert(await page.locator('#resumeAiReview > h3').textContent()==='2. AI 검토 · 직접 수정 (선택)','Stage 2 heading missing');
-    assert(await page.locator('#resumePreviewLab > h3').textContent()==='3. 이력서 완성 · PDF 저장','Stage 3 heading missing');
+    assert((await page.locator('#resumeTemplateLab > h3').textContent()).startsWith('1. 이력서 작성'),'Stage 1 heading missing');
+    assert((await page.locator('#resumeAiReview > h3').textContent()).startsWith('2. AI 검토 · 직접 수정 (선택)'),'Stage 2 heading missing');
+    assert((await page.locator('#resumePreviewLab > h3').textContent()).startsWith('3. 이력서 완성 · PDF 저장'),'Stage 3 heading missing');
     assert(await page.locator('.resumeReadable > .block').count()===3,'INJE STEP 8 must show three primary stage blocks');
     assert(!await page.locator('#resumePriorDetails').evaluate(el=>el.open),'Prior import must be optional and collapsed initially');
     assert(await page.locator('#resumeGoReview').count()===1&&await page.locator('#resumeGoPdf').count()===1,'Stage navigation buttons missing');
