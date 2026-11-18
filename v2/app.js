@@ -166,7 +166,7 @@ function installStepAccordion(root,step){
   const storageKey=`jobfit:accordion:${courseConfig.course||'default'}:${step}`;
   const readMode=()=>{try{return sessionStorage.getItem(storageKey)}catch{return null}};
   const writeMode=value=>{try{sessionStorage.setItem(storageKey,String(value))}catch{}};
-  const rawBlocks=()=>[...section.querySelectorAll('.block')].filter(b=>!b.parentElement?.closest('.block'));
+  const rawBlocks=()=>[...section.querySelectorAll('.block')].filter(b=>!b.parentElement?.closest('.block')&&!b.closest('#resumeAdvancedDisclosure,#resumeOptionalDocsDisclosure'));
   const triggerFor=block=>block?.querySelector(':scope > .moduleHead')||block?.querySelector(':scope > .sectionHead')||block?.querySelector(':scope > h3')||null;
   const groups=()=>{
     const out=[];let current=null;
