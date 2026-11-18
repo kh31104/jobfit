@@ -33,6 +33,8 @@ for(const width of [1280,390]){
     assert((await page.locator('#resumePreviewLab > h3').textContent()).startsWith('3. 이력서 완성 · PDF 저장'),'Stage 3 heading missing');
     assert(await page.locator('.resumeReadable > .block').count()===3,'INJE STEP 8 must show three primary stage blocks');
     assert(!await page.locator('#resumePriorDetails').evaluate(el=>el.open),'Prior import must be optional and collapsed initially');
+    await page.locator('#resumePriorDetails > summary').click();
+    assert(await page.locator('#resumePriorDetails').evaluate(el=>el.open),'Optional import must expand on request');
     assert(await page.locator('#resumeGoReview').count()===1&&await page.locator('#resumeGoPdf').count()===1,'Stage navigation buttons missing');
     assert(await page.locator('#resumeGate .miniCard').count()===3,'INJE evidence gate should contain three summaries');
     assert((await page.locator('#resumeGate').innerText()).includes('불러온 경험 근거'),'Imported evidence summary missing');
