@@ -46,7 +46,7 @@ for(const testCase of cases){
         await page.evaluate(({k,s})=>localStorage.setItem(k,JSON.stringify(s)),{k:key,s:initial});
         await page.reload({waitUntil:'networkidle'});
         await page.locator('#resumeTemplateLab').waitFor({timeout:15000});
-        await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeEvidenceImport')));
+        await page.evaluate(()=>{window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeTemplateLab'));document.getElementById('resumePriorDetails').open=true;});
         const beforeImport=await page.evaluate(k=>{const s=JSON.parse(localStorage.getItem(k));return {assessments:s.assessments,jobDeepDive:s.artifacts.jobDeepDive};},key);
         await page.locator('#resumeAutoImport [data-resume-import="all"]').click();
         const state=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
