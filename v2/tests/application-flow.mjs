@@ -247,8 +247,10 @@ await run('STEP 8 auto-fills only reusable facts from STEP 1-7',async page=>{
   await page.locator('[data-new-exp="actionResult"]').fill('설문응답을 분류해 제안서의 근거자료로 정리했다');
   await page.locator('#newExperienceFactChecked').check();
   await page.locator('#addNewResumeExperience').click();
-  assert((await page.locator('[data-resume-bind="forms.standard.activities.r1.activity"]').inputValue())==='교내 아이디어 공모전','New STEP 8 experience was not added to the resume');
-  assert(((await page.locator('[data-resume-source-for="forms.standard.activities.r1.activity"]').textContent())||'').includes('STEP 8 직접 추가'),'New experience source label missing');
+  const activitiesAfterAdd=await page.locator('[data-resume-bind^="forms.standard.activities."][data-resume-bind$=".activity"]').evaluateAll(els=>els.map(el=>({path:el.dataset.resumeBind,value:el.value})));
+  const newActivity=activitiesAfterAdd.find(x=>x.value==='교내 아이디어 공모전');
+  assert(!!newActivity,'New STEP 8 experience was not added to the resume');
+  assert(((await page.locator('[data-resume-source-for="'+newActivity.path+'"]').textContent())||'').includes('STEP 8 직접 추가'),'New experience source label missing');
   const afterExtra=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   assert(afterExtra.artifacts.resumeLab.additionalExperiences?.some(x=>x.title==='교내 아이디어 공모전'),'New experience was not stored in Resume Lab');
   await page.locator('[data-resume-template="blind"]').click();
