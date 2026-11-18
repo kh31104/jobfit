@@ -91,6 +91,11 @@ for(const testCase of cases){
         await page.reload({waitUntil:'networkidle'});
         const reloaded=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).artifacts.resumeLab,key);
         assert(JSON.stringify(reloaded.forms)===before,testCase.name+'/'+type+': reload lost imported forms');
+        await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeAiReview')));
+        await page.locator('#previewResumeReviewPrompt').click();
+        const reviewPrompt=await page.locator('#resumeReviewPromptText').inputValue();
+        assert(reviewPrompt.includes('컴퓨터활용능력 2급'),testCase.name+'/'+type+': AI prompt redacted qualification name');
+        assert(!reviewPrompt.includes('JF26-INJE-IMPORT-QA'),testCase.name+'/'+type+': AI prompt exposed student identifier');
         assert(!errors.length,testCase.name+'/'+type+': page errors '+errors.join(' | '));
         console.log('PASS '+testCase.name+' '+type+' import / student data preservation / repeated import / reload');
       }finally{await context.close();}
