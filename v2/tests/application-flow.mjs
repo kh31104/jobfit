@@ -218,6 +218,7 @@ await run('STEP 8 auto-fills only reusable facts from STEP 1-7',async page=>{
   s.artifacts.jdAnalyzer={postings:[{id:'jd1',company:'가상모빌리티',jobTitle:'생산기술',requirements:[],gates:[],gateReviewed:true}],selectedId:'jd1'};
   s.artifacts.jobDeepDive={analyses:{job1:{company:{name:'가상모빌리티'},studentSpec:{certificates:'컴퓨터활용능력 1급, ADsP 준비 중',language:'TOEIC 820',tools:'Excel, Python',portfolio:''}}},targetAnalyses:{}};
   await seed(page,s);
+  await page.locator('#resumePriorDetails > summary').click();
   const autoText=(await page.locator('#resumeAutoImport').textContent())||'';
   assert(autoText.includes('앞에서 이미 입력한 사실은 다시 쓰지 않습니다'),'STEP 8 prior-data reuse guidance missing');
   await page.locator('[data-resume-import="all"]').click();
