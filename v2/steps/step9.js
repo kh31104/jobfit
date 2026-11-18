@@ -367,13 +367,17 @@ function resumeReviewKey(data){return data.templateType+'_'+data.applicationMode
 function refreshResumeReview(data,ctx){
   var panel=document.getElementById('resumeAiReview');if(panel)panel.outerHTML=resumeReviewBlock(data,ctx);
 }
-function resumeRedactForAi(obj){
-  if(Array.isArray(obj))return obj.map(resumeRedactForAi);
+function resumeRedactForAi(obj,fieldPath=[]){
+  if(Array.isArray(obj))return obj.map((item,index)=>resumeRedactForAi(item,[...fieldPath,String(index)]));
   if(obj&&typeof obj==='object'){
     var out={};
     Object.keys(obj).forEach(function(key){
-      if(/^(name|nameKo|nameEn|phone|mobile|email|address|residentNumber|birthDate)$/i.test(key))out[key]='[개인정보 제외]';
-      else out[key]=resumeRedactForAi(obj[key]);
+      // 자격증명과 교육과정명은 사람 이름이 아니므로 AI 검토에 그대로 전달한다.
+      // 양식 최상위의 지원자 이름 및 다른 개인정보 필드는 계속 비식별 처리한다.
+      var isNonPersonalName=key==='name'&&fieldPath.length===2
+        &&(fieldPath[0]==='certifications'||fieldPath[0]==='training');
+      if(!isNonPersonalName&&/^(name|nameKo|nameEn|phone|mobile|email|address|residentNumber|birthDate)$/i.test(key))out[key]='[개인정보 제외]';
+      else out[key]=resumeRedactForAi(obj[key],[...fieldPath,key]);
     });return out;
   }
   return obj;
