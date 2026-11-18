@@ -259,13 +259,19 @@ for(const width of [1280,390]){
     await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeTemplateLab')));
     assert((await page.locator('#resumeTargetMode').innerText()).includes('일반 이력서 작성'),'General mode without JD must work');
     await page.locator('[data-resume-bind="forms.standard.nameKo"]').fill('일반 학생');
+    await page.locator('[data-resume-bind="forms.standard.certifications.r0.name"]').fill('컴퓨터활용능력');
+    await page.locator('[data-resume-bind="forms.standard.certifications.r0.score"]').fill('2급');
     await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumePreviewLab')));
     await page.locator('#refreshResumePreview').click();
     assert((await page.locator('#resumeA4Preview').innerText()).includes('일반 학생'),'Resume PDF preview without JD or career assets failed');
     await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeAiReview')));
     await page.locator('#previewResumeReviewPrompt').click();
-    assert((await page.locator('#resumeReviewPromptText').inputValue()).includes('기업·직무 미지정 일반형'),'General AI review prompt missing');
-    assert(!(await page.locator('#resumeReviewPromptText').inputValue()).includes('일반 학생'),'AI prompt must not include name');
+    const generalReviewPrompt=await page.locator('#resumeReviewPromptText').inputValue();
+    assert(generalReviewPrompt.includes('기업·직무 미지정 일반형'),'General AI review prompt missing');
+    assert(!generalReviewPrompt.includes('일반 학생'),'AI prompt must not include name');
+    assert(generalReviewPrompt.includes('"nameKo": "[개인정보 제외]"'),'Personal applicant name must remain redacted');
+    assert(generalReviewPrompt.includes('"name": "컴퓨터활용능력"'),'Qualification name must not be redacted');
+    assert(generalReviewPrompt.includes('"score": "2급"'),'Qualification grade must remain available for review');
     // STEP 9 학생 관점: 앞 단계에 채용공고/역량 카드가 없어도 초안을 작성·재수정할 수 있다.
     // 이 경로는 기존 경험·이력서를 덮어쓰거나 검증되지 않은 초안을 Final Ready로 표시하지 않는다.
     const beforeCoverFallback=await page.evaluate(key=>{
