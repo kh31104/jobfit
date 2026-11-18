@@ -32,7 +32,14 @@ for(const cfg of config){
   page.on('pageerror',error=>errors.push(String(error)));
   const by=field=>page.locator('[data-resume-bind="'+field+'"]');
   const enter=async(field,value)=>{await by(field).fill(value);};
-  const openStage=async(id)=>page.evaluate(id=>window.JobfitStepAccordion?.openBlock?.(document.getElementById(id)),id);
+  const openStage=async(id)=>page.evaluate(id=>{
+    if(id==='resumeEvidenceImport'){
+      window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeTemplateLab'));
+      const prior=document.getElementById('resumePriorDetails');if(prior)prior.open=true;
+      return;
+    }
+    window.JobfitStepAccordion?.openBlock?.(document.getElementById(id));
+  },id);
   const openGroup=async(group)=>{
     const box=page.locator('[data-resume-section="'+group+'"]');
     if(!await box.getAttribute('open'))await box.locator('summary').click();
