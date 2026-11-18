@@ -233,7 +233,8 @@ await run('STEP 8 auto-fills only reusable facts from STEP 1-7',async page=>{
   assert(((await page.locator('[data-resume-source-for="forms.standard.education.r0.major"]').textContent())||'').includes('STEP 1'),'Education source label missing');
   assert(((await page.locator('[data-resume-source-for="forms.standard.certifications.r0.name"]').textContent())||'').includes('STEP 5'),'Credential source label missing');
   assert(((await page.locator('[data-resume-source-for="forms.standard.activities.r0.activity"]').textContent())||'').includes('STEP 3'),'Experience source label missing');
-  await page.locator('details[data-resume-section="standard-education"] summary').click();
+  const importedEducation=page.locator('details[data-resume-section="standard-education"]');
+  if(!(await importedEducation.evaluate(el=>el.open)))await importedEducation.locator('summary').click();
   await page.locator('[data-resume-bind="forms.standard.education.r0.major"]').fill('기계시스템공학과');
   assert(((await page.locator('[data-resume-source-for="forms.standard.education.r0.major"]').textContent())||'').includes('학생 수정'),'Edited imported field must show student modification');
   assert(await page.locator('[data-extra-exp-mode="new"]').count()===1,'New experience tab missing');
@@ -246,8 +247,10 @@ await run('STEP 8 auto-fills only reusable facts from STEP 1-7',async page=>{
   await page.locator('[data-new-exp="actionResult"]').fill('설문응답을 분류해 제안서의 근거자료로 정리했다');
   await page.locator('#newExperienceFactChecked').check();
   await page.locator('#addNewResumeExperience').click();
-  assert((await page.locator('[data-resume-bind="forms.standard.activities.r1.activity"]').inputValue())==='교내 아이디어 공모전','New STEP 8 experience was not added to the resume');
-  assert(((await page.locator('[data-resume-source-for="forms.standard.activities.r1.activity"]').textContent())||'').includes('STEP 8 직접 추가'),'New experience source label missing');
+  const activitiesAfterAdd=await page.locator('[data-resume-bind^="forms.standard.activities."][data-resume-bind$=".activity"]').evaluateAll(els=>els.map(el=>({path:el.dataset.resumeBind,value:el.value})));
+  const newActivity=activitiesAfterAdd.find(x=>x.value==='교내 아이디어 공모전');
+  assert(!!newActivity,'New STEP 8 experience was not added to the resume');
+  assert(((await page.locator('[data-resume-source-for="'+newActivity.path+'"]').textContent())||'').includes('STEP 8 직접 추가'),'New experience source label missing');
   const afterExtra=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
   assert(afterExtra.artifacts.resumeLab.additionalExperiences?.some(x=>x.title==='교내 아이디어 공모전'),'New experience was not stored in Resume Lab');
   await page.locator('[data-resume-template="blind"]').click();

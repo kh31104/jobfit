@@ -64,7 +64,9 @@ jobs:
       - name: Test INJE STEP 8-9 editable resumes, cover letters and separate PDF on PC/mobile
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
-        run: node v2/tests/inje-step8-9-editable-docs.mjs
+        run: |
+          node v2/tests/inje-step8-import-regression.mjs
+          node v2/tests/inje-step8-9-editable-docs.mjs
       - name: Simulate student STEP 8 entries and generate A4 PDFs on desktop Android Safari
         env:
           JOBFIT_TEST_URL: http://127.0.0.1:8765/v2/
@@ -154,7 +156,9 @@ jobs:
         env:
           JOBFIT_TEST_URL: https://kh31104.github.io/jobfit/v2/
           JOBFIT_QA_OUT: v2/test-output/step8-pdf-qa-deployed
-        run: node v2/tests/inje-step8-realistic-pdf-qa.mjs
+        run: |
+          node v2/tests/inje-step8-import-regression.mjs
+          node v2/tests/inje-step8-realistic-pdf-qa.mjs
       - name: Archive deployed STEP 8 PDF QA artifacts
         if: always()
         uses: actions/upload-artifact@v4
