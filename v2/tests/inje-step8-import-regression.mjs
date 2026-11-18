@@ -17,7 +17,7 @@ function seed(type){
     artifacts:{
       experienceMap:[...verified,pending],
       jobExplorer:{candidates:[{id:'job1',title:'브랜드 마케팅'}],targetCombos:[{jobId:'job1'}]},
-      jobDeepDive:{targetAnalyses:{t1:{studentSpec:{certificates:'컴퓨터활용능력 2급, GTQ 1급',language:'TOEIC 850',tools:'Excel'}}},analyses:{}},
+      jobDeepDive:{targetAnalyses:{t1:{studentSpec:{certificates:'컴퓨터활용능력 2급, GTQ 1급, ADsP / 준비 중',language:'TOEIC 850',tools:'Excel'}}},analyses:{}},
       jdAnalyzer:{postings:[{id:'jd1',company:'가상기업',jobTitle:'브랜드 마케팅'}],selectedId:'jd1'},
       resumeLab:{templateType:type,applicationMode:'general',items:[],forms:{
         standard:{education:{r0:{school:'내가 작성한 학교',major:'인문학과'}},activities:{r0:{activity:'내가 작성한 활동',note:'직접 작성한 근거'}}},
@@ -56,6 +56,7 @@ for(const testCase of cases){
         assert(report.pendingExperiences===1,testCase.name+'/'+type+': pending experience missing');
         assert((await page.locator('#resumeImportFeedback').innerText()).includes('사실확인 전 경험 1건'),testCase.name+'/'+type+': pending explanation missing');
         assert(report.addedByGroup.credentials===3,testCase.name+'/'+type+': qualifications not imported');
+        assert(!JSON.stringify(result.forms[type]).includes('ADsP'),testCase.name+'/'+type+': unfinished credential incorrectly imported');
         assert(result.skills.includes('Excel'),testCase.name+'/'+type+': tools not imported');
         assert(result.applicationMode==='general',testCase.name+'/'+type+': general mode changed');
         assert(JSON.stringify(state.assessments)===JSON.stringify(beforeImport.assessments),testCase.name+'/'+type+': original STEP 3 data changed');
