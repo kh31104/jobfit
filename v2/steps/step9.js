@@ -665,8 +665,8 @@ function collectResumePriorData(state,posting,experiences,injeCompact=false){
   return {
     targetJob:String(posting?.jobTitle||(injeCompact?chosen?.title:'')||'').trim(),
     education:{institution:String(profile.schoolName||profile.university||profile.educationInstitution||profile.institution||'').trim(),major:String(profile.major||'').trim(),grade:String(profile.grade||'').trim()},
-    certifications:union('certificates'),
-    language:union('language'),
+    certifications:injeCompact?union('certificates'):splitResumeSpec(spec.certificates),
+    language:injeCompact?union('language'):splitResumeSpec(spec.language),
     tools:injeCompact?[...new Set(toolList)].join(' · '):cleanResumeSpec(spec.tools),
     portfolio:cleanResumeSpec(spec.portfolio),
     experiences:verified,
@@ -706,7 +706,7 @@ function applyResumePriorData(data,type,prior,scope,injeCompact=false){
     if(type==='blind')count+=putPriorRows(data.forms.blind,'certifications',entries.map(function(x){return {name:x.name};}),4,['name'],function(slot,row){markRowSources(data,'forms.blind.certifications.'+slot,row,'STEP 5');});
   }
   function doExperiences(){
-    var exps=type==='standard'?(prior.experiences||[]):(prior.experiences||[]).filter(function(x){return experienceKind(x)!=='education';});
+    var exps=injeCompact&&type==='standard'?(prior.experiences||[]):(prior.experiences||[]).filter(function(x){return experienceKind(x)!=='education';});
     if(type==='standard'){
       var careers=exps.filter(function(x){return experienceKind(x)==='career';}).map(function(x){return {period:x.period||'',company:x.organization||x.company||'',position:x.roleTitle||x.role||'',duty:resumeExperienceContent(x),employmentType:x.employmentType||''};});
       var acts=exps.filter(function(x){return experienceKind(x)!=='career';}).map(function(x){return {period:x.period||'',activity:x.title||'',organization:x.organization||x.team||'',note:uniqueJoin([x.roleTitle||x.role,x.action,x.result])};});
