@@ -77,6 +77,7 @@ for(const width of [1280,390]){
     await page.locator('[data-resume-bind="forms.standard.targetJob"]').fill('식품 품질관리');
     await page.locator('[data-resume-bind="forms.standard.nameKo"]').fill('학생 테스트');
     await page.locator('[data-resume-bind="forms.standard.email"]').fill('learner@example.com');
+    await page.locator('#resumePriorDetails > summary').click();
     await page.locator('[data-extra-exp-mode="new"]').click();
     await page.locator('[data-new-exp="title"]').fill('급식실 위생 점검 보조');
     await page.locator('[data-new-exp="actionResult"]').fill('점검표를 매일 기록하고 누락 항목을 담당자에게 알렸다.');
