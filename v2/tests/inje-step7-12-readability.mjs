@@ -57,9 +57,7 @@ for(const width of [1280,390]){
       if(screen.step===7){
         await page.locator('#resumeAdvancedDisclosure').waitFor({state:'attached'});
         await page.evaluate(()=>{
-          const section=document.getElementById('resumeEvidenceImport');
           window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeTemplateLab'));
-          document.getElementById('resumePriorDetails').open=true;
           document.getElementById('resumeAdvancedDisclosure').open=true;
         });
       }

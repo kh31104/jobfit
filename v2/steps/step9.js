@@ -37,13 +37,13 @@ export async function render(ctx){
   function renderAll(){renderGate();renderItems();renderAssetContext();}
   function renderGate(){const box=document.getElementById('resumeGate');if(!box)return;const verified=candidateAssets.filter(isAssetVerified).length,draft=candidateAssets.length-verified,finalItems=data.items.filter(x=>x.factChecked&&x.assetVerified).length,draftItems=data.items.length-finalItems;if(!injeCompact){box.innerHTML=`<div class="grid4"><div class="miniCard"><b>Career Asset 후보</b><span>${candidateAssets.length}개</span></div><div class="miniCard"><b>검증된 Asset</b><span>${verified}개</span></div><div class="miniCard"><b>검증대기 Asset</b><span>${draft}개</span></div><div class="miniCard"><b>최종 사용 가능 Bullet</b><span>${finalItems}개 · 초안 ${draftItems}개</span></div></div>${draft?'<div class="callout warn"><b>검증대기 Career Asset이 있습니다.</b><br>초안 작성은 가능하지만 최종 Resume에는 Career Asset Fact Check와 원경험 Fact Check를 모두 완료한 항목만 사용하세요.</div>':'<div class="callout good"><b>Career Asset 검증상태 양호</b><br>현재 선택 가능한 자산은 사실검증 상태가 확인되었습니다.</div>'}`;return;}
     box.innerHTML=`<div class="grid3"><div class="miniCard"><b>불러온 경험 근거</b><span>${candidateAssets.length}개</span></div><div class="miniCard"><b>확인 필요</b><span>${draft}개</span></div><div class="miniCard"><b>사용 가능한 문장</b><span>${finalItems}개 · 초안 ${draftItems}개</span></div></div>`;
-    if(!candidateAssets.length){box.innerHTML+='<div class="callout info"><b>연결된 경험 근거가 없습니다.</b><br>일반 이력서는 위 양식을 작성하고 저장할 수 있습니다. 직무 맞춤형 문장이 필요하면 STEP 3 경험을 STEP 5 공고 요구사항과 연결하거나 2번에서 경험을 불러오거나 새 경험을 직접 추가하세요.</div>';return;}
+    if(!candidateAssets.length){box.innerHTML+='<div class="callout info"><b>연결된 경험 근거가 없습니다.</b><br>일반 이력서는 위 양식을 작성하고 저장할 수 있습니다. 직무 맞춤형 문장이 필요하면 STEP 3 경험을 STEP 5 공고 요구사항과 연결하거나 선택한 이력서 양식에 경험을 직접 입력하세요.</div>';return;}
     if(draft){box.innerHTML+='<div class="callout warn"><b>확인이 필요한 경험 근거가 있습니다.</b><br>초안은 작성할 수 있지만 최종 이력서 문장에 사용하기 전 사실을 확인하세요.</div>';}
     else{box.innerHTML+='<div class="callout good"><b>앞에서 확인한 경험을 불러왔습니다.</b><br>경험 자체를 다시 검증할 필요는 없습니다. 이력서 문장에서 새로 추가한 내용만 확인하세요.</div>';}
   }
   function renderAssetContext(){
     const box=document.getElementById('assetContext'),a=assets.find(x=>x.id===v('assetId'));
-    if(!a){box.className='callout info';box.textContent=candidateAssets.length?'Career Asset을 선택하세요.':(injeCompact?`사용 가능한 Career Asset이 없습니다. ${prevEvidenceStep}에서 연결하거나, 2번에서 검증된 경험을 불러오거나 새 경험을 직접 추가하세요.`:`사용 가능한 Career Asset이 없습니다. ${prevEvidenceStep}에서 JD Requirement와 Evidence를 먼저 연결하세요.`);return;}
+    if(!a){box.className='callout info';box.textContent=candidateAssets.length?'Career Asset을 선택하세요.':(injeCompact?`사용 가능한 Career Asset이 없습니다. ${prevEvidenceStep}에서 연결하거나, 선택한 이력서 양식에 경험을 직접 입력하세요.`:`사용 가능한 Career Asset이 없습니다. ${prevEvidenceStep}에서 JD Requirement와 Evidence를 먼저 연결하세요.`);return;}
     const level=a.evidenceLevel||legacyLevel(a.strength),verified=isAssetVerified(a);
     box.className='callout '+(verified?'good':'warn')+' jfResultBox';
     box.innerHTML='<b>'+esc(level,ctx)+' · '+esc(a.experienceTitle,ctx)+'</b><div class="jfReadFields">'+
@@ -500,6 +500,9 @@ function resumeTemplateLabel(type){
 }
 function resumeTemplateBlock(data,ctx,prior,posting=null,injeCompact=false){
   ensureResumeForms(data);
+  const form='<div id="resumeTemplateForm">'+resumeTemplateForm(data,ctx)+'</div>';
+  const guide='<div id="resumeTemplateGuide">'+resumeTemplateGuide(data.templateType)+'</div>';
+  const saved='<p class="help" id="resumeSavedProgress">'+resumeSavedProgressText(data)+'</p>';
   return '<div class="block" id="resumeTemplateLab">'
     +'<h3>'+(injeCompact?'1. 이력서 작성':'1. 이력서 양식 선택 · 직접 작성')+'</h3>'
     +'<p class="help">'+(injeCompact?'표준·NCS·블라인드 중 하나만 선택해 작성하세요. 공고가 없어도 작성할 수 있습니다. 실제 지원 시 해당 기관의 지정 양식을 우선하세요.':'제공해주신 3개 예시를 기준으로 구성했습니다. <b>학생은 하나만 선택해 작성</b>하고, 실제 지원 시에는 해당 기업·기관의 지정 양식을 우선합니다.')+'</p>'
@@ -508,11 +511,11 @@ function resumeTemplateBlock(data,ctx,prior,posting=null,injeCompact=false){
       +resumeTab('ncs','NCS 이력서',data.templateType)
       +resumeTab('blind','블라인드 이력서',data.templateType)
     +'</div>'
-    +(injeCompact?resumeTargetingBlock(data,ctx,posting):'')
-    +'<p class="help" id="resumeSavedProgress">'+resumeSavedProgressText(data)+'</p>'
-    +'<div id="resumeTemplateGuide">'+resumeTemplateGuide(data.templateType)+'</div>'
-    +(!injeCompact?resumeAutoImportBlock(prior,data.templateType,ctx)+resumeExperienceEntryTabs(data,ctx):'')
-    +'<div id="resumeTemplateForm">'+resumeTemplateForm(data,ctx)+'</div>'
+    +(injeCompact
+      ?form+saved
+        +'<details class="detailsBox" id="resumeTargetingDisclosure" style="margin-top:12px"><summary>지원기업·채용공고 설정 (선택)</summary>'+resumeTargetingBlock(data,ctx,posting)+'</details>'
+        +'<details class="detailsBox" id="resumeTemplateGuideDisclosure" style="margin-top:12px"><summary>선택한 이력서 양식 안내</summary>'+guide+'</details>'
+      :saved+guide+resumeAutoImportBlock(prior,data.templateType,ctx)+resumeExperienceEntryTabs(data,ctx)+form)
   +'</div>';
 }
 
@@ -525,31 +528,30 @@ function resumeSavedProgressText(data){
   return '입력한 이력서 '+saved.length+'/3종'+(saved.length?' · '+saved.map(x=>labels[x]).join(', '):'')+' · 1종 이상 작성한 뒤 아래에서 PDF로 저장하세요.';
 }
 function compactInjeResumeUi(root,data){
-  const outer=root.querySelector('.resumeReadable'),evidence=document.getElementById('resumeEvidenceImport');
-  if(!outer||!evidence)return;
+  const outer=root.querySelector('.resumeReadable');
+  if(!outer)return;
   const blockWithHeading=text=>[...outer.querySelectorAll(':scope > .block')].find(x=>x.querySelector(':scope > h3')?.textContent?.trim()?.startsWith(text));
   const bullet=blockWithHeading('3. '),summary=blockWithHeading('5. ');
   const items=document.getElementById('resumeItems')?.parentElement,docs=document.getElementById('optionalResumeDocs');
-  const move=node=>{if(!node)return;const prev=node.previousElementSibling;if(prev?.classList?.contains('hr'))prev.remove();return node;};
+  const move=node=>{if(!node)return null;const prev=node.previousElementSibling;if(prev?.classList?.contains('hr'))prev.remove();return node;};
   const makeDetails=(label,id,open=false)=>{
     const d=document.createElement('details');d.className='detailsBox';d.id=id;d.style.marginTop='14px';
-    d.open=!!open;const s=document.createElement('summary');s.textContent=label;d.appendChild(s);return d;
+    d.open=!!open;const summary=document.createElement('summary');summary.textContent=label;d.appendChild(summary);return d;
   };
-  if(docs){
-    const choice=makeDetails('경험기술서·경력기술서 · 필요하면 AI로 작성','resumeOptionalDocsDisclosure',data.optionalDocument?.type!=='none');
-    choice.appendChild(move(docs));evidence.appendChild(choice);
-    const heading=docs.querySelector(':scope > h3');if(heading)heading.textContent='경험·경력기술서 작성 · 선택';
-  }
-  const advanced=makeDetails('추가 선택 · 이력서 문장 정리와 직무 요약','resumeAdvancedDisclosure');
+  // 화면에서 불러오기와 새 경험 입력 영역만 제외한다. 저장된 학생 자료는 건드리지 않는다.
+  const evidence=document.getElementById('resumeEvidenceImport');
+  if(evidence)move(evidence).remove();
+  const advanced=makeDetails('추가 편집 · 이력서 문장과 직무 요약 (선택)','resumeAdvancedDisclosure');
   if(bullet){bullet.querySelector(':scope > h3').textContent='이력서 문장 다듬기 · 선택';advanced.appendChild(move(bullet));}
   if(items)advanced.appendChild(move(items));
   if(summary){summary.querySelector(':scope > h3').textContent='직무 요약 · 필요할 때';advanced.appendChild(move(summary));}
-  evidence.appendChild(advanced);
+  const optional=docs?makeDetails('경험기술서·경력기술서 작성 (선택)','resumeOptionalDocsDisclosure',false):null;
+  if(optional){
+    optional.appendChild(move(docs));
+    const heading=docs.querySelector(':scope > h3');if(heading)heading.textContent='경험·경력기술서 작성 · 선택';
+  }
   const template=document.getElementById('resumeTemplateLab');
   if(template){
-    const disclosure=makeDetails('앞 단계 정보 불러오기 · 경험 추가 (선택)','resumePriorDetails');
-    disclosure.appendChild(move(evidence));
-    template.insertBefore(disclosure,document.getElementById('resumeTemplateForm'));
     const actions=document.createElement('div');actions.className='actions';actions.id='resumeThreeStageActions';actions.style.marginTop='16px';
     actions.innerHTML='<button type="button" class="btn secondary" id="resumeGoReview">2. AI 검토 (선택)</button><button type="button" class="btn primary" id="resumeGoPdf">3. PDF 저장</button>';
     template.appendChild(actions);
@@ -567,8 +569,12 @@ function compactInjeResumeUi(root,data){
       only.textContent='선택한 이력서 PDF 저장';only.classList.remove('secondary');only.classList.add('primary');
       const combined=document.getElementById('printResumePdf');if(combined){combined.classList.remove('primary');combined.classList.add('secondary');}
     }
+    // 선택형 기술서와 고급 편집은 기본 이력서와 PDF 단계 뒤에 둔다.
+    preview.insertAdjacentElement('afterend',advanced);
+    if(optional)advanced.insertAdjacentElement('afterend',optional);
   }
 }
+
 function resumeImportFeedbackHtml(report,type){
   if(!report||report.templateType!==type||!report.inje)return '';
   const labels={education:'학력·교육',credentials:'자격·어학',experiences:'경험·활동',targetJob:'지원직무',tools:'도구·기술'};
@@ -812,9 +818,21 @@ function resumeTemplateGuide(type){
   return '<div class="callout info"><b>표준이력서</b><br>일반 기업 지원용 기본형입니다. 연락 가능한 정보와 직무 관련 이력은 남기고, 사진·생년월일처럼 채용 판단에 꼭 필요하지 않은 항목은 Jobfit 기본 양식에서 제외했습니다.'+common+'</div>';
 }
 function resumeTemplateForm(data,ctx){
-  if(data.templateType==='ncs')return ncsResumeForm(data,ctx);
-  if(data.templateType==='blind')return blindResumeForm(data,ctx);
-  return standardResumeForm(data,ctx);
+  const html=data.templateType==='ncs'?ncsResumeForm(data,ctx):data.templateType==='blind'?blindResumeForm(data,ctx):standardResumeForm(data,ctx);
+  if(ctx.displayStep===undefined||ctx.displayStep===9)return html;
+  // INJE: '항목 판정'과 예시는 기본정보 입력 앞에 노출하지 않고 최하단 선택 항목으로 이동.
+  const wrapper=document.createElement('div');wrapper.innerHTML=html;
+  const card=wrapper.querySelector('.listCard');
+  const policy=card?.querySelector(':scope > .callout');
+  const exampleAction=card?.querySelector(':scope > .actions');
+  const examplePanel=card?.querySelector(':scope > [data-resume-example-panel]');
+  if(card&&(policy||exampleAction||examplePanel)){
+    const help=document.createElement('details');help.className='detailsBox';help.id='resumeFormExtraHelp';
+    help.style.marginTop='14px';const summary=document.createElement('summary');summary.textContent='작성 기준·예시 보기 (선택)';help.appendChild(summary);
+    for(const node of [policy,exampleAction,examplePanel])if(node)help.appendChild(node);
+    card.appendChild(help);
+  }
+  return wrapper.innerHTML;
 }
 function standardResumeForm(data,ctx){
   const general=ctx.displayStep!==undefined&&ctx.displayStep!==9&&data.applicationMode==='general';

@@ -123,7 +123,6 @@ await run('New STEP 8 Resume Lab keeps unverified STEP 5 evidence as draft',asyn
   const heading=(await page.locator('#stepRoot').textContent())||'';
   assert(heading.includes('Resume Lab'),'Logical STEP 8 did not load Resume Lab');
   assert((await page.locator('#stepRoot .kicker').first().textContent()).includes('STEP 8'),'Resume Lab still shows the old STEP number');
-  await page.locator('#resumePriorDetails > summary').click();
   await page.locator('#resumeAdvancedDisclosure summary').click();
   await page.locator('#assetId').selectOption('a1');
   const ctx=(await page.locator('#assetContext').textContent())||'';
@@ -144,7 +143,6 @@ await run('STEP 8 Resume Lab supports three form tabs and optional detail docume
   await page.locator('[data-resume-template="blind"]').click();
   assert(((await page.locator('#resumeTemplateGuide').textContent())||'').includes('블라인드 작성 원칙'),'Blind privacy guidance missing');
   await page.locator('[data-resume-bind="forms.blind.targetJob"]').fill('생산기술');
-  await page.locator('#resumePriorDetails > summary').click();
   await page.locator('#resumeOptionalDocsDisclosure summary').click();
   await page.locator('[data-resume-doc="experience"]').click();
   await page.locator('details[data-resume-section="experience-doc-evidence"] summary').click();
@@ -190,16 +188,19 @@ await run('STEP 8 resume forms stay compact and show examples on desktop and mob
   const standardSections=page.locator('#resumeTemplateForm details[data-resume-section]');
   assert(await standardSections.count()===5,'Standard resume should be split into five collapsible sections');
   assert(await page.locator('#resumeTemplateForm details[data-resume-section][open]').count()===1,'Only the standard basic section should be open by default');
+  await page.locator('#resumeFormExtraHelp > summary').click();
   await page.locator('[data-resume-example="standard"]').click();
   const standardExample=(await page.locator('[data-resume-example-panel="standard"]').textContent())||'';
   assert(standardExample.includes('표준이력서 예시')&&standardExample.includes('김민지'),'Standard resume example did not open');
   await page.locator('[data-resume-template="ncs"]').click();
   assert(await page.locator('#resumeTemplateForm details[data-resume-section]').count()===5,'NCS resume should be split into five collapsible sections');
+  await page.locator('#resumeFormExtraHelp > summary').click();
   await page.locator('[data-resume-example="ncs"]').click();
   const ncsExample=(await page.locator('[data-resume-example-panel="ncs"]').textContent())||'';
   assert(ncsExample.includes('NCS 이력서 예시')&&ncsExample.includes('직무관련 교육'),'NCS resume example did not open');
   await page.locator('[data-resume-template="blind"]').click();
   assert(await page.locator('#resumeTemplateForm details[data-resume-section]').count()===6,'Blind resume should be split into six collapsible sections');
+  await page.locator('#resumeFormExtraHelp > summary').click();
   await page.locator('[data-resume-example="blind"]').click();
   const blindExample=(await page.locator('[data-resume-example-panel="blind"]').textContent())||'';
   assert(blindExample.includes('블라인드 이력서 예시')&&blindExample.includes('학교명')&&!blindExample.includes('부경대학교'),'Blind example must teach the no-school-name rule without exposing a school name');
@@ -210,58 +211,26 @@ await run('STEP 8 resume forms stay compact and show examples on desktop and mob
   assert(guide.includes('필요한 항목만 열어 작성')&&guide.includes('좌우로 밀어'),'Mobile/compact usage guidance is missing');
 });
 
-await run('STEP 8 auto-fills only reusable facts from STEP 1-7',async page=>{
+await run('STEP 8 starts directly with a form and protects STEP 1–7 data',async page=>{
   const s=state(7);
   s.profile.institution='부경대학교';s.profile.major='기계공학과';
-  s.assessments.experienceCompetency.experiences=[
-    {id:'exp1',category:'프로젝트',title:'센서오차 캡스톤',period:'2026.03~2026.06',organization:'부경대학교 기계공학과',roleTitle:'데이터 분석 담당',action:'측정조건을 나눠 비교했다',result:'오차 원인을 확인했다',evidence:'측정기록표',factChecked:true},
-    {id:'exp2',category:'교육·수업',title:'생산관리',period:'2026.03~2026.06',action:'공정 데이터를 조건별로 정리했다',result:'조건별 차이를 비교했다',evidence:'수업 과제',factChecked:true}
-  ];
-  s.artifacts.jdAnalyzer={postings:[{id:'jd1',company:'가상모빌리티',jobTitle:'생산기술',requirements:[],gates:[],gateReviewed:true}],selectedId:'jd1'};
-  s.artifacts.jobDeepDive={analyses:{job1:{company:{name:'가상모빌리티'},studentSpec:{certificates:'컴퓨터활용능력 1급, ADsP 준비 중',language:'TOEIC 820',tools:'Excel, Python',portfolio:''}}},targetAnalyses:{}};
+  s.assessments.experienceCompetency.experiences=[{id:'exp1',title:'센서오차 캡스톤',action:'측정조건을 나눠 비교했다',factChecked:true}];
+  s.artifacts.jdAnalyzer={postings:[{id:'jd1',company:'가상모빌리티',jobTitle:'생산기술',requirements:[]}],selectedId:'jd1'};
   await seed(page,s);
-  await page.locator('#resumePriorDetails > summary').click();
-  const autoText=(await page.locator('#resumeAutoImport').textContent())||'';
-  assert(autoText.includes('앞에서 이미 입력한 사실은 다시 쓰지 않습니다'),'STEP 8 prior-data reuse guidance missing');
-  await page.locator('[data-resume-import="all"]').click();
-  assert((await page.locator('[data-resume-bind="forms.standard.targetJob"]').inputValue())==='생산기술','Selected JD target job was not imported');
-  assert((await page.locator('[data-resume-bind="forms.standard.education.r0.school"]').inputValue()).trim().length>0,'Standard education institution was not imported from the saved profile/course context');
-  assert((await page.locator('[data-resume-bind="forms.standard.education.r0.major"]').inputValue())==='기계공학과','Standard major was not imported');
-  const certs=await page.locator('[data-resume-bind^="forms.standard.certifications"][data-resume-bind$=".name"]').evaluateAll(els=>els.map(x=>x.value));
-  assert(certs.some(x=>x.includes('컴퓨터활용능력 1급'))&&certs.some(x=>x.includes('TOEIC 820')),'STEP 5 credentials were not imported');
-  assert(!certs.some(x=>x.includes('준비 중')),'Unacquired credential must not be imported as completed');
-  assert((await page.locator('[data-resume-bind="forms.standard.activities.r0.activity"]').inputValue()).includes('센서오차'),'Verified project experience was not imported');
-  assert((await page.locator('#skills').inputValue()).includes('Excel'),'STEP 5 tools were not reused in Resume skills');
-  assert(((await page.locator('[data-resume-source-for="forms.standard.targetJob"]').textContent())||'').includes('STEP 5 JD'),'Target job source label missing');
-  assert(((await page.locator('[data-resume-source-for="forms.standard.education.r0.major"]').textContent())||'').includes('STEP 1'),'Education source label missing');
-  assert(((await page.locator('[data-resume-source-for="forms.standard.certifications.r0.name"]').textContent())||'').includes('STEP 5'),'Credential source label missing');
-  assert(((await page.locator('[data-resume-source-for="forms.standard.activities.r0.activity"]').textContent())||'').includes('STEP 3'),'Experience source label missing');
-  const importedEducation=page.locator('details[data-resume-section="standard-education"]');
-  if(!(await importedEducation.evaluate(el=>el.open)))await importedEducation.locator('summary').click();
-  await page.locator('[data-resume-bind="forms.standard.education.r0.major"]').fill('기계시스템공학과');
-  assert(((await page.locator('[data-resume-source-for="forms.standard.education.r0.major"]').textContent())||'').includes('학생 수정'),'Edited imported field must show student modification');
-  assert(await page.locator('[data-extra-exp-mode="new"]').count()===1,'New experience tab missing');
-  await page.locator('[data-extra-exp-mode="new"]').click();
-  await page.locator('[data-new-exp="type"]').selectOption({label:'대외활동'});
-  await page.locator('[data-new-exp="title"]').fill('교내 아이디어 공모전');
-  await page.locator('[data-new-exp="period"]').fill('2026.09~2026.10');
-  await page.locator('[data-new-exp="organization"]').fill('공모전 프로젝트팀');
-  await page.locator('[data-new-exp="role"]').fill('자료분석 담당');
-  await page.locator('[data-new-exp="actionResult"]').fill('설문응답을 분류해 제안서의 근거자료로 정리했다');
-  await page.locator('#newExperienceFactChecked').check();
-  await page.locator('#addNewResumeExperience').click();
-  const activitiesAfterAdd=await page.locator('[data-resume-bind^="forms.standard.activities."][data-resume-bind$=".activity"]').evaluateAll(els=>els.map(el=>({path:el.dataset.resumeBind,value:el.value})));
-  const newActivity=activitiesAfterAdd.find(x=>x.value==='교내 아이디어 공모전');
-  assert(!!newActivity,'New STEP 8 experience was not added to the resume');
-  assert(((await page.locator('[data-resume-source-for="'+newActivity.path+'"]').textContent())||'').includes('STEP 8 직접 추가'),'New experience source label missing');
-  const afterExtra=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
-  assert(afterExtra.artifacts.resumeLab.additionalExperiences?.some(x=>x.title==='교내 아이디어 공모전'),'New experience was not stored in Resume Lab');
-  await page.locator('[data-resume-template="blind"]').click();
-  await page.locator('[data-resume-import="all"]').click();
-  assert((await page.locator('[data-resume-bind="forms.blind.targetJob"]').inputValue())==='생산기술','Blind resume target job was not imported');
-  const blindOrg=await page.locator('[data-resume-bind="forms.blind.experience.r0.organization"]').inputValue();
-  assert(!blindOrg.includes('부경대학교')&&blindOrg.includes('프로젝트'),'Blind auto-import must strip school-identifying organization names');
-  assert(await page.locator('[data-resume-bind^="forms.blind.training"]').count()>0,'Verified education experience should be available to blind education fields');
+  assert(await page.locator('#resumeTemplateTabs + #resumeTemplateForm').count()===1,'Form must follow the template selector');
+  assert(await page.locator('#resumeAutoImport').count()===0,'Removed import section is still displayed');
+  assert(await page.locator('#resumeEvidenceImport').count()===0,'Removed experience entry is still displayed');
+  assert(!await page.locator('#resumeFormExtraHelp').evaluate(el=>el.open),'Optional help must be collapsed');
+  await page.locator('[data-resume-bind="forms.standard.targetJob"]').fill('생산기술');
+  await page.locator('[data-resume-bind="forms.standard.nameKo"]').fill('학생 실습');
+  await page.locator('details[data-resume-section="standard-education"] summary').click();
+  await page.locator('[data-resume-bind="forms.standard.education.r0.major"]').fill('기계공학과');
+  await page.locator('details[data-resume-section="standard-activities"] summary').click();
+  await page.locator('[data-resume-bind="forms.standard.activities.r0.activity"]').fill('센서오차 캡스톤');
+  const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jobfit:v2:learner')));
+  assert(stored.artifacts.resumeLab.forms.standard.activities.r0.activity==='센서오차 캡스톤','Edited experience not saved');
+  assert(JSON.stringify(stored.assessments.experienceCompetency)===JSON.stringify(s.assessments.experienceCompetency),'Earlier experience was overwritten');
+  assert(JSON.stringify(stored.artifacts.jdAnalyzer)===JSON.stringify(s.artifacts.jdAnalyzer),'Earlier JD was overwritten');
 });
 
 await run('STEP 9 reuses STEP 8 Final Ready experience without retyping',async page=>{
@@ -297,7 +266,6 @@ await run('STEP 8 student persona completes resume preview and Career Asset auto
   await page.locator('[data-resume-bind="forms.standard.education.r0.period"]').fill('2023.03~2027.02');
   await page.locator('[data-resume-bind="forms.standard.education.r0.school"]').fill('부경대학교');
   await page.locator('[data-resume-bind="forms.standard.education.r0.graduation"]').fill('졸업예정');
-  await page.locator('#resumePriorDetails > summary').click();
   await page.locator('#resumeAdvancedDisclosure summary').click();
   await page.locator('#assetId').selectOption('a1');
   await page.locator('#section').selectOption({label:'프로젝트'});

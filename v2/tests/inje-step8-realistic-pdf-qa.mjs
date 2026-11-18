@@ -33,11 +33,6 @@ for(const cfg of config){
   const by=field=>page.locator('[data-resume-bind="'+field+'"]');
   const enter=async(field,value)=>{await by(field).fill(value);};
   const openStage=async(id)=>page.evaluate(id=>{
-    if(id==='resumeEvidenceImport'){
-      window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeTemplateLab'));
-      const prior=document.getElementById('resumePriorDetails');if(prior)prior.open=true;
-      return;
-    }
     window.JobfitStepAccordion?.openBlock?.(document.getElementById(id));
   },id);
   const openGroup=async(group)=>{
@@ -102,11 +97,14 @@ for(const cfg of config){
     await page.reload({waitUntil:'networkidle'});
     await page.locator('#resumeTemplateLab').waitFor();
     must(await page.locator('[data-resume-template]').count()===3,'Missing three templates');
+    must(await page.locator('#resumeTemplateTabs + #resumeTemplateForm').count()===1,'Resume form is not directly under template tabs');
+    must(await page.locator('#resumeEvidenceImport').count()===0,'Deprecated experience panel is still present');
+    await page.locator('#resumeTargetingDisclosure > summary').click();
 
     // Student A: general resume, no target job required despite a previously chosen JD.
     await page.locator('[data-application-mode="general"]').click();
-    must((await page.locator('#resumeTemplateForm').innerText()).includes('지원직무(지원처 미정이면 생략 가능)'),'General standard incorrectly requires a target job');
-    must((await page.locator('#resumeTemplateForm').innerText()).includes('지원직무 · 선택'),'General standard input label must be optional');
+    must((await page.locator('#resumeTemplateForm').textContent()).includes('지원직무(지원처 미정이면 생략 가능)'),'General standard incorrectly requires a target job');
+    must((await page.locator('#resumeTemplateForm').textContent()).includes('지원직무 · 선택'),'General standard input label must be optional');
     await enter('forms.standard.nameKo','홍테스트');
     await enter('forms.standard.phone','010-1111-2222');
     await enter('forms.standard.email','resume-test@example.com');
@@ -114,13 +112,10 @@ for(const cfg of config){
     await enter('forms.standard.education.r0.school','테스트대학교');
     await enter('forms.standard.education.r0.major','경영학과');
     await enter('forms.standard.education.r0.period','2023.03~2027.02');
-    await openStage('resumeEvidenceImport');
-    await page.locator('[data-extra-exp-mode="new"]').click();
-    await page.locator('[data-new-exp="title"]').fill('고객 분석 교내 프로젝트');
-    await page.locator('[data-new-exp="period"]').fill('2026.03~2026.06');
-    await page.locator('[data-new-exp="actionResult"]').fill('리뷰 30건을 직접 분류해 결과표 작성');
-    await page.locator('#newExperienceFactChecked').check();
-    await page.locator('#addNewResumeExperience').click();
+    await openGroup('standard-activities');
+    await enter('forms.standard.activities.r0.activity','고객 분석 교내 프로젝트');
+    await enter('forms.standard.activities.r0.period','2026.03~2026.06');
+    await enter('forms.standard.activities.r0.note','리뷰 30건을 직접 분류해 결과표 작성');
     await openStage('resumePreviewLab');
     await page.locator('#refreshResumePreview').click();
     const generalText=await page.locator('#resumeA4Preview').innerText();
@@ -156,7 +151,7 @@ for(const cfg of config){
     await openStage('resumeTemplateLab');
     await page.locator('[data-resume-template="ncs"]').click();
     await page.locator('[data-application-mode="general"]').click();
-    must((await page.locator('#resumeTemplateForm').innerText()).includes('지원분야·직무(지원처 미정이면 생략 가능)'),'General NCS guidance inconsistent');
+    must((await page.locator('#resumeTemplateForm').textContent()).includes('지원분야·직무(지원처 미정이면 생략 가능)'),'General NCS guidance inconsistent');
     await page.locator('[data-application-mode="targeted"]').click();
     await enter('forms.ncs.nameKo','김엔씨에스');
     await enter('forms.ncs.mobile','010-1234-5678');
@@ -175,7 +170,7 @@ for(const cfg of config){
     await openStage('resumeTemplateLab');
     await page.locator('[data-resume-template="blind"]').click();
     await page.locator('[data-application-mode="general"]').click();
-    must((await page.locator('#resumeTemplateForm').innerText()).includes('지원직무(지원처 미정이면 생략 가능)'),'General blind guidance inconsistent');
+    must((await page.locator('#resumeTemplateForm').textContent()).includes('지원직무(지원처 미정이면 생략 가능)'),'General blind guidance inconsistent');
     await page.locator('[data-application-mode="targeted"]').click();
     await enter('forms.blind.name','박블라인드');
     await enter('forms.blind.phone','010-2222-3333');
@@ -190,7 +185,6 @@ for(const cfg of config){
     await printAndCheck('#printResumeOnly','blind-targeted',['박블라인드','학생 프로젝트팀','기업 홍보'],'테스트대학교');
 
     // Optional experience document: standalone and combined PDF both need readable print windows.
-    await openStage('resumeEvidenceImport');
     await page.locator('#resumeOptionalDocsDisclosure summary').click();
     await page.locator('[data-resume-doc="experience"]').click();
     await enter('optionalDocument.experience.title','소비자 조사 경험기술서');
@@ -214,7 +208,7 @@ for(const cfg of config){
     must((await page.locator('#resumeReviewRoundStatus').textContent()).includes('2회'),'Review rounds not persisted');
     const state=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),key);
     must(state.assessments.experienceCompetency.experiences[0].action==='리뷰 30건을 범주화','Original STEP 3 experience was overwritten');
-    must(state.artifacts.resumeLab.additionalExperiences.length>=1,'Newly added experience missing after reload');
+    must(state.artifacts.resumeLab.forms.standard.activities.r0.activity==='고객 분석 교내 프로젝트','Directly entered activity missing after reload');
     must(errors.length===0,cfg.name+' browser JS error: '+errors.join(' | '));
     console.log('PASS '+cfg.name+' all STEP 8 student-flow checks; persistent inputs and existing STEP 3 intact');
   }catch(error){

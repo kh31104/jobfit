@@ -56,7 +56,6 @@ for(const [engine,label,device] of [
    // The learner intentionally keeps optional resume bullets collapsed. Open the section before testing visibility.
    await page.evaluate(()=>{
      window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeTemplateLab'));
-      document.getElementById('resumePriorDetails').open=true;
      const advanced=document.getElementById('resumeAdvancedDisclosure');if(advanced)advanced.open=true;
    });
    assert((await page.locator('#resumeItems').innerText()).includes('기존 값 유지'),label+': seeded resume not visible when expanded');
