@@ -647,7 +647,7 @@ function addNewExperienceToResume(data,type,draft){
 function collectResumePriorData(state,posting,experiences,injeCompact=false){
   const profile=state.profile||{},spec=findRelevantStudentSpec(state,posting);
   const saved=Array.isArray(experiences)?experiences.filter(x=>x&&typeof x==='object'):[];
-  if(injeCompact&&Array.isArray(state.artifacts?.experienceMap)){
+  if(injeCompact&&!saved.length&&Array.isArray(state.artifacts?.experienceMap)){
     for(const item of state.artifacts.experienceMap){
       if(!item||typeof item!=='object')continue;
       if(!saved.some(x=>(item.id&&x.id===item.id)||(!item.id&&x.title===item.title&&x.action===item.action)))saved.push(item);
@@ -660,7 +660,7 @@ function collectResumePriorData(state,posting,experiences,injeCompact=false){
   const chosen=(explorer.candidates||[]).find(x=>x.id===firstTarget.jobId);
   const analysis=state.artifacts?.jobDeepDive||{};
   const pool=injeCompact?[spec,...Object.values(analysis.targetAnalyses||{}).map(x=>x?.studentSpec),...Object.values(analysis.analyses||{}).map(x=>x?.studentSpec)].filter(Boolean):[spec];
-  const union=key=>[...new Set(pool.flatMap(x=>splitResumeSpec(x[key])))];
+  const union=key=>[...new Set(pool.flatMap(x=>splitResumeInjeCredential(x[key])))];
   const toolList=pool.map(x=>cleanResumeSpec(x.tools)).filter(Boolean);
   return {
     targetJob:String(posting?.jobTitle||(injeCompact?chosen?.title:'')||'').trim(),
@@ -685,6 +685,14 @@ function splitResumeSpec(value){
 function cleanResumeSpec(value){
   var x=String(value||'').trim();return /^(없음|미확인|해당 없음|해당없음)$/i.test(x)?'':x;
 }
+function splitResumeInjeCredential(value){
+  return String(value||'').split(/\n|,|;/).flatMap(function(chunk){
+    const text=chunk.trim();
+    if(!text||/(준비\s*중|취득\s*예정|응시\s*예정|공부\s*중|미취득|불합격)/.test(text))return [];
+    return splitResumeSpec(text.replace(/\s*(?:\/\s*)?(?:취득|합격|보유)\s*$/,''));
+  });
+}
+
 function applyResumePriorData(data,type,prior,scope,injeCompact=false){
   ensureResumeForms(data);var count=0;
   const putPriorRows=(...args)=>putResumeRows(...args,injeCompact);
