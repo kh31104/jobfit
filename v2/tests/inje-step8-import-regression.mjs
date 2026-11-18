@@ -4,9 +4,9 @@ const base=process.env.JOBFIT_TEST_URL||'http://127.0.0.1:8765/v2/';
 const key='jobfit:v2:learner';
 const assert=(ok,message)=>{if(!ok)throw Error(message);};
 const formPaths={
-  standard:{name:'forms.standard.nameKo',existing:'forms.standard.education.r0.school',expected:'내가 작성한 학교',newPath:'forms.standard.activities.r0.note',newValue:'직접 수정한 활동 내용'},
-  ncs:{name:'forms.ncs.nameKo',existing:'forms.ncs.training.r0.name',expected:'직접 작성한 교육',newPath:'forms.ncs.training.r0.content',newValue:'직접 수정한 교육 내용'},
-  blind:{name:'forms.blind.name',existing:'forms.blind.experience.r0.organization',expected:'직접 작성한 조직',newPath:'forms.blind.experience.r0.activity',newValue:'직접 수정한 경험 내용'}
+  standard:{name:'forms.standard.nameKo',existing:'forms.standard.education.r0.school',expected:'내가 작성한 학교',section:'standard-activities',newPath:'forms.standard.activities.r0.note',newValue:'직접 수정한 활동 내용'},
+  ncs:{name:'forms.ncs.nameKo',existing:'forms.ncs.training.r0.name',expected:'직접 작성한 교육',section:'ncs-training',newPath:'forms.ncs.training.r0.content',newValue:'직접 수정한 교육 내용'},
+  blind:{name:'forms.blind.name',existing:'forms.blind.experience.r0.organization',expected:'직접 작성한 조직',section:'blind-experience',newPath:'forms.blind.experience.r0.activity',newValue:'직접 수정한 경험 내용'}
 };
 const seed=type=>({
   version:2.2,activeStep:7,mode:'full',
@@ -50,6 +50,7 @@ for(const testCase of cases){
         assert((await page.locator('[data-resume-bind="'+spec.existing+'"]').inputValue())===spec.expected,testCase.name+'/'+type+': previously saved value missing');
         const before=await page.evaluate(k=>{const s=JSON.parse(localStorage.getItem(k));return {profile:s.profile,assessments:s.assessments,jobDeepDive:s.artifacts.jobDeepDive,jdAnalyzer:s.artifacts.jdAnalyzer,optionalDocument:s.artifacts.resumeLab.optionalDocument};},key);
         await page.locator('[data-resume-bind="'+spec.name+'"]').fill('실습 학생 '+type);
+        await page.locator('[data-resume-section="'+spec.section+'"] > summary').click();
         await page.locator('[data-resume-bind="'+spec.newPath+'"]').fill(spec.newValue);
         const saved=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
         assert(saved.artifacts.resumeLab.forms[type],testCase.name+'/'+type+': selected form not saved');
