@@ -55,7 +55,7 @@ for(const width of [1280,390]){
       await page.reload({waitUntil:'networkidle'});
       if(screen.step===6){await page.locator('#jf7Legacy').waitFor();await page.click('#jf7Legacy');}
       if(screen.step===7){
-        await page.locator('#resumeAdvancedDisclosure').waitFor();
+        await page.locator('#resumeAdvancedDisclosure').waitFor({state:'attached'});
         await page.evaluate(()=>{
           const section=document.getElementById('resumeEvidenceImport');
           window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeTemplateLab'));
