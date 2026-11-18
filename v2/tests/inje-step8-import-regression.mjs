@@ -47,6 +47,7 @@ for(const testCase of cases){
         await page.reload({waitUntil:'networkidle'});
         await page.locator('#resumeTemplateLab').waitFor({timeout:15000});
         await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeEvidenceImport')));
+        const beforeImport=await page.evaluate(k=>{const s=JSON.parse(localStorage.getItem(k));return {assessments:s.assessments,jobDeepDive:s.artifacts.jobDeepDive};},key);
         await page.locator('#resumeAutoImport [data-resume-import="all"]').click();
         const state=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
         const result=state.artifacts.resumeLab;
@@ -57,8 +58,8 @@ for(const testCase of cases){
         assert(report.addedByGroup.credentials===3,testCase.name+'/'+type+': qualifications not imported');
         assert(result.skills.includes('Excel'),testCase.name+'/'+type+': tools not imported');
         assert(result.applicationMode==='general',testCase.name+'/'+type+': general mode changed');
-        assert(JSON.stringify(state.assessments)===JSON.stringify(initial.assessments),testCase.name+'/'+type+': original STEP 3 data changed');
-        assert(JSON.stringify(state.artifacts.jobDeepDive)===JSON.stringify(initial.artifacts.jobDeepDive),testCase.name+'/'+type+': prior STEP 5 spec changed');
+        assert(JSON.stringify(state.assessments)===JSON.stringify(beforeImport.assessments),testCase.name+'/'+type+': original STEP 3 data changed');
+        assert(JSON.stringify(state.artifacts.jobDeepDive)===JSON.stringify(beforeImport.jobDeepDive),testCase.name+'/'+type+': prior STEP 5 spec changed');
         assert(result.forms.standard.education.r0.school==='내가 작성한 학교',testCase.name+'/'+type+': handwritten education overwritten');
         assert(result.forms.standard.activities.r0.activity==='내가 작성한 활동',testCase.name+'/'+type+': handwritten activity overwritten');
         assert(result.forms.ncs.training.r0.name==='직접 작성한 교육',testCase.name+'/'+type+': handwritten training overwritten');
