@@ -5,7 +5,7 @@ export async function render(ctx){
   // INJE 화면 번호 기준: GAP Match와 지원자격 확인은 STEP 5 Job Analysis에 있다.
   const displayStep=ctx.displayStep??9,injeCompact=displayStep!==9,prevEvidenceStep=injeCompact?'STEP 5 GAP Match':'STEP 8',prevGateStep=injeCompact?'STEP 5 Job Analysis':'STEP 7';
   const s=ctx.getState(),jd=s.artifacts?.jdAnalyzer||{postings:[],selectedId:''},posting=jd.postings?.find(x=>x.id===jd.selectedId)||jd.postings?.[0],assets=s.artifacts?.careerAssets?.assets||[],candidateAssets=assets.filter(a=>(a.evidenceLevel||legacyLevel(a.strength))!=='없음'),experiences=s.assessments?.experienceCompetency?.experiences||[],saved=s.artifacts?.resumeLab||{items:[],summary:'',skills:'',notes:''},data=structuredClone(saved),root=document.getElementById('stepRoot');
-  data.items=data.items||[];ensureResumeForms(data);if(injeCompact)ensureResumeTargeting(data,posting);const prior=collectResumePriorData(s,posting,experiences);let editingResumeId=null;
+  data.items=data.items||[];ensureResumeForms(data);if(injeCompact)ensureResumeTargeting(data,posting);const prior=collectResumePriorData(s,posting,experiences,injeCompact);let editingResumeId=null;
 
   root.innerHTML=`<section class="card jobfitReadable resumeReadable">${READABLE_STYLES}
     <div class="sectionHead"><div><div class="kicker">STEP ${displayStep}</div><h2>Resume Lab</h2><p>JD와 Career Asset을 연결해 이력서·경험기술서를 만들되, 검증된 사실만 최종 문장으로 사용합니다.</p></div><span class="badge">9주차</span></div><div class="progress"><span style="width:71%"></span></div>
@@ -14,7 +14,7 @@ export async function render(ctx){
 
     ${resumeTemplateBlock(data,ctx,prior,posting,injeCompact)}
 
-    ${injeCompact?`<div class="hr"></div><div class="block" id="resumeEvidenceImport"><h3>2. 이력서에 사용할 경험 확인하기</h3><p class="help">필요한 경우에만 앞 단계의 학력·자격·경험을 선택해 불러오세요. 이미 작성한 내용은 덮어쓰지 않습니다. STEP 3에서 확인한 경험은 다시 검사하지 않고, 새로 쓴 수치·성과만 확인하세요.</p>${resumeAutoImportBlock(prior,data.templateType,ctx,true)}${resumeExperienceEntryTabs(data,ctx)}<div id="resumeGate"></div></div>`:`<div class="hr"></div><div class="block"><h3>2. Resume Evidence Gate</h3><div id="resumeGate"></div><div class="grid3" style="margin-top:12px"><div class="miniCard"><b>Fact</b><span>하지 않은 일·없는 수치를 쓰지 않는다.</span></div><div class="miniCard"><b>Action</b><span>역할명이 아니라 내가 직접 한 행동을 쓴다.</span></div><div class="miniCard"><b>Evidence</b><span>JD Requirement를 증명하는 Career Asset만 사용한다.</span></div></div></div>`}
+    ${injeCompact?`<div class="hr"></div><div class="block" id="resumeEvidenceImport"><h3>2. 이력서에 사용할 경험 확인하기</h3><p class="help">필요한 경우에만 앞 단계의 학력·자격·경험을 선택해 불러오세요. 이미 작성한 내용은 덮어쓰지 않습니다. STEP 3에서 확인한 경험은 다시 검사하지 않고, 새로 쓴 수치·성과만 확인하세요.</p>${resumeAutoImportBlock(prior,data.templateType,ctx,true,data.lastImportReport)}${resumeExperienceEntryTabs(data,ctx)}<div id="resumeGate"></div></div>`:`<div class="hr"></div><div class="block"><h3>2. Resume Evidence Gate</h3><div id="resumeGate"></div><div class="grid3" style="margin-top:12px"><div class="miniCard"><b>Fact</b><span>하지 않은 일·없는 수치를 쓰지 않는다.</span></div><div class="miniCard"><b>Action</b><span>역할명이 아니라 내가 직접 한 행동을 쓴다.</span></div><div class="miniCard"><b>Evidence</b><span>JD Requirement를 증명하는 Career Asset만 사용한다.</span></div></div></div>`}
 
     <div class="hr"></div><div class="block"><h3>3. ${injeCompact?'경험을 이력서 문장으로 바꾸기':'Career Asset → Resume Bullet'}</h3><p class="help">${injeCompact?'앞에서 확인한 경험을 선택하고, 실제로 한 일과 결과를 이력서 문장으로 정리하세요.':'Fact Check가 끝나지 않은 자산도 초안 연습은 가능하지만, 최종 제출용으로는 표시하지 않습니다.'}</p><div class="grid2">${selectAsset('assetId',injeCompact?'이력서에 쓸 경험':'Career Asset',candidateAssets)}${sel('section','이력서 섹션','',['프로젝트','인턴·경력','대외활동','아르바이트','교육·수업','기타'])}</div><div id="assetContext" class="callout info">${injeCompact?'경험을 선택하면 실제 행동과 확인 근거를 보여줍니다.':'Career Asset을 선택하면 Evidence와 검증상태를 확인합니다.'}</div>
       <div class="grid2" style="margin-top:12px">${area('rawBullet',injeCompact?'내가 직접 쓴 문장':'내 원문','','내가 먼저 사실 중심으로 작성한 문장')}${area('aiBullet',injeCompact?'AI가 정리한 문장':'AI 구조화','','AI가 제안한 문장 또는 구조')}${area('finalBullet',injeCompact?'최종 이력서 문장':'최종 Bullet','','실제로 한 일과 결과만 사용해 최종 수정')}${area('detailText',injeCompact?'경험기술서용 설명':'경험기술서 확장','','필요 시 3~5문장으로 역할·행동·성과를 확장')}</div>
@@ -556,18 +556,36 @@ function compactInjeResumeUi(root,data){
     }
   }
 }
-function resumeAutoImportBlock(prior,type,ctx,compact=false){
+function resumeImportFeedbackHtml(report,type){
+  if(!report||report.templateType!==type||!report.inje)return '';
+  const labels={education:'학력·교육',credentials:'자격·어학',experiences:'경험·활동',targetJob:'지원직무',tools:'도구·기술'};
+  const categories=Object.keys(labels).filter(k=>Number(report.availableByGroup?.[k]||0)>0);
+  const lines=categories.map(k=>{
+    const available=Number(report.availableByGroup[k]||0),added=Number(report.addedByGroup?.[k]||0);
+    return '<div>• '+labels[k]+' : 대상 '+available+'건 / 이번 반영 '+added+'건'+(available>added?' / 기존 기재·행 부족 등 '+(available-added)+'건':'')+'</div>';
+  }).join('');
+  const pending=Number(report.pendingExperiences||0),unplaced=Number(report.unplaced||0);
+  return '<div class="callout '+(report.count?'good':'info')+'" id="resumeImportFeedback" role="status" aria-live="polite" style="margin-top:10px">'
+    +'<b>불러오기 결과 · 이번에 '+Number(report.count||0)+'건 반영</b>'
+    +(lines?'<div style="margin-top:6px;line-height:1.7">'+lines+'</div>':'<div style="margin-top:6px">선택한 항목에 새로 채울 정보가 없습니다.</div>')
+    +(pending?'<div style="margin-top:6px">• 사실확인 전 경험 '+pending+'건은 이력서에 자동 입력하지 않았습니다. STEP 3에서 확인한 뒤 다시 불러오세요.</div>':'')
+    +(unplaced?'<div class="muted small" style="margin-top:5px">기존 기재 내용과 중복되거나 표의 빈 행이 부족한 항목은 그대로 두었습니다. 필요한 경우 위쪽 이력서 양식을 확인하세요.</div>':'')
+    +'<div class="muted small" style="margin-top:5px">반영된 항목은 위 1번 이력서 양식에서 자동으로 펼쳐집니다. 기존 작성내용은 바꾸지 않았습니다.</div></div>';
+}
+function resumeAutoImportBlock(prior,type,ctx,compact=false,report=null){
   var edu=prior.education?.institution||prior.education?.major?'학력·전공 1건':'학력·전공 없음';
   var certCount=(prior.certifications||[]).length+(prior.language||[]).length;
   var expCount=(prior.experiences||[]).length;
   var skill=prior.tools?'도구·기술 있음':'도구·기술 없음';
+  var pending=compact&&Number(prior.pendingExperiences||0)>0?'<br><span class="muted small">사실확인 전 경험 '+Number(prior.pendingExperiences)+'건은 아래 버튼으로 자동 입력되지 않습니다.</span>':'';
   var blindNote=type==='blind'?'<br><b>블라인드 보호:</b> 학교명은 자동 입력하지 않습니다.':'';
   var ncsNote=type==='ncs'?'<br><b>NCS 보호:</b> 학교명·학점 대신 직무관련 교육·경험만 가져옵니다.':'';
   return '<div class="callout '+(compact?'info':'good')+'" id="resumeAutoImport"><b>'+(compact?'앞 단계 정보 선택 불러오기':'STEP 1~7 자동 불러오기')+'</b><br>'
     +'앞에서 이미 입력한 사실은 다시 쓰지 않습니다. '+(compact?'아래 버튼을 누른 항목만 빈칸에 반영합니다. ':'')+'<b>'+esc(edu,ctx)+' · 자격/어학 '+certCount+'건 · 검증 경험 '+expCount+'건 · '+esc(skill,ctx)+'</b>'
-    +blindNote+ncsNote
+    +blindNote+ncsNote+pending
     +'<br><span class="muted small"><b>'+(compact?'선택해서 불러오기:</b> 지원직무, 학력·전공, 취득한 자격·어학, 검증된 경험·활동, 도구·기술. <b>직접 입력:</b> 성명·연락처와 아직 확인되지 않은 정보. 불러온 항목에는 <b>출처: STEP 1 / STEP 3 / STEP 5</b>를 표시하며 작성한 값은 덮어쓰지 않습니다.':'자동:</b> 선택 JD의 지원직무, 앞 단계의 전공·학력정보, 취득 완료 자격·어학, 검증 완료 경험·활동, 도구·기술. <b>직접 입력:</b> 성명·휴대전화·이메일 등 앞 단계에 없는 개인정보와 자동으로 확인할 수 없는 날짜·기관·점수. 자동 입력값에는 <b>출처: STEP 1 / STEP 3 / STEP 5</b>를 표시하며 기존 입력값을 덮어쓰지 않습니다.')+'</span>'
-    +'<div class="actions" style="margin-top:10px"><button type="button" class="btn secondary smallBtn" data-resume-import="education">학력·교육</button><button type="button" class="btn secondary smallBtn" data-resume-import="credentials">자격·어학</button><button type="button" class="btn secondary smallBtn" data-resume-import="experiences">경험·활동</button><button type="button" class="btn primary smallBtn" data-resume-import="all">가능한 항목 모두 불러오기</button></div></div>';
+    +'<div class="actions" style="margin-top:10px"><button type="button" class="btn secondary smallBtn" data-resume-import="education">학력·교육</button><button type="button" class="btn secondary smallBtn" data-resume-import="credentials">자격·어학</button><button type="button" class="btn secondary smallBtn" data-resume-import="experiences">경험·활동</button><button type="button" class="btn primary smallBtn" data-resume-import="all">가능한 항목 모두 불러오기</button></div>'
+    +(compact?resumeImportFeedbackHtml(report,type):'')+'</div>';
 }
 
 function resumeExperienceEntryTabs(data,ctx){
@@ -626,16 +644,33 @@ function addNewExperienceToResume(data,type,draft){
   return {count,message:count?'새 경험을 현재 이력서에 추가했습니다.':'현재 이력서에 빈 행이 없어 추가하지 못했습니다. 기존 행을 정리해 주세요.'};
 }
 
-function collectResumePriorData(state,posting,experiences){
-  var profile=state.profile||{},spec=findRelevantStudentSpec(state,posting),verified=(experiences||[]).filter(function(x){return x&&x.factChecked;});
+function collectResumePriorData(state,posting,experiences,injeCompact=false){
+  const profile=state.profile||{},spec=findRelevantStudentSpec(state,posting);
+  const saved=Array.isArray(experiences)?experiences.filter(x=>x&&typeof x==='object'):[];
+  if(injeCompact&&Array.isArray(state.artifacts?.experienceMap)){
+    for(const item of state.artifacts.experienceMap){
+      if(!item||typeof item!=='object')continue;
+      if(!saved.some(x=>(item.id&&x.id===item.id)||(!item.id&&x.title===item.title&&x.action===item.action)))saved.push(item);
+    }
+  }
+  const verified=saved.filter(x=>x.factChecked===true);
+  const pendingExperiences=saved.length-verified.length;
+  const explorer=state.artifacts?.jobExplorer||{};
+  const firstTarget=explorer.targetCombos?.[0]||{};
+  const chosen=(explorer.candidates||[]).find(x=>x.id===firstTarget.jobId);
+  const analysis=state.artifacts?.jobDeepDive||{};
+  const pool=injeCompact?[spec,...Object.values(analysis.targetAnalyses||{}).map(x=>x?.studentSpec),...Object.values(analysis.analyses||{}).map(x=>x?.studentSpec)].filter(Boolean):[spec];
+  const union=key=>[...new Set(pool.flatMap(x=>splitResumeSpec(x[key])))];
+  const toolList=pool.map(x=>cleanResumeSpec(x.tools)).filter(Boolean);
   return {
-    targetJob:String(posting?.jobTitle||'').trim(),
+    targetJob:String(posting?.jobTitle||(injeCompact?chosen?.title:'')||'').trim(),
     education:{institution:String(profile.schoolName||profile.university||profile.educationInstitution||profile.institution||'').trim(),major:String(profile.major||'').trim(),grade:String(profile.grade||'').trim()},
-    certifications:splitResumeSpec(spec.certificates),
-    language:splitResumeSpec(spec.language),
-    tools:cleanResumeSpec(spec.tools),
+    certifications:union('certificates'),
+    language:union('language'),
+    tools:injeCompact?[...new Set(toolList)].join(' · '):cleanResumeSpec(spec.tools),
     portfolio:cleanResumeSpec(spec.portfolio),
-    experiences:verified
+    experiences:verified,
+    pendingExperiences:injeCompact?pendingExperiences:0
   };
 }
 function findRelevantStudentSpec(state,posting){
@@ -650,57 +685,70 @@ function splitResumeSpec(value){
 function cleanResumeSpec(value){
   var x=String(value||'').trim();return /^(없음|미확인|해당 없음|해당없음)$/i.test(x)?'':x;
 }
-function applyResumePriorData(data,type,prior,scope){
+function applyResumePriorData(data,type,prior,scope,injeCompact=false){
   ensureResumeForms(data);var count=0;
+  const putPriorRows=(...args)=>putResumeRows(...args,injeCompact);
+  const addedByGroup={education:0,credentials:0,experiences:0,targetJob:0,tools:0};
+  const educationExps=(prior.experiences||[]).filter(x=>experienceKind(x)==='education');
+  const availableByGroup={education:type==='standard'?Number(!!(prior.education?.institution||prior.education?.major)):educationExps.length,credentials:(prior.certifications||[]).length+(prior.language||[]).length,experiences:type==='standard'?(prior.experiences||[]).length:(prior.experiences||[]).length-educationExps.length,targetJob:scope==='all'&&prior.targetJob?1:0,tools:scope==='all'&&prior.tools?1:0};
   function doEducation(){
     if(type==='standard'&&(prior.education?.institution||prior.education?.major)){
-      count+=putResumeRows(data.forms.standard,'education',[{school:prior.education.institution,major:prior.education.major}],3,['school','major'],function(slot,row){markRowSources(data,'forms.standard.education.'+slot,row,'STEP 1');});
+      count+=putPriorRows(data.forms.standard,'education',[{school:prior.education.institution,major:prior.education.major}],3,['school','major'],function(slot,row){markRowSources(data,'forms.standard.education.'+slot,row,'STEP 1');});
     }
     var educationExp=(prior.experiences||[]).filter(function(x){return experienceKind(x)==='education';});
-    if(type==='ncs')count+=putResumeRows(data.forms.ncs,'training',educationExp.map(function(x){return {type:'학교교육',name:x.title||'',content:resumeExperienceContent(x),hours:'',period:x.period||''};}),4,['name','content'],function(slot,row){markRowSources(data,'forms.ncs.training.'+slot,row,'STEP 3');});
-    if(type==='blind')count+=putResumeRows(data.forms.blind,'training',educationExp.map(function(x){return {type:'학교교육',course:x.title||'',hours:'',jobContent:resumeExperienceContent(x)};}),4,['course','jobContent'],function(slot,row){markRowSources(data,'forms.blind.training.'+slot,row,'STEP 3');});
+    if(type==='ncs')count+=putPriorRows(data.forms.ncs,'training',educationExp.map(function(x){return {type:'학교교육',name:x.title||'',content:resumeExperienceContent(x),hours:'',period:x.period||''};}),4,['name','content'],function(slot,row){markRowSources(data,'forms.ncs.training.'+slot,row,'STEP 3');});
+    if(type==='blind')count+=putPriorRows(data.forms.blind,'training',educationExp.map(function(x){return {type:'학교교육',course:x.title||'',hours:'',jobContent:resumeExperienceContent(x)};}),4,['course','jobContent'],function(slot,row){markRowSources(data,'forms.blind.training.'+slot,row,'STEP 3');});
   }
   function doCredentials(){
     var entries=[...(prior.certifications||[]),...(prior.language||[])].map(function(x){return {name:x};});
-    if(type==='standard')count+=putResumeRows(data.forms.standard,'certifications',entries,4,['name'],function(slot,row){markRowSources(data,'forms.standard.certifications.'+slot,row,'STEP 5');});
-    if(type==='ncs')count+=putResumeRows(data.forms.ncs,'certifications',entries.map(function(x){return {name:x.name};}),4,['name'],function(slot,row){markRowSources(data,'forms.ncs.certifications.'+slot,row,'STEP 5');});
-    if(type==='blind')count+=putResumeRows(data.forms.blind,'certifications',entries.map(function(x){return {name:x.name};}),4,['name'],function(slot,row){markRowSources(data,'forms.blind.certifications.'+slot,row,'STEP 5');});
+    if(type==='standard')count+=putPriorRows(data.forms.standard,'certifications',entries,4,['name'],function(slot,row){markRowSources(data,'forms.standard.certifications.'+slot,row,'STEP 5');});
+    if(type==='ncs')count+=putPriorRows(data.forms.ncs,'certifications',entries.map(function(x){return {name:x.name};}),4,['name'],function(slot,row){markRowSources(data,'forms.ncs.certifications.'+slot,row,'STEP 5');});
+    if(type==='blind')count+=putPriorRows(data.forms.blind,'certifications',entries.map(function(x){return {name:x.name};}),4,['name'],function(slot,row){markRowSources(data,'forms.blind.certifications.'+slot,row,'STEP 5');});
   }
   function doExperiences(){
-    var exps=(prior.experiences||[]).filter(function(x){return experienceKind(x)!=='education';});
+    var exps=type==='standard'?(prior.experiences||[]):(prior.experiences||[]).filter(function(x){return experienceKind(x)!=='education';});
     if(type==='standard'){
       var careers=exps.filter(function(x){return experienceKind(x)==='career';}).map(function(x){return {period:x.period||'',company:x.organization||x.company||'',position:x.roleTitle||x.role||'',duty:resumeExperienceContent(x),employmentType:x.employmentType||''};});
       var acts=exps.filter(function(x){return experienceKind(x)!=='career';}).map(function(x){return {period:x.period||'',activity:x.title||'',organization:x.organization||x.team||'',note:uniqueJoin([x.roleTitle||x.role,x.action,x.result])};});
-      count+=putResumeRows(data.forms.standard,'career',careers,3,['company','duty'],function(slot,row){markRowSources(data,'forms.standard.career.'+slot,row,'STEP 3');});
-      count+=putResumeRows(data.forms.standard,'activities',acts,4,['activity','note'],function(slot,row){markRowSources(data,'forms.standard.activities.'+slot,row,'STEP 3');});
+      count+=putPriorRows(data.forms.standard,'career',careers,3,['company','duty'],function(slot,row){markRowSources(data,'forms.standard.career.'+slot,row,'STEP 3');});
+      count+=putPriorRows(data.forms.standard,'activities',acts,4,['activity','note'],function(slot,row){markRowSources(data,'forms.standard.activities.'+slot,row,'STEP 3');});
     }
     if(type==='ncs'){
       var ncsCareers=exps.filter(function(x){return experienceKind(x)==='career';}).map(function(x){return {company:x.organization||x.company||'',duty:resumeExperienceContent(x),period:x.period||''};});
       var ncsActs=exps.filter(function(x){return experienceKind(x)!=='career';}).map(function(x){return {group:x.organization||x.team||x.title||'',role:x.roleTitle||x.role||'',content:resumeExperienceContent(x),period:x.period||''};});
-      count+=putResumeRows(data.forms.ncs,'career',ncsCareers,4,['company','duty'],function(slot,row){markRowSources(data,'forms.ncs.career.'+slot,row,'STEP 3');});
-      count+=putResumeRows(data.forms.ncs,'activities',ncsActs,4,['group','content'],function(slot,row){markRowSources(data,'forms.ncs.activities.'+slot,row,'STEP 3');});
+      count+=putPriorRows(data.forms.ncs,'career',ncsCareers,4,['company','duty'],function(slot,row){markRowSources(data,'forms.ncs.career.'+slot,row,'STEP 3');});
+      count+=putPriorRows(data.forms.ncs,'activities',ncsActs,4,['group','content'],function(slot,row){markRowSources(data,'forms.ncs.activities.'+slot,row,'STEP 3');});
     }
     if(type==='blind'){
       var blindRows=exps.map(function(x){var kind=experienceKind(x);return {type:kind==='career'?'경력':'경험',organization:safeBlindOrganization(x.organization||x.company||x.team||x.title||'',kind),role:x.roleTitle||x.role||'',period:x.period||'',activity:resumeExperienceContent(x)};});
-      count+=putResumeRows(data.forms.blind,'experience',blindRows,4,['organization','activity'],function(slot,row){markRowSources(data,'forms.blind.experience.'+slot,row,'STEP 3');});
+      count+=putPriorRows(data.forms.blind,'experience',blindRows,4,['organization','activity'],function(slot,row){markRowSources(data,'forms.blind.experience.'+slot,row,'STEP 3');});
     }
   }
-  if(scope==='education'||scope==='all')doEducation();
-  if(scope==='credentials'||scope==='all')doCredentials();
-  if(scope==='experiences'||scope==='all')doExperiences();
+  let before=count;
+  if(scope==='education'||scope==='all'){doEducation();addedByGroup.education=count-before;}
+  before=count;
+  if(scope==='credentials'||scope==='all'){doCredentials();addedByGroup.credentials=count-before;}
+  before=count;
+  if(scope==='experiences'||scope==='all'){doExperiences();addedByGroup.experiences=count-before;}
   if(scope==='all'&&prior.targetJob){
-    if(type==='standard'&&!String(data.forms.standard.targetJob||'').trim()){data.forms.standard.targetJob=prior.targetJob;setImportSource(data,'forms.standard.targetJob','STEP 5 JD');count++;}
-    if(type==='ncs'&&!String(data.forms.ncs.job||'').trim()){data.forms.ncs.job=prior.targetJob;setImportSource(data,'forms.ncs.job','STEP 5 JD');count++;}
-    if(type==='blind'&&!String(data.forms.blind.targetJob||'').trim()){data.forms.blind.targetJob=prior.targetJob;setImportSource(data,'forms.blind.targetJob','STEP 5 JD');count++;}
+    if(type==='standard'&&!String(data.forms.standard.targetJob||'').trim()){data.forms.standard.targetJob=prior.targetJob;setImportSource(data,'forms.standard.targetJob','STEP 5 JD');count++;addedByGroup.targetJob++;}
+    if(type==='ncs'&&!String(data.forms.ncs.job||'').trim()){data.forms.ncs.job=prior.targetJob;setImportSource(data,'forms.ncs.job','STEP 5 JD');count++;addedByGroup.targetJob++;}
+    if(type==='blind'&&!String(data.forms.blind.targetJob||'').trim()){data.forms.blind.targetJob=prior.targetJob;setImportSource(data,'forms.blind.targetJob','STEP 5 JD');count++;addedByGroup.targetJob++;}
   }
-  if(scope==='all'&&prior.tools&&!String(data.skills||'').trim()){data.skills=prior.tools;setImportSource(data,'skills','STEP 5 My Spec');count++;}
+  if(scope==='all'&&prior.tools&&!String(data.skills||'').trim()){data.skills=prior.tools;setImportSource(data,'skills','STEP 5 My Spec');count++;addedByGroup.tools++;}
+  const included=scope==='all'?['education','credentials','experiences','targetJob','tools']:scope==='education'||scope==='credentials'||scope==='experiences'?[scope]:[];
+  const visibleByGroup=Object.fromEntries(Object.entries(availableByGroup).map(([k,v])=>[k,included.includes(k)?v:0]));
+  const available=included.reduce((n,k)=>n+(availableByGroup[k]||0),0),unplaced=Math.max(0,available-count);
+  const pendingExperiences=(scope==='all'||scope==='experiences')?Number(prior.pendingExperiences||0):0;
   var label=scope==='education'?'학력·교육':scope==='credentials'?'자격·어학':scope==='experiences'?'경험·활동':'앞 단계 데이터';
-  return {count,message:count?label+' '+count+'개 항목을 빈칸에 불러왔습니다.':'새로 불러올 '+label+' 정보가 없습니다. 기존 입력값은 유지했습니다.'};
+  const message=count?label+' '+count+'개 항목을 빈칸에 불러왔습니다.':'새로 불러올 '+label+' 정보가 없습니다. 기존 입력값은 유지했습니다.';
+  return {count,message,addedByGroup,availableByGroup:visibleByGroup,unplaced,pendingExperiences,inje:injeCompact};
+
 }
-function putResumeRows(form,key,entries,maxRows,dedupeKeys,onAdded){
+function putResumeRows(form,key,entries,maxRows,dedupeKeys,onAdded,scanAll=false){
   if(!entries.length)return 0;form[key]=form[key]&&typeof form[key]==='object'?form[key]:{};var added=0;
   var existing=Object.values(form[key]).filter(function(x){return x&&typeof x==='object';});
-  entries.slice(0,maxRows).forEach(function(entry){
+  (scanAll?entries:entries.slice(0,maxRows)).forEach(function(entry){
     var sig=dedupeKeys.map(function(k){return String(entry[k]||'').trim();}).join('|');if(!sig.replace(/\|/g,''))return;
     var duplicate=existing.some(function(row){return dedupeKeys.map(function(k){return String(row[k]||'').trim();}).join('|')===sig;});if(duplicate)return;
     var slot='';for(var i=0;i<maxRows;i++){var k='r'+i,row=form[key][k];if(!row||!Object.values(row).some(function(v){return String(v||'').trim();})){slot=k;break;}}
@@ -1063,10 +1111,26 @@ function wireResumeFormUi(data,ctx,persist,assets=[],experiences=[],prior={},pos
       var importer=e.target.closest('[data-resume-import]');
       if(importer){
         var importPrior=(injeCompact&&data.applicationMode==='general')?{...prior,targetJob:''}:prior;
-        var result=applyResumePriorData(data,data.templateType,importPrior,importer.dataset.resumeImport||'all');persist();
-        var form=document.getElementById('resumeTemplateForm');if(form)form.innerHTML=resumeTemplateForm(data,ctx);
+        var form=document.getElementById('resumeTemplateForm');
+        const openBefore=form?[...form.querySelectorAll('details[open][data-resume-section]')].map(x=>x.dataset.resumeSection):[];
+        var result=applyResumePriorData(data,data.templateType,importPrior,importer.dataset.resumeImport||'all',injeCompact);
+        if(injeCompact)data.lastImportReport={...result,templateType:data.templateType,scope:importer.dataset.resumeImport||'all'};
+        persist();
+        if(form){
+          form.innerHTML=resumeTemplateForm(data,ctx);
+          const names={standard:{education:['standard-education'],credentials:['standard-certifications'],experiences:['standard-career','standard-activities']},ncs:{education:['ncs-training'],credentials:['ncs-certifications'],experiences:['ncs-career','ncs-activities']},blind:{education:['blind-training'],credentials:['blind-certifications'],experiences:['blind-experience']}};
+          const expand=new Set(openBefore);
+          if(injeCompact)for(const key of ['education','credentials','experiences']){
+            if(result.addedByGroup?.[key]>0)for(const name of names[data.templateType]?.[key]||[])expand.add(name);
+          }
+          for(const detail of form.querySelectorAll('details[data-resume-section]'))if(expand.has(detail.dataset.resumeSection))detail.open=true;
+        }
+        if(injeCompact){
+          const importPanel=document.getElementById('resumeAutoImport');
+          if(importPanel)importPanel.outerHTML=resumeAutoImportBlock(prior,data.templateType,ctx,true,data.lastImportReport);
+        }
         var skills=document.getElementById('skills');if(skills&&!skills.value&&data.skills)skills.value=data.skills;
-        ctx.toast(result.message);return;
+        ctx.toast(result.message+(injeCompact&&result.pendingExperiences?' · 사실확인 전 경험 '+result.pendingExperiences+'건 제외':''));return;
       }
       var example=e.target.closest('[data-resume-example]');
       if(example){
@@ -1078,7 +1142,7 @@ function wireResumeFormUi(data,ctx,persist,assets=[],experiences=[],prior={},pos
       data.templateType=b.dataset.resumeTemplate||'standard';persist();
       var f=document.getElementById('resumeTemplateForm'),g=document.getElementById('resumeTemplateGuide');
       if(f)f.innerHTML=resumeTemplateForm(data,ctx);if(g)g.innerHTML=resumeTemplateGuide(data.templateType);
-       var importNotice=document.getElementById('resumeAutoImport');if(importNotice)importNotice.outerHTML=resumeAutoImportBlock(prior,data.templateType,ctx,injeCompact);
+       var importNotice=document.getElementById('resumeAutoImport');if(importNotice)importNotice.outerHTML=resumeAutoImportBlock(prior,data.templateType,ctx,injeCompact,data.lastImportReport);
       lab.querySelectorAll('[data-resume-template]').forEach(function(x){x.classList.toggle('primary',x===b);x.classList.toggle('secondary',x!==b);});
       if(injeCompact)refreshResumeReview(data,ctx);
     });
