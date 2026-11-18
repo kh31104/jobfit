@@ -137,6 +137,7 @@ for(const width of [1280,390]){
 
     // STEP 8: 기존 STEP 3 경험을 선택 불러와도 원본과 JD·Career Asset은 유지해야 한다.
     await openStep(page,7);await page.waitForSelector('#resumeTemplateLab');
+    await page.locator('#resumePriorDetails > summary').click();
     await page.locator('[data-resume-import="experiences"]').first().click();
     st=await read(page);
     assert(st.artifacts.careerAssets.assets.some(a=>a.id==='asset1'),'Existing career asset was removed');
