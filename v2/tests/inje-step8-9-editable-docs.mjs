@@ -27,8 +27,15 @@ for(const width of [1280,390]){
     assert(await page.locator('#stepRoot .progress + #resumeTemplateLab').count()===1,'INJE STEP 8 must open directly with resume template selection');
     assert(await page.locator('#resumeEvidenceImport #resumeAutoImport').count()===1,'Optional prior-data import must appear in section 2');
     assert(await page.locator('#resumeEvidenceImport #resumeExperienceEntry').count()===1,'Import and new-experience controls must appear in section 2');
-    assert(await page.locator('#resumeTemplateLab #resumeAutoImport').count()===0,'Section 1 should contain only resume selection and writing controls');
-    assert(await page.locator('#stepRoot h3').filter({hasText:'2. 이력서에 사용할 경험 확인하기'}).count()===1,'Simplified INJE evidence heading missing');
+    assert(await page.locator('#resumeTemplateLab #resumePriorDetails #resumeAutoImport').count()===1,'Optional prior-data import must be nested in stage 1');
+    assert((await page.locator('#resumeTemplateLab > h3').textContent()).startsWith('1. 이력서 작성'),'Stage 1 heading missing');
+    assert((await page.locator('#resumeAiReview > h3').textContent()).startsWith('2. AI 검토 · 직접 수정 (선택)'),'Stage 2 heading missing');
+    assert((await page.locator('#resumePreviewLab > h3').textContent()).startsWith('3. 이력서 완성 · PDF 저장'),'Stage 3 heading missing');
+    assert(await page.locator('.resumeReadable > .block').count()===3,'INJE STEP 8 must show three primary stage blocks');
+    assert(!await page.locator('#resumePriorDetails').evaluate(el=>el.open),'Prior import must be optional and collapsed initially');
+    await page.locator('#resumePriorDetails > summary').click();
+    assert(await page.locator('#resumePriorDetails').evaluate(el=>el.open),'Optional import must expand on request');
+    assert(await page.locator('#resumeGoReview').count()===1&&await page.locator('#resumeGoPdf').count()===1,'Stage navigation buttons missing');
     assert(await page.locator('#resumeGate .miniCard').count()===3,'INJE evidence gate should contain three summaries');
     assert((await page.locator('#resumeGate').innerText()).includes('불러온 경험 근거'),'Imported evidence summary missing');
     assert((await page.locator('#resumeGate').innerText()).includes('앞에서 확인한 경험을 불러왔습니다.'),'STEP 3 verified experience was not reused');
@@ -92,7 +99,7 @@ for(const width of [1280,390]){
     await page.locator('[data-resume-bind="forms.standard.targetJob"]').fill('디지털 마케팅');
     await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeAiReview')));
     await page.locator('#redoResumeReview').click();
-    assert((await page.locator('#resumeAiReview > h3').textContent()).startsWith('3.'),'AI review section number changed after re-review');
+    assert((await page.locator('#resumeAiReview > h3').textContent()).startsWith('2.'),'AI review section number changed after re-review');
     const secondPrompt=await page.locator('#resumeReviewPromptText').inputValue();
     assert(secondPrompt.includes('디지털 마케팅'),'AI re-review did not include student-edited resume');
     assert((await page.locator('#resumeReviewRoundStatus').innerText()).includes('2회'),'Second AI review was not counted');
@@ -104,7 +111,7 @@ for(const width of [1280,390]){
     assert(await page.locator('#printResumeOnly').count()===1,'Optional PDF control missing');
     assert((await page.locator('#resumeReviewRoundStatus').textContent()).includes('2회'),'PDF choice incorrectly changed AI review state');
 
-    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeEvidenceImport')));
+    await page.evaluate(()=>{window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeTemplateLab'));document.getElementById('resumePriorDetails').open=true;});
     await page.locator('#resumeAdvancedDisclosure summary').click();
     await page.locator('#copyPrompt').click();
     assert(await page.locator('#resumeAiIntakePanel [data-ai-intake-answer="action"]').count()===1,'Resume bullet must ask for missing personal action');
@@ -157,7 +164,7 @@ for(const width of [1280,390]){
     await popup.locator('body').waitFor();
     assert((await popup.locator('body').innerText()).includes('경험기술서 실습'),'Separate PDF missed saved experience');
     await popup.close();
-    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeEvidenceImport')));
+    await page.evaluate(()=>{window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeTemplateLab'));document.getElementById('resumePriorDetails').open=true;});
     await page.locator('[data-resume-doc="career"]').click();
     assert(await page.locator('#copyResumeOptionalAiPrompt').count()===1,'Career description must expose its AI drafting prompt');
     assert((await page.locator('#resumeOptionalAiHelp').textContent()).includes('담당업무'),'Career drafting guidance must explain duties and outcomes');
@@ -259,13 +266,24 @@ for(const width of [1280,390]){
     await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeTemplateLab')));
     assert((await page.locator('#resumeTargetMode').innerText()).includes('일반 이력서 작성'),'General mode without JD must work');
     await page.locator('[data-resume-bind="forms.standard.nameKo"]').fill('일반 학생');
+    await page.evaluate(()=>{
+      window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeTemplateLab'));
+      const certifications=document.querySelector('[data-resume-section="standard-certifications"]');
+      if(certifications)certifications.open=true;
+    });
+    await page.locator('[data-resume-bind="forms.standard.certifications.r0.name"]').fill('컴퓨터활용능력');
+    await page.locator('[data-resume-bind="forms.standard.certifications.r0.score"]').fill('2급');
     await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumePreviewLab')));
     await page.locator('#refreshResumePreview').click();
     assert((await page.locator('#resumeA4Preview').innerText()).includes('일반 학생'),'Resume PDF preview without JD or career assets failed');
     await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('resumeAiReview')));
     await page.locator('#previewResumeReviewPrompt').click();
-    assert((await page.locator('#resumeReviewPromptText').inputValue()).includes('기업·직무 미지정 일반형'),'General AI review prompt missing');
-    assert(!(await page.locator('#resumeReviewPromptText').inputValue()).includes('일반 학생'),'AI prompt must not include name');
+    const generalReviewPrompt=await page.locator('#resumeReviewPromptText').inputValue();
+    assert(generalReviewPrompt.includes('기업·직무 미지정 일반형'),'General AI review prompt missing');
+    assert(!generalReviewPrompt.includes('일반 학생'),'AI prompt must not include name');
+    assert(generalReviewPrompt.includes('"nameKo": "[개인정보 제외]"'),'Personal applicant name must remain redacted');
+    assert(generalReviewPrompt.includes('"name": "컴퓨터활용능력"'),'Qualification name must not be redacted');
+    assert(generalReviewPrompt.includes('"score": "2급"'),'Qualification grade must remain available for review');
     // STEP 9 학생 관점: 앞 단계에 채용공고/역량 카드가 없어도 초안을 작성·재수정할 수 있다.
     // 이 경로는 기존 경험·이력서를 덮어쓰거나 검증되지 않은 초안을 Final Ready로 표시하지 않는다.
     const beforeCoverFallback=await page.evaluate(key=>{

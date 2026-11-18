@@ -71,12 +71,13 @@ for(const width of [1280,390]){
     await openStep(page,7);
     await page.waitForSelector('#resumeTemplateLab');
     assert(await page.locator('#qsStep8').count()===0,'STEP 8 should start with the resume form, not an intake form');
-    assert(await page.locator('#resumeEvidenceImport #resumeExperienceEntry').count()===1,'Optional experience must be in section 2');
+    assert(await page.locator('#resumeEvidenceImport #resumeExperienceEntry').count()===1,'Optional experience must remain available inside stage 1');
     await page.locator('[data-application-mode="targeted"]').click();
     await page.locator('[data-resume-bind="targetCompany"]').fill('바른식품');
     await page.locator('[data-resume-bind="forms.standard.targetJob"]').fill('식품 품질관리');
     await page.locator('[data-resume-bind="forms.standard.nameKo"]').fill('학생 테스트');
     await page.locator('[data-resume-bind="forms.standard.email"]').fill('learner@example.com');
+    await page.locator('#resumePriorDetails > summary').click();
     await page.locator('[data-extra-exp-mode="new"]').click();
     await page.locator('[data-new-exp="title"]').fill('급식실 위생 점검 보조');
     await page.locator('[data-new-exp="actionResult"]').fill('점검표를 매일 기록하고 누락 항목을 담당자에게 알렸다.');
@@ -136,6 +137,7 @@ for(const width of [1280,390]){
 
     // STEP 8: 기존 STEP 3 경험을 선택 불러와도 원본과 JD·Career Asset은 유지해야 한다.
     await openStep(page,7);await page.waitForSelector('#resumeTemplateLab');
+    await page.locator('#resumePriorDetails > summary').click();
     await page.locator('[data-resume-import="experiences"]').first().click();
     st=await read(page);
     assert(st.artifacts.careerAssets.assets.some(a=>a.id==='asset1'),'Existing career asset was removed');

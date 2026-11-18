@@ -14,7 +14,7 @@ export async function render(ctx){
 
     ${resumeTemplateBlock(data,ctx,prior,posting,injeCompact)}
 
-    ${injeCompact?`<div class="hr"></div><div class="block" id="resumeEvidenceImport"><h3>2. 이력서에 사용할 경험 확인하기</h3><p class="help">필요한 경우에만 앞 단계의 학력·자격·경험을 선택해 불러오세요. 이미 작성한 내용은 덮어쓰지 않습니다. STEP 3에서 확인한 경험은 다시 검사하지 않고, 새로 쓴 수치·성과만 확인하세요.</p>${resumeAutoImportBlock(prior,data.templateType,ctx,true,data.lastImportReport)}${resumeExperienceEntryTabs(data,ctx)}<div id="resumeGate"></div></div>`:`<div class="hr"></div><div class="block"><h3>2. Resume Evidence Gate</h3><div id="resumeGate"></div><div class="grid3" style="margin-top:12px"><div class="miniCard"><b>Fact</b><span>하지 않은 일·없는 수치를 쓰지 않는다.</span></div><div class="miniCard"><b>Action</b><span>역할명이 아니라 내가 직접 한 행동을 쓴다.</span></div><div class="miniCard"><b>Evidence</b><span>JD Requirement를 증명하는 Career Asset만 사용한다.</span></div></div></div>`}
+    ${injeCompact?`<div class="hr"></div><div class="block" id="resumeEvidenceImport"><h3>앞 단계 자료 확인 · 선택</h3><p class="help">필요한 경우에만 앞 단계의 학력·자격·경험을 선택해 불러오세요. 이미 작성한 내용은 덮어쓰지 않습니다. STEP 3에서 확인한 경험은 다시 검사하지 않고, 새로 쓴 수치·성과만 확인하세요.</p>${resumeAutoImportBlock(prior,data.templateType,ctx,true,data.lastImportReport)}${resumeExperienceEntryTabs(data,ctx)}<div id="resumeGate"></div></div>`:`<div class="hr"></div><div class="block"><h3>2. Resume Evidence Gate</h3><div id="resumeGate"></div><div class="grid3" style="margin-top:12px"><div class="miniCard"><b>Fact</b><span>하지 않은 일·없는 수치를 쓰지 않는다.</span></div><div class="miniCard"><b>Action</b><span>역할명이 아니라 내가 직접 한 행동을 쓴다.</span></div><div class="miniCard"><b>Evidence</b><span>JD Requirement를 증명하는 Career Asset만 사용한다.</span></div></div></div>`}
 
     <div class="hr"></div><div class="block"><h3>3. ${injeCompact?'경험을 이력서 문장으로 바꾸기':'Career Asset → Resume Bullet'}</h3><p class="help">${injeCompact?'앞에서 확인한 경험을 선택하고, 실제로 한 일과 결과를 이력서 문장으로 정리하세요.':'Fact Check가 끝나지 않은 자산도 초안 연습은 가능하지만, 최종 제출용으로는 표시하지 않습니다.'}</p><div class="grid2">${selectAsset('assetId',injeCompact?'이력서에 쓸 경험':'Career Asset',candidateAssets)}${sel('section','이력서 섹션','',['프로젝트','인턴·경력','대외활동','아르바이트','교육·수업','기타'])}</div><div id="assetContext" class="callout info">${injeCompact?'경험을 선택하면 실제 행동과 확인 근거를 보여줍니다.':'Career Asset을 선택하면 Evidence와 검증상태를 확인합니다.'}</div>
       <div class="grid2" style="margin-top:12px">${area('rawBullet',injeCompact?'내가 직접 쓴 문장':'내 원문','','내가 먼저 사실 중심으로 작성한 문장')}${area('aiBullet',injeCompact?'AI가 정리한 문장':'AI 구조화','','AI가 제안한 문장 또는 구조')}${area('finalBullet',injeCompact?'최종 이력서 문장':'최종 Bullet','','실제로 한 일과 결과만 사용해 최종 수정')}${area('detailText',injeCompact?'경험기술서용 설명':'경험기술서 확장','','필요 시 3~5문장으로 역할·행동·성과를 확장')}</div>
@@ -367,13 +367,17 @@ function resumeReviewKey(data){return data.templateType+'_'+data.applicationMode
 function refreshResumeReview(data,ctx){
   var panel=document.getElementById('resumeAiReview');if(panel)panel.outerHTML=resumeReviewBlock(data,ctx);
 }
-function resumeRedactForAi(obj){
-  if(Array.isArray(obj))return obj.map(resumeRedactForAi);
+function resumeRedactForAi(obj,fieldPath=[]){
+  if(Array.isArray(obj))return obj.map((item,index)=>resumeRedactForAi(item,[...fieldPath,String(index)]));
   if(obj&&typeof obj==='object'){
     var out={};
     Object.keys(obj).forEach(function(key){
-      if(/^(name|nameKo|nameEn|phone|mobile|email|address|residentNumber|birthDate)$/i.test(key))out[key]='[개인정보 제외]';
-      else out[key]=resumeRedactForAi(obj[key]);
+      // 자격증명과 교육과정명은 사람 이름이 아니므로 AI 검토에 그대로 전달한다.
+      // 양식 최상위의 지원자 이름 및 다른 개인정보 필드는 계속 비식별 처리한다.
+      var isNonPersonalName=key==='name'&&fieldPath.length===2
+        &&(fieldPath[0]==='certifications'||fieldPath[0]==='training');
+      if(!isNonPersonalName&&/^(name|nameKo|nameEn|phone|mobile|email|address|residentNumber|birthDate)$/i.test(key))out[key]='[개인정보 제외]';
+      else out[key]=resumeRedactForAi(obj[key],[...fieldPath,key]);
     });return out;
   }
   return obj;
@@ -423,9 +427,9 @@ function resumeReviewBlock(data,ctx){
       +(item.feedback?'<p class="jfResultBox" style="white-space:pre-wrap;margin:8px 0 0">'+esc(item.feedback,ctx)+'</p>':'<p class="muted small">검토 결과를 기록하지 않았습니다.</p>')+'</div>';
   }).join('');
   return '<div class="hr"></div><div class="block" id="resumeAiReview">'
-    +'<h3>'+(ctx.displayStep===7?'3. AI 최종 검토 · 학생 직접 수정':'6. AI 검토 → 직접 수정 → 다시 검토')+'</h3>'
-    +'<p class="help">필요한 만큼 다시 검토할 수 있습니다. AI 수정 제안은 자동 반영되지 않으며, 이력서 양식에서 학생이 직접 고칩니다. PDF 저장은 학생이 마지막에 선택합니다.</p>'
-    +'<div class="callout info"><b>반복할 수 있는 검토 과정</b><br>① AI 검토 프롬프트 복사 → ② ChatGPT 등 AI에서 검토 → ③ 결과 붙여넣기 → ④ 학생이 원본 이력서 수정 → ⑤ 수정한 이력서로 AI 재검토 → ⑥ 원하는 때 PDF 저장 선택</div>'
+    +'<h3>'+(ctx.displayStep===7?'2. AI 검토 · 직접 수정 (선택)':'6. AI 검토 → 직접 수정 → 다시 검토')+'</h3>'
+    +'<p class="help">AI 검토는 선택입니다. 이력서를 수정했다면 재검토하지 않고 3번 PDF 저장으로 이동해도 됩니다. 검토 의견은 이력서를 자동으로 바꾸지 않습니다.</p>'
+    +'<div class="callout info"><b>검토 방법</b><br>① 프롬프트를 복사해 AI에 붙여넣기 → ② 받은 검토 의견을 아래 칸에 붙여넣기 → ③ 필요한 내용만 1번 이력서에서 직접 수정. 다시 검토하지 않아도 PDF로 저장할 수 있습니다.</div>'
     +'<div class="callout warn"><b>개인정보 주의</b><br>이름·연락처·주소 입력란은 AI 프롬프트에서 제외합니다. 자유서술에 개인정보가 있다면 복사 전에 직접 확인하세요.</div>'
     +'<p class="help" id="resumeReviewRoundStatus">현재 양식의 AI 검토 요청 '+count+'회'+(count?' · 최신 '+count+'차 결과 입력란 표시':' · 아직 요청하지 않았습니다.')+'</p>'
     +'<div class="actions"><button type="button" class="btn secondary" id="previewResumeReviewPrompt">AI 검토 프롬프트 확인</button>'
@@ -433,7 +437,7 @@ function resumeReviewBlock(data,ctx){
     +'<div class="field" style="margin-top:10px"><label>AI 검토 프롬프트 · 복사 전에 확인</label><textarea id="resumeReviewPromptText" readonly placeholder="검토 프롬프트를 확인한 뒤 AI에 붙여넣으세요." style="min-height:100px"></textarea></div>'
     +'<div class="field"><label>이번 AI 검토 결과 붙여넣기 · '+(data.templateType==='ncs'?'NCS':data.templateType==='blind'?'블라인드':'표준')+' / '+(data.applicationMode==='general'?'일반형':'맞춤형')+'</label><textarea id="resumeReviewFeedback" placeholder="AI가 제안한 수정 사항을 붙여넣으세요. 이 내용은 이력서에 자동 반영되지 않습니다.">'+esc(feedback,ctx)+'</textarea></div>'
     +'<div class="actions"><button type="button" class="btn secondary" id="backToResumeForm">이력서로 돌아가 직접 수정</button>'
-    +'<button type="button" class="btn primary" id="redoResumeReview">수정 후 AI 재검토하기</button>'
+    +'<button type="button" class="btn primary" id="redoResumeReview">재검토하기 · 선택</button>'
     +'<button type="button" class="btn secondary" id="goToResumePdf">PDF 저장 선택하기</button></div>'
     +(history.length>1?'<details class="detailsBox" id="resumeReviewHistory" style="margin-top:12px"><summary>이전 AI 검토 결과 '+(history.length-1)+'건 보기</summary>'+past+'</details>':'')
     +'<p class="help">재검토 버튼은 현재 수정한 이력서를 기준으로 새 프롬프트를 만듭니다. 이전 검토 의견은 위 기록에 남습니다. PDF 저장은 자동 실행되지 않습니다.</p>'
@@ -456,7 +460,7 @@ function wireResumeReviewUi(data,ctx,persist,posting=null,aiGuide=null){
   root.addEventListener('click',function(e){
     if(e.target.closest('#redoResumeReview')){
       showPrompt(true);
-      ctx.toast('현재 수정 내용을 기준으로 AI 재검토 프롬프트를 만들었습니다. 다시 AI에 붙여넣어 검토하세요.');
+      ctx.toast('수정된 내용을 반영해 선택형 재검토 프롬프트를 만들었습니다.');
       document.getElementById('resumeReviewPromptText')?.scrollIntoView({behavior:'smooth',block:'center'});
       return;
     }
@@ -497,8 +501,8 @@ function resumeTemplateLabel(type){
 function resumeTemplateBlock(data,ctx,prior,posting=null,injeCompact=false){
   ensureResumeForms(data);
   return '<div class="block" id="resumeTemplateLab">'
-    +'<h3>1. 이력서 양식 선택 · 직접 작성</h3>'
-    +'<p class="help">제공해주신 3개 예시를 기준으로 구성했습니다. <b>학생은 하나만 선택해 작성</b>하고, 실제 지원 시에는 해당 기업·기관의 지정 양식을 우선합니다.</p>'
+    +'<h3>'+(injeCompact?'1. 이력서 작성':'1. 이력서 양식 선택 · 직접 작성')+'</h3>'
+    +'<p class="help">'+(injeCompact?'표준·NCS·블라인드 중 하나만 선택해 작성하세요. 공고가 없어도 작성할 수 있습니다. 실제 지원 시 해당 기관의 지정 양식을 우선하세요.':'제공해주신 3개 예시를 기준으로 구성했습니다. <b>학생은 하나만 선택해 작성</b>하고, 실제 지원 시에는 해당 기업·기관의 지정 양식을 우선합니다.')+'</p>'
     +'<div class="actions" id="resumeTemplateTabs">'
       +resumeTab('standard','표준이력서',data.templateType)
       +resumeTab('ncs','NCS 이력서',data.templateType)
@@ -541,10 +545,19 @@ function compactInjeResumeUi(root,data){
   if(items)advanced.appendChild(move(items));
   if(summary){summary.querySelector(':scope > h3').textContent='직무 요약 · 필요할 때';advanced.appendChild(move(summary));}
   evidence.appendChild(advanced);
-  const review=document.getElementById('resumeAiReview');if(review)review.querySelector(':scope > h3').textContent='3. AI 최종 검토 · 학생 직접 수정';
+  const template=document.getElementById('resumeTemplateLab');
+  if(template){
+    const disclosure=makeDetails('앞 단계 정보 불러오기 · 경험 추가 (선택)','resumePriorDetails');
+    disclosure.appendChild(move(evidence));
+    template.insertBefore(disclosure,document.getElementById('resumeTemplateForm'));
+    const actions=document.createElement('div');actions.className='actions';actions.id='resumeThreeStageActions';actions.style.marginTop='16px';
+    actions.innerHTML='<button type="button" class="btn secondary" id="resumeGoReview">2. AI 검토 (선택)</button><button type="button" class="btn primary" id="resumeGoPdf">3. PDF 저장</button>';
+    template.appendChild(actions);
+  }
+  const review=document.getElementById('resumeAiReview');if(review)review.querySelector(':scope > h3').textContent='2. AI 검토 · 직접 수정 (선택)';
   const preview=document.getElementById('resumePreviewLab');
   if(preview){
-    preview.querySelector(':scope > h3').textContent='4. 최종 이력서 확인 · PDF 저장';
+    preview.querySelector(':scope > h3').textContent='3. 이력서 완성 · PDF 저장';
     const actions=preview.querySelector(':scope > .actions'),only=document.getElementById('printResumeOnly');
     if(actions&&only){
       const more=makeDetails('다른 저장 방법 · 기술서 포함 또는 별도 PDF','resumeOtherPdfOptions');
@@ -1043,6 +1056,12 @@ function wireResumeFormUi(data,ctx,persist,assets=[],experiences=[],prior={},pos
   if(lab){
     interactionRoot.addEventListener('click',function(e){
       if(injeCompact){
+        if(e.target.closest('#resumeGoReview')||e.target.closest('#resumeGoPdf')){
+          const target=document.getElementById(e.target.closest('#resumeGoReview')?'resumeAiReview':'resumePreviewLab');
+          window.JobfitStepAccordion?.openBlock?.(target);
+          target?.scrollIntoView({behavior:'smooth',block:'start'});
+          return;
+        }
         var appButton=e.target.closest('[data-application-mode]');
         if(appButton){
           const mode=appButton.dataset.applicationMode;
