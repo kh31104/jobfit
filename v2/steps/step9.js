@@ -501,8 +501,8 @@ function resumeTemplateLabel(type){
 function resumeTemplateBlock(data,ctx,prior,posting=null,injeCompact=false){
   ensureResumeForms(data);
   return '<div class="block" id="resumeTemplateLab">'
-    +'<h3>1. 이력서 작성</h3>'
-    +'<p class="help">표준·NCS·블라인드 중 하나만 선택해 작성하세요. 공고가 없어도 작성할 수 있습니다. 실제 지원 시 해당 기관의 지정 양식을 우선하세요.</p>'
+    +'<h3>'+(injeCompact?'1. 이력서 작성':'1. 이력서 양식 선택 · 직접 작성')+'</h3>'
+    +'<p class="help">'+(injeCompact?'표준·NCS·블라인드 중 하나만 선택해 작성하세요. 공고가 없어도 작성할 수 있습니다. 실제 지원 시 해당 기관의 지정 양식을 우선하세요.':'제공해주신 3개 예시를 기준으로 구성했습니다. <b>학생은 하나만 선택해 작성</b>하고, 실제 지원 시에는 해당 기업·기관의 지정 양식을 우선합니다.')+'</p>'
     +'<div class="actions" id="resumeTemplateTabs">'
       +resumeTab('standard','표준이력서',data.templateType)
       +resumeTab('ncs','NCS 이력서',data.templateType)
