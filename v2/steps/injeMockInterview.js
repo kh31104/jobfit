@@ -19,9 +19,14 @@ function targetFrom(state,data,posting){
   const selectedExplorerJob=explorer.candidates?.find(x=>x.id===targets[0])?.title||"";
   const deepDive=state.artifacts?.jobDeepDive||{};
   const deepDiveJob=deepDive.targetAnalyses?.[deepDive.reportTargetId]?.jobTitle||"";
+  const savedMock=data.mockInterview||{};
+  const job=Object.hasOwn(savedMock,"targetJob")?clean(savedMock.targetJob,100)
+    :nonempty(cover.jobTitle,coverData.practiceTargetJob,formJob,resume.jobTitle,posting?.jobTitle,deepDiveJob,selectedExplorerJob,state.profile?.targetJob);
+  const company=Object.hasOwn(savedMock,"company")?clean(savedMock.company,100)
+    :nonempty(cover.company,resumeData.targetCompany,posting?.company,resume.company);
   return {
-    job:nonempty(data.mockInterview?.targetJob,cover.jobTitle,coverData.practiceTargetJob,formJob,resume.jobTitle,posting?.jobTitle,deepDiveJob,selectedExplorerJob,state.profile?.targetJob),
-    company:nonempty(data.mockInterview?.company,cover.company,resumeData.targetCompany,posting?.company,resume.company),
+    job,
+    company:/^(기업 미정|미정|지원 기업)$/i.test(company)? "":company,
     mode:data.mockInterview?.mode==="12"?"12":"6",
     record:data.mockInterview?.record||""
   };
@@ -125,7 +130,8 @@ export function buildInjeMockInterviewPrompt({state,posting,targetJob,company,mo
 function parseChosenJob(answer){
   const lines=String(answer||"").split(/\r?\n/);
   let chosen="",company="";
-  for(const line of lines){
+  for(const rawLine of lines){
+    const line=rawLine.replace(/^\s*[-*•]\s*/,"").replace(/\*\*/g,"").trim();
     const jobMatch=line.match(/^\s*(?:\[(?:선택|최종|지원)\s*직무\]\s*|(?:선택|최종|지원)\s*직무\s*[:：]\s*)(.{1,100})\s*$/i);
     const companyMatch=line.match(/^\s*(?:\[선택\s*기업\]\s*|지원\s*기업\s*[:：]\s*)(.{1,100})\s*$/i);
     if(jobMatch)chosen=clean(jobMatch[1].replace(/^[:：\s]+/,""),100);
