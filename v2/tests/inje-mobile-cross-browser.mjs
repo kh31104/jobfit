@@ -100,6 +100,40 @@ async function run(engine,label,device){
     await page.waitForSelector('#jobfitReportPrint',{state:'attached',timeout:45000});
     report=await page.locator('#jobfitReportPrint').textContent();
     ensure(report.includes('ERP 운영 경험')&&report.includes('기준에 맞는지 검사·점검하기'),label+': refresh lost report data');
+
+    // INJE STEP 9 student can start without STEP 3, STEP 8 or a job posting on both mobile engines.
+    stored=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
+    stored.activeStep=8;
+    stored.assessments.experienceCompetency.experiences=[];
+    stored.artifacts.resumeLab={items:[]};
+    stored.artifacts.careerAssets={assets:[]};
+    stored.artifacts.jdAnalyzer={postings:[],selectedId:''};
+    stored.artifacts.coverLetterLab={questions:[]};
+    await page.evaluate(([k,v])=>localStorage.setItem(k,JSON.stringify(v)),[key,stored]);
+    await page.reload({waitUntil:'domcontentloaded',timeout:60000});
+    await page.waitForSelector('#question',{state:'attached',timeout:45000});
+    for(const id of ['coverQuestionAdvanced','coverEvidenceOptional','coverDraftOptional','coverAiReviewDisclosure']){
+      ensure(await page.locator('#'+id).evaluate(e=>!e.open),label+': optional STEP 9 section opened by default: '+id);
+    }
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('question')?.closest('.block')));
+    await page.locator('#question').fill('희망 직무를 선택한 이유는 무엇인가요?');
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('rawAnswer')?.closest('.block')));
+    await page.locator('#rawAnswer').fill('학과 행사의 카드뉴스를 직접 작성하고 오타 지적을 반영했습니다.');
+    await page.locator('#finalAnswer').fill('학과 행사 카드뉴스를 제작하며 댓글의 질문을 확인해 정보를 수정했습니다.');
+    await page.locator('#factChecked').check();
+    await page.locator('#addQuestion').click();
+    const cover=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).artifacts.coverLetterLab.questions[0],key);
+    ensure(cover?.practiceMode===true&&cover.status==='draft'&&cover.factChecked===true,label+': independent STEP 9 practice was not saved');
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('questionList')?.closest('.block')));
+    const practiceWindow=page.waitForEvent('popup',{timeout:15000});
+    await page.locator('[data-cover-pdf]').click();
+    const preview=await practiceWindow;
+    await preview.waitForLoadState('domcontentloaded');
+    ensure((await preview.locator('h1').innerText()).includes('연습용'),label+': practice PDF was not labeled');
+    await preview.close();
+    await page.reload({waitUntil:'domcontentloaded',timeout:60000});
+    await page.waitForSelector('#questionList [data-cover-edit]',{state:'attached',timeout:45000});
+    ensure(await page.locator('[data-cover-edit]').count()===1,label+': STEP 9 answer missing after reload');
     ensure(!errors.length,label+': page errors '+errors.join(' | '));
     console.log('PASS '+label+' '+base+' — selection, reload, GAP save, report, evidence, refresh');
   } finally{

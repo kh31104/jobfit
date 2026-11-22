@@ -241,6 +241,7 @@ await run('STEP 9 reuses STEP 8 Final Ready experience without retyping',async p
   s.artifacts.resumeLab={items:[{id:'resume1',assetId:'a1',assetTitle:'센서 데이터 캡스톤',requirement:'공정 데이터 분석',finalBullet:'측정조건을 나눠 비교해 오차가 커지는 조건을 확인',factChecked:true,assetVerified:true,status:'final-ready'}],summary:'',skills:'Excel',notes:''};
   await seed(page,s);
   assert(await page.locator('#resumeEvidenceSource').count()===1,'STEP 9 should expose STEP 8 Final Ready resume evidence');
+  await page.locator('#coverEvidenceOptional').evaluate(el=>el.open=true);
   await page.locator('#resumeEvidenceSource').selectOption('resume1');
   await page.locator('#loadResumeEvidence').click();
   assert(await page.locator('[data-asset="a1"]').isChecked(),'Resume source did not select its Career Asset');
