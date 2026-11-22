@@ -66,6 +66,11 @@ for(const width of [1280,390]){
         assert(await page.locator('#riskDashboard').count()===0,'INJE STEP 10 risk dashboard should not be shown');
         assert(await page.locator('#mockInterviewTargetJob').inputValue()==='브랜드 마케팅','STEP 10 should reuse saved target job');
         assert(await page.locator('#finishMockInterview').count()===1,'STEP 10 completion control missing');
+        const stages=await page.locator('#injeMockInterview .injeInterviewStage > h3').allTextContents();
+        assert(stages.length===4,'INJE STEP 10 should show exactly four main stages');
+        assert(stages.join(' / ').includes('지원직무 확인')&&stages.join(' / ').includes('피드백 기록')&&stages.join(' / ').includes('연습 완료'),'INJE STEP 10 main stage labels missing');
+        assert(!(await page.locator('#mockInterviewOptionalTools').evaluate(el=>el.open)),'Optional AI tools should be collapsed by default');
+        assert(await page.locator('#mockInterviewRecord').isVisible(),'Interview feedback field should be visible without opening extras');
         await page.locator('#injeInterviewAdvancedDisclosure').evaluate(el=>{el.open=true});
       }
       await page.waitForSelector(screen.selector,{timeout:15000});
@@ -82,6 +87,32 @@ for(const width of [1280,390]){
       if(screen.step===10)assert((await page.locator('#humanList').textContent()).includes('팀 회의를 진행했습니다'),'Human-First full answer disappeared');
       const current=await page.evaluate(({key,keys})=>{const stored=JSON.parse(localStorage.getItem(key));return Object.fromEntries(keys.map(k=>[k,stored.artifacts[k]]));},{key,keys:artifactKeys});
       for(const k of artifactKeys)assert(JSON.stringify(current[k])===JSON.stringify(seed.artifacts[k]),'Browsing STEP '+(screen.step+1)+' modified saved '+k+' data');
+      if(screen.step===9){
+        await page.locator('#mockInterviewMode').selectOption('12');
+        assert((await page.locator('#mockInterviewPromptPreview').inputValue()).includes('면접 모드: 12문항'),'Deep interview mode should update prompt');
+        await page.locator('#mockInterviewRecord').fill('면접 피드백: 수치를 확인하고 근거부터 설명하기');
+        await page.locator('#saveMockInterviewRecord').click();
+        await page.locator('#finishMockInterview').click();
+        const saved=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts.interviewLab,key);
+        assert(saved.mockInterview?.record?.includes('면접 피드백'),'AI feedback was not saved');
+        assert(!!saved.mockInterview?.completedAt,'Interview completion was not saved');
+        assert(JSON.stringify(saved.questions)===JSON.stringify(seed.artifacts.interviewLab.questions),'Existing Interview Question Bank was changed');
+        assert(saved.practiceNotes===seed.artifacts.interviewLab.practiceNotes,'Existing interview notes were changed');
+        await page.reload({waitUntil:'networkidle'});
+        assert((await page.locator('#mockInterviewRecord').inputValue()).includes('면접 피드백'),'Interview feedback lost on reload');
+        assert((await page.locator('#mockInterviewCompletionStatus').textContent()).includes('완료'),'Interview completion label lost on reload');
+        await page.locator('#mockInterviewTargetJob').fill('');
+        await page.locator('#mockInterviewCompany').click();
+        assert((await page.locator('#mockInterviewPromptPreview').inputValue()).includes('지원직무: 미정 · 먼저 질문으로 확인'),'Unset job must trigger AI elicitation');
+        await page.locator('#mockInterviewOptionalTools').evaluate(el=>el.open=true);
+        await page.locator('#mockInterviewImportDetails').evaluate(el=>el.open=true);
+        await page.locator('#mockInterviewAiResult').fill('[선택 직무] SNS 콘텐츠 마케팅');
+        await page.locator('#applyMockInterviewJob').click();
+        assert((await page.locator('#mockInterviewTargetJob').inputValue())==='SNS 콘텐츠 마케팅','Chosen AI job should apply');
+        const stateAfter=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),key);
+        for(const k of artifactKeys.filter(k=>k!=='interviewLab'))assert(JSON.stringify(stateAfter.artifacts[k])===JSON.stringify(seed.artifacts[k]),'Interview controls changed '+k);
+        await page.evaluate(({key,interview})=>{const s=JSON.parse(localStorage.getItem(key));s.artifacts.interviewLab=interview;localStorage.setItem(key,JSON.stringify(s))},{key,interview:seed.artifacts.interviewLab});
+      }
     }
     assert(errors.length===0,'Browser errors: '+errors.join(' | '));
     console.log('PASS INJE STEP 7–12 saved-result readability and state preservation ('+width+'px)');
