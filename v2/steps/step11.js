@@ -1,12 +1,14 @@
 import {readField,READABLE_STYLES} from './readableResults.js';
+import {injeMockInterviewSection,mountInjeMockInterview} from './injeMockInterview.js';
 export async function render(ctx){
-  const displayStep=ctx.displayStep??11;
+  const displayStep=ctx.displayStep??11,injeCompact=displayStep!==11;
   const s=ctx.getState(),jd=s.artifacts?.jdAnalyzer||{postings:[],selectedId:''},posting=jd.postings?.find(x=>x.id===jd.selectedId)||jd.postings?.[0],resume=s.artifacts?.resumeLab||{items:[]},cover=s.artifacts?.coverLetterLab||{questions:[]},allAssets=s.artifacts?.careerAssets?.assets||[],assets=allAssets.filter(a=>(a.evidenceLevel||legacyLevel(a.strength))!=='없음'),saved=s.artifacts?.interviewLab||{questions:[],practiceNotes:''},data=structuredClone(saved),root=document.getElementById('stepRoot');
   data.questions=data.questions||[];
 
   root.innerHTML=`<section class="card jobfitReadable interviewReadable">${READABLE_STYLES}
     <div class="sectionHead"><div><div class="kicker">STEP ${displayStep}</div><h2>Interview Lab</h2><p>지원서에 기록한 동일한 Evidence를 말로 검증하고, JD의 핵심 질문에 일관되게 답합니다.</p></div><span class="badge">11–12주차</span></div><div class="progress"><span style="width:86%"></span></div>
     ${posting?`<div class="callout info"><b>Target</b><br>${esc(posting.company,ctx)} · ${esc(posting.jobTitle,ctx)}</div>`:''}
+    ${injeCompact?injeMockInterviewSection({state:s,data,posting,ctx}):''}
 
     <div class="block"><h3>1. Interview Risk Dashboard</h3><div id="riskDashboard">${riskDashboard(posting,resume,cover,data,ctx)}</div></div>
     <div class="hr"></div><div class="block"><h3>2. AI 예상질문 프롬프트</h3><p class="help">모범답안을 요청하지 않고, JD·이력서·자소서에서 실제로 검증해야 할 주장부터 질문하게 합니다.</p><textarea id="interviewPrompt" rows="16">${esc(buildPrompt(posting,resume,cover,assets),ctx)}</textarea><div class="actions"><button class="btn secondary" id="copyPrompt">면접 프롬프트 복사</button></div></div>
@@ -18,7 +20,7 @@ export async function render(ctx){
     <div class="hr"></div><div class="block"><h3>4. 실전연습 메모</h3><textarea id="practiceNotes" rows="8" placeholder="반복해서 막힌 질문, 말이 길어진 부분, 추가로 필요한 Evidence">${esc(data.practiceNotes||'',ctx)}</textarea><div class="actions"><button class="btn primary" id="saveAll">Interview Lab 저장</button><button class="btn secondary" id="nextStep">STEP ${displayStep+1} Human-First Check →</button></div></div>
   <style>@media(max-width:760px){.interviewReadable .grid2,.interviewReadable .grid3,.interviewReadable .grid4{grid-template-columns:minmax(0,1fr)}}.interviewReadable #answerEvidence .jfReadFields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}@media(max-width:760px){.interviewReadable #answerEvidence .jfReadFields{grid-template-columns:minmax(0,1fr)}}</style></section>`;
 
-  renderAll();['assetId','sourceType'].forEach(id=>document.getElementById(id).addEventListener('change',renderAnswerEvidence));document.getElementById('copyPrompt').addEventListener('click',()=>copy(document.getElementById('interviewPrompt').value,ctx));document.getElementById('addQuestion').addEventListener('click',addQuestion);document.getElementById('saveAll').addEventListener('click',saveAll);document.getElementById('nextStep').addEventListener('click',()=>{saveAll();ctx.navigate(12)});
+  renderAll();if(injeCompact)mountInjeMockInterview({root,state:s,data,posting,ctx,persist});['assetId','sourceType'].forEach(id=>document.getElementById(id).addEventListener('change',renderAnswerEvidence));document.getElementById('copyPrompt').addEventListener('click',()=>copy(document.getElementById('interviewPrompt').value,ctx));document.getElementById('addQuestion').addEventListener('click',addQuestion);document.getElementById('saveAll').addEventListener('click',saveAll);document.getElementById('nextStep').addEventListener('click',()=>{saveAll();ctx.navigate(12)});
 
   function renderAll(){renderQuestions();renderAnswerEvidence();const d=document.getElementById('riskDashboard');if(d)d.innerHTML=riskDashboard(posting,resume,cover,data,ctx)}
   function renderAnswerEvidence(){const box=document.getElementById('answerEvidence'),a=allAssets.find(x=>x.id===v('assetId')),required=evidenceRequired(v('sourceType'));if(required&&!a){box.className='callout warn';box.innerHTML='<b>Evidence 연결 필요</b><br>JD·이력서·자소서·직무심층 질문은 검증 가능한 Career Asset을 연결해야 합니다.';return;}if(!a){box.className='callout info';box.textContent='인성·가치 질문처럼 특정 경험 Evidence가 필수가 아닌 경우 비워둘 수 있습니다.';return;}const level=a.evidenceLevel||legacyLevel(a.strength),verified=isAssetVerified(a);box.className=`callout ${verified?'good':'warn'}`;box.innerHTML=`<b>${esc(level,ctx)} · ${esc(a.experienceTitle,ctx)}</b><div class="jfReadFields">${readField("JD Requirement",a.requirement,ctx)}${readField("핵심 행동",a.proof,ctx)}${readField("사실 Evidence",a.fact,ctx)}</div><p class="jfReadNote">${verified?"면접 답변 Evidence 사용 가능":"최종 답변 전 Career Asset Fact Check 필요"}</p>`;}
