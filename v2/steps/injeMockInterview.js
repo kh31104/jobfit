@@ -37,19 +37,18 @@ export function injeMockInterviewSection({state,data,posting,ctx}){
   return '<div class="hr"></div><div class="block injeMockInterview" id="injeMockInterview">'+
     '<p class="help injeInterviewOverview">지원직무 확인 → AI 모의면접 → 피드백 기록 → 연습 완료. 아래 순서대로 진행하세요.</p>'+ 
     '<div class="injeInterviewStage" id="mockInterviewStage1"><h3>① 지원직무 확인</h3><p class="help">앞 STEP의 직무가 있으면 자동으로 가져옵니다. 없으면 직접 입력하거나 비워두고 시작해도 됩니다.</p>'+
-    '<p class="help">① 지원직무 확인 → ② 면접 프롬프트 복사 → ③ 내 AI 채팅창에 붙여넣어 답변하기. 지원기업이나 앞 STEP 기록이 없어도 연습할 수 있습니다.</p>'+
     '<div class="grid2">'+
       '<div class="field"><label for="mockInterviewTargetJob">지원직무 <span class="muted">(직접 수정 가능)</span></label>'+
       '<input id="mockInterviewTargetJob" type="text" maxlength="100" placeholder="예: 브랜드 마케팅 / 아직 미정이면 비워두세요" value="'+html(initial.job,ctx)+'"></div>'+
       '<div class="field"><label for="mockInterviewCompany">지원기업 <span class="muted">(선택)</span></label>'+
       '<input id="mockInterviewCompany" type="text" maxlength="100" placeholder="기업 미정이어도 시작할 수 있어요" value="'+html(initial.company,ctx)+'"></div></div>'+
-    '<div class="field" style="margin-top:12px"><label for="mockInterviewMode">면접 문항 수</label>'+
-      '<select id="mockInterviewMode"><option value="6"'+(initial.mode==="6"?" selected":"")+'>6문항 · 기본 연습</option><option value="12"'+(initial.mode==="12"?" selected":"")+'>12문항 · 심화 연습</option></select></div>'+
     '<div class="callout info" id="mockInterviewJobGuide" aria-live="polite">'+
       (initial.job?'<b>현재 지원직무: '+html(initial.job,ctx)+'</b><br>앞 단계에서 불러온 정보를 여기에서 수정해도 다른 STEP에는 영향을 주지 않습니다.':
         '<b>지원직무가 없어도 시작할 수 있어요.</b><br>AI가 관심 업무와 전공을 한 번에 하나씩 질문한 뒤 직무 후보를 제안합니다. 학생이 선택한 직무로 면접을 이어갑니다.')+
     '</div>'+
     '</div><div class="injeInterviewStage" id="mockInterviewStage2"><h3>② AI 모의면접 시작</h3><p class="help">면접 지시문을 복사해 AI 채팅창에 붙여넣으세요. AI가 질문을 한 번에 하나씩 하고, 답변에 따라 꼬리질문과 피드백을 제공합니다.</p>'+ 
+    '<div class="field" style="margin-top:12px"><label for="mockInterviewMode">면접 문항 수</label>'+
+      '<select id="mockInterviewMode"><option value="6"'+(initial.mode==="6"?" selected":"")+'>6문항 · 기본 연습</option><option value="12"'+(initial.mode==="12"?" selected":"")+'>12문항 · 심화 연습</option></select></div>'+
     '<div class="actions"><button type="button" class="btn primary" id="copyMockInterviewPrompt">면접 지시문 복사</button>'+
     '<a class="btn secondary" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">ChatGPT 열기</a></div>'+
     '<p class="help">복사한 지시문은 직접 붙여넣어야 합니다. 잡핏이 학생 정보를 AI에 자동으로 전송하지 않습니다. 말로 연습하려면 AI 채팅의 음성 기능을 사용하세요.</p>'+
@@ -61,7 +60,7 @@ export function injeMockInterviewSection({state,data,posting,ctx}){
     '<p class="help" id="mockInterviewCompletionStatus" role="status" aria-live="polite">'+
       (data.mockInterview?.completedAt?'이전에 모의면접 연습을 완료로 표시했습니다.':'아직 완료 표시 전입니다. 면접을 마친 뒤 완료 버튼을 누르세요.')+'</p>'+ 
     '<div class="actions"><button type="button" class="btn primary" id="finishMockInterview">면접 연습 완료 표시</button></div></div>'+ 
-    '<details class="injeInterviewDetails injeInterviewOptional" id="mockInterviewOptionalTools"><summary>추가 기능 (선택) · 직무 추천 결과 가져오기 / 지시문 확인</summary>'+ 
+    '<details class="injeInterviewDetails injeInterviewOptional" id="mockInterviewOptionalTools"><summary>추가 기능 (선택)</summary>'+ 
     '<details class="injeInterviewDetails" id="mockInterviewImportDetails"><summary>지원직무를 정하지 못했나요? · AI가 추천한 직무 가져오기 (선택)</summary>'+
     '<p class="help">AI와 대화해 직무를 선택했다면, AI 답변 중 ‘[선택 직무] 브랜드 마케팅’과 같은 줄을 아래에 붙여넣으세요. 지원직무 칸에 반영됩니다.</p>'+
     '<div class="field"><label for="mockInterviewAiResult">AI의 직무 추천 결과</label><textarea id="mockInterviewAiResult" rows="3" placeholder="[선택 직무] 브랜드 마케팅"></textarea></div>'+
