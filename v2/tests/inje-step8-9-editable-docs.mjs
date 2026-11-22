@@ -395,6 +395,8 @@ for(const width of [1280,390]){
     assert(await page.locator('#coverDraftOptional').evaluate(el=>!el.open),'AI draft section must be optional');
     assert(await page.locator('#coverAiReviewDisclosure').evaluate(el=>!el.open),'AI review section must be optional');
     assert(await page.locator('#resumeReuse').count()===0,'Empty STEP 8 import should not be shown');
+    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('coverModeBlock')));
+    await page.locator('[name="coverWorkMode"][value="practice"]').check();
     await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('question')?.closest('.block')));
     await page.locator('#question').fill('브랜드 마케팅에 관심을 가진 이유는 무엇인가요?');
     await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('rawAnswer')?.closest('.block')));
@@ -403,7 +405,7 @@ for(const width of [1280,390]){
     await page.locator('#factChecked').check();
     await page.locator('#addQuestion').click();
     const practiceOnly=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts.coverLetterLab.questions[0],key);
-    assert(practiceOnly.practiceMode===true&&practiceOnly.status==='draft','Practice must remain practice, not submitted final');
+    assert(practiceOnly.practiceMode===true&&practiceOnly.status==='draft','Practice must remain practice, not submitted final: '+JSON.stringify(practiceOnly));
     assert(practiceOnly.finalAnswer.includes('카드뉴스 제작'),'Direct-only practice was not saved');
     await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('questionList')?.closest('.block')));
     const practicePopupPromise=page.waitForEvent('popup');
