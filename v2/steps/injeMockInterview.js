@@ -35,7 +35,7 @@ function html(value,ctx){return ctx.escapeHtml(String(value??""));}
 export function injeMockInterviewSection({state,data,posting,ctx}){
   const initial=targetFrom(state,data,posting);
   return '<div class="hr"></div><div class="block injeMockInterview" id="injeMockInterview">'+
-    '<h3>0. 내 AI로 실전 모의면접 하기</h3>'+
+    '<h3>1. 내 AI로 실전 모의면접 하기</h3>'+
     '<p class="help">① 지원직무 확인 → ② 면접 프롬프트 복사 → ③ 내 AI 채팅창에 붙여넣어 답변하기. 지원기업이나 앞 STEP 기록이 없어도 연습할 수 있습니다.</p>'+
     '<div class="grid2">'+
       '<div class="field"><label for="mockInterviewTargetJob">지원직무 <span class="muted">(직접 수정 가능)</span></label>'+
@@ -60,7 +60,7 @@ export function injeMockInterviewSection({state,data,posting,ctx}){
     '<div class="actions"><button type="button" class="btn secondary" id="refreshMockInterviewPrompt">현재 입력 반영</button></div></details>'+
     '<div class="field" style="margin-top:14px"><label for="mockInterviewRecord">면접 후 피드백·연습 기록 <span class="muted">(선택)</span></label>'+
     '<textarea id="mockInterviewRecord" rows="4" placeholder="AI 면접에서 반복 지적된 내용이나 다음 연습에서 고칠 점을 적거나 붙여넣으세요.">'+html(initial.record,ctx)+'</textarea></div>'+
-    '<div class="actions"><button type="button" class="btn secondary" id="saveMockInterviewRecord">실전면접 설정·기록 저장</button></div>'+
+    '<div class="actions"><button type="button" class="btn secondary" id="saveMockInterviewRecord">면접 설정·연습 기록 저장</button><button type="button" class="btn secondary" id="finishMockInterview">면접 연습 완료 표시</button></div>'+
     '<p class="help" id="mockInterviewMessage" role="status" aria-live="polite"></p>'+
     '</div>'+
     '<style>.injeMockInterview{max-width:100%;overflow-wrap:anywhere}.injeMockInterview input,.injeMockInterview select,.injeMockInterview textarea{max-width:100%;box-sizing:border-box}.injeMockInterview .injeInterviewDetails{margin-top:12px;padding:12px;border:1px solid #d8dfe9;border-radius:10px}.injeMockInterview .injeInterviewDetails summary{cursor:pointer;font-weight:600}.injeMockInterview .injeInterviewDetails textarea{width:100%;margin-top:10px}.injeMockInterview .actions{flex-wrap:wrap}.injeMockInterview .actions a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}@media(max-width:760px){.injeMockInterview .grid2{grid-template-columns:minmax(0,1fr)}.injeMockInterview .actions>*{max-width:100%}}</style>';
@@ -159,7 +159,11 @@ export function mountInjeMockInterview({root,state,data,posting,ctx,persist}){
     at(id).addEventListener("input",refresh);
   });
   at("mockInterviewRecord").addEventListener("change",save);
-  at("saveMockInterviewRecord").addEventListener("click",()=>{save();message("STEP 10의 모의면접 설정과 기록을 저장했습니다.");});
+  at("saveMockInterviewRecord").addEventListener("click",()=>{save();message("STEP 10의 면접 설정과 연습 기록을 저장했습니다.");});
+  at("finishMockInterview").addEventListener("click",()=>{
+    data.mockInterview={...(data.mockInterview||{}),...current(),completedAt:new Date().toISOString()};
+    persist();message("모의면접 연습을 완료로 표시했습니다. STEP 10에만 저장됩니다.");
+  });
   at("refreshMockInterviewPrompt").addEventListener("click",()=>{save();refresh();message("현재 지원직무와 기존 기록을 반영했습니다.");});
   at("applyMockInterviewJob").addEventListener("click",()=>{
     const result=parseChosenJob(at("mockInterviewAiResult").value);
