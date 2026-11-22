@@ -359,6 +359,7 @@ for(const width of [1280,390]){
     assert(practiceQ.practiceMode===true&&practiceQ.status==='draft'&&!practiceQ.company,'Practice must remain draft without company');
     assert(practiceQ.questionType==='WHY'&&practiceQ.jobTitle==='브랜드 마케팅','Practice type/target job lost');
     const practiceId=practiceQ.id;
+    await page.locator('#coverAiReviewDisclosure').evaluate(el=>el.open=true);
     await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('coverAiReview')));
     await page.locator('#coverReviewQuestion').selectOption(practiceId);
     assert((await page.locator('#coverReviewPrompt').inputValue()).includes('실제 채용공고 없음'),'Practice AI review should not invent posting');
