@@ -425,11 +425,14 @@ function simplifyInjeCoverUi(root){
       const label=final.querySelector('label');if(label)label.textContent='내가 작성한 자기소개서 답변';
       const hint=final.querySelector('.help');if(hint)hint.textContent='직접 작성한 답변만으로도 초안 저장이 가능합니다. 사실 확인 후 필요하면 AI 검토를 이용하세요.';
     }
-    const extra=disclosure('경험 상세 기록·AI 초안·구조화 메모 (선택)','coverAnswerAdvanced');
-    for(const id of ['rawAnswer','structure','draft']){
-      const field=document.getElementById(id)?.closest('.field');if(field)extra.appendChild(field);
+    const evidence=disclosure('실제 경험·답변 구성 메모 (선택)','coverEvidenceOptional');
+    for(const id of ['rawAnswer','structure']){
+      const field=document.getElementById(id)?.closest('.field');if(field)evidence.appendChild(field);
     }
-    if(final)final.insertAdjacentElement('afterend',extra);else answer.appendChild(extra);
+    const draft=disclosure('AI 초안 입력 (선택)','coverDraftOptional');
+    const draftField=document.getElementById('draft')?.closest('.field');if(draftField)draft.appendChild(draftField);
+    if(final){final.insertAdjacentElement('afterend',evidence);evidence.insertAdjacentElement('afterend',draft);}
+    else{answer.appendChild(evidence);answer.appendChild(draft);}
     const initial=answer.querySelector(':scope > .grid2');if(initial&&!initial.children.length)initial.remove();
   }
   if(review)review.querySelector(':scope > h3').textContent='4. AI 검토·학생 수정 (선택)';
