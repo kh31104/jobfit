@@ -32,6 +32,7 @@ export async function render(ctx){
   <style>.coverReadable .jfDraftText{white-space:pre-wrap;font-size:14px;line-height:1.85;overflow-wrap:anywhere;word-break:keep-all}.coverReadable .jfResultBox>.jfReadFields{margin-top:12px}.coverReadable .jfReadField{min-width:0}@media(max-width:760px){.coverReadable .grid2,.coverReadable .grid3{grid-template-columns:minmax(0,1fr)}} </style></section>`;
 
   if(injeCompact)compactInjeCoverUi(root);
+  if(injeCompact)simplifyInjeCoverUi(root);
   renderAll();wireResumeReuse();if(injeCompact){wireInjeWritingControls();document.getElementById('coverReviewQuestion')?.addEventListener('change',e=>{selectedReviewId=e.target.value;renderReviewPanel();});}document.querySelectorAll('[data-asset]').forEach(x=>x.addEventListener('change',()=>{enforceAssetLimit(x);renderGuards()}));document.getElementById('requirementId').addEventListener('change',renderGuards);document.getElementById('manualRequirement')?.addEventListener('input',renderGuards);document.getElementById('copyPrompt').addEventListener('click',()=>copy(buildPrompt(),ctx));document.getElementById('addQuestion').addEventListener('click',addQuestion);document.getElementById('cancelQuestionEdit').addEventListener('click',cancelQuestionEdit);document.getElementById('saveAll').addEventListener('click',()=>{persist();status('자기소개서 작업을 저장했습니다.');});document.getElementById('nextStep').addEventListener('click',()=>{persist();ctx.navigate(11)});
 
   document.getElementById('printAllCovers')?.addEventListener('click',()=>{
@@ -92,10 +93,10 @@ export async function render(ctx){
     if(!a.reqId&&!injeCompact){status(injeCompact?'채용공고에서 요구하는 업무·역량을 선택하거나 직접 입력하세요.':'관련 JD Requirement를 선택하세요.');return;}/* 선택하지 않은 고급 요구역량 입력은 문항 저장의 필수조건이 아닙니다. */
     if(!a.sel.length&&!injeCompact){status('사용할 Career Asset을 1개 이상 선택하세요.');return;}
     if(a.sel.length>2){status(injeCompact?'자기소개서 질문당 경험은 최대 2개만 선택하세요.':'Career Asset은 최대 2개만 선택하세요.');return;}
-    if(!v('rawAnswer')){status(injeCompact?'먼저 실제로 한 일을 내 말로 적어 주세요. AI 초안만으로는 저장할 수 없습니다.':'AI 초안보다 학생의 Raw Voice 또는 인터뷰 답변을 먼저 남기세요.');return;}
+    if(!v('rawAnswer')&&!(injeCompact&&v('finalAnswer'))){status(injeCompact?'실제 경험 또는 작성한 자기소개서 답변을 먼저 입력하세요.':'AI 초안보다 학생의 Raw Voice 또는 인터뷰 답변을 먼저 남기세요.');return;}
     const r=practiceMode?null:(a.reqId==='__manual'?{id:'__manual',text:v('manualRequirement')}:(posting?.requirements||[]).find(x=>x.id===a.reqId));
-    const factChecked=document.getElementById('factChecked').checked,assetVerified=a.sel.length>0&&a.weak.length===0,requirementAligned=!practiceMode&&a.matched.length>0,statusValue=injeCompact?(!practiceMode&&!!posting&&factChecked&&!!v('rawAnswer')&&!!v('finalAnswer')?'final-ready':'draft'):(!practiceMode&&factChecked&&assetVerified&&requirementAligned?'final-ready':'draft');
-    const fields={postingId:practiceMode?'':posting?.id||'',company:practiceMode?'':posting?.company||'',jobTitle:practiceMode?v('practiceTargetJob'):posting?.jobTitle||'',question:q,intent:v('intent'),requirementId:r?.id||'',requirement:r?.text||'',claim:v('claim'),assetIds:a.sel.map(x=>x.id),rawAnswer:v('rawAnswer'),structure:v('structure'),draft:v('draft'),finalAnswer:v('finalAnswer'),factChecked,assetVerified,requirementAligned,status:statusValue,...(injeCompact?{questionType:v('questionType'),practiceMode}:{} )};
+    const factChecked=document.getElementById('factChecked').checked,assetVerified=a.sel.length>0&&a.weak.length===0,requirementAligned=!practiceMode&&a.matched.length>0,statusValue=injeCompact?(!practiceMode&&!!posting&&factChecked&&!!(v('rawAnswer')||v('finalAnswer'))&&!!v('finalAnswer')?'final-ready':'draft'):(!practiceMode&&factChecked&&assetVerified&&requirementAligned?'final-ready':'draft');
+    const fields={postingId:practiceMode?'':posting?.id||'',company:practiceMode?'':posting?.company||'',jobTitle:practiceMode?v('practiceTargetJob'):posting?.jobTitle||'',question:q,intent:v('intent'),requirementId:r?.id||'',requirement:r?.text||'',claim:v('claim'),assetIds:a.sel.map(x=>x.id),rawAnswer:v('rawAnswer')||(injeCompact?v('finalAnswer'):''),structure:v('structure'),draft:v('draft'),finalAnswer:v('finalAnswer'),factChecked,assetVerified,requirementAligned,status:statusValue,...(injeCompact?{questionType:v('questionType'),practiceMode}:{} )};
     const updating=!!editingQuestionId;
     if(updating){
       const i=data.questions.findIndex(x=>x.id===editingQuestionId);
@@ -390,6 +391,56 @@ function compactInjeCoverUi(root){
   }
 }
 
+// INJE: 문항 하나를 빠르게 완성하는 기본 동선. 기존 필드 ID·저장 구조는 그대로 사용.
+function simplifyInjeCoverUi(root){
+  const page=root.querySelector('.coverReadable');if(!page)return;
+  const blocks=[...page.querySelectorAll(':scope > .block')];
+  const byHeading=prefix=>blocks.find(b=>b.querySelector(':scope > h3')?.textContent?.trim()?.startsWith(prefix));
+  const question=byHeading('1. '),experience=byHeading('2. '),answer=byHeading('3. ');
+  const dashboard=byHeading('0. '),review=document.getElementById('coverAiReview');
+  const saved=document.getElementById('questionList')?.closest('.block');
+  const reuse=document.getElementById('resumeReuse')||blocks.find(b=>b.querySelector(':scope > h3')?.textContent?.includes('STEP 8에서 작성한 이력서'));
+  const disclosure=(title,id)=>{const d=document.createElement('details');d.className='detailsBox';d.id=id;d.style.marginTop='12px';const s=document.createElement('summary');s.textContent=title;d.appendChild(s);return d;};
+  if(question){
+    question.querySelector(':scope > h3').textContent='1. 자기소개서 질문 선택·입력';
+    const extra=disclosure('평가의도·채용공고·질문 유형 설정 (선택)','coverQuestionAdvanced');
+    const intent=document.getElementById('intent')?.closest('.field');
+    const requirement=document.getElementById('coverRequirementSlot');
+    const claim=document.getElementById('claim')?.closest('.field');
+    const type=document.getElementById('questionType')?.closest('.field');
+    for(const n of [intent,requirement,claim,type])if(n)extra.appendChild(n);
+    const first=question.querySelector('.grid2');if(first)first.style.gridTemplateColumns='minmax(0,1fr)';
+    question.appendChild(extra);
+    const hint=document.createElement('p');hint.className='help';hint.textContent='기업이 없으면 위에서 연습하기를 선택하고 질문을 누르세요. 실제 지원 질문도 직접 입력할 수 있습니다.';
+    question.insertBefore(hint,question.querySelector('.grid2'));
+  }
+  if(experience){
+    experience.querySelector(':scope > h3').textContent='2. 사용할 경험 선택 (선택)';
+    const help=experience.querySelector(':scope > .help');if(help)help.textContent='STEP 8을 하지 않아도 됩니다. STEP 3 경험을 선택하거나 아래 답변 칸에 직접 작성하세요.';
+  }
+  if(answer){
+    answer.querySelector(':scope > h3').textContent='3. 자기소개서 답변 작성·저장';
+    const final=document.getElementById('finalAnswer')?.closest('.field');
+    if(final){
+      const label=final.querySelector('label');if(label)label.textContent='내가 작성한 자기소개서 답변';
+      const hint=final.querySelector('.help');if(hint)hint.textContent='직접 작성한 답변만으로도 초안 저장이 가능합니다. 사실 확인 후 필요하면 AI 검토를 이용하세요.';
+    }
+    const extra=disclosure('경험 상세 기록·AI 초안·구조화 메모 (선택)','coverAnswerAdvanced');
+    for(const id of ['rawAnswer','structure','draft']){
+      const field=document.getElementById(id)?.closest('.field');if(field)extra.appendChild(field);
+    }
+    if(final)final.insertAdjacentElement('afterend',extra);else answer.appendChild(extra);
+    const initial=answer.querySelector(':scope > .grid2');if(initial&&!initial.children.length)initial.remove();
+  }
+  if(review)review.querySelector(':scope > h3').textContent='4. AI 검토·학생 수정 (선택)';
+  if(saved)saved.querySelector(':scope > h3').textContent='5. 작성한 자기소개서 확인·저장';
+  if(saved&&(reuse||dashboard)){
+    const extras=disclosure('앞 단계 자료 불러오기·작성 현황 (선택)','coverSupportingTools');
+    if(reuse)extras.appendChild(reuse);
+    if(dashboard)extras.appendChild(dashboard);
+    saved.insertAdjacentElement('afterend',extras);
+  }
+}
 function coverAiReviewBlock(){
   return '<div class="hr"></div><div class="block" id="coverAiReview"><h3>4. AI 검토 → 학생 수정 → 재검토</h3><p class="help">3번에서 문항을 저장한 뒤, 검토할 문항을 선택하세요. AI 검토 의견은 복사해 사용하고, 수정은 학생이 직접 합니다.</p>'
     +'<div class="field"><label for="coverReviewQuestion">검토할 자기소개서 문항</label><select id="coverReviewQuestion"><option value="">문항 선택</option></select></div>'
