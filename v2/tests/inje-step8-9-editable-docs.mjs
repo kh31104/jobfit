@@ -377,70 +377,74 @@ for(const width of [1280,390]){
     assert(JSON.stringify(practiceAfter.artifacts.resumeLab)===beforeCoverFallback.resume,'Practice overwrote STEP 8');
     assert(JSON.stringify(practiceAfter.artifacts.jdAnalyzer)===beforeCoverFallback.jd,'Practice overwrote job posting');
 
-    // STEP 8/3 데이터가 전혀 없는 학생: 기본 3단계만 사용해 연습 문항을 완성하고 PDF로 출력한다.
-    await page.evaluate(key=>{
-      const st=JSON.parse(localStorage.getItem(key));
-      st.activeStep=8;
-      st.assessments.experienceCompetency.experiences=[];
-      st.artifacts.resumeLab={items:[]};
-      st.artifacts.careerAssets={assets:[]};
-      st.artifacts.jdAnalyzer={postings:[],selectedId:''};
-      st.artifacts.coverLetterLab={questions:[]};
-      localStorage.setItem(key,JSON.stringify(st));
-    },key);
-    await page.reload({waitUntil:'networkidle'});
-    await page.locator('#question').waitFor({state:'attached'});
-    assert(await page.locator('#coverQuestionAdvanced').evaluate(el=>!el.open),'Advanced JD section must be collapsed initially');
-    assert(await page.locator('#coverEvidenceOptional').evaluate(el=>!el.open),'Prior-experience section must be optional');
-    assert(await page.locator('#coverDraftOptional').evaluate(el=>!el.open),'AI draft section must be optional');
-    assert(await page.locator('#coverAiReviewDisclosure').evaluate(el=>!el.open),'AI review section must be optional');
-    assert(await page.locator('#resumeReuse').count()===0,'Empty STEP 8 import should not be shown');
-    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('coverModeBlock')));
-    await page.locator('[name="coverWorkMode"][value="practice"]').check();
-    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('question')?.closest('.block')));
-    await page.locator('#question').fill('브랜드 마케팅에 관심을 가진 이유는 무엇인가요?');
-    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('rawAnswer')?.closest('.block')));
-    await page.locator('#rawAnswer').fill('학과 행사 카드뉴스를 제작하고 댓글 질문을 확인했습니다.');
-    await page.locator('#finalAnswer').fill('학생 행사 카드뉴스 제작에서 고객 질문을 확인하는 일이 흥미로웠습니다.');
-    await page.locator('#factChecked').check();
-    await page.locator('#addQuestion').click();
-    const practiceOnly=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts.coverLetterLab.questions[0],key);
-    assert(practiceOnly.practiceMode===true&&practiceOnly.status==='draft','Practice must remain practice, not submitted final: '+JSON.stringify(practiceOnly));
-    assert(practiceOnly.finalAnswer.includes('카드뉴스 제작'),'Direct-only practice was not saved');
-    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('questionList')?.closest('.block')));
-    const practicePopupPromise=page.waitForEvent('popup');
-    await page.locator('[data-cover-pdf]').click();
-    const practicePopup=await practicePopupPromise;
-    await practicePopup.waitForLoadState('domcontentloaded');
-    assert((await practicePopup.locator('h1').innerText()).includes('연습용'),'Practice PDF preview is not labeled');
-    assert((await practicePopup.locator('.docMeta').innerText()).includes('지원기업 미정'),'Practice PDF invented company');
-    await practicePopup.close();
-    await page.reload({waitUntil:'networkidle'});
-    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('questionList')?.closest('.block')));
-    assert((await page.locator('[data-cover-edit]').count())===1,'Independent practice lost after reload');
-
-    // 공고만 있는 학생도 STEP 8 검증 카드 없이 직접 쓴 답변을 사실확인 후 완료한다.
-    await page.evaluate(key=>{
-      const st=JSON.parse(localStorage.getItem(key));
-      st.activeStep=8;
-      st.artifacts.jdAnalyzer={selectedId:'jd_direct',postings:[{id:'jd_direct',company:'실습기업',jobTitle:'브랜드 마케팅',requirements:[]}]};
-      st.artifacts.coverLetterLab={questions:[],practiceMode:false};
-      localStorage.setItem(key,JSON.stringify(st));
-    },key);
-    await page.reload({waitUntil:'networkidle'});
-    await page.locator('#question').waitFor({state:'attached'});
-    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('question')?.closest('.block')));
-    await page.locator('#question').fill('프로젝트에서 본인이 수행한 업무를 설명하세요.');
-    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('rawAnswer')?.closest('.block')));
-    await page.locator('#rawAnswer').fill('카드뉴스를 직접 작성하고 댓글의 오타를 수정했습니다.');
-    await page.locator('#finalAnswer').fill('학과 행사 카드뉴스 제작을 맡아 댓글 반응을 살펴보고 정보를 수정했습니다.');
-    await page.locator('#factChecked').check();
-    await page.locator('#addQuestion').click();
-    const independentFinal=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts.coverLetterLab.questions[0],key);
-    assert(independentFinal.status==='final-ready'&&independentFinal.assetVerified===false,'STEP 8 must not be required, and evidence must not be fabricated');
-    assert(independentFinal.requirementAligned===false,'Missing JD link must not be falsely claimed');
-    await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('questionList')?.closest('.block')));
-    assert((await page.locator('[data-cover-edit]').count())===1,'Direct application question missing');
+    // 완전히 새 브라우저 저장공간에서 STEP 8 없이 쓰는 학생을 검증한다.
+    // 기존 학생 저장값과 복구 스냅샷에 손대지 않는다.
+    for(const variant of ['practice','application']){
+      const isolated=await browser.newContext({viewport:{width,height:900},acceptDownloads:true});
+      const learner=await isolated.newPage(),freshErrors=[];
+      learner.on('pageerror',e=>freshErrors.push(e.message));
+      try{
+        await learner.goto(base+'?course=INJE2026',{waitUntil:'networkidle'});
+        const blank=seed();
+        blank.activeStep=8;
+        blank.assessments.experienceCompetency.experiences=[];
+        blank.artifacts.resumeLab={items:[]};
+        blank.artifacts.careerAssets={assets:[]};
+        blank.artifacts.jdAnalyzer=variant==='practice'
+          ?{postings:[],selectedId:''}
+          :{selectedId:'jd_direct',postings:[{id:'jd_direct',company:'실습기업',jobTitle:'브랜드 마케팅',requirements:[]}]};
+        blank.artifacts.coverLetterLab={questions:[],practiceMode:variant==='practice'};
+        await learner.evaluate(([k,v])=>localStorage.setItem(k,JSON.stringify(v)),[key,blank]);
+        await learner.reload({waitUntil:'networkidle'});
+        await learner.locator('#question').waitFor({state:'attached'});
+        assert(await learner.locator('#coverQuestionAdvanced').evaluate(el=>!el.open),'Advanced JD section must start collapsed');
+        assert(await learner.locator('#coverEvidenceOptional').evaluate(el=>!el.open),'Experience import must start collapsed');
+        assert(await learner.locator('#coverDraftOptional').evaluate(el=>!el.open),'AI draft must start collapsed');
+        assert(await learner.locator('#coverAiReviewDisclosure').evaluate(el=>!el.open),'AI review must start collapsed');
+        assert(await learner.locator('#resumeReuse').count()===0,'Empty STEP 8 import should not be shown');
+        await learner.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('coverModeBlock')));
+        await learner.locator('[name="coverWorkMode"][value="'+(variant==='practice'?'practice':'application')+'"]').check();
+        await learner.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('question')?.closest('.block')));
+        await learner.locator('#question').fill(variant==='practice'
+          ?'브랜드 마케팅에 관심을 가진 이유는 무엇인가요?'
+          :'프로젝트에서 본인이 수행한 업무를 설명하세요.');
+        await learner.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('rawAnswer')?.closest('.block')));
+        await learner.locator('#rawAnswer').fill('학과 행사 카드뉴스를 만들고 댓글의 질문과 오타를 확인했습니다.');
+        await learner.locator('#finalAnswer').fill('학과 행사 카드뉴스 제작을 맡아 댓글 반응을 살펴보고 게시물을 수정했습니다.');
+        await learner.locator('#factChecked').check();
+        await learner.locator('#addQuestion').click();
+        const rows=await learner.evaluate(k=>JSON.parse(localStorage.getItem(k)).artifacts.coverLetterLab.questions,key);
+        assert(rows.length===1,'New isolated student must save exactly one question: '+JSON.stringify(rows));
+        const item=rows[0];
+        assert(item.finalAnswer.includes('카드뉴스 제작'),'Direct STEP 9 final answer missing');
+        if(variant==='practice'){
+          assert(item.practiceMode===true&&item.status==='draft'&&item.factChecked===true,'Practice must stay practice: '+JSON.stringify(item));
+        }else{
+          assert(item.practiceMode===false&&item.status==='final-ready','Direct application must be final-ready: '+JSON.stringify(item));
+          assert(item.assetVerified===false&&item.requirementAligned===false,'No STEP8 assets or requirement proof may be fabricated');
+        }
+        await learner.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('questionList')?.closest('.block')));
+        const popupPromise=learner.waitForEvent('popup');
+        await learner.locator('[data-cover-pdf]').click();
+        const preview=await popupPromise;
+        await preview.waitForLoadState('domcontentloaded');
+        if(variant==='practice'){
+          assert((await preview.locator('h1').innerText()).includes('연습용'),'Practice PDF preview must be marked as practice');
+          assert((await preview.locator('.docMeta').innerText()).includes('지원기업 미정'),'Practice PDF must not invent an employer');
+        }else{
+          assert(!(await preview.locator('h1').innerText()).includes('연습용'),'Actual application PDF must not have practice label');
+        }
+        await preview.close();
+        await learner.reload({waitUntil:'networkidle'});
+        await learner.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('questionList')?.closest('.block')));
+        assert((await learner.locator('[data-cover-edit]').count())===1,'Isolated student data lost after reload');
+        if(width<=480){
+          const overflow=await learner.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+          assert(overflow<=2,'INJE STEP 9 mobile horizontal overflow '+overflow+'px');
+        }
+        assert(freshErrors.length===0,'Independent student browser error: '+freshErrors.join(' | '));
+      }finally{await isolated.close();}
+    }
     if(width<=480){
       const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
       assert(overflow<=2,'INJE STEP 9 mobile horizontal overflow '+overflow+'px');
