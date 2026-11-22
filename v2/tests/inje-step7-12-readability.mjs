@@ -61,6 +61,13 @@ for(const width of [1280,390]){
           document.getElementById('resumeAdvancedDisclosure').open=true;
         });
       }
+      if(screen.step===9){
+        await page.locator('#injeMockInterview').waitFor({state:'visible'});
+        assert(await page.locator('#riskDashboard').count()===0,'INJE STEP 10 risk dashboard should not be shown');
+        assert(await page.locator('#mockInterviewTargetJob').inputValue()==='브랜드 마케팅','STEP 10 should reuse saved target job');
+        assert(await page.locator('#finishMockInterview').count()===1,'STEP 10 completion control missing');
+        await page.locator('#injeInterviewAdvancedDisclosure').evaluate(el=>{el.open=true});
+      }
       await page.waitForSelector(screen.selector,{timeout:15000});
       for(const [selector,n] of screen.checks){
         const count=await page.locator(selector).count();
