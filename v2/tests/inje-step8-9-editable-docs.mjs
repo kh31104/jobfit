@@ -389,7 +389,7 @@ for(const width of [1280,390]){
       localStorage.setItem(key,JSON.stringify(st));
     },key);
     await page.reload({waitUntil:'networkidle'});
-    await page.locator('#question').waitFor();
+    await page.locator('#question').waitFor({state:'attached'});
     assert(await page.locator('#coverQuestionAdvanced').evaluate(el=>!el.open),'Advanced JD section must be collapsed initially');
     assert(await page.locator('#coverEvidenceOptional').evaluate(el=>!el.open),'Prior-experience section must be optional');
     assert(await page.locator('#coverDraftOptional').evaluate(el=>!el.open),'AI draft section must be optional');
@@ -426,7 +426,7 @@ for(const width of [1280,390]){
       localStorage.setItem(key,JSON.stringify(st));
     },key);
     await page.reload({waitUntil:'networkidle'});
-    await page.locator('#question').waitFor();
+    await page.locator('#question').waitFor({state:'attached'});
     await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('question')?.closest('.block')));
     await page.locator('#question').fill('프로젝트에서 본인이 수행한 업무를 설명하세요.');
     await page.evaluate(()=>window.JobfitStepAccordion?.openBlock?.(document.getElementById('rawAnswer')?.closest('.block')));
