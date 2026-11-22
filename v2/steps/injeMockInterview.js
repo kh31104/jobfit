@@ -6,13 +6,22 @@ function clean(value,max=500){
   return String(value??"").trim().slice(0,max);
 }
 function targetFrom(state,data,posting){
-  const resumeItems=state.artifacts?.resumeLab?.items||[];
-  const coverItems=state.artifacts?.coverLetterLab?.questions||[];
-  const resume=resumeItems.find(x=>x&&x.jobTitle)||{};
-  const cover=coverItems.find(x=>x&&x.jobTitle)||{};
+  const resumeData=state.artifacts?.resumeLab||{},coverData=state.artifacts?.coverLetterLab||{};
+  const resumeItems=resumeData.items||[],coverItems=coverData.questions||[];
+  const resume=[...resumeItems].reverse().find(x=>x&&x.jobTitle)||{};
+  const cover=[...coverItems].reverse().find(x=>x&&x.jobTitle)||{};
+  const formType=resumeData.templateType||"standard",forms=resumeData.forms||{};
+  const formJob=formType==="ncs"?forms.ncs?.job:formType==="blind"?forms.blind?.targetJob:forms.standard?.targetJob;
+  const explorer=state.artifacts?.jobExplorer||{};
+  const targets=Array.isArray(explorer.targetCombos)&&explorer.targetCombos.length
+    ?[...explorer.targetCombos].sort((a,b)=>(a.priority||99)-(b.priority||99)).map(x=>x.jobId)
+    :explorer.targets||[];
+  const selectedExplorerJob=explorer.candidates?.find(x=>x.id===targets[0])?.title||"";
+  const deepDive=state.artifacts?.jobDeepDive||{};
+  const deepDiveJob=deepDive.targetAnalyses?.[deepDive.reportTargetId]?.jobTitle||"";
   return {
-    job:nonempty(data.mockInterview?.targetJob,posting?.jobTitle,cover.jobTitle,resume.jobTitle,state.profile?.targetJob),
-    company:nonempty(data.mockInterview?.company,posting?.company,cover.company,resume.company),
+    job:nonempty(data.mockInterview?.targetJob,cover.jobTitle,coverData.practiceTargetJob,formJob,resume.jobTitle,posting?.jobTitle,deepDiveJob,selectedExplorerJob,state.profile?.targetJob),
+    company:nonempty(data.mockInterview?.company,cover.company,resumeData.targetCompany,posting?.company,resume.company),
     mode:data.mockInterview?.mode==="12"?"12":"6",
     record:data.mockInterview?.record||""
   };
