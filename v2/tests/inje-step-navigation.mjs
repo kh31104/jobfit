@@ -61,7 +61,11 @@ async function test(engine,label,device){
   page.on('requestfailed',request=>{
     if(/\.js(?:\?|$)/.test(request.url()))moduleRequestsFailed.push({url:request.url(),cause:request.failure()?.errorText||'unknown'});
   });
+  let lesson = 0;
   async function seed(s){
+    // Each fixture represents a different student, so the previous scenario's
+    // richer IndexedDB snapshot cannot legitimately restore over this seed.
+    s.profile.anonCode = 'JF26-NAV-' + (++lesson);
     await page.evaluate(([k,v])=>localStorage.setItem(k,JSON.stringify(v)),[key,s]);
     await page.reload({waitUntil:'domcontentloaded',timeout:60000});
     await page.locator('#saveDeep').waitFor({state:'attached',timeout:60000});
@@ -100,7 +104,7 @@ async function test(engine,label,device){
       console.log('PASS '+label+' '+scenario+': saved and entered STEP 6 with original fields intact');
     }
 
-    // Both PC and mobile: verify 1-12 navigation entrypoints do not redirect to STEP 5.
+    // Both PC and mobile: verify all visible navigation entrypoints do not redirect to STEP 5.
     await seed(stateFor());
     for(const [order,n] of [0,1,2,3,4,5,6,7,8,9,11].entries()){
       await page.locator('.stepBtn[data-step="'+n+'"]').click({force:true});

@@ -47,6 +47,11 @@ for(const width of [1280,390]){
   const context=await browser.newContext({viewport:{width,height:950}});
   const page=await context.newPage();const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
+  // Feed Korean fixture text without depending on the headless OS input method.
+  const setText=(selector,text)=>page.locator(selector).evaluate((el,value)=>{
+    el.value=value;
+    el.dispatchEvent(new Event('input',{bubbles:true}));
+  },text);
   try{
     await page.goto(base+'?course=INJE2026',{waitUntil:'networkidle'});
     await page.evaluate(({key,seed})=>localStorage.setItem(key,JSON.stringify(seed)),{key,seed});
@@ -94,7 +99,7 @@ for(const width of [1280,390]){
       if(screen.step===9){
         await page.locator('#mockInterviewMode').selectOption('12');
         assert((await page.locator('#mockInterviewPromptPreview').inputValue()).includes('면접 모드: 12문항'),'Deep interview mode should update prompt');
-        await page.locator('#mockInterviewRecord').fill('면접 피드백: 수치를 확인하고 근거부터 설명하기');
+        await setText('#mockInterviewRecord','면접 피드백: 수치를 확인하고 근거부터 설명하기');
         await page.locator('#saveMockInterviewRecord').click();
         await page.locator('#finishMockInterview').click();
         const saved=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts.interviewLab,key);
@@ -105,12 +110,12 @@ for(const width of [1280,390]){
         await page.reload({waitUntil:'networkidle'});
         assert((await page.locator('#mockInterviewRecord').inputValue()).includes('면접 피드백'),'Interview feedback lost on reload');
         assert((await page.locator('#mockInterviewCompletionStatus').textContent()).includes('완료'),'Interview completion label lost on reload');
-        await page.locator('#mockInterviewTargetJob').fill('');
+        await setText('#mockInterviewTargetJob','');
         await page.locator('#mockInterviewCompany').click();
         assert((await page.locator('#mockInterviewPromptPreview').inputValue()).includes('지원직무: 미정 · 먼저 질문으로 확인'),'Unset job must trigger AI elicitation');
         await page.locator('#mockInterviewOptionalTools').evaluate(el=>el.open=true);
         await page.locator('#mockInterviewImportDetails').evaluate(el=>el.open=true);
-        await page.locator('#mockInterviewAiResult').fill('[선택 직무] SNS 콘텐츠 마케팅');
+        await setText('#mockInterviewAiResult','[선택 직무] SNS 콘텐츠 마케팅');
         await page.locator('#applyMockInterviewJob').click();
         assert((await page.locator('#mockInterviewTargetJob').inputValue())==='SNS 콘텐츠 마케팅','Chosen AI job should apply');
         const stateAfter=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),key);
