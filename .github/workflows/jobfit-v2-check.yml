@@ -232,6 +232,7 @@ jobs:
           node v2/tests/inje-step1-6-report-mobile.mjs
           node v2/tests/inje-mobile-gap-save.mjs
           node v2/tests/inje-mobile-choice-backup.mjs
+          JOBFIT_CHROMIUM_ONLY=1 node v2/tests/inje-writing-inspector.mjs
           node v2/tests/inje-step7-12-readability.mjs
           node v2/tests/inje-step7-ai-import.mjs
           node v2/tests/inje-step7-tables.mjs
@@ -252,6 +253,7 @@ jobs:
           node v2/tests/inje-step1-6-report-mobile.mjs
           node v2/tests/inje-mobile-gap-save.mjs
           node v2/tests/inje-mobile-choice-backup.mjs
+          JOBFIT_CHROMIUM_ONLY=1 node v2/tests/inje-writing-inspector.mjs
           node v2/tests/inje-step7-12-readability.mjs
           node v2/tests/inje-step7-ai-import.mjs
           node v2/tests/inje-step7-tables.mjs

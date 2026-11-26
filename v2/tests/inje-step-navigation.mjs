@@ -61,7 +61,11 @@ async function test(engine,label,device){
   page.on('requestfailed',request=>{
     if(/\.js(?:\?|$)/.test(request.url()))moduleRequestsFailed.push({url:request.url(),cause:request.failure()?.errorText||'unknown'});
   });
+  let lesson = 0;
   async function seed(s){
+    // Each fixture represents a different student, so the previous scenario's
+    // richer IndexedDB snapshot cannot legitimately restore over this seed.
+    s.profile.anonCode = 'JF26-NAV-' + (++lesson);
     await page.evaluate(([k,v])=>localStorage.setItem(k,JSON.stringify(v)),[key,s]);
     await page.reload({waitUntil:'domcontentloaded',timeout:60000});
     await page.locator('#saveDeep').waitFor({state:'attached',timeout:60000});
@@ -100,21 +104,21 @@ async function test(engine,label,device){
       console.log('PASS '+label+' '+scenario+': saved and entered STEP 6 with original fields intact');
     }
 
-    // Both PC and mobile: verify 1-12 navigation entrypoints do not redirect to STEP 5.
+    // Both PC and mobile: verify all visible navigation entrypoints do not redirect to STEP 5.
     await seed(stateFor());
-    for(let n=0;n<12;n++){
+    for(const [order,n] of [0,1,2,3,4,5,6,7,8,9,11].entries()){
       await page.locator('.stepBtn[data-step="'+n+'"]').click({force:true});
       await page.waitForFunction(index=>{
         const active=document.querySelector('.stepBtn.active');
         const root=document.getElementById('stepRoot');
         return active?.dataset.step===String(index)&&!!root?.querySelector('.sectionHead')&&!root?.querySelector(':scope > .card.placeholder');
       },n,{timeout:45000});
-      console.log('NAV '+label+' STEP '+(n+1)+' loaded');
+      console.log('NAV '+label+' STEP '+(order+1)+' loaded');
       const text=await page.locator('#stepRoot').textContent();
-      assert(!text.includes('선택한 모듈 화면을 불러오지 못했습니다.'),label+': unable to render STEP '+(n+1));
+      assert(!text.includes('선택한 모듈 화면을 불러오지 못했습니다.'),label+': unable to render STEP '+(order+1));
     }
     const final=await saved();
-    assert(final.assessments.experienceCompetency.experiences[0].action==='시료를 직접 검사하고 검사지에 기록함',label+': experience changed across all 12 steps');
+    assert(final.assessments.experienceCompetency.experiences[0].action==='시료를 직접 검사하고 검사지에 기록함',label+': experience changed across all 11 steps');
     assert(final.artifacts.jobDeepDive.targetAnalyses['target-j1'].studentSpec.language==='한국어 TOPIK 3급',label+': original student spec changed across navigation');
     // Safari WebKit may deliver a rejected import() from the document discarded
     // by the repeated test-only page.reload() calls. If every STEP has rendered,
@@ -125,11 +129,11 @@ async function test(engine,label,device){
     const actionableErrors=errors.filter(message=>!recoveredSafariErrors.includes(message));
     assert(!actionableErrors.length,label+': browser errors '+actionableErrors.join(' | '));
     if(recoveredSafariErrors.length){
-      assert(await page.locator('.stepBtn[data-step="11"].active').count()===1,label+': STEP 12 not active after Safari import warning');
+      assert(await page.locator('.stepBtn[data-step="11"].active').count()===1,label+': STEP 11 not active after Safari import warning');
       assert(await page.locator('#stepRoot .sectionHead').count()===1,label+': final STEP missing after Safari import warning');
-      console.warn('WARN '+label+': '+recoveredSafariErrors.length+' cancelled/stale import warning(s) during repeated reload; all 12 STEPs and protected data verified. Module request failures: '+JSON.stringify(moduleRequestsFailed.slice(-10)));
+      console.warn('WARN '+label+': '+recoveredSafariErrors.length+' cancelled/stale import warning(s) during repeated reload; all 11 STEPs and protected data verified. Module request failures: '+JSON.stringify(moduleRequestsFailed.slice(-10)));
     }
-    console.log('PASS '+label+': 12-step navigation and original student values remain intact');
+    console.log('PASS '+label+': 11-step navigation and original student values remain intact');
   } finally {
     await context.close();await browser.close();
   }
