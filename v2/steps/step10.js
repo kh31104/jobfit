@@ -1,3 +1,4 @@
+import {mountInjeWritingInspector} from './injeWritingInspector.js';
 import {readField,READABLE_STYLES} from './readableResults.js';
 import {printApplicationDocument,downloadApplicationText,escapeDocumentText} from './applicationExport.js';
 export async function render(ctx){
@@ -31,7 +32,7 @@ export async function render(ctx){
     <div class="block"><h3>${injeCompact?'5':'4'}. 저장한 문항 · 수정 및 개별 저장</h3><p class="help">각 문항의 최종답변을 수정하거나 검증된 문항만 개별 PDF로 저장할 수 있습니다. 검증 전 초안은 별도 텍스트 파일로 보관할 수 있습니다.</p><div class="actions"><button type="button" class="btn secondary" id="printAllCovers">${injeCompact?'최종 완성 문항 전체 PDF':'검증 완료 문항 전체 PDF'}</button><button type="button" class="btn secondary" id="downloadAllCovers">${injeCompact?'전체 문항 텍스트 백업':'문항 전체 TXT 백업'}</button></div><div id="questionList"></div></div><div class="actions"><button class="btn primary" id="saveAll">${injeCompact?'자기소개서 작성 내용 저장':'Cover Letter Lab 저장'}</button><button class="btn secondary" id="nextStep">STEP ${displayStep+(injeCompact?2:1)} ${injeCompact?'면접 준비':'Interview Lab'} →</button></div>
   <style>.coverReadable .jfDraftText{white-space:pre-wrap;font-size:14px;line-height:1.85;overflow-wrap:anywhere;word-break:keep-all}.coverReadable .jfResultBox>.jfReadFields{margin-top:12px}.coverReadable .jfReadField{min-width:0}@media(max-width:760px){.coverReadable .grid2,.coverReadable .grid3{grid-template-columns:minmax(0,1fr)}} </style></section>`;
 
-  if(injeCompact)compactInjeCoverUi(root);
+  if(injeCompact){compactInjeCoverUi(root);mountInjeWritingInspector(root,ctx);}
   renderAll();wireResumeReuse();if(injeCompact){wireInjeWritingControls();document.getElementById('coverReviewQuestion')?.addEventListener('change',e=>{selectedReviewId=e.target.value;renderReviewPanel();});}document.querySelectorAll('[data-asset]').forEach(x=>x.addEventListener('change',()=>{enforceAssetLimit(x);renderGuards()}));document.getElementById('requirementId').addEventListener('change',renderGuards);document.getElementById('manualRequirement')?.addEventListener('input',renderGuards);document.getElementById('copyPrompt').addEventListener('click',()=>copy(buildPrompt(),ctx));document.getElementById('addQuestion').addEventListener('click',addQuestion);document.getElementById('cancelQuestionEdit').addEventListener('click',cancelQuestionEdit);document.getElementById('saveAll').addEventListener('click',()=>{persist();status('자기소개서 작업을 저장했습니다.');});document.getElementById('nextStep').addEventListener('click',()=>{persist();ctx.navigate(11)});
 
   document.getElementById('printAllCovers')?.addEventListener('click',()=>{
@@ -121,6 +122,7 @@ export async function render(ctx){
     document.getElementById('addQuestion').textContent='문항 수정 저장';
     document.getElementById('cancelQuestionEdit').classList.remove('hidden');
     renderGuards();
+    root.querySelector('#finalAnswer').dispatchEvent(new Event('input'));
     const editFocus=injeCompact?document.getElementById('finalAnswer'):document.getElementById('question');
     if(injeCompact)window.JobfitStepAccordion?.openBlock?.(editFocus?.closest('.block'));
     editFocus?.scrollIntoView({behavior:'smooth',block:'center'});
@@ -128,7 +130,8 @@ export async function render(ctx){
   }
   function cancelQuestionEdit(){
     editingQuestionId=null;
-    clear(['question','intent','claim','rawAnswer','structure','draft','finalAnswer','manualRequirement']);if(injeCompact){const t=document.getElementById('questionType');if(t)t.value='';renderTypeGuide();}
+    clear(['question','intent','claim','rawAnswer','structure','draft','finalAnswer','manualRequirement']);
+    root.querySelector('#finalAnswer').dispatchEvent(new Event('input'));if(injeCompact){const t=document.getElementById('questionType');if(t)t.value='';renderTypeGuide();}
     document.getElementById('requirementId').value='';
     document.querySelectorAll('[data-asset]').forEach(x=>x.checked=false);
     document.getElementById('factChecked').checked=false;

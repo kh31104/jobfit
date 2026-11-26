@@ -39,7 +39,7 @@ const screens=[
   {step:7,selector:'#resumeItems .jfResultBox',checks:[['#resumeItems .jfReadField',3]]},
   {step:8,selector:'#questionList .jfResultBox',checks:[['#questionList .jfReadField',5]]},
   {step:9,selector:'#questionList .jfResultBox',checks:[['#questionList .jfReadField',4]]},
-  {step:10,selector:'#humanList .jfResultBox',checks:[['#humanList .jfReadField',1]]},
+  {step:10,selector:'#legacyEvidence-humanList .jfResultBox',checks:[['#legacyEvidence-humanList .jfReadField',1]]},
   {step:11,selector:'#portfolioPrint .portfolioDoc',checks:[['#portfolioPrint .portfolioSection',10],['#portfolioPrint .jfReadField',3]]}
 ];
 let failed=false;
@@ -73,6 +73,10 @@ for(const width of [1280,390]){
         assert(await page.locator('#mockInterviewRecord').isVisible(),'Interview feedback field should be visible without opening extras');
         await page.locator('#injeInterviewAdvancedDisclosure').evaluate(el=>{el.open=true});
       }
+      if(screen.step===10){
+        await page.locator('#khWritingInspector > summary').click();
+        await page.locator('#khLegacyEvidence > summary').click();
+      }
       await page.waitForSelector(screen.selector,{timeout:15000});
       for(const [selector,n] of screen.checks){
         const count=await page.locator(selector).count();
@@ -84,7 +88,7 @@ for(const width of [1280,390]){
       }
       if(screen.step===7)assert((await page.locator('#resumeItems').textContent()).includes('분류 결과를 정리했다'),'Existing Resume evidence disappeared');
       if(screen.step===8)assert((await page.locator('#questionList').textContent()).includes('그 결과를 팀원에게 공유했다'),'Cover Letter original draft disappeared');
-      if(screen.step===10)assert((await page.locator('#humanList').textContent()).includes('팀 회의를 진행했습니다'),'Human-First full answer disappeared');
+      if(screen.step===10)assert((await page.locator('#legacyEvidence-humanList').textContent()).includes('팀 회의를 진행했습니다'),'Human-First full answer disappeared');
       const current=await page.evaluate(({key,keys})=>{const stored=JSON.parse(localStorage.getItem(key));return Object.fromEntries(keys.map(k=>[k,stored.artifacts[k]]));},{key,keys:artifactKeys});
       for(const k of artifactKeys)assert(JSON.stringify(current[k])===JSON.stringify(seed.artifacts[k]),'Browsing STEP '+(screen.step+1)+' modified saved '+k+' data');
       if(screen.step===9){

@@ -17,7 +17,7 @@ async function run(name,viewport){
     await page.goto(`${base}?course=INJE2026&measures=true`,{waitUntil:'networkidle'});
     assert(new URL(page.url()).searchParams.get('course')==='INJE2026','Course URL parameter changed');
     assert(new URL(page.url()).searchParams.get('measures')==='true','INJE2026 must keep STEP0 PRE enabled');
-    assert(await page.locator('.stepBtn').count()===12,'INJE STEP navigation must contain 12 steps after duplicate JD/Asset removal');
+    assert(await page.locator('.stepBtn').count()===11,'INJE navigation must contain 11 steps');
     const hero=(await page.locator('.hero').textContent())||'';assert(hero.includes('일부 구조화 결과는 수업 운영용 중앙 서버에도 저장됩니다.'),'Operational central storage notice missing');
 
     await page.waitForSelector('#preMeasureSave');
@@ -32,7 +32,7 @@ async function run(name,viewport){
     assert(await page.locator('[data-measure="pre-kcaas"]').count()===12,'STEP0 K-CAAS PRE must expose 12 items');
 
     await page.locator('#makeCodeBtn').click();const code=(await page.locator('#anonCode').textContent()||'').trim();assert(/^JF26-[A-Z2-9]{6}$/.test(code),'Anonymous code creation changed');
-    for(let step=0;step<=11;step++){
+    for(const step of [0,1,2,3,4,5,6,7,8,9,11]){
       await page.locator(`.stepBtn[data-step="${step}"]`).click();await page.locator('#stepRoot h2').first().waitFor({state:'visible',timeout:15000});
       const body=(await page.locator('#stepRoot').textContent())||'';
       const headingCount=await page.locator('#stepRoot h2').count();

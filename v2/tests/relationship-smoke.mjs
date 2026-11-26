@@ -34,14 +34,14 @@ await run('INJE navigation removes duplicate STEP 7–8 and renumbers applicatio
   await page.evaluate(s=>localStorage.setItem('jobfit:v2:learner',JSON.stringify(s)),state);
   await page.reload({waitUntil:'networkidle'});
   const labels=await page.locator('.stepBtn').allTextContents();
-  assert(labels.length===12,'INJE should have 12 visible steps including STEP 0–11');
+  assert(labels.length===11,'INJE should have 11 visible steps');
   assert(!labels.some(x=>x.includes('JD Analyzer')),'Duplicate JD Analyzer step should be removed from INJE');
   assert(!labels.some(x=>x.includes('Career Asset Match')),'Duplicate Career Asset Match step should be removed from INJE');
   assert(labels.some(x=>x.includes('Industry & Company Analysis')),'STEP 7 Industry & Company Analysis missing');
   assert(!labels.some(x=>x.includes('Career Fit Map')),'INJE STEP 7 must not show Career Fit Map');
   assert(labels.some(x=>x.includes('Resume Lab')),'Resume Lab missing after renumbering');
   await page.locator('.stepBtn[data-step="7"]').click();
-  await page.waitForSelector('#stepRoot .kicker');
+  await page.waitForSelector('#stepRoot .kicker',{state:'attached'});
   const text=(await page.locator('#stepRoot').textContent())||'';
   assert(text.includes('Resume Lab'),'New STEP 8 should load Resume Lab');
   assert((await page.locator('#stepRoot .kicker').first().textContent()).includes('STEP 8'),'Resume Lab kicker was not renumbered');

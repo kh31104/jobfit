@@ -64,7 +64,7 @@ await run('Seeded semester data assembles into final Job Portfolio',async page=>
   await page.evaluate(state=>localStorage.setItem('jobfit:v2:learner',JSON.stringify(state)),seeded);await page.reload({waitUntil:'networkidle'});await page.waitForSelector('#portfolioPrint');const text=(await page.locator('#portfolioPrint').textContent())||'';for(const expected of ['가상에너지','생산기술','배터리','센서 데이터 캡스톤','조건별 센서 측정값','오차 원인을 어떻게 확인했나요?','현장실습 경험','공정 데이터 프로젝트 1건 완성'])assert(text.includes(expected),`Portfolio missing seeded value: ${expected}`);await page.emulateMedia({media:'print'});assert(await page.locator('#portfolioPrint').isVisible(),'Portfolio is not visible in print media');assert((await page.locator('.topbar').evaluate(el=>getComputedStyle(el).display))==='none','Topbar should be hidden for print');
 });
 
-await run('Mobile layout loads core navigation',async page=>{await page.goto(`${base}?course=INJE2026`,{waitUntil:'networkidle'});assert(await page.locator('.stepBtn').count()===12,'Mobile INJE navigation does not contain 12 steps');assert(await page.locator('#makeCodeBtn').isVisible(),'Anonymous code button not visible on mobile');},{viewport:{width:390,height:844}});
+await run('Mobile layout loads core navigation',async page=>{await page.goto(`${base}?course=INJE2026`,{waitUntil:'networkidle'});assert(await page.locator('.stepBtn').count()===11,'Mobile INJE navigation does not contain 11 steps');assert(await page.locator('#makeCodeBtn').isVisible(),'Anonymous code button not visible on mobile');},{viewport:{width:390,height:844}});
 
 await run('Instructor dashboard whitelists research-only files',async page=>{
   await page.goto(instructorBase,{waitUntil:'networkidle'});
